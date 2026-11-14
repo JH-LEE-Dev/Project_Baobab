@@ -58,8 +58,6 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     private float comboPitchMultiplier = 1f;
     // 켜는 도중 콤보가 바뀌면 루프 피치를 이 속도(초당)로 목표 피치까지 따라 올린다(내린다).
     private const float ComboPitchFollowSpeed = 0.6f;
-    // 시동 피치 램프(PowerUp)가 끝나는 시각. 그 전에는 램프가 피치를 쥐고 있으므로 따라가지 않는다.
-    private float comboPitchFollowStartTime;
 
     public void SetComboPitchMultiplier(float _multiplier)
     {
@@ -107,7 +105,6 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     private VFXComponent vfxComponent;
     private ParticleSystem cuttingEffect;
     private bool wasForward = false;
-    private AudioHandle cuttingSoundHandle = AudioHandle.Invalid;
 
     // 프로퍼티
     public float timeRemaining
@@ -345,11 +342,8 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
 
         if (prevMap != mapType)
         {
-            if (cuttingSoundHandle.IsValid)
-            {
-                Sound.StopTracked(cuttingSoundHandle);
-                cuttingSoundHandle = AudioHandle.Invalid;
-            }
+            // 이 커터를 공용 가공 루프에서 뺀다. 모든 커터가 빠지면 루프(와 꺼지는 꼬리음)를 즉시 끊는다.
+            SharedCuttingLoop.ExitImmediate(this, true);
             // 맵 상태가 바뀔 때(던전 -> 마을 복귀 등) sound 연출 상태를 리셋하여,
             // 정방향(가공 중)이든 역방향(날 복귀 중)이든 현재 단계에 맞춰 사운드가 100% 올바르게 재개되도록 유도
             wasForward = isReversing;
@@ -443,54 +437,158 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
             if (isForward)
             {
                 PlayCuttingEffect();
-                if (isRestoredFromOtherMap)
-                {
-                    // 이미 가공 중반에 던전에서 마을로 돌아온 경우:
-                    // 0 RPM에서 시동이 새로 걸리는 예열음(PowerUp) 대신, 이미 쌩쌩 가동 중인 정상 피치(1.0)로 루프를 재생하여
-                    // 카메라 하강 오디오 페이드인 연출과 자연스럽게 이어지게 한다.
-                    cuttingSoundHandle = Sound.PlayTracked(SoundID.SawmillCutterLoop, transform.position,
-                        soundVolume, true, comboPitchMultiplier);
-                    comboPitchFollowStartTime = Time.time;
-                    isRestoredFromOtherMap = false;
-                }
-                else
-                {
-                    // 새로 가공이 시작된 경우: 0.4초 피치 램프(시동 연출) 적용. 가공 콤보가 쌓였으면 그만큼 높은 피치까지 올라간다.
-                    float rampDuration = GetPitchRampDuration();
-                    cuttingSoundHandle = Sound.PlayTrackedWithPowerUp(SoundID.SawmillCutterLoop, transform.position,
-                        soundVolume, true, rampDuration, 0.1f, comboPitchMultiplier);
-                    // 램프 코루틴의 마지막 프레임과 겹치지 않도록 한 프레임 남짓 여유를 둔다.
-                    comboPitchFollowStartTime = Time.time + rampDuration + 0.05f;
-                }
+                // 가공 루프는 커터마다 따로 틀지 않고 하나를 같이 쓴다(여러 루프가 겹치면 듣기 좋지 않다).
+                // 이미 다른 커터가 켜는 중이면 그 루프에 합류만 하고, 아무도 안 켜고 있었으면 루프를 새로 튼다.
+                SharedCuttingLoop.Enter(this, soundVolume, isRestoredFromOtherMap);
+                isRestoredFromOtherMap = false;
             }
             else
             {
                 StopCuttingEffect();
-                // 날이 되돌아올 때는 루프를 끊고 기존 사운드로 바꾸되, 루프가 지금 올라와 있던
-                // 피치 그대로 이어받아 거기서부터 (가공 속도에 비례한 속도로) 서서히 내려가며
-                // 꺼지는 느낌(전원이 빠지듯)을 준다.
-                float pitchAtReversal = Sound.GetTrackedPitch(cuttingSoundHandle);
-                Sound.StopTracked(cuttingSoundHandle);
-                cuttingSoundHandle = Sound.PlayTracked(SoundID.Cutter, transform.position, soundVolume, true, pitchAtReversal);
-                Sound.StopTrackedWithPowerDown(cuttingSoundHandle, GetPitchRampDuration());
+                // 켜는 커터가 하나도 남지 않을 때만 루프를 끊고 꺼지는 소리(파워다운)로 넘어간다.
+                SharedCuttingLoop.Exit(this, soundVolume, GetPitchRampDuration());
             }
             wasForward = isForward;
         }
 
-        UpdateComboLoopPitch(isForward);
+        if (isForward) SharedCuttingLoop.UpdateFrame();
     }
 
-    // 켜는 도중 가공 콤보가 바뀌면 지금 돌고 있는 가공 루프의 피치를 새 목표로 서서히 맞춘다.
-    // 콤보가 없으면 목표가 1이고 램프도 1에서 끝나므로 아무것도 바꾸지 않는다.
-    private void UpdateComboLoopPitch(bool _isForward)
+    /// <summary>
+    /// 모든 커터가 함께 쓰는 가공 루프 사운드. 커터 하나 이상이 켜는 중(정방향)이면 루프 하나만 재생하고,
+    /// 켜는 커터가 모두 멈추면 그때 꺼지는 소리로 넘어간다. 소리 위치는 켜는 중인 커터들의 가운데다.
+    /// </summary>
+    private static class SharedCuttingLoop
     {
-        if (false == _isForward || false == cuttingSoundHandle.IsValid) return;
-        if (Time.time < comboPitchFollowStartTime) return;
+        private static readonly List<LogCutter> activeCutters = new List<LogCutter>(8);
+        private static AudioHandle loopHandle = AudioHandle.Invalid;
+        // 마지막 커터가 멈춘 뒤 피치가 내려가며 꺼지는 소리. 맵 전환·비활성화 때 즉시 끊기 위해 들고 있는다.
+        private static AudioHandle tailHandle = AudioHandle.Invalid;
+        private static LogCutter tailOwner;
+        // 시동 피치 램프(PowerUp)가 끝나는 시각. 그 전에는 램프가 피치를 쥐고 있으므로 콤보 피치를 따라가지 않는다.
+        private static float pitchFollowStartTime;
+        private static int lastUpdateFrame = -1;
+        private static Vector3 lastPosition;
 
-        float current = Sound.GetTrackedPitch(cuttingSoundHandle);
-        if (Mathf.Abs(current - comboPitchMultiplier) < 0.0005f) return;
+        public static void Enter(LogCutter _cutter, float _volume, bool _bRestored)
+        {
+            if (!activeCutters.Contains(_cutter)) activeCutters.Add(_cutter);
 
-        Sound.SetTrackedPitch(cuttingSoundHandle, Mathf.MoveTowards(current, comboPitchMultiplier, ComboPitchFollowSpeed * Time.deltaTime));
+            // 이미 루프가 돌고 있으면 합류만 한다.
+            if (Sound.IsTrackedPlaying(loopHandle)) return;
+
+            lastPosition = GetCenter();
+            float targetPitch = GetTargetPitch();
+            if (_bRestored)
+            {
+                // 이미 가공 중반에 던전에서 마을로 돌아온 경우:
+                // 0 RPM에서 시동이 새로 걸리는 예열음(PowerUp) 대신, 이미 쌩쌩 가동 중인 정상 피치로 루프를 재생하여
+                // 카메라 하강 오디오 페이드인 연출과 자연스럽게 이어지게 한다.
+                loopHandle = Sound.PlayTracked(SoundID.SawmillCutterLoop, lastPosition, _volume, true, targetPitch);
+                pitchFollowStartTime = Time.time;
+            }
+            else
+            {
+                // 새로 가공이 시작된 경우: 피치 램프(시동 연출) 적용. 가공 콤보가 쌓였으면 그만큼 높은 피치까지 올라간다.
+                float rampDuration = _cutter.GetPitchRampDuration();
+                loopHandle = Sound.PlayTrackedWithPowerUp(SoundID.SawmillCutterLoop, lastPosition,
+                    _volume, true, rampDuration, 0.1f, targetPitch);
+                // 램프 코루틴의 마지막 프레임과 겹치지 않도록 한 프레임 남짓 여유를 둔다.
+                pitchFollowStartTime = Time.time + rampDuration + 0.05f;
+            }
+        }
+
+        public static void Exit(LogCutter _cutter, float _volume, float _powerDownDuration)
+        {
+            if (!activeCutters.Remove(_cutter))
+            {
+                // 루프에 없던 커터가 멈췄다 = 던전에서 마을로 돌아온 순간 날이 되돌아가던 중이다(SetMapType이 전환을 다시
+                // 일으킨다). 원래처럼 꺼지는 소리를 내되, 다른 커터의 루프나 꺼지는 소리가 이미 나고 있으면 겹쳐 내지 않는다.
+                if (activeCutters.Count > 0 || Sound.IsTrackedPlaying(loopHandle) || Sound.IsTrackedPlaying(tailHandle)) return;
+
+                PlayTail(_cutter, _cutter.transform.position, _volume, 1f, _powerDownDuration);
+                return;
+            }
+            if (activeCutters.Count > 0) return;
+            if (!Sound.IsTrackedPlaying(loopHandle))
+            {
+                loopHandle = AudioHandle.Invalid;
+                return;
+            }
+
+            // 마지막 커터가 멈췄다: 루프를 끊고 기존 사운드로 바꾸되, 루프가 지금 올라와 있던 피치 그대로 이어받아
+            // 거기서부터 (가공 속도에 비례한 속도로) 서서히 내려가며 꺼지는 느낌(전원이 빠지듯)을 준다.
+            float pitchAtReversal = Sound.GetTrackedPitch(loopHandle);
+            Sound.StopTracked(loopHandle);
+            loopHandle = AudioHandle.Invalid;
+
+            PlayTail(_cutter, lastPosition, _volume, pitchAtReversal, _powerDownDuration);
+        }
+
+        private static void PlayTail(LogCutter _owner, Vector3 _position, float _volume, float _pitch, float _powerDownDuration)
+        {
+            tailHandle = Sound.PlayTracked(SoundID.Cutter, _position, _volume, true, _pitch);
+            tailOwner = _owner;
+            Sound.StopTrackedWithPowerDown(tailHandle, _powerDownDuration);
+        }
+
+        /// <summary>
+        /// 이 커터를 루프에서 빼고, 남은 커터가 없으면 루프를 페이드 없이 즉시 끊는다.
+        /// 꺼지는 소리는 _bStopAnyTail이면(맵 전환 - 모든 커터가 함께 불린다) 누가 냈든 끊고, 아니면(비활성화)
+        /// 이 커터가 낸 것일 때만 끊는다. 쉬던 커터가 꺼진다고 다른 커터의 꺼지는 소리가 잘리면 안 된다.
+        /// </summary>
+        public static void ExitImmediate(LogCutter _cutter, bool _bStopAnyTail)
+        {
+            activeCutters.Remove(_cutter);
+
+            if (_bStopAnyTail || tailOwner == _cutter)
+            {
+                Sound.StopTracked(tailHandle);
+                tailHandle = AudioHandle.Invalid;
+                tailOwner = null;
+            }
+
+            if (activeCutters.Count > 0) return;
+
+            Sound.StopTracked(loopHandle);
+            loopHandle = AudioHandle.Invalid;
+        }
+
+        /// <summary>켜는 중인 커터가 매 프레임 부른다. 프레임당 한 번만 위치·콤보 피치를 갱신한다.</summary>
+        public static void UpdateFrame()
+        {
+            if (lastUpdateFrame == Time.frameCount) return;
+            lastUpdateFrame = Time.frameCount;
+
+            if (activeCutters.Count == 0 || !loopHandle.IsValid) return;
+
+            lastPosition = GetCenter();
+            Sound.UpdateTrackedPosition(loopHandle, lastPosition);
+
+            // 켜는 도중 가공 콤보가 바뀌면 루프 피치를 새 목표로 서서히 맞춘다.
+            // 콤보가 없으면 목표가 1이고 램프도 1에서 끝나므로 아무것도 바꾸지 않는다.
+            if (Time.time < pitchFollowStartTime) return;
+
+            float target = GetTargetPitch();
+            float current = Sound.GetTrackedPitch(loopHandle);
+            if (Mathf.Abs(current - target) < 0.0005f) return;
+
+            Sound.SetTrackedPitch(loopHandle, Mathf.MoveTowards(current, target, ComboPitchFollowSpeed * Time.deltaTime));
+        }
+
+        private static Vector3 GetCenter()
+        {
+            Vector3 sum = Vector3.zero;
+            for (int i = 0; i < activeCutters.Count; i++) sum += activeCutters[i].transform.position;
+            return sum / Mathf.Max(1, activeCutters.Count);
+        }
+
+        private static float GetTargetPitch()
+        {
+            float pitch = 1f;
+            for (int i = 0; i < activeCutters.Count; i++) pitch = Mathf.Max(pitch, activeCutters[i].comboPitchMultiplier);
+            return pitch;
+        }
     }
 
     private void PlayCuttingEffect()
@@ -630,8 +728,8 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     {
         StopCuttingEffect();
         // 씬 전환 등으로 비활성화되는 경우는 페이드아웃 없이 즉시 정지한다 (코루틴은 비활성 오브젝트에서 진행되지 않음).
-        Sound.StopTracked(cuttingSoundHandle);
-        cuttingSoundHandle = AudioHandle.Invalid;
+        // 다른 커터가 아직 켜는 중이면 공용 루프는 계속된다.
+        SharedCuttingLoop.ExitImmediate(this, false);
         wasForward = false;
     }
 }
