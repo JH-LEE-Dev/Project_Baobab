@@ -7,11 +7,11 @@ using UnityEngine;
 /// 쓰러진 나무는 사망 처리(드랍·카운트·풀 반환)가 그 자리에서 그대로 끝난다. 이 클래스는 쓰러지는 순간의 나무 그림을 베낀
 /// 대역(스프라이트 몇 장)만 띄워, 하얗게 번쩍이며 진원 반대쪽으로 기울어 솟구치게 하고, 꼭대기에 닿으면 대역을 숨기고 사망 이펙트를
 /// 그 높이에서 터뜨린다(밑동 쪽 이펙트는 바닥 그대로). 그림자는 바닥에 남아 나무가 떠오른 게 보인다.
-/// 게임 판정·정렬 값·나무 상태는 건드리지 않는다. 한꺼번에 띄울 수 있는 수를 넘으면 false를 돌려주고, 부른 쪽이 예전처럼 바로 터뜨린다.
+/// 게임 판정·정렬 값·나무 상태는 건드리지 않는다. 대역은 모자라면 더 만들어 늘린다(띄울 그림이 없을 때만 false - 부른 쪽이 바로 터뜨린다).
 /// </summary>
 public sealed class QuakeTreeLaunch
 {
-    // 한꺼번에 떠 있을 수 있는 대역 수. 지진 한 번(III단계 범위)에 쓰러지는 나무 수보다 넉넉하다. 넘치면 바로 터진다.
+    // 대역 목록의 처음 용량. 지진 한 번(III단계 범위)에 쓰러지는 나무 수보다 넉넉하다. 넘치면 대역을 더 만들어 늘린다.
     private const int MaxGhosts = 48;
     // 솟구쳐 꼭대기에 닿는 시간(초). 처음에 빠르고 꼭대기에서 느려진다(3차 감속).
     private const float RiseSeconds = 0.13f;
@@ -27,6 +27,7 @@ public sealed class QuakeTreeLaunch
     private sealed class Ghost
     {
         public Transform root;
+        public int index; // ghosts 목록 안의 자리(뒤에 추가만 되고 순서가 바뀌지 않는다)
         public readonly List<SpriteRenderer> body = new List<SpriteRenderer>(6);
         public readonly List<SpriteRenderer> shadows = new List<SpriteRenderer>(2);
         public int bodyCount;
@@ -46,6 +47,9 @@ public sealed class QuakeTreeLaunch
     private Transform container;
     private readonly List<Ghost> ghosts = new List<Ghost>(MaxGhosts);
     private int activeCount;
+    // 이 위치 앞의 대역은 모두 쓰는 중이다. TakeGhost가 여기서부터 찾아도 맨 앞부터 찾을 때와 같은 대역(가장 앞의 쉬는 대역)을 고른다.
+    // 지진 한 번에 수십~수백 그루가 같은 프레임에 쓰러지면 매번 맨 앞부터 훑는 비용이 그루 수의 제곱으로 늘었다.
+    private int firstMaybeFree;
     private MaterialPropertyBlock block;
 
     private static readonly List<SpriteRenderer> bodyBuffer = new List<SpriteRenderer>(6);
@@ -59,12 +63,12 @@ public sealed class QuakeTreeLaunch
 
     /// <summary>
     /// 지금 쓰러진 나무(_tree, 아직 풀로 돌아가기 전)를 _height(월드)만큼 솟구쳐 꼭대기에서 터지게 한다. _tiltDegrees만큼 기울며 오른다.
-    /// 띄울 수 없으면(대역이 모자라거나 그릴 그림이 없으면) false - 부른 쪽이 사망 이펙트를 바로 터뜨린다.
+    /// 띄울 수 없으면(그릴 그림이 없으면) false - 부른 쪽이 사망 이펙트를 바로 터뜨린다.
     /// </summary>
     public bool TryLaunch(TreeObj _tree, float _height, float _tiltDegrees)
     {
         if (null == vfxManager || null == _tree || null == _tree.treeVisualComponent) return false;
-        if (activeCount >= MaxGhosts) return false;
+        // 대역 수 상한은 두지 않는다. MaxGhosts를 넘으면 TakeGhost가 새로 만들어 늘린다(솟구치는 연출이 빠지지 않게).
 
         TreeVisualComponent visual = _tree.treeVisualComponent;
         bodyBuffer.Clear();
@@ -174,6 +178,7 @@ public sealed class QuakeTreeLaunch
             Hide(ghosts[g]);
         }
         activeCount = 0;
+        firstMaybeFree = 0;
     }
 
     // // 내부
@@ -187,6 +192,7 @@ public sealed class QuakeTreeLaunch
 
         Hide(_ghost);
         activeCount--;
+        if (_ghost.index < firstMaybeFree) firstMaybeFree = _ghost.index;
 
         vfxManager.PlayTreeDeadVFX(pose, _ghost.treeType, _ghost.gemStage);
     }
@@ -208,6 +214,7 @@ public sealed class QuakeTreeLaunch
         // 묶음이 사라졌으면(던전 매니저와 함께 파괴) 대역도 같이 사라졌으므로 처음부터 다시 만든다.
         ghosts.Clear();
         activeCount = 0;
+        firstMaybeFree = 0;
         if (null == owner) return false;
 
         GameObject containerObject = new GameObject("[QuakeTreeLaunch]");
@@ -219,15 +226,21 @@ public sealed class QuakeTreeLaunch
 
     private Ghost TakeGhost()
     {
-        for (int g = 0; g < ghosts.Count; g++)
+        // 고른 대역은 부른 쪽(TryLaunch)이 곧바로 쓰는 중으로 바꾸므로 탐색 시작 위치를 그 다음으로 옮긴다.
+        for (int g = Mathf.Clamp(firstMaybeFree, 0, ghosts.Count); g < ghosts.Count; g++)
         {
-            if (false == ghosts[g].bActive && null != ghosts[g].root) return ghosts[g];
+            if (false == ghosts[g].bActive && null != ghosts[g].root)
+            {
+                firstMaybeFree = g + 1;
+                return ghosts[g];
+            }
         }
 
         GameObject rootObject = new GameObject("QuakeTreeLaunchGhost");
         rootObject.transform.SetParent(container, false);
-        Ghost ghost = new Ghost { root = rootObject.transform };
+        Ghost ghost = new Ghost { root = rootObject.transform, index = ghosts.Count };
         ghosts.Add(ghost);
+        firstMaybeFree = ghosts.Count;
         return ghost;
     }
 

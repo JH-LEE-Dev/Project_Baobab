@@ -21,7 +21,8 @@ namespace PresentationLayer.VFX
     public sealed class PixelQuadBuffer
     {
         private const float PixelUnit = 1.0f / 32.0f;
-        private const int MaxVertices = 60000;                  // UInt16 인덱스(65535) 안에 들어가는 4의 배수
+        // UInt16 인덱스(65535) 안에 들어가는 4의 배수. 쿼드가 이보다 많아도 버리지 않고, 그 메쉬만 UInt32 인덱스로 바꿔 담는다(SetupMesh).
+        private const int MaxVertices = 60000;
         private const int MinMeshVertexCapacity = 256;
         private const ulong HashOffset = 14695981039346656037UL; // FNV-1a 64
         private const ulong HashPrime = 1099511628211UL;
@@ -119,7 +120,6 @@ namespace PresentationLayer.VFX
         /// </summary>
         public void AddWorldRect(float _x0, float _y0, float _x1, float _y1, Color32 _color)
         {
-            if (MaxVertices <= vertexCount + 4) return;
             EnsureCapacity(vertexCount + 4);
 
             float x0 = _x0 * PixelUnit;
@@ -158,7 +158,6 @@ namespace PresentationLayer.VFX
         /// </summary>
         public void AddLocalRect(int _x0, int _y0, int _x1, int _y1, Color32 _color)
         {
-            if (MaxVertices <= vertexCount + 4) return;
             EnsureCapacity(vertexCount + 4);
 
             float x0 = _x0 * PixelUnit;
@@ -251,7 +250,9 @@ namespace PresentationLayer.VFX
         {
             if (_needed <= vertices.Length) return;
 
-            int capacity = Mathf.Min(MaxVertices, Mathf.Max(_needed, vertices.Length * 2));
+            // 두 배로 늘리되 MaxVertices까지는 예전과 같이 멈추고, 그보다 더 필요할 때만 넘어선다(넘친 쿼드를 버리지 않는다).
+            int capacity = Mathf.Max(_needed, Mathf.Min(MaxVertices, vertices.Length * 2));
+            if (_needed > MaxVertices) capacity = Mathf.Max(_needed, vertices.Length * 2);
             QuadVertex[] grown = new QuadVertex[capacity];
             System.Array.Copy(vertices, grown, vertexCount);
             vertices = grown;
@@ -283,6 +284,22 @@ namespace PresentationLayer.VFX
         // 정점 버퍼(위치 + 색 한 스트림)와 쿼드 인덱스 패턴을 용량만큼 잡는다. 정점 버퍼를 다시 잡으면 기존 정점 내용은 사라진다.
         private static void SetupMesh(Mesh _mesh, int _neededVertices)
         {
+            if (_neededVertices > MaxVertices)
+            {
+                // UInt16 인덱스로 담을 수 없는 양이면 이 메쉬만 UInt32 인덱스로 잡는다(MaxVertices 이하는 아래 예전 경로 그대로).
+                int bigCapacity = Mathf.Max(_neededVertices, _mesh.vertexCount * 2);
+                bigCapacity += (4 - bigCapacity % 4) % 4;
+                int bigIndexCount = bigCapacity / 4 * 6;
+
+                uint[] bigPattern = GetQuadIndexPattern32(bigCapacity / 4);
+                _mesh.SetVertexBufferParams(bigCapacity, VertexLayout);
+                _mesh.SetIndexBufferParams(bigIndexCount, IndexFormat.UInt32);
+                _mesh.SetIndexBufferData(bigPattern, 0, 0, bigIndexCount, UploadFlags);
+                _mesh.subMeshCount = 1;
+                _mesh.SetSubMesh(0, new SubMeshDescriptor(0, 0, MeshTopology.Triangles), UploadFlags);
+                return;
+            }
+
             int capacity = Mathf.Min(MaxVertices, Mathf.Max(_neededVertices, Mathf.Max(MinMeshVertexCapacity, _mesh.vertexCount * 2)));
             capacity -= capacity % 4;
             int indexCount = capacity / 4 * 6;
@@ -315,6 +332,29 @@ namespace PresentationLayer.VFX
             }
 
             return quadIndexPattern;
+        }
+
+        // UInt32 인덱스 패턴. MaxVertices를 넘는 메쉬가 생길 때만 만들고, 더 큰 메쉬가 나오면 그 크기로 다시 만든다.
+        private static uint[] quadIndexPattern32;
+
+        private static uint[] GetQuadIndexPattern32(int _quadCount)
+        {
+            if (null != quadIndexPattern32 && quadIndexPattern32.Length >= _quadCount * 6) return quadIndexPattern32;
+
+            quadIndexPattern32 = new uint[_quadCount * 6];
+            for (int q = 0; q < _quadCount; q++)
+            {
+                uint v = (uint)(q * 4);
+                int i = q * 6;
+                quadIndexPattern32[i] = v;
+                quadIndexPattern32[i + 1] = v + 1;
+                quadIndexPattern32[i + 2] = v + 2;
+                quadIndexPattern32[i + 3] = v;
+                quadIndexPattern32[i + 4] = v + 2;
+                quadIndexPattern32[i + 5] = v + 3;
+            }
+
+            return quadIndexPattern32;
         }
     }
 }

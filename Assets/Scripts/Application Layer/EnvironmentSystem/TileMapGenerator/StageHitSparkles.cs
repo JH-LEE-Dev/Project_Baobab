@@ -135,6 +135,11 @@ public class StageHitSparkles : MonoBehaviour
         Vector2 origin = (Vector2)_topPosition + settings.emitOffset;
         ParticleSystem.EmitParams emitParams = new ParticleSystem.EmitParams();
 
+        // 최대 입자 수에 닿으면 Emit이 새 알갱이를 조용히 버리므로, 넣기 전에 상한을 두 배로 늘린다(SharedBurstEmitter와 같은 방식, 줄이지 않는다)
+        ParticleSystem.MainModule main = sparkleSystem.main;
+        int required = sparkleSystem.particleCount + count;
+        if (required > main.maxParticles) main.maxParticles = Mathf.Max(required, main.maxParticles * 2);
+
         for (int k = 0; k < count; k++)
         {
             Vector2 jitter = new Vector2(Random.Range(-1f, 1f) * settings.emitSpread.x, Random.Range(-1f, 1f) * settings.emitSpread.y);

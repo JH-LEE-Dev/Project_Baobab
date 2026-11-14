@@ -251,13 +251,13 @@ public class InDungeonVFXManager : MonoBehaviour
     private const int BrandStarWrapPrewarmCount = 4;
 
     // 치명타 전용 임팩트(VFX_CriticalImpact). 프리팹 없이 이 매니저 아래에 런타임으로 만들고, 끝난 인스턴스를 다시 쓴다.
-    // 다중 공격·충격파로 한 번에 여러 그루가 치명타를 맞아도 동시에 이만큼까지만 그린다(넘는 것은 생략, 나무 번쩍임·반동은 그대로).
+    // 다중 공격·충격파로 한 번에 여러 그루가 치명타를 맞으면 쉬는 인스턴스가 모자랄 때 새로 만들어 모두 그린다(아래 MaxActive는 목록 처음 크기).
     private const int CriticalImpactMaxActive = 12;
     private const int CriticalImpactPrewarmCount = 4;
     private readonly List<PresentationLayer.VFX.VFX_CriticalImpact> criticalImpacts = new List<PresentationLayer.VFX.VFX_CriticalImpact>(CriticalImpactMaxActive);
 
     // "약점 타격" 특성 연출(VFX_WeakPointHit: 절반 이하로 내려온 순간의 노출, 보너스가 들어간 타격의 관통). 치명타 임팩트와 같은 방식으로
-    // 이 매니저 아래에 런타임으로 만들고 끝난 인스턴스를 다시 쓴다. 회전 베기·다중 공격으로 여러 그루가 한꺼번에 나와도 동시에 이만큼까지만 그린다.
+    // 이 매니저 아래에 런타임으로 만들고 끝난 인스턴스를 다시 쓴다. 회전 베기·다중 공격으로 여러 그루가 한꺼번에 나오면 모자란 만큼 새로 만든다.
     // 미리 만드는 수는 상한과 같다. 회전 베기 한 번에 여러 그루가 처음 절반을 넘으면 그 프레임에 생성(오브젝트+메쉬)이 몰렸었다.
     // 쉬는 인스턴스는 컴포넌트·렌더러가 꺼져 있어 매 프레임 비용이 없다.
     private const int WeakPointHitMaxActive = 12;
@@ -272,7 +272,7 @@ public class InDungeonVFXManager : MonoBehaviour
     private readonly List<PresentationLayer.VFX.VFX_HelloHit> helloHits = new List<PresentationLayer.VFX.VFX_HelloHit>(HelloHitMaxActive);
 
     // 보석 나무 변신·사망 단계별 추가 연출(VFX_GemTierBurst), 다이아·무지개 원목 잔광(VFX_GemLogTrail).
-    // 치명타 임팩트와 같이 이 매니저 아래에 런타임으로 만들고 끝난 인스턴스를 다시 쓴다. 동시 상한을 넘는 것은 생략한다(기존 이펙트는 그대로).
+    // 치명타 임팩트와 같이 이 매니저 아래에 런타임으로 만들고 끝난 인스턴스를 다시 쓴다. 쉬는 인스턴스가 모자라면 새로 만든다(생략하지 않는다).
     // 쉬는 인스턴스는 컴포넌트가 꺼져 있어 매 프레임 비용이 없으므로, 재생 순간에 새로 만드는 일이 없도록 넉넉히 미리 만든다
     // (원목 잔광: 보석 원목 4~7개 x 드랍 배율 x 잭팟 2배, 연출: 여러 그루가 한꺼번에 변신·사망).
     private const int GemTierBurstMaxActive = 10;
@@ -543,7 +543,7 @@ public class InDungeonVFXManager : MonoBehaviour
 
             if (vfx == null)
             {
-                if (gemLogTrails.Count >= GemLogTrailMaxActive) return;
+                // 동시 상한(GemLogTrailMaxActive)에서 생략하지 않고 쉬는 인스턴스가 없으면 새로 만들어 목록을 늘린다
                 vfx = PresentationLayer.VFX.VFX_GemLogTrail.Create(transform);
                 if (vfx == null) return;
                 gemLogTrails.Add(vfx);
@@ -562,8 +562,7 @@ public class InDungeonVFXManager : MonoBehaviour
             if (candidate != null && false == candidate.IsPlaying) return candidate;
         }
 
-        if (gemTierBursts.Count >= GemTierBurstMaxActive) return null;
-
+        // 동시 상한(GemTierBurstMaxActive)에서 생략하지 않고 쉬는 인스턴스가 없으면 새로 만들어 목록을 늘린다
         PresentationLayer.VFX.VFX_GemTierBurst vfx = PresentationLayer.VFX.VFX_GemTierBurst.Create(transform);
         if (vfx != null) gemTierBursts.Add(vfx);
         return vfx;
@@ -571,7 +570,7 @@ public class InDungeonVFXManager : MonoBehaviour
 
     /// <summary>
     /// 치명타 전용 임팩트(베기 줄기·별 섬광·점선 충격파·파편)를 맞은 자리(밑동 쪽, 기본 피격 톱밥이 터지는 자리)에서 재생한다.
-    /// 맞은 나무의 가장 앞 렌더러보다 한 단계 더 앞에 그린다. 동시에 CriticalImpactMaxActive개를 넘으면 생략한다.
+    /// 맞은 나무의 가장 앞 렌더러보다 한 단계 더 앞에 그린다. 쉬는 인스턴스가 없으면 새로 만든다(생략하지 않는다).
     /// </summary>
     public void PlayCriticalImpactVFX(TreeVisualComponent _visual)
     {
@@ -590,7 +589,7 @@ public class InDungeonVFXManager : MonoBehaviour
 
         if (vfx == null)
         {
-            if (criticalImpacts.Count >= CriticalImpactMaxActive) return;
+            // 동시 상한(CriticalImpactMaxActive)에서 생략하지 않고 쉬는 인스턴스가 없으면 새로 만들어 목록을 늘린다
             vfx = PresentationLayer.VFX.VFX_CriticalImpact.Create(transform);
             if (vfx == null) return;
             criticalImpacts.Add(vfx);
@@ -602,7 +601,7 @@ public class InDungeonVFXManager : MonoBehaviour
     /// <summary>
     /// "약점 타격" 연출을 맞은 나무 밑동(기본 피격 톱밥이 터지는 자리)에서 재생한다. _mode는 VFX_WeakPointHit.ModeExpose(절반 이하로 내려온 순간)
     /// 또는 ModeStrike(보너스가 들어간 도끼 타격), _exitDirX는 관통 줄기가 빠지는 쪽(공격자 반대편, 1 또는 -1)이다.
-    /// 노출은 맞은 나무의 가장 앞 렌더러보다 한 단계 더 앞에, 관통은 날아다니는 것 층에 그린다. 동시에 WeakPointHitMaxActive개를 넘으면 생략한다.
+    /// 노출은 맞은 나무의 가장 앞 렌더러보다 한 단계 더 앞에, 관통은 날아다니는 것 층에 그린다. 쉬는 인스턴스가 없으면 새로 만든다(생략하지 않는다).
     /// </summary>
     public void PlayWeakPointHitVFX(TreeVisualComponent _visual, int _mode, int _exitDirX)
     {
@@ -621,7 +620,7 @@ public class InDungeonVFXManager : MonoBehaviour
 
         if (vfx == null)
         {
-            if (weakPointHits.Count >= WeakPointHitMaxActive) return;
+            // 동시 상한(WeakPointHitMaxActive)에서 생략하지 않고 쉬는 인스턴스가 없으면 새로 만들어 목록을 늘린다
             vfx = PresentationLayer.VFX.VFX_WeakPointHit.Create(transform);
             if (vfx == null) return;
             weakPointHits.Add(vfx);
@@ -642,7 +641,7 @@ public class InDungeonVFXManager : MonoBehaviour
 
     /// <summary>
     /// "첫 인사" 연출을 맞은 나무 밑동에서 재생한다. _bReply면 나무 꼭대기에 화답 반짝임을 더한다(이 타격으로 쓰러진 나무는 false).
-    /// _awayDirX는 공격자 반대편(1 또는 -1)이다. 동시에 HelloHitMaxActive개를 넘으면 생략한다.
+    /// _awayDirX는 공격자 반대편(1 또는 -1)이다. 쉬는 인스턴스가 없으면 새로 만든다(생략하지 않는다).
     /// </summary>
     public void PlayHelloHitVFX(TreeVisualComponent _visual, int _awayDirX, bool _bReply)
     {
@@ -661,7 +660,7 @@ public class InDungeonVFXManager : MonoBehaviour
 
         if (vfx == null)
         {
-            if (helloHits.Count >= HelloHitMaxActive) return;
+            // 동시 상한(HelloHitMaxActive)에서 생략하지 않고 쉬는 인스턴스가 없으면 새로 만들어 목록을 늘린다
             vfx = PresentationLayer.VFX.VFX_HelloHit.Create(transform);
             if (vfx == null) return;
             helloHits.Add(vfx);

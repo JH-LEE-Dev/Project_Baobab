@@ -114,10 +114,10 @@ namespace PresentationLayer.VFX
         private ulong groundHash;
         private int groundVertexCount = -1;
 
-        private readonly Pop[] pops = new Pop[PopCapacity];
-        private readonly Spark[] sparks = new Spark[SparkCapacity];
-        private readonly Ring[] rings = new Ring[RingCapacity];
-        private readonly Star[] stars = new Star[StarCapacity];
+        private Pop[] pops = new Pop[PopCapacity];
+        private Spark[] sparks = new Spark[SparkCapacity];
+        private Ring[] rings = new Ring[RingCapacity];
+        private Star[] stars = new Star[StarCapacity];
         private int popCursor;
         private int sparkCursor;
         private int ringCursor;
@@ -213,10 +213,10 @@ namespace PresentationLayer.VFX
         {
             bPlaying = false;
             anchor = null;
-            for (int i = 0; i < PopCapacity; i++) pops[i].bActive = false;
-            for (int i = 0; i < SparkCapacity; i++) sparks[i].bActive = false;
-            for (int i = 0; i < RingCapacity; i++) rings[i].bActive = false;
-            for (int i = 0; i < StarCapacity; i++) stars[i].bActive = false;
+            for (int i = 0; i < pops.Length; i++) pops[i].bActive = false;
+            for (int i = 0; i < sparks.Length; i++) sparks[i].bActive = false;
+            for (int i = 0; i < rings.Length; i++) rings[i].bActive = false;
+            for (int i = 0; i < stars.Length; i++) stars[i].bActive = false;
             livePops = 0;
             liveSparks = 0;
             liveRings = 0;
@@ -232,6 +232,13 @@ namespace PresentationLayer.VFX
         // 원목이 사라진 발밑 자리(좌우로 1px 흔들어 겹친 터짐이 한 덩어리로 보이지 않게 한다).
         private void AddPop(int _tier)
         {
+            if (true == pops[popCursor].bActive)
+            {
+                // 꽉 차면 아직 살아있는 터짐을 덮어쓰지 않고 배열을 두 배로 늘린다
+                popCursor = pops.Length;
+                System.Array.Resize(ref pops, pops.Length * 2);
+            }
+
             if (false == pops[popCursor].bActive) livePops++;
             pops[popCursor] = new Pop
             {
@@ -241,7 +248,7 @@ namespace PresentationLayer.VFX
                 x = Mathf.RoundToInt((Rand01() - 0.5f) * 4f),
                 y = FeetOffsetY + Mathf.RoundToInt(Rand01() * 2f),
             };
-            popCursor = (popCursor + 1) % PopCapacity;
+            popCursor = (popCursor + 1) % pops.Length;
         }
 
         // 발밑에서 몸을 타고 솟는 반짝이. 단계가 높을수록 많고 높이 솟는다.
@@ -252,6 +259,13 @@ namespace PresentationLayer.VFX
             for (int i = 0; i < count; i++)
             {
                 float spread = count > 1 ? (i / (float)(count - 1) - 0.5f) : 0f;
+                if (true == sparks[sparkCursor].bActive)
+                {
+                    // 꽉 차면 아직 살아있는 반짝이를 덮어쓰지 않고 배열을 두 배로 늘린다
+                    sparkCursor = sparks.Length;
+                    System.Array.Resize(ref sparks, sparks.Length * 2);
+                }
+
                 if (false == sparks[sparkCursor].bActive) liveSparks++;
                 sparks[sparkCursor] = new Spark
                 {
@@ -266,12 +280,19 @@ namespace PresentationLayer.VFX
                     tier = _tier,
                     seed = (int)(Rand01() * 997f),
                 };
-                sparkCursor = (sparkCursor + 1) % SparkCapacity;
+                sparkCursor = (sparkCursor + 1) % sparks.Length;
             }
         }
 
         private void AddRing(int _tier)
         {
+            if (true == rings[ringCursor].bActive)
+            {
+                // 꽉 차면 아직 살아있는 고리를 덮어쓰지 않고 배열을 두 배로 늘린다
+                ringCursor = rings.Length;
+                System.Array.Resize(ref rings, rings.Length * 2);
+            }
+
             if (false == rings[ringCursor].bActive) liveRings++;
             rings[ringCursor] = new Ring
             {
@@ -280,12 +301,19 @@ namespace PresentationLayer.VFX
                 tier = _tier,
                 endRadius = 1 == _tier ? 12f : (2 == _tier ? 14f : 16f),
             };
-            ringCursor = (ringCursor + 1) % RingCapacity;
+            ringCursor = (ringCursor + 1) % rings.Length;
         }
 
         // 머리 위 별: 좌우로 조금 비켜 켠다.
         private void AddStar(int _tier)
         {
+            if (true == stars[starCursor].bActive)
+            {
+                // 꽉 차면 아직 살아있는 별을 덮어쓰지 않고 배열을 두 배로 늘린다
+                starCursor = stars.Length;
+                System.Array.Resize(ref stars, stars.Length * 2);
+            }
+
             if (false == stars[starCursor].bActive) liveStars++;
             stars[starCursor] = new Star
             {
@@ -295,7 +323,7 @@ namespace PresentationLayer.VFX
                 x = (0 == (starCursor & 1) ? 1 : -1) * Mathf.RoundToInt(Mathf.Lerp(4f, 8f, Rand01())),
                 arm = 1 == _tier ? 4 : (2 == _tier ? 5 : 6),
             };
-            starCursor = (starCursor + 1) % StarCapacity;
+            starCursor = (starCursor + 1) % stars.Length;
         }
 
         // //초기화
@@ -360,7 +388,7 @@ namespace PresentationLayer.VFX
 
             if (0 < livePops)
             {
-                for (int i = 0; i < PopCapacity; i++)
+                for (int i = 0; i < pops.Length; i++)
                 {
                     if (false == pops[i].bActive) continue;
                     pops[i].age += _dt;
@@ -375,7 +403,7 @@ namespace PresentationLayer.VFX
             if (0 < liveSparks)
             {
                 float damping = Mathf.Exp(-3.2f * _dt);
-                for (int i = 0; i < SparkCapacity; i++)
+                for (int i = 0; i < sparks.Length; i++)
                 {
                     if (false == sparks[i].bActive) continue;
                     if (sparks[i].delay > 0f)
@@ -399,7 +427,7 @@ namespace PresentationLayer.VFX
 
             if (0 < liveRings)
             {
-                for (int i = 0; i < RingCapacity; i++)
+                for (int i = 0; i < rings.Length; i++)
                 {
                     if (false == rings[i].bActive) continue;
                     rings[i].age += _dt;
@@ -413,7 +441,7 @@ namespace PresentationLayer.VFX
 
             if (0 < liveStars)
             {
-                for (int i = 0; i < StarCapacity; i++)
+                for (int i = 0; i < stars.Length; i++)
                 {
                     if (false == stars[i].bActive) continue;
                     stars[i].age += _dt;
@@ -450,7 +478,8 @@ namespace PresentationLayer.VFX
 
             // 바닥 고리는 계단식으로만 바뀌므로 그림을 정하는 상태가 직전과 같으면 그리기부터 건너뛴다(메쉬는 대상 기준이라 그대로 맞다).
             ulong groundKey = GroundKey();
-            if (groundKey != appliedGroundKey || 0 > groundVertexCount)
+            // 고리 배열이 늘어나 상태 키 64비트에 다 담기지 않으면 키로 건너뛰지 않고 매번 다시 그린다
+            if (groundKey != appliedGroundKey || 0 > groundVertexCount || rings.Length * RingKeyBits > 64)
             {
                 appliedGroundKey = groundKey;
                 painter.Begin(buffer, groundTransform.worldToLocalMatrix, 0f);
@@ -483,7 +512,7 @@ namespace PresentationLayer.VFX
             if (0 == liveRings) return 0UL;
 
             ulong key = 0UL;
-            for (int r = 0; r < RingCapacity; r++)
+            for (int r = 0; r < rings.Length; r++)
             {
                 int step = RingStep(r);
                 if (0 > step) continue;
@@ -505,7 +534,7 @@ namespace PresentationLayer.VFX
         // 터짐: 흰 덩이로 번쩍 -> 보석 색 대각 광선 4갈래 -> 끝점 네 개만 남았다 사라진다.
         private void DrawPops(int _ax, int _ay)
         {
-            for (int i = 0; i < PopCapacity; i++)
+            for (int i = 0; i < pops.Length; i++)
             {
                 if (false == pops[i].bActive) continue;
 
@@ -545,7 +574,7 @@ namespace PresentationLayer.VFX
         // 몸을 타고 솟는 반짝이: + 로 솟아(머리 흰빛) 점으로 줄고, 끝물에 점멸한다.
         private void DrawSparks(int _ax, int _ay)
         {
-            for (int i = 0; i < SparkCapacity; i++)
+            for (int i = 0; i < sparks.Length; i++)
             {
                 if (false == sparks[i].bActive || sparks[i].delay > 0f) continue;
 
@@ -569,7 +598,7 @@ namespace PresentationLayer.VFX
         {
             int cx = _ax;
             int cy = _ay + FeetOffsetY;
-            for (int r = 0; r < RingCapacity; r++)
+            for (int r = 0; r < rings.Length; r++)
             {
                 int step = RingStep(r);
                 if (0 > step) continue;
@@ -619,7 +648,7 @@ namespace PresentationLayer.VFX
         // 머리 위 별: 작은 + 로 켜져 4갈래 별(가운데 흰 3x3 + 대각 광선)로 번쩍였다가 계단식으로 줄고 점멸하며 사라진다.
         private void DrawStars(int _ax, int _ay)
         {
-            for (int s = 0; s < StarCapacity; s++)
+            for (int s = 0; s < stars.Length; s++)
             {
                 if (false == stars[s].bActive) continue;
 

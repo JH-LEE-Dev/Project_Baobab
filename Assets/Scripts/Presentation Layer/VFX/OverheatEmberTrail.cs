@@ -12,7 +12,7 @@ namespace PresentationLayer.VFX
     ///   부드러운 빛이라 픽셀 격자에 맞추지 않고 소수 위치에 둔다.
     /// - 꼬리 심선: 최근 0.16초 위치에 1px 점(흰 노랑 -> 노랑 -> 주황 -> 빨강). 본체 픽셀 메쉬에 월드 격자로 그린다.
     ///
-    /// 좌표는 월드 픽셀(y 위쪽). 고정 용량 배열이라 재생 중 힙 할당이 없다.
+    /// 좌표는 월드 픽셀(y 위쪽). 미리 잡은 배열을 쓰므로 재생 중 힙 할당이 없다(빛 꼬리 쿼드가 넘칠 때만 배열을 늘린다).
     /// </summary>
     public sealed class OverheatEmberTrail
     {
@@ -40,10 +40,11 @@ namespace PresentationLayer.VFX
 
         // 내부 의존성
         private readonly Point[] points = new Point[HistoryCapacity];
-        private readonly Vector3[] vertices = new Vector3[QuadCapacity * 4];
-        private readonly Color32[] colors = new Color32[QuadCapacity * 4];
-        private readonly Vector2[] uvs = new Vector2[QuadCapacity * 4];
-        private readonly int[] triangles = new int[QuadCapacity * 6];
+        // 빛 꼬리 쿼드 배열은 넘치면 함께 두 배로 늘리므로 readonly가 아니다(QuadCapacity는 처음 크기)
+        private Vector3[] vertices = new Vector3[QuadCapacity * 4];
+        private Color32[] colors = new Color32[QuadCapacity * 4];
+        private Vector2[] uvs = new Vector2[QuadCapacity * 4];
+        private int[] triangles = new int[QuadCapacity * 6];
         private readonly Color32[] ribbonColors = new Color32[4];
 
         // 상태 변수
@@ -57,7 +58,13 @@ namespace PresentationLayer.VFX
 
         public OverheatEmberTrail()
         {
-            for (int q = 0; q < QuadCapacity; q++)
+            FillQuadTemplate(0, QuadCapacity);
+        }
+
+        // [_from, _to) 쿼드의 인덱스와 UV를 채운다(정점 위치·색과 달리 쿼드마다 고정값)
+        private void FillQuadTemplate(int _from, int _to)
+        {
+            for (int q = _from; q < _to; q++)
             {
                 int v = q * 4;
                 int t = q * 6;
@@ -88,6 +95,18 @@ namespace PresentationLayer.VFX
                 if (true == bLinear) color = color.linear;
                 ribbonColors[i] = color;
             }
+        }
+
+        // 빛 꼬리 쿼드가 꽉 차면 원판을 버리지 않고 정점·색·UV·인덱스 배열을 함께 두 배로 늘린다
+        private void GrowQuads()
+        {
+            int oldQuads = vertices.Length / 4;
+            int newQuads = oldQuads * 2;
+            System.Array.Resize(ref vertices, newQuads * 4);
+            System.Array.Resize(ref colors, newQuads * 4);
+            System.Array.Resize(ref uvs, newQuads * 4);
+            System.Array.Resize(ref triangles, newQuads * 6);
+            FillQuadTemplate(oldQuads, newQuads);
         }
 
         public void Clear()
@@ -162,7 +181,8 @@ namespace PresentationLayer.VFX
             float invDuration = 1.0f / Mathf.Max(0.0001f, _duration);
 
             // 새것 -> 오래된 것 순서로 구간을 따라 원판을 놓는다(시안과 같은 순서·간격)
-            for (int i = count - 1; i > 0 && quads < QuadCapacity; i--)
+            // 쿼드가 꽉 차도 멈추지 않고 배열을 늘려 끝까지 놓는다
+            for (int i = count - 1; i > 0; i--)
             {
                 Point a = points[i];
                 Point b = points[i - 1];
@@ -170,7 +190,7 @@ namespace PresentationLayer.VFX
                 int n = Mathf.Max(1, Mathf.CeilToInt(len / SplatSpacing));
                 float spread = Mathf.Min(n, 2.2f) / n;
 
-                for (int j = 0; j < n && quads < QuadCapacity; j++)
+                for (int j = 0; j < n; j++)
                 {
                     float k = j / (float)n;
                     float x = a.x + (b.x - a.x) * k;
@@ -192,6 +212,9 @@ namespace PresentationLayer.VFX
                     float x1 = (x + half) / PixelsPerUnit;
                     float y0 = (y - half) / PixelsPerUnit;
                     float y1 = (y + half) / PixelsPerUnit;
+
+                    // 꽉 차면 이 원판을 버리지 않고 쿼드 배열을 두 배로 늘린다
+                    if (quads * 4 >= vertices.Length) GrowQuads();
 
                     int v = quads * 4;
                     vertices[v] = _worldToLocal.MultiplyPoint3x4(new Vector3(x0, y0, 0.0f));
@@ -225,6 +248,8 @@ namespace PresentationLayer.VFX
 
             // 정점 수가 줄 때 남은 인덱스가 범위를 넘지 않도록 인덱스를 먼저 비운 뒤 정점을 올린다
             _mesh.SetTriangles(triangles, 0, 0, 0, false);
+            // 쿼드 배열이 늘어나 UInt16 인덱스로 담을 수 없는 양이 되면 이 메쉬만 UInt32 인덱스로 바꾼다
+            if (65535 < quads * 4 && UnityEngine.Rendering.IndexFormat.UInt16 == _mesh.indexFormat) _mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
             _mesh.SetVertices(vertices, 0, quads * 4);
             _mesh.SetColors(colors, 0, quads * 4);
             _mesh.SetUVs(0, uvs, 0, quads * 4);

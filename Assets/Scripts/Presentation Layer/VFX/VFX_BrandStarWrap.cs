@@ -99,8 +99,9 @@ namespace PresentationLayer.VFX
         private readonly MeshRenderer[] meshRenderers = new MeshRenderer[2];
         private readonly Mesh[] meshes = new Mesh[2];
 
-        private readonly DustParticle[] dusts = new DustParticle[DustCapacity];
-        private readonly int[] dustLastTick = new int[MaxStarCount];
+        // DustCapacity는 처음 크기다. 살아있는 가루로 꽉 차면 두 배로 늘어난다.
+        private DustParticle[] dusts = new DustParticle[DustCapacity];
+        private int[] dustLastTick = new int[MaxStarCount];
 
         //상태 변수
         private int dustCursor;
@@ -214,14 +215,14 @@ namespace PresentationLayer.VFX
 
         private void ClearDust()
         {
-            for (int i = 0; i < DustCapacity; i++) dusts[i].bActive = false;
-            for (int i = 0; i < MaxStarCount; i++) dustLastTick[i] = 0;
+            for (int i = 0; i < dusts.Length; i++) dusts[i].bActive = false;
+            for (int i = 0; i < dustLastTick.Length; i++) dustLastTick[i] = 0;
             dustCursor = 0;
         }
 
         private void UpdateDust(float _dt)
         {
-            for (int i = 0; i < DustCapacity; i++)
+            for (int i = 0; i < dusts.Length; i++)
             {
                 if (false == dusts[i].bActive) continue;
 
@@ -259,13 +260,21 @@ namespace PresentationLayer.VFX
             dust.wobblePhase = rand01 * TwoPi;
             dust.color = _color;
 
+            // 꽉 차면 아직 살아있는 입자를 덮어쓰지 않고 배열을 두 배로 늘린다
+            if (true == dusts[dustCursor].bActive)
+            {
+                int oldLength = dusts.Length;
+                System.Array.Resize(ref dusts, oldLength * 2);
+                dustCursor = oldLength;
+            }
+
             dusts[dustCursor] = dust;
-            dustCursor = (dustCursor + 1) % DustCapacity;
+            dustCursor = (dustCursor + 1) % dusts.Length;
         }
 
         private void DrawDust()
         {
-            for (int i = 0; i < DustCapacity; i++)
+            for (int i = 0; i < dusts.Length; i++)
             {
                 if (false == dusts[i].bActive) continue;
 
@@ -321,6 +330,8 @@ namespace PresentationLayer.VFX
 
             // 별마다 바뀌지 않는 값은 루프 밖에서 한 번만 계산한다
             int count = Mathf.Max(1, starCount);
+            // 별 개수가 MaxStarCount를 넘어도 넘친 별이 가루를 거르지 않도록 틱 기록을 늘린다(새 칸은 ClearDust와 같은 0)
+            if (dustLastTick.Length < count) System.Array.Resize(ref dustLastTick, Mathf.Max(count, dustLastTick.Length * 2));
             float enterSpan = Mathf.Max(enterDuration * 0.6f, 0.0001f);
             float dustInterval = Mathf.Max(dustSpawnInterval, 0.01f);
             float orbitAngleOffset = elapsed * orbitRevolutionsPerSec * TwoPi;
@@ -355,7 +366,7 @@ namespace PresentationLayer.VFX
                 if (true == _bDraw) DrawStarAt(centerX, cy, radiusScale, angle, sizeStage, bPlus, baseColor, glow, true);
 
                 // 궤도에 안착한 별만 가루를 흘린다(퇴장 중에는 새로 흘리지 않는다)
-                if (2 == sizeStage && 0.0f == exitU && s < MaxStarCount)
+                if (2 == sizeStage && 0.0f == exitU)
                 {
                     int tick = (int)((elapsed + s * 0.037f) / dustInterval);
                     if (tick != dustLastTick[s])

@@ -135,6 +135,12 @@ public sealed class RoguelikeTileWaveFeedback
         ParticleSystem.EmitParams emitParams = new ParticleSystem.EmitParams();
         Color color = _bLava ? settings.lavaSplashColor : settings.splashColor;
         float scatter = Mathf.Max(0f, settings.splashScatter);
+
+        // 최대 입자 수에 닿으면 Emit이 새 물보라를 조용히 버리므로, 넣기 전에 상한을 두 배로 늘린다(SharedBurstEmitter와 같은 방식, 줄이지 않는다)
+        ParticleSystem.MainModule main = splashSystem.main;
+        int required = splashSystem.particleCount + settings.splashesPerPoint;
+        if (required > main.maxParticles) main.maxParticles = Mathf.Max(required, main.maxParticles * 2);
+
         for (int k = 0; k < settings.splashesPerPoint; k++)
         {
             Vector2 offset = UnityEngine.Random.insideUnitCircle * scatter;

@@ -298,10 +298,11 @@ namespace PresentationLayer.VFX
         private static readonly StarCell[][] StarSprites = BuildStarSprites();
 
         // 마법진 픽셀 표: 반지름(px)이 같으면 모든 인스턴스가 공유한다(메인 스레드 단일 실행). 행(y) -> 열(x) 순서로 정렬되어 있다.
-        private static readonly SigilPixel[] sigilPending = new SigilPixel[SigilCapacity];
-        private static readonly SigilPixel[] sigil = new SigilPixel[SigilCapacity];
-        private static readonly int[] ringIndices = new int[SigilCapacity];
-        private static readonly int[] dissolveIndices = new int[DissolveCapacity];
+        // 넘치면 두 배로 늘어난다(SigilCapacity / DissolveCapacity는 처음 크기)
+        private static SigilPixel[] sigilPending = new SigilPixel[SigilCapacity];
+        private static SigilPixel[] sigil = new SigilPixel[SigilCapacity];
+        private static int[] ringIndices = new int[SigilCapacity];
+        private static int[] dissolveIndices = new int[DissolveCapacity];
         private static readonly int[] runeGlyphArena = new int[RuneCount];
         private static readonly int[] runeCenterX = new int[RuneCount];
         private static readonly int[] runeCenterY = new int[RuneCount];
@@ -651,6 +652,13 @@ namespace PresentationLayer.VFX
             sigilCount = 0;
             ringCount = 0;
             dissolveCount = 0;
+            // 임시 표가 늘어났으면 정렬 표와 링 색인도 같은 크기로 맞춘다(픽셀을 버리지 않는다)
+            if (sigil.Length < sigilPending.Length)
+            {
+                System.Array.Resize(ref sigil, sigilPending.Length);
+                System.Array.Resize(ref ringIndices, sigilPending.Length);
+            }
+
             int gridHeight = gridExtentY * 2 + 1;
             for (int row = 0; row < gridHeight; row++)
             {
@@ -661,11 +669,14 @@ namespace PresentationLayer.VFX
                     if (0 == cell) continue;
 
                     sigilGrid[rowStart + col] = 0;
-                    if (SigilCapacity <= sigilCount) continue;
-
                     sigil[sigilCount] = sigilPending[cell - 1];
                     if (GroupRing == sigil[sigilCount].group) ringIndices[ringCount++] = sigilCount;
-                    if (0.05f >= sigil[sigilCount].h && dissolveCount < DissolveCapacity) dissolveIndices[dissolveCount++] = sigilCount;
+                    if (0.05f >= sigil[sigilCount].h)
+                    {
+                        // 해체 색인이 꽉 차면 버리지 않고 두 배로 늘린다
+                        if (dissolveIndices.Length <= dissolveCount) System.Array.Resize(ref dissolveIndices, dissolveIndices.Length * 2);
+                        dissolveIndices[dissolveCount++] = sigilCount;
+                    }
                     sigilCount++;
                 }
             }
@@ -877,10 +888,13 @@ namespace PresentationLayer.VFX
         {
             int col = _x + gridExtentX;
             int row = _y + gridExtentY;
-            if (0 > col || col >= gridWidth || 0 > row || row >= gridExtentY * 2 + 1 || SigilCapacity <= pendingCount) return;
+            if (0 > col || col >= gridWidth || 0 > row || row >= gridExtentY * 2 + 1) return;
 
             int cellIndex = row * gridWidth + col;
             if (0 != sigilGrid[cellIndex]) return;
+
+            // 임시 표가 꽉 차면 픽셀을 버리지 않고 두 배로 늘린다
+            if (sigilPending.Length <= pendingCount) System.Array.Resize(ref sigilPending, sigilPending.Length * 2);
 
             // 시안 좌표(y가 아래)로 바꿔 둘레 위치와 해시를 계산한다
             int simY = -_y;

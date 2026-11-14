@@ -65,7 +65,7 @@ namespace PresentationLayer.VFX
         private readonly Sample[] history = new Sample[HistoryCapacity];
         private int historyStart;
         private int historyCount;
-        private readonly Spark[] sparks = new Spark[SparkCapacity];
+        private Spark[] sparks = new Spark[SparkCapacity];
         private int sparkCursor;
         private float sparkTimer;
 
@@ -99,7 +99,7 @@ namespace PresentationLayer.VFX
             historyCount = 0;
             sparkCursor = 0;
             sparkTimer = SparkInterval * Rand01();
-            for (int i = 0; i < SparkCapacity; i++) sparks[i].bActive = false;
+            for (int i = 0; i < sparks.Length; i++) sparks[i].bActive = false;
             age = 0f;
             releasedAt = 0f;
             bFollowing = null != _log;
@@ -186,6 +186,13 @@ namespace PresentationLayer.VFX
                 if (sparkTimer <= 0f)
                 {
                     sparkTimer += SparkInterval;
+                    if (true == sparks[sparkCursor].bActive)
+                    {
+                        // 꽉 차면 아직 살아있는 반짝이를 덮어쓰지 않고 배열을 두 배로 늘린다
+                        sparkCursor = sparks.Length;
+                        System.Array.Resize(ref sparks, sparks.Length * 2);
+                    }
+
                     sparks[sparkCursor] = new Spark
                     {
                         bActive = true,
@@ -195,7 +202,7 @@ namespace PresentationLayer.VFX
                         age = 0f,
                         seed = (int)(Rand01() * 997f),
                     };
-                    sparkCursor = (sparkCursor + 1) % SparkCapacity;
+                    sparkCursor = (sparkCursor + 1) % sparks.Length;
                 }
             }
             else if (age - releasedAt >= FadeOutTime)
@@ -204,7 +211,7 @@ namespace PresentationLayer.VFX
                 return;
             }
 
-            for (int i = 0; i < SparkCapacity; i++)
+            for (int i = 0; i < sparks.Length; i++)
             {
                 if (false == sparks[i].bActive) continue;
                 sparks[i].age += dt;
@@ -255,7 +262,7 @@ namespace PresentationLayer.VFX
                 if (u < 0.5f) painter.Line(b.x, b.y - 1, a.x, a.y - 1, 0, 0, 0, color);
             }
 
-            for (int i = 0; i < SparkCapacity; i++)
+            for (int i = 0; i < sparks.Length; i++)
             {
                 if (false == sparks[i].bActive) continue;
 

@@ -77,6 +77,8 @@ namespace PresentationLayer.VFX
         private const int TileQuadCapacity = 1024;
         private const int MaxLaneCells = 640;
         private const int MaxActiveLanes = 16;
+        // UInt16 인덱스(65535) 안에 들어가는 4의 배수. 타일 메쉬가 이보다 커질 때만 그 메쉬를 UInt32 인덱스로 잡는다(PixelQuadBuffer와 같은 방식).
+        private const int MaxTileVertices16 = 60000;
         private const float OnThreshold = 0.03f;
         private const float GlowRange = 2.0f;
 
@@ -148,15 +150,18 @@ namespace PresentationLayer.VFX
         private const ulong HashPrime = 1099511628211UL;
 
         // 활성 차선 목록(고정 배열). 맨 앞이 타일 메쉬를 그리는 호스트다.
-        private static readonly VFX_OffroadLane[] activeLanes = new VFX_OffroadLane[MaxActiveLanes];
+        private static VFX_OffroadLane[] activeLanes = new VFX_OffroadLane[MaxActiveLanes];
         private static int activeLaneCount;
         private static int updatedFrame = -1;
 
         // 칸 밝기 합집합 버퍼(고정 64x64 창)와 타일 메쉬 정점
-        private static readonly float[] cellCover = new float[WindowSize * WindowSize];
-        private static readonly float[] cellGlow = new float[WindowSize * WindowSize];
-        private static readonly TileVertex[] tileVertices = new TileVertex[TileQuadCapacity * 4];
+        // 창 한 변 칸 수. 차선들이 창보다 넓게 퍼지면 칸을 잘라내지 않고 두 배씩 늘린다(처음은 WindowSize).
+        private static int windowSize = WindowSize;
+        private static float[] cellCover = new float[WindowSize * WindowSize];
+        private static float[] cellGlow = new float[WindowSize * WindowSize];
+        private static TileVertex[] tileVertices = new TileVertex[TileQuadCapacity * 4];
         private static ushort[] tileIndexPattern;
+        private static uint[] tileIndexPattern32;
         private static readonly Color32[] moteColors = new Color32[MoteColorSteps];
         private static bool bMoteColorsReady;
 
@@ -171,10 +176,10 @@ namespace PresentationLayer.VFX
         private ParticleSystem rootParticleSystem;
 
         // 차선이 덮는 칸(Begin에서 한 번 계산)
-        private readonly int[] cellI = new int[MaxLaneCells];
-        private readonly int[] cellJ = new int[MaxLaneCells];
-        private readonly int[] cellA = new int[MaxLaneCells];
-        private readonly bool[] cellInner = new bool[MaxLaneCells];
+        private int[] cellI = new int[MaxLaneCells];
+        private int[] cellJ = new int[MaxLaneCells];
+        private int[] cellA = new int[MaxLaneCells];
+        private bool[] cellInner = new bool[MaxLaneCells];
         private int cellCount;
         private int cellMinI;
         private int cellMaxI;
@@ -216,6 +221,8 @@ namespace PresentationLayer.VFX
         private int skyVertexCount = -1;
         private ulong tileHash;
         private int tileVertexCount = -1;
+        // 타일 메쉬(groundMesh)가 담을 수 있는 쿼드 수. 넘치면 메쉬 버퍼를 늘린다.
+        private int tileMeshQuadCapacity;
 
         // 퍼블릭 초기화 및 제어 메서드
 
@@ -227,7 +234,6 @@ namespace PresentationLayer.VFX
         public void Begin(Vector3 _from, Vector3 _to, float _halfWidthUnits = 0.0f)
         {
             EnsureInitialized();
-            if (MaxActiveLanes <= activeLaneCount && false == IsRegistered()) return;
 
             float halfWidth = Mathf.Max(0.05f, 0.0f < _halfWidthUnits ? _halfWidthUnits : laneHalfWidth);
             float fromX = _from.x;
@@ -310,7 +316,9 @@ namespace PresentationLayer.VFX
         private void RegisterLane()
         {
             if (true == IsRegistered()) return;
-            if (MaxActiveLanes <= activeLaneCount) return;
+
+            // 꽉 차면 차선을 버리지 않고 목록을 두 배로 늘린다
+            if (activeLanes.Length <= activeLaneCount) System.Array.Resize(ref activeLanes, activeLanes.Length * 2);
 
             activeLanes[activeLaneCount++] = this;
         }
@@ -350,7 +358,8 @@ namespace PresentationLayer.VFX
             {
                 groundMesh = new Mesh { name = "VFX_OffroadLane_Tiles" };
                 groundMesh.MarkDynamic();
-                SetupTileMesh(groundMesh);
+                SetupTileMesh(groundMesh, TileQuadCapacity);
+                tileMeshQuadCapacity = TileQuadCapacity;
                 groundMeshFilter.sharedMesh = groundMesh;
 
                 groundMeshRenderer.shadowCastingMode = ShadowCastingMode.Off;
@@ -368,12 +377,41 @@ namespace PresentationLayer.VFX
         }
 
         // 정점 버퍼(위치 + 색 + uv 한 스트림)와 쿼드 인덱스 패턴을 용량만큼 잡는다(재생 중 다시 잡지 않는다)
-        private static void SetupTileMesh(Mesh _mesh)
+        private static void SetupTileMesh(Mesh _mesh, int _quadCapacity)
         {
-            if (null == tileIndexPattern)
+            if (_quadCapacity * 4 > MaxTileVertices16)
             {
-                tileIndexPattern = new ushort[TileQuadCapacity * 6];
-                for (int q = 0; q < TileQuadCapacity; q++)
+                // UInt16 인덱스로 담을 수 없는 양이면 이 메쉬만 UInt32 인덱스로 잡는다(그 이하는 아래 예전 경로 그대로)
+                if (null == tileIndexPattern32 || tileIndexPattern32.Length < _quadCapacity * 6)
+                {
+                    tileIndexPattern32 = new uint[_quadCapacity * 6];
+                    for (int q = 0; q < _quadCapacity; q++)
+                    {
+                        uint v = (uint)(q * 4);
+                        int n = q * 6;
+                        tileIndexPattern32[n] = v;
+                        tileIndexPattern32[n + 1] = v + 1;
+                        tileIndexPattern32[n + 2] = v + 2;
+                        tileIndexPattern32[n + 3] = v;
+                        tileIndexPattern32[n + 4] = v + 2;
+                        tileIndexPattern32[n + 5] = v + 3;
+                    }
+                }
+
+                _mesh.SetVertexBufferParams(_quadCapacity * 4, TileVertexLayout);
+                _mesh.SetIndexBufferParams(_quadCapacity * 6, IndexFormat.UInt32);
+                _mesh.SetIndexBufferData(tileIndexPattern32, 0, 0, _quadCapacity * 6, TileUploadFlags);
+                _mesh.subMeshCount = 1;
+                _mesh.SetSubMesh(0, new SubMeshDescriptor(0, 0, MeshTopology.Triangles), TileUploadFlags);
+                return;
+            }
+
+            // 처음 용량보다 큰 메쉬가 생기면 인덱스 패턴도 그 크기로 다시 만든다(앞부분 내용은 같다)
+            if (null == tileIndexPattern || tileIndexPattern.Length < _quadCapacity * 6)
+            {
+                int patternQuads = Mathf.Max(TileQuadCapacity, _quadCapacity);
+                tileIndexPattern = new ushort[patternQuads * 6];
+                for (int q = 0; q < patternQuads; q++)
                 {
                     int v = q * 4;
                     int n = q * 6;
@@ -386,9 +424,9 @@ namespace PresentationLayer.VFX
                 }
             }
 
-            _mesh.SetVertexBufferParams(TileQuadCapacity * 4, TileVertexLayout);
-            _mesh.SetIndexBufferParams(TileQuadCapacity * 6, IndexFormat.UInt16);
-            _mesh.SetIndexBufferData(tileIndexPattern, 0, 0, TileQuadCapacity * 6, TileUploadFlags);
+            _mesh.SetVertexBufferParams(_quadCapacity * 4, TileVertexLayout);
+            _mesh.SetIndexBufferParams(_quadCapacity * 6, IndexFormat.UInt16);
+            _mesh.SetIndexBufferData(tileIndexPattern, 0, 0, _quadCapacity * 6, TileUploadFlags);
             _mesh.subMeshCount = 1;
             _mesh.SetSubMesh(0, new SubMeshDescriptor(0, 0, MeshTopology.Triangles), TileUploadFlags);
         }
@@ -510,7 +548,15 @@ namespace PresentationLayer.VFX
             {
                 for (int j = startJ; j <= endJ; j++)
                 {
-                    if (MaxLaneCells <= cellCount) break;
+                    if (cellI.Length <= cellCount)
+                    {
+                        // 꽉 차면 칸을 버리지 않고 칸 배열 넷을 함께 두 배로 늘린다
+                        int grownCells = cellI.Length * 2;
+                        System.Array.Resize(ref cellI, grownCells);
+                        System.Array.Resize(ref cellJ, grownCells);
+                        System.Array.Resize(ref cellA, grownCells);
+                        System.Array.Resize(ref cellInner, grownCells);
+                    }
 
                     int cx = originPxX + TileHalfW * (i - j);
                     int cy = originPxY + TileHalfH * (i + j);
@@ -686,7 +732,7 @@ namespace PresentationLayer.VFX
                     glow = 0.12f * (1.0f - behind);
                 }
 
-                int index = wi * WindowSize + wj;
+                int index = wi * windowSize + wj;
                 if (1.0f < cover) cover = 1.0f;
                 if (cover > cellCover[index]) cellCover[index] = cover;
                 if (glow > cellGlow[index]) cellGlow[index] = glow;
@@ -697,7 +743,7 @@ namespace PresentationLayer.VFX
         {
             if (_wi < 0 || _spanI <= _wi || _wj < 0 || _spanJ <= _wj) return false;
 
-            return OnThreshold <= cellCover[_wi * WindowSize + _wj];
+            return OnThreshold <= cellCover[_wi * windowSize + _wj];
         }
 
         // 모든 활성 차선의 칸 밝기를 합쳐 호스트의 타일 메쉬를 다시 만든다. 켜진 칸 하나당 쿼드 하나, 이웃 칸이 꺼진 변이 테두리다.
@@ -740,11 +786,22 @@ namespace PresentationLayer.VFX
 
             int windowI0 = minI - 1;
             int windowJ0 = minJ - 1;
-            int spanI = Mathf.Min(WindowSize, maxI - windowI0 + 2);
-            int spanJ = Mathf.Min(WindowSize, maxJ - windowJ0 + 2);
+            // 차선들이 창보다 넓게 퍼지면 칸을 잘라내지 않고 창을 두 배씩 늘린다
+            int neededSpan = Mathf.Max(maxI - windowI0 + 2, maxJ - windowJ0 + 2);
+            if (windowSize < neededSpan)
+            {
+                int grownWindow = windowSize;
+                while (grownWindow < neededSpan) grownWindow *= 2;
+                windowSize = grownWindow;
+                cellCover = new float[grownWindow * grownWindow];
+                cellGlow = new float[grownWindow * grownWindow];
+            }
 
-            System.Array.Clear(cellCover, 0, spanI * WindowSize);
-            System.Array.Clear(cellGlow, 0, spanI * WindowSize);
+            int spanI = Mathf.Min(windowSize, maxI - windowI0 + 2);
+            int spanJ = Mathf.Min(windowSize, maxJ - windowJ0 + 2);
+
+            System.Array.Clear(cellCover, 0, spanI * windowSize);
+            System.Array.Clear(cellGlow, 0, spanI * windowSize);
 
             for (int i = 0; i < activeLaneCount; i++)
             {
@@ -771,10 +828,12 @@ namespace PresentationLayer.VFX
             {
                 for (int wj = 0; wj < spanJ; wj++)
                 {
-                    int index = wi * WindowSize + wj;
+                    int index = wi * windowSize + wj;
                     float cover = cellCover[index];
                     if (cover < OnThreshold) continue;
-                    if (TileQuadCapacity <= quadCount) break;
+
+                    // 꽉 차면 칸을 버리지 않고 정점 배열을 두 배로 늘린다
+                    if (tileVertices.Length <= quadCount * 4) System.Array.Resize(ref tileVertices, tileVertices.Length * 2);
 
                     int flags = 0;
                     if (false == IsCellOn(wi + 1, wj, spanI, spanJ)) flags |= 1;
@@ -834,6 +893,14 @@ namespace PresentationLayer.VFX
             }
 
             if (vertexCount == _host.tileVertexCount && hash == _host.tileHash) return;
+
+            if (_host.tileMeshQuadCapacity < quadCount)
+            {
+                // 메쉬 버퍼보다 칸이 많으면 버리지 않고 메쉬 버퍼를 두 배 이상으로 늘린다(정점 60000개를 넘으면 UInt32 인덱스)
+                int grownQuads = Mathf.Max(quadCount, _host.tileMeshQuadCapacity * 2);
+                SetupTileMesh(_host.groundMesh, grownQuads);
+                _host.tileMeshQuadCapacity = grownQuads;
+            }
 
             _host.groundMesh.SetVertexBufferData(tileVertices, 0, 0, vertexCount, 0, TileUploadFlags);
             SubMeshDescriptor subMesh = new SubMeshDescriptor(0, quadCount * 6, MeshTopology.Triangles);
@@ -967,7 +1034,7 @@ namespace PresentationLayer.VFX
             activeLaneCount = 0;
             updatedFrame = -1;
             bMoteColorsReady = false;
-            for (int i = 0; i < MaxActiveLanes; i++) activeLanes[i] = null;
+            for (int i = 0; i < activeLanes.Length; i++) activeLanes[i] = null;
         }
 
         private void OnValidate()

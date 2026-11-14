@@ -104,7 +104,8 @@ namespace PresentationLayer.VFX
         private Mesh mesh;
         private ParticleSystemRenderer rootParticleRenderer;
 
-        private readonly DustParticle[] dusts = new DustParticle[DustCapacity];
+        // DustCapacity는 처음 크기다. 살아있는 가루로 꽉 차면 두 배로 늘어난다.
+        private DustParticle[] dusts = new DustParticle[DustCapacity];
         private readonly float[] starTargetX = new float[ConstellationStarCount];
         private readonly float[] starTargetY = new float[ConstellationStarCount];
         private readonly float[] starCurrentX = new float[ConstellationStarCount];
@@ -149,7 +150,7 @@ namespace PresentationLayer.VFX
             bSecondWaveSpawned = false;
             dustCursor = 0;
 
-            for (int i = 0; i < DustCapacity; i++) dusts[i].bActive = false;
+            for (int i = 0; i < dusts.Length; i++) dusts[i].bActive = false;
 
             Vector3 pos = transform.position;
             randomState = unchecked((uint)(Time.frameCount * 2654435761u) ^ (uint)Mathf.FloorToInt(pos.x * 97.0f) ^ ((uint)Mathf.FloorToInt(pos.y * 57.0f) << 7));
@@ -200,8 +201,16 @@ namespace PresentationLayer.VFX
             dust.seed = (int)(Rand01() * 1000.0f);
             dust.color = _color;
 
+            // 꽉 차면 아직 살아있는 입자를 덮어쓰지 않고 배열을 두 배로 늘린다
+            if (true == dusts[dustCursor].bActive)
+            {
+                int oldLength = dusts.Length;
+                System.Array.Resize(ref dusts, oldLength * 2);
+                dustCursor = oldLength;
+            }
+
             dusts[dustCursor] = dust;
-            dustCursor = (dustCursor + 1) % DustCapacity;
+            dustCursor = (dustCursor + 1) % dusts.Length;
         }
 
         // 각인 위치에서 별가루 조각을 방사형으로 터뜨린다. 각도를 구간별로 나눠서 한쪽으로 몰리지 않게 한다.
@@ -233,7 +242,7 @@ namespace PresentationLayer.VFX
 
         private void UpdateDust(float _dt)
         {
-            for (int i = 0; i < DustCapacity; i++)
+            for (int i = 0; i < dusts.Length; i++)
             {
                 if (false == dusts[i].bActive) continue;
 
@@ -367,7 +376,7 @@ namespace PresentationLayer.VFX
 
         private void DrawDust()
         {
-            for (int i = 0; i < DustCapacity; i++)
+            for (int i = 0; i < dusts.Length; i++)
             {
                 if (false == dusts[i].bActive) continue;
 

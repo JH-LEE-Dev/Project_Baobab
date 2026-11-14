@@ -655,11 +655,17 @@ public class Boomerang : MonoBehaviour
 
         for (int i = 0; i < count; i++)
         {
-            afterimages[i] = BoomerangAfterimage.Create(spriteRenderer, "BoomerangAfterimage");
-            DontDestroyOnLoad(afterimages[i].gameObject);
+            afterimages[i] = CreateAfterimage();
         }
 
         nextAfterimageIndex = 0;
+    }
+
+    private BoomerangAfterimage CreateAfterimage()
+    {
+        BoomerangAfterimage afterimage = BoomerangAfterimage.Create(spriteRenderer, "BoomerangAfterimage");
+        DontDestroyOnLoad(afterimage.gameObject);
+        return afterimage;
     }
 
     private void UpdateAfterimage(float _deltaTime)
@@ -676,6 +682,22 @@ public class Boomerang : MonoBehaviour
             : spriteRenderer.sortingOrder - 1;
 
         BoomerangAfterimage afterimage = afterimages[nextAfterimageIndex];
+        // 꽉 차면 아직 사라지는 중인 잔상을 덮어쓰지 않고 링 버퍼를 두 배로 늘린다.
+        // 늘어난 칸의 잔상은 처음 만들 때와 같은 방식으로 쓸 때 하나씩 만든다.
+        if (afterimage != null && afterimage.gameObject.activeSelf)
+        {
+            int oldLength = afterimages.Length;
+            System.Array.Resize(ref afterimages, oldLength * 2);
+            nextAfterimageIndex = oldLength;
+            afterimage = null;
+        }
+
+        if (afterimage == null)
+        {
+            afterimage = CreateAfterimage();
+            afterimages[nextAfterimageIndex] = afterimage;
+        }
+
         nextAfterimageIndex = (nextAfterimageIndex + 1) % afterimages.Length;
 
         afterimage.Show(
@@ -694,6 +716,8 @@ public class Boomerang : MonoBehaviour
 
         for (int i = 0; i < afterimages.Length; i++)
         {
+            // 링 버퍼를 늘린 뒤 아직 만들지 않은 칸은 건너뛴다
+            if (afterimages[i] == null) continue;
             afterimages[i].SetPaused(_paused);
         }
     }
@@ -704,6 +728,8 @@ public class Boomerang : MonoBehaviour
 
         for (int i = 0; i < afterimages.Length; i++)
         {
+            // 링 버퍼를 늘린 뒤 아직 만들지 않은 칸은 건너뛴다
+            if (afterimages[i] == null) continue;
             afterimages[i].Hide();
         }
     }

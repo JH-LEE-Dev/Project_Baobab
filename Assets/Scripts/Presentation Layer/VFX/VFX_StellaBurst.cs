@@ -161,8 +161,9 @@ namespace PresentationLayer.VFX
         private Mesh groundMesh;
         private ParticleSystemRenderer rootParticleRenderer;
 
-        private readonly StellaStar[] stars = new StellaStar[StarCapacity];
-        private readonly StellaDust[] dusts = new StellaDust[DustCapacity];
+        // StarCapacity / DustCapacity는 처음 크기다. 넘치면 두 배로 늘어난다.
+        private StellaStar[] stars = new StellaStar[StarCapacity];
+        private StellaDust[] dusts = new StellaDust[DustCapacity];
         private readonly StellaSpark[] sparks = new StellaSpark[SparkCapacity];
         private readonly int[] ringStarStart = new int[RingCount];
         private readonly int[] ringStarCount = new int[RingCount];
@@ -294,7 +295,15 @@ namespace PresentationLayer.VFX
             for (int r = 0; r < RingCount; r++)
             {
                 ringMaxRadius[r] = radiusPx * RingFactor[r];
-                int count = Mathf.Clamp(Mathf.RoundToInt((3.0f + ringMaxRadius[r] / 30.0f) * scale), 3, MaxStarsPerRing);
+                // 반지름이 커서 고리당 별이 MaxStarsPerRing을 넘으면 줄이지 않고 배열을 두 배씩 늘린다
+                int count = Mathf.Max(3, Mathf.RoundToInt((3.0f + ringMaxRadius[r] / 30.0f) * scale));
+                if (stars.Length < starTotal + count)
+                {
+                    int grown = stars.Length;
+                    while (grown < starTotal + count) grown *= 2;
+                    System.Array.Resize(ref stars, grown);
+                }
+
                 ringStarStart[r] = starTotal;
                 ringStarCount[r] = count;
 
@@ -313,12 +322,14 @@ namespace PresentationLayer.VFX
             for (int r = 0; r < RingCount; r++)
             {
                 float lifeSpan = RingLife[r] * 0.8f;
-                float step = Mathf.Max(DustSpawnStep / scale, lifeSpan * starTotal / DustCapacity);
+                // 용량에 맞춰 간격을 늘리던 항(lifeSpan * starTotal / DustCapacity)은 별 120개 이하에서는 항상 더 작아 쓰이지 않았다.
+                // 별이 더 많아져도 별가루를 성기게 줄이지 않고 배열을 늘려 담는다.
+                float step = DustSpawnStep / scale;
 
                 for (int i = 0; i < ringStarCount[r]; i++)
                 {
                     int starIndex = ringStarStart[r] + i;
-                    for (float ts = RingDelay[r] + 0.04f + Rand01() * 0.03f; ts < RingDelay[r] + lifeSpan && dustTotal < DustCapacity; ts += step)
+                    for (float ts = RingDelay[r] + 0.04f + Rand01() * 0.03f; ts < RingDelay[r] + lifeSpan; ts += step)
                     {
                         float x;
                         float groundY;
@@ -342,6 +353,8 @@ namespace PresentationLayer.VFX
                         dust.type = roll < 0.15f ? 0 : (roll < 0.5f ? 1 : 2);
                         dust.bGold = Rand01() < 0.28f;
                         dust.seed = Mathf.FloorToInt(Rand01() * 6.0f);
+                        // 꽉 차면 별가루를 버리지 않고 배열을 두 배로 늘린다
+                        if (dusts.Length <= dustTotal) System.Array.Resize(ref dusts, dusts.Length * 2);
                         dusts[dustTotal++] = dust;
                     }
                 }

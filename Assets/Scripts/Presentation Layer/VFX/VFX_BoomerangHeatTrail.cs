@@ -100,8 +100,9 @@ namespace PresentationLayer.VFX
         //내부 의존성
         private MeshRenderer bodyRenderer;
         private Mesh bodyMesh;
-        private readonly Puff[] puffs = new Puff[PuffCapacity];
-        private readonly Ember[] embers = new Ember[EmberCapacity];
+        // 꽉 차면 두 배로 늘리므로 readonly가 아니다(PuffCapacity/EmberCapacity는 처음 크기)
+        private Puff[] puffs = new Puff[PuffCapacity];
+        private Ember[] embers = new Ember[EmberCapacity];
 
         //상태 변수
         private TrailState state;
@@ -250,8 +251,8 @@ namespace PresentationLayer.VFX
         /// </summary>
         public void Clear()
         {
-            for (int i = 0; i < PuffCapacity; i++) puffs[i].bActive = false;
-            for (int i = 0; i < EmberCapacity; i++) embers[i].bActive = false;
+            for (int i = 0; i < puffs.Length; i++) puffs[i].bActive = false;
+            for (int i = 0; i < embers.Length; i++) embers[i].bActive = false;
 
             bHeadValid = false;
             if (TrailState.Idle != state)
@@ -464,8 +465,16 @@ namespace PresentationLayer.VFX
                     // 여러 가지 크기: 작은 것이 많고 큰 것은 드물다
                     puff.radius = roll < 0.25f ? 0 : (roll < 0.5f ? 1 : (roll < 0.72f ? 2 : (roll < 0.87f ? 3 : (roll < 0.96f ? 4 : (roll < 0.99f ? 5 : 6)))));
 
+                    // 꽉 차면 아직 살아있는 불꽃 덩이를 덮어쓰지 않고 배열을 두 배로 늘린다
+                    if (true == puffs[puffCursor].bActive)
+                    {
+                        int oldLength = puffs.Length;
+                        System.Array.Resize(ref puffs, oldLength * 2);
+                        puffCursor = oldLength;
+                    }
+
                     puffs[puffCursor] = puff;
-                    puffCursor = (puffCursor + 1) % PuffCapacity;
+                    puffCursor = (puffCursor + 1) % puffs.Length;
                 }
             }
         }
@@ -510,8 +519,16 @@ namespace PresentationLayer.VFX
                 float toneRoll = Rand01();
                 ember.tone = toneRoll < 0.08f ? ToneCyan : (toneRoll < 0.3f ? ToneViolet : (toneRoll < 0.65f ? ToneIce : (toneRoll < 0.93f ? ToneBlue : ToneWhite)));
 
+                // 꽉 차면 아직 살아있는 불티를 덮어쓰지 않고 배열을 두 배로 늘린다
+                if (true == embers[emberCursor].bActive)
+                {
+                    int oldLength = embers.Length;
+                    System.Array.Resize(ref embers, oldLength * 2);
+                    emberCursor = oldLength;
+                }
+
                 embers[emberCursor] = ember;
-                emberCursor = (emberCursor + 1) % EmberCapacity;
+                emberCursor = (emberCursor + 1) % embers.Length;
             }
         }
 
@@ -546,7 +563,7 @@ namespace PresentationLayer.VFX
 
             float damp = Mathf.Max(0.0f, 1.0f - 2.2f * _dt);
 
-            for (int i = 0; i < PuffCapacity; i++)
+            for (int i = 0; i < puffs.Length; i++)
             {
                 if (false == puffs[i].bActive) continue;
 
@@ -568,7 +585,7 @@ namespace PresentationLayer.VFX
             }
 
             float emberDamp = Mathf.Max(0.0f, 1.0f - 0.9f * _dt);
-            for (int i = 0; i < EmberCapacity; i++)
+            for (int i = 0; i < embers.Length; i++)
             {
                 if (false == embers[i].bActive) continue;
 
@@ -669,7 +686,7 @@ namespace PresentationLayer.VFX
         // 후반에는 반지름이 줄고 행이 빠지며 흩어지다 점멸하며 사라진다.
         private void DrawPuffs()
         {
-            for (int i = 0; i < PuffCapacity; i++)
+            for (int i = 0; i < puffs.Length; i++)
             {
                 if (false == puffs[i].bActive) continue;
 
@@ -722,7 +739,7 @@ namespace PresentationLayer.VFX
         // 불씨: 후반에는 `.`로 작아졌다 점멸하며 소멸한다. kind 1은 작은 원(반지름 1~2px), kind 2는 대시.
         private void DrawEmbers()
         {
-            for (int i = 0; i < EmberCapacity; i++)
+            for (int i = 0; i < embers.Length; i++)
             {
                 if (false == embers[i].bActive) continue;
 

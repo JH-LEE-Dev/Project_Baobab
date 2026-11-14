@@ -125,9 +125,9 @@ namespace PresentationLayer.VFX
         private ulong meshHash;
         private int meshVertexCount = -1;
 
-        private readonly Particle[] particles = new Particle[ParticleCapacity];
-        private readonly Flash[] flashes = new Flash[FlashCapacity];
-        private readonly Ring[] rings = new Ring[RingCapacity];
+        private Particle[] particles = new Particle[ParticleCapacity];
+        private Flash[] flashes = new Flash[FlashCapacity];
+        private Ring[] rings = new Ring[RingCapacity];
         private int particleCursor;
         private int flashCursor;
         private int ringCursor;
@@ -175,11 +175,25 @@ namespace PresentationLayer.VFX
             int x = ToPixel(_pos.x);
             int y = ToPixel(_pos.y);
 
+            if (true == flashes[flashCursor].bActive)
+            {
+                // 꽉 차면 아직 살아있는 섬광을 덮어쓰지 않고 배열을 두 배로 늘린다
+                flashCursor = flashes.Length;
+                System.Array.Resize(ref flashes, flashes.Length * 2);
+            }
+
             flashes[flashCursor] = new Flash { bActive = true, bFresh = true, x = x, y = y, age = 0f };
-            flashCursor = (flashCursor + 1) % FlashCapacity;
+            flashCursor = (flashCursor + 1) % flashes.Length;
+
+            if (true == rings[ringCursor].bActive)
+            {
+                // 꽉 차면 아직 살아있는 충격파를 덮어쓰지 않고 배열을 두 배로 늘린다
+                ringCursor = rings.Length;
+                System.Array.Resize(ref rings, rings.Length * 2);
+            }
 
             rings[ringCursor] = new Ring { bActive = true, bFresh = true, x = x, y = y - 6, age = 0f };
-            ringCursor = (ringCursor + 1) % RingCapacity;
+            ringCursor = (ringCursor + 1) % rings.Length;
 
             const int emberCount = 12;
             for (int i = 0; i < emberCount; i++)
@@ -212,9 +226,9 @@ namespace PresentationLayer.VFX
         /// <summary>그리던 것을 모두 지운다(맵을 떠날 때).</summary>
         public void ClearAll()
         {
-            for (int i = 0; i < ParticleCapacity; i++) particles[i].bActive = false;
-            for (int i = 0; i < FlashCapacity; i++) flashes[i].bActive = false;
-            for (int i = 0; i < RingCapacity; i++) rings[i].bActive = false;
+            for (int i = 0; i < particles.Length; i++) particles[i].bActive = false;
+            for (int i = 0; i < flashes.Length; i++) flashes[i].bActive = false;
+            for (int i = 0; i < rings.Length; i++) rings[i].bActive = false;
             bAnyParticles = false;
             if (null != meshRenderer) meshRenderer.enabled = false;
         }
@@ -305,6 +319,13 @@ namespace PresentationLayer.VFX
 
         private void AddParticle(float _x, float _y, float _vx, float _vy, float _drag, float _gravity, float _delay, float _life, int _kind, Color32 _color)
         {
+            if (true == particles[particleCursor].bActive)
+            {
+                // 꽉 차면 아직 살아있는 입자를 덮어쓰지 않고 배열을 두 배로 늘린다
+                particleCursor = particles.Length;
+                System.Array.Resize(ref particles, particles.Length * 2);
+            }
+
             particles[particleCursor] = new Particle
             {
                 bActive = true,
@@ -321,7 +342,7 @@ namespace PresentationLayer.VFX
                 seed = (int)(Rand01() * 997f),
                 color = _color,
             };
-            particleCursor = (particleCursor + 1) % ParticleCapacity;
+            particleCursor = (particleCursor + 1) % particles.Length;
             bAnyParticles = true;
         }
 
@@ -348,7 +369,7 @@ namespace PresentationLayer.VFX
             {
                 bool bAnyLeft = false;
 
-                for (int i = 0; i < ParticleCapacity; i++)
+                for (int i = 0; i < particles.Length; i++)
                 {
                     if (false == particles[i].bActive) continue;
 
@@ -381,7 +402,7 @@ namespace PresentationLayer.VFX
                     Encapsulate(particles[i].x, particles[i].y, ref minX, ref minY, ref maxX, ref maxY);
                 }
 
-                for (int i = 0; i < FlashCapacity; i++)
+                for (int i = 0; i < flashes.Length; i++)
                 {
                     if (false == flashes[i].bActive) continue;
                     if (flashes[i].bFresh) flashes[i].bFresh = false;
@@ -397,7 +418,7 @@ namespace PresentationLayer.VFX
                     Encapsulate(flashes[i].x, flashes[i].y, ref minX, ref minY, ref maxX, ref maxY);
                 }
 
-                for (int i = 0; i < RingCapacity; i++)
+                for (int i = 0; i < rings.Length; i++)
                 {
                     if (false == rings[i].bActive) continue;
                     if (rings[i].bFresh) rings[i].bFresh = false;
@@ -459,7 +480,7 @@ namespace PresentationLayer.VFX
 
         private void DrawParticles()
         {
-            for (int i = 0; i < ParticleCapacity; i++)
+            for (int i = 0; i < particles.Length; i++)
             {
                 if (false == particles[i].bActive || particles[i].age < 0f) continue;
 
@@ -551,7 +572,7 @@ namespace PresentationLayer.VFX
         // 계단식으로 줄어드는 하얀 십자 섬광(커터마다 한 번).
         private void DrawFlashes()
         {
-            for (int i = 0; i < FlashCapacity; i++)
+            for (int i = 0; i < flashes.Length; i++)
             {
                 if (false == flashes[i].bActive) continue;
 
@@ -581,7 +602,7 @@ namespace PresentationLayer.VFX
         // 주황 점선 타원 충격파. 계단식으로 커지고 바깥으로 갈수록 붉게 식으며 점이 빠진다.
         private void DrawRings()
         {
-            for (int r = 0; r < RingCapacity; r++)
+            for (int r = 0; r < rings.Length; r++)
             {
                 if (false == rings[r].bActive) continue;
 

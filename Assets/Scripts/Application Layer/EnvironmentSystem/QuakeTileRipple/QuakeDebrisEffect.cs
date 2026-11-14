@@ -149,6 +149,14 @@ public sealed class QuakeDebrisEffect
         // 못 낸 몫을 쌓아 두지 않는다(멈췄다 풀리는 프레임에 한꺼번에 나오지 않게).
         if (dustBudget > MaxAttemptsPerFrame) dustBudget = 0f;
 
+        // 이번 프레임에 낼 수 있는 최대 개수(시도마다 흙먼지 최대 3알 + 부스러기 1알)만큼 자리를 한 번에 확보한다.
+        // 입자를 낼 때마다 입자 수를 묻던 것을 프레임당 한 번으로 줄인다(어느 쪽이든 버려지는 입자는 없다).
+        if (0 < attempts)
+        {
+            EnsureRoom(dust, attempts * 3);
+            EnsureRoom(chips, attempts);
+        }
+
         Vector3 center = ripple.Center;
         for (int i = 0; i < attempts; i++)
         {
@@ -223,6 +231,13 @@ public sealed class QuakeDebrisEffect
         int count = Mathf.Min(MaxFallPerFrame, (int)fallBudget);
         fallBudget -= count;
         if (fallBudget > MaxFallPerFrame) fallBudget = 0f;
+
+        // 잔돌은 낙하 층, 먼지는 흙먼지 층으로 가므로 각 층에 최대 개수만큼 한 번에 자리를 확보한다(TickFront와 같은 이유).
+        if (0 < count)
+        {
+            EnsureRoom(fall, count);
+            EnsureRoom(dust, count);
+        }
 
         float gravity = 9.81f * FallGravity;
         for (int i = 0; i < count; i++)
@@ -322,6 +337,15 @@ public sealed class QuakeDebrisEffect
         go.SetActive(true);
         system.Play();
         return system;
+    }
+
+    // 최대 입자 수(처음 1500)에 닿으면 Emit이 새 입자를 조용히 버리므로, 내기 전에 _count알이 더 들어갈 만큼 상한을 늘린다(SharedBurstEmitter와 같은 방식, 줄이지 않는다).
+    // 상한은 담을 수 있는 수일 뿐이라 넉넉히 잡아도 보이는 입자는 같다.
+    private static void EnsureRoom(ParticleSystem _system, int _count)
+    {
+        ParticleSystem.MainModule main = _system.main;
+        int required = _system.particleCount + _count;
+        if (required > main.maxParticles) main.maxParticles = Mathf.Max(required, main.maxParticles * 2);
     }
 
     private float Range(float _min, float _max) => _min + (float)random.NextDouble() * (_max - _min);

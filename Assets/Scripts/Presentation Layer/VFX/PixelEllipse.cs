@@ -17,13 +17,30 @@ namespace PresentationLayer.VFX
         private const int QuadrantCapacity = MaxRadius * 2 + 8;
         private const int RingCapacity = QuadrantCapacity * 4;
 
-        public static readonly int[] OutX = new int[RingCapacity];
-        public static readonly int[] OutY = new int[RingCapacity];
+        // MaxRadius는 처음 크기다. 더 큰 반지름이 오면 줄여 그리지 않고 배열을 늘린다(호출 측은 Build 뒤에 OutX/OutY를 읽는다).
+        public static int[] OutX = new int[RingCapacity];
+        public static int[] OutY = new int[RingCapacity];
 
-        private static readonly int[] quadrantX = new int[QuadrantCapacity];
-        private static readonly int[] quadrantY = new int[QuadrantCapacity];
-        private static readonly int[] rawX = new int[RingCapacity];
-        private static readonly int[] rawY = new int[RingCapacity];
+        private static int[] quadrantX = new int[QuadrantCapacity];
+        private static int[] quadrantY = new int[QuadrantCapacity];
+        private static int[] rawX = new int[RingCapacity];
+        private static int[] rawY = new int[RingCapacity];
+
+        // 반지름 _radius까지 담을 수 있게 표를 늘린다(처음 크기 안이면 아무것도 하지 않는다)
+        private static void EnsureCapacity(int _radius)
+        {
+            int needed = _radius * 2 + 8;
+            if (needed <= quadrantX.Length) return;
+
+            int quadrant = Mathf.Max(needed, quadrantX.Length * 2);
+            int ring = quadrant * 4;
+            quadrantX = new int[quadrant];
+            quadrantY = new int[quadrant];
+            rawX = new int[ring];
+            rawY = new int[ring];
+            OutX = new int[ring];
+            OutY = new int[ring];
+        }
 
         /// <summary>
         /// 가로 반지름 _rx, 세로 반지름 _ry인 타원 윤곽을 OutX/OutY에 만들고 점 개수를 돌려준다.
@@ -37,8 +54,11 @@ namespace PresentationLayer.VFX
                 return 1;
             }
 
-            int rx = Mathf.Min(_rx, MaxRadius);
-            int ry = Mathf.Clamp(_ry, 1, MaxRadius);
+            // 처음 크기(MaxRadius)를 넘는 반지름은 잘라내지 않고 표를 늘려 실제 크기로 그린다
+            int rx = _rx;
+            int ry = Mathf.Max(1, _ry);
+            EnsureCapacity(Mathf.Max(rx, ry));
+            int quadrantCapacity = quadrantX.Length;
 
             // 1사분면: (0, ry) -> (rx, 0) 순서의 midpoint 타원
             int n = 0;
@@ -50,7 +70,7 @@ namespace PresentationLayer.VFX
             double dy = 2.0 * rx2 * y;
             double p = ry2 - rx2 * ry + 0.25 * rx2;
 
-            while (dx < dy && n < QuadrantCapacity)
+            while (dx < dy && n < quadrantCapacity)
             {
                 quadrantX[n] = x;
                 quadrantY[n] = y;
@@ -70,7 +90,7 @@ namespace PresentationLayer.VFX
             }
 
             p = ry2 * (x + 0.5) * (x + 0.5) + rx2 * (y - 1.0) * (y - 1.0) - rx2 * ry2;
-            while (0 <= y && n < QuadrantCapacity)
+            while (0 <= y && n < quadrantCapacity)
             {
                 quadrantX[n] = x;
                 quadrantY[n] = y;
