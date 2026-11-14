@@ -373,6 +373,8 @@ MonoBehaviour:
   omp: {fileID: 7013793298929853146}
   offset: {x: 0, y: 0}
   useDynamicPositioning: 0
+  useFourByTwoAtEightSlots: 1
+  fourByTwoOffset: {x: -0.4375, y: 0.3125}
   positionLerpSpeed: 8
   popupTag: Popup
   popdownTag: Popdown
