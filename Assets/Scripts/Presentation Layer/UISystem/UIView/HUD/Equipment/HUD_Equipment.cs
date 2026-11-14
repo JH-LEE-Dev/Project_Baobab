@@ -1,3 +1,4 @@
+using DG.Tweening;
 using PresentationLayer.DOTweenAnimationSystem.Motions.UI;
 using UnityEngine;
 
@@ -15,10 +16,26 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         [Tooltip("도끼 HUD 왼쪽의 과열 게이지. 보일지 말지는 UIView_HUD가 정한다")]
         [SerializeField] private HUD_HeatGauge heatGauge;
 
+        [Header("Axe Deposit Slide")]
+        [Tooltip("도끼를 모루에 맡기면 도끼 HUD만 이만큼(px) 아래로 내려가 화면 밖으로 빠진다")]
+        [SerializeField] private float axeDepositHiddenOffsetY = 110f;
+        [SerializeField] private float axeDepositAnticipationY = 5f;
+        [SerializeField] private float axeDepositAnticipationDuration = 0.08f;
+        [SerializeField] private float axeDepositExitDuration = 0.26f;
+        [SerializeField] private float axeDepositReturnDuration = 0.42f;
+        [SerializeField] private float axeDepositReturnOvershoot = 2.2f;
+
         // //내부 의존성
         private ICharacter character;
         private IOverheatComponent overheatState;
         private int shownOverheatStage; // 마지막으로 도끼 HUD에 넣은 과열 단계(단계가 오를 때만 섬광 연출)
+
+        // 모루에 도끼를 맡긴 동안 도끼 HUD를 내리는 연출(위치만 움직인다 - 크기 연출은 도끼 HUD 자체 연출과 겹치지 않게 쓰지 않는다)
+        private RectTransform axeRect;
+        private Vector2 axeBasePosition;
+        private bool bAxeBaseCaptured;
+        private bool bAxeHiddenByDeposit;
+        private Sequence axeDepositSequence;
 
         // //퍼블릭 초기화 및 제어 메서드
 
@@ -58,6 +75,11 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                 axeComponent.DurabilityRepairedEvent -= OnAxeRepaired;
                 axeComponent.DurabilityRepairedEvent += OnAxeRepaired;
             }
+
+            // 모루 맡기기: 도끼 HUD만 내려갔다 올라온다. 바인딩 시점에는 지금 상태로 바로 맞춘다.
+            character.AxeDepositStateChangedEvent -= OnAxeDepositStateChanged;
+            character.AxeDepositStateChangedEvent += OnAxeDepositStateChanged;
+            SetAxeHiddenByDeposit(character.bAxeDeposited, false);
 
             // 과열 아우라: 이전에 바인딩한 캐릭터의 구독은 풀고, 지금 상태를 먼저 맞춘 뒤 이후 변화는 이벤트로 받는다.
             UnbindOverheat();
@@ -123,6 +145,76 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             }
         }
 
+        private void OnAxeDepositStateChanged(bool _bDeposited)
+        {
+            SetAxeHiddenByDeposit(_bDeposited, true);
+        }
+
+        // 도끼를 맡기면 도끼 HUD가 단독으로 아래로 빠지고(움찔 → 빨려 내려감), 돌려받으면 아래에서 튀어 오른다.
+        // 과열 게이지 등장/퇴장(HUD_HeatGauge)과 같은 움직임이다. 시간은 unscaled.
+        private void SetAxeHiddenByDeposit(bool _bHidden, bool _bAnimate)
+        {
+            if (null == axeItem)
+                return;
+
+            if (null == axeRect)
+                axeRect = axeItem.transform as RectTransform;
+
+            if (null == axeRect)
+                return;
+
+            if (false == bAxeBaseCaptured)
+            {
+                axeBasePosition = axeRect.anchoredPosition;
+                bAxeBaseCaptured = true;
+            }
+
+            if (_bHidden == bAxeHiddenByDeposit && (null == axeDepositSequence || false == axeDepositSequence.IsActive()))
+            {
+                if (false == _bAnimate)
+                    axeRect.anchoredPosition = HiddenOrBasePosition(_bHidden);
+                return;
+            }
+
+            bAxeHiddenByDeposit = _bHidden;
+            KillAxeDepositSlide();
+
+            if (false == _bAnimate || false == gameObject.activeInHierarchy)
+            {
+                axeRect.anchoredPosition = HiddenOrBasePosition(_bHidden);
+                return;
+            }
+
+            axeDepositSequence = DOTween.Sequence().SetUpdate(true);
+
+            if (_bHidden)
+            {
+                axeDepositSequence.Append(axeRect.DOAnchorPosY(axeBasePosition.y + axeDepositAnticipationY, axeDepositAnticipationDuration, true)
+                    .SetEase(Ease.OutQuad));
+                axeDepositSequence.Append(axeRect.DOAnchorPosY(axeBasePosition.y - axeDepositHiddenOffsetY, axeDepositExitDuration, true)
+                    .SetEase(Ease.InBack));
+            }
+            else
+            {
+                axeDepositSequence.Append(axeRect.DOAnchorPosY(axeBasePosition.y, axeDepositReturnDuration, true)
+                    .SetEase(Ease.OutBack, axeDepositReturnOvershoot));
+            }
+        }
+
+        private Vector2 HiddenOrBasePosition(bool _bHidden)
+        {
+            return _bHidden ? new Vector2(axeBasePosition.x, axeBasePosition.y - axeDepositHiddenOffsetY) : axeBasePosition;
+        }
+
+        private void KillAxeDepositSlide()
+        {
+            if (null != axeDepositSequence)
+            {
+                axeDepositSequence.Kill();
+                axeDepositSequence = null;
+            }
+        }
+
         // 실제 공격/수리로 도끼 내구도가 변한 경우에만 호출된다. 이때만 파손 사운드/이펙트를 재생한다.
         private void OnAxeAttacked()
         {
@@ -164,9 +256,12 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         public void OnDestroy()
         {
             UnbindOverheat();
+            KillAxeDepositSlide();
 
             if (null == character)
                 return;
+
+            character.AxeDepositStateChangedEvent -= OnAxeDepositStateChanged;
 
             IAxeComponent axeComponent = character.armComponent?.axeComponent;
 

@@ -3002,8 +3002,8 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  repairBoxCount: 0
-  repairAmount: 0.25
+  bRepairBoxUnlocked: 0
+  repairRateBonus: 0
 --- !u!58 &4433508306021481703
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -4849,8 +4849,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a2afc81d8a985142ac1e75418ef96d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RepairBox
-  repairBoxCount: 0
-  repairAmount: 0.25
   col: {fileID: 1174663446286046539}
   spriteRenderer: {fileID: 7183186584407014943}
   customSortable: {fileID: 2253289437639516120}
@@ -4890,6 +4888,19 @@ MonoBehaviour:
   repairSparkTag: RepairSpark
   repairSparkPoint: {fileID: 2236563588636971392}
   countHud: {fileID: 3880462177544858547}
+  hammerInterval: 0.5
+  durabilityPerSecond: 5
+  gaugeBackgroundSprite: {fileID: 21300000, guid: 8f987c13629ff364aa9c27b86c81946e, type: 3}
+  gaugeOutlineSprite: {fileID: 21300000, guid: 2b93f9ed4238442449e0f3c5f82c3129, type: 3}
+  gaugeFillSprite: {fileID: 21300000, guid: 3f69589dc8c1dd24795a27c1fdf73cb9, type: 3}
+  gaugeShader: {fileID: 4800000, guid: 1ff69fa42a2d0ce4e9a625dbe3a2ed77, type: 3}
+  gaugeLocalAnchor: {x: 0, y: 0.875}
+  throwAxeSprite: {fileID: 21300000, guid: bfba13694ea0ceb4290b49e8f9d4d747, type: 3}
+  throwAxeMaterial: {fileID: 2100000, guid: e880c8cc906e30a49a8f8e63742acf0b, type: 2}
+  throwDuration: 0.3
+  throwArcHeight: 1
+  throwSpinDegrees: 540
+  throwLocalTarget: {x: -0.15625, y: 0.65625}
 --- !u!114 &2253289437639516120
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -1180,10 +1180,25 @@ public class AttackComponent : PComponent
         }
     }
 
+    // 도끼를 모루에 맡긴 동안(Character.DepositAxe) 공격 대상 탐지·나무 외곽선을 멈춘다. 기본값 false면 예전과 같다.
+    private bool bTargetDetectionSuppressed = false;
+
+    public void SetTargetDetectionSuppressed(bool _bSuppressed)
+    {
+        if (bTargetDetectionSuppressed == _bSuppressed) return;
+
+        bTargetDetectionSuppressed = _bSuppressed;
+        if (_bSuppressed)
+        {
+            nearestTarget = null;
+            ClearDetectedTreeOutlines();
+        }
+    }
+
     private void DetectNearestTarget()
     {
         if (CollisionSystem.Instance == null) return;
-        if (currentWeaponMode != WeaponMode.Axe)
+        if (currentWeaponMode != WeaponMode.Axe || bTargetDetectionSuppressed)
         {
             nearestTarget = null;
             ClearDetectedTreeOutlines();
