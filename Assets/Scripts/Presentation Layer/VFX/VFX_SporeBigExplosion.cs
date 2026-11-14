@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace PresentationLayer.VFX
@@ -214,8 +215,13 @@ namespace PresentationLayer.VFX
         private static int[][] outlineY;
         private static float[][] outlineAngle;
 
-        private static readonly PixelQuadBuffer skyBuffer = new PixelQuadBuffer(QuadBudget);
-        private static readonly PixelQuadBuffer groundBuffer = new PixelQuadBuffer(2400);
+        // 충격파 고리 띠(DrawRingBandGapped)의 점별 각도 표(가로 반지름별). 최초 사용 때 만든다.
+        private static float[][] ringBandAngles;
+        private static int[] ringBandRy;
+        private static int[] ringBandW;
+
+        private static readonly PixelQuadBuffer skyBuffer = new PixelQuadBuffer(QuadBudget, false);
+        private static readonly PixelQuadBuffer groundBuffer = new PixelQuadBuffer(2400, false);
         private static readonly int[] linePixelX = new int[LineBufferSize];
         private static readonly int[] linePixelY = new int[LineBufferSize];
 
@@ -712,6 +718,7 @@ namespace PresentationLayer.VFX
         }
 
         // 같은 줄에서 같은 색으로 이어지는 픽셀을 한 쿼드로 합쳐 정점 수를 줄인다(결과 픽셀은 같다).
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void FlushRun()
         {
             if (false == bRunActive) return;
@@ -721,6 +728,7 @@ namespace PresentationLayer.VFX
         }
 
         // 쿼드 한 개를 버퍼에 넣고 실제 그린 픽셀 범위(월드 픽셀)를 모은다. 메쉬 경계를 좁게 잡는 데 쓴다.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void EmitRect(int _x0, int _y0, int _x1, int _y1, Color32 _color)
         {
             activeBuffer.AddWorldRect(_x0, _y0, _x1, _y1, _color);
@@ -732,11 +740,13 @@ namespace PresentationLayer.VFX
             if (boundsMaxY[b] < _y1) boundsMaxY[b] = _y1;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool SameColor(Color32 _a, Color32 _b)
         {
             return _a.r == _b.r && _a.g == _b.g && _a.b == _b.b && _a.a == _b.a;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void AddRun(int _x0, int _x1Exclusive, int _y, Color32 _color)
         {
             if (true == bRunActive && runY == _y && runX1 == _x0 && true == SameColor(runColor, _color))
@@ -763,6 +773,7 @@ namespace PresentationLayer.VFX
             return result;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Dot(int _x, int _y, Color32 _color)
         {
             AddRun(_x, _x + 1, _y, _color);
@@ -827,7 +838,103 @@ namespace PresentationLayer.VFX
 
         // 두께 _w의 고리를 점 단위로 그리며 끊김 구간(각도)을 건너뛴다. 바깥 채운 타원에서 안쪽 채운 타원을 뺀 판정이라
         // 가장자리는 midpoint 곡선과 같다.
+        // 점마다의 각도(Atan2)는 (_rx, _ry, _w)만으로 정해지므로 반지름별 표에서 읽는다(표 값은 같은 식으로 한 번 계산한 것이라 비트까지 같다).
+        // 점을 도는 순서와 판정은 표를 만들 때와 같아서 n번째로 방문하는 점의 각도가 표의 n번째 값이다.
         private void DrawRingBandGapped(int _rx, int _ry, int _w, Color32 _color, int _ring)
+        {
+            float[] angles = GetRingBandAngles(_rx, _ry, _w);
+            if (null == angles)
+            {
+                DrawRingBandGappedDirect(_rx, _ry, _w, _color, _ring);
+                return;
+            }
+
+            int innerRx = Mathf.Max(0, _rx - _w);
+            int innerRy = Mathf.Max(0, Mathf.RoundToInt(_ry - _w * (float)_ry / Mathf.Max(1, _rx)));
+            int n = 0;
+
+            for (int y = -_ry; y <= _ry; y++)
+            {
+                int wo = FillHalfWidth(_rx, _ry, y);
+                if (wo < 0) continue;
+
+                int wi = -1;
+                if (-innerRy <= y && y <= innerRy && 0 < innerRx) wi = FillHalfWidth(innerRx, innerRy, y);
+
+                for (int x = -wo; x <= wo; x++)
+                {
+                    if (0 <= wi && x == -wi)
+                    {
+                        x = wi;
+                        continue;
+                    }
+
+                    float angle = angles[n++];
+                    if (true == InRingGap(_ring, angle)) continue;
+
+                    Dot(centerX + x, centerY + y, _color);
+                }
+            }
+        }
+
+        // (_rx, _ry, _w) 고리 띠의 점별 각도 표. 표 칸은 가로 반지름별 하나이고, 처음 쓰일 때 만든다(윤곽 표와 같은 방식).
+        // 다른 세로 반지름/두께로 불리면(현재 호출 경로에는 없음) null을 돌려 매번 계산하게 한다.
+        private static float[] GetRingBandAngles(int _rx, int _ry, int _w)
+        {
+            if (_rx < 0 || MaxOutlineRadius < _rx) return null;
+
+            if (null == ringBandAngles)
+            {
+                ringBandAngles = new float[MaxOutlineRadius + 1][];
+                ringBandRy = new int[MaxOutlineRadius + 1];
+                ringBandW = new int[MaxOutlineRadius + 1];
+            }
+
+            float[] table = ringBandAngles[_rx];
+            if (null != table) return ringBandRy[_rx] == _ry && ringBandW[_rx] == _w ? table : null;
+
+            int innerRx = Mathf.Max(0, _rx - _w);
+            int innerRy = Mathf.Max(0, Mathf.RoundToInt(_ry - _w * (float)_ry / Mathf.Max(1, _rx)));
+
+            // 1차: 점 개수, 2차: 각도 채우기(DrawRingBandGappedDirect와 같은 순회)
+            int count = 0;
+            for (int pass = 0; pass < 2; pass++)
+            {
+                if (1 == pass) table = new float[count];
+                int n = 0;
+
+                for (int y = -_ry; y <= _ry; y++)
+                {
+                    int wo = FillHalfWidth(_rx, _ry, y);
+                    if (wo < 0) continue;
+
+                    int wi = -1;
+                    if (-innerRy <= y && y <= innerRy && 0 < innerRx) wi = FillHalfWidth(innerRx, innerRy, y);
+
+                    for (int x = -wo; x <= wo; x++)
+                    {
+                        if (0 <= wi && x == -wi)
+                        {
+                            x = wi;
+                            continue;
+                        }
+
+                        if (1 == pass) table[n] = Mathf.Repeat(Mathf.Atan2(y / (float)Mathf.Max(1, _ry), x / (float)Mathf.Max(1, _rx)), TwoPi);
+                        n++;
+                    }
+                }
+
+                count = n;
+            }
+
+            ringBandAngles[_rx] = table;
+            ringBandRy[_rx] = _ry;
+            ringBandW[_rx] = _w;
+            return table;
+        }
+
+        // 원래 방식(점마다 Atan2). 표를 쓸 수 없을 때만 쓴다.
+        private void DrawRingBandGappedDirect(int _rx, int _ry, int _w, Color32 _color, int _ring)
         {
             int innerRx = Mathf.Max(0, _rx - _w);
             int innerRy = Mathf.Max(0, Mathf.RoundToInt(_ry - _w * (float)_ry / Mathf.Max(1, _rx)));

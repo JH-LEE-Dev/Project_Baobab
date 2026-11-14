@@ -105,9 +105,9 @@ namespace PresentationLayer.VFX
         private static readonly Color32 PuffColor = new Color32(255, 255, 255, 235);
         private static readonly Color32 SolidColor = new Color32(255, 255, 255, 255);
 
-        private static readonly PixelQuadBuffer frontBuffer = new PixelQuadBuffer(1500);
-        private static readonly PixelQuadBuffer backBuffer = new PixelQuadBuffer(1500);
-        private static readonly PixelQuadBuffer groundBuffer = new PixelQuadBuffer(800);
+        private static readonly PixelQuadBuffer frontBuffer = new PixelQuadBuffer(1500, false);
+        private static readonly PixelQuadBuffer backBuffer = new PixelQuadBuffer(1500, false);
+        private static readonly PixelQuadBuffer groundBuffer = new PixelQuadBuffer(800, false);
 
         // 내부 의존성
         private MeshFilter meshFilter;

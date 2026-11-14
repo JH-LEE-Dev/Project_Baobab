@@ -247,7 +247,7 @@ namespace PresentationLayer.VFX
         private static readonly Color32[] WaveColorsHeating = { ColorWhite, ColorYellow, ColorOrange, ColorRed };
 
         // 메쉬 버퍼는 매 프레임 Clear 후 채우므로 인스턴스끼리 공유해도 안전하다(BackLayer, FrontLayer, AuraLayer 순)
-        private static readonly PixelQuadBuffer[] quadBuffers = { new PixelQuadBuffer(512), new PixelQuadBuffer(512), new PixelQuadBuffer(1024) };
+        private static readonly PixelQuadBuffer[] quadBuffers = { new PixelQuadBuffer(512, false), new PixelQuadBuffer(512, false), new PixelQuadBuffer(1024, false) };
 
         //내부 의존성
         private readonly MeshFilter[] meshFilters = new MeshFilter[LayerCount];

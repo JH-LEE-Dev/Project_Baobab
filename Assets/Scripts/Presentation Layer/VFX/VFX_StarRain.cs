@@ -82,6 +82,18 @@ namespace PresentationLayer.VFX
         private const float OffsetY = -165.0f;          // 화면 아래가 +인 좌표에서 위쪽 = 음수
         private const float FallCurve = 1.6f;
 
+        private const int RowChunkShift = 4;            // Layer.rowChunks 묶음 크기 = 16칸
+        private const int RowChunkSize = 1 << RowChunkShift;
+        private const int RowChunkCapacity = 64;        // 한 줄이 담는 묶음 수(ulong 비트 수). 이보다 넓은 격자는 묶음 없이 훑는다.
+        private const ulong DeBruijn64 = 0x03F79D71B4CB0A89UL;
+        private static readonly int[] DeBruijnIndex =
+        {
+            0, 1, 48, 2, 57, 49, 28, 3, 61, 58, 50, 42, 38, 29, 17, 4,
+            62, 55, 59, 36, 53, 51, 43, 22, 45, 39, 33, 30, 24, 18, 12, 5,
+            63, 47, 56, 27, 60, 41, 37, 16, 54, 35, 52, 21, 44, 32, 23, 11,
+            46, 26, 40, 15, 34, 20, 31, 10, 25, 14, 19, 9, 13, 8, 7, 6,
+        };
+
         private const byte ToneNone = 0;
         private const byte ToneWhite = 1;
         private const byte ToneIce = 2;
@@ -103,6 +115,8 @@ namespace PresentationLayer.VFX
         {
             public PixelQuadBuffer buffer;
             public byte[] cells = new byte[0];
+            // 줄마다 칠한 16칸 묶음 표시(비트 c = 칸 16c ~ 16c+15). EmitLayer가 칠한 묶음만 훑게 한다.
+            public ulong[] rowChunks = new ulong[0];
             public int minX;
             public int minY;
             public int width;
@@ -369,6 +383,7 @@ namespace PresentationLayer.VFX
 
             int needed = _layer.width * _layer.height;
             if (_layer.cells.Length < needed) _layer.cells = new byte[needed];
+            if (_layer.rowChunks.Length < _layer.height) _layer.rowChunks = new ulong[_layer.height];
 
             ResetDirty(_layer);
         }
@@ -467,6 +482,7 @@ namespace PresentationLayer.VFX
             if (gx < 0 || _layer.width <= gx || gy < 0 || _layer.height <= gy) return;
 
             _layer.cells[gy * _layer.width + gx] = _tone;
+            _layer.rowChunks[gy] |= 1UL << (gx >> RowChunkShift);
 
             if (gx < _layer.dirtyMinX) _layer.dirtyMinX = gx;
             if (gy < _layer.dirtyMinY) _layer.dirtyMinY = gy;
@@ -1093,44 +1109,77 @@ namespace PresentationLayer.VFX
 
             int width = _layer.width;
             Layer boundsOwner = _buffer == groundLayer.buffer ? groundLayer : airLayer;
+            // 묶음 표시는 줄당 64묶음(1024칸)까지 담는다. 그보다 넓으면(범위 상한 6에서도 약 640칸이라 현재는 없음) 더러운 사각형 전체를 훑는다.
+            bool bChunked = width <= RowChunkCapacity * RowChunkSize;
 
             for (int gy = _layer.dirtyMinY; gy <= _layer.dirtyMaxY; gy++)
             {
                 int row = gy * width;
-                int x = _layer.dirtyMinX;
+                ulong chunks = _layer.rowChunks[gy];
+                _layer.rowChunks[gy] = 0UL;
 
-                while (x <= _layer.dirtyMaxX)
+                if (false == bChunked)
                 {
-                    byte tone = _layer.cells[row + x];
-                    if (ToneNone == tone)
-                    {
-                        x++;
-                        continue;
-                    }
+                    EmitRow(_layer, _buffer, _budget, boundsOwner, gy, row, _layer.dirtyMinX, _layer.dirtyMaxX);
+                    continue;
+                }
 
-                    int start = x;
-                    while (x + 1 <= _layer.dirtyMaxX && tone == _layer.cells[row + x + 1]) x++;
-                    int end = x;
+                // 칠하지 않은 묶음은 모두 빈 칸이라 건너뛴다. 묶음은 왼쪽부터 차례로 보고, 한 묶음 끝을 넘어 이어진 같은 톤 구간은
+                // 원래처럼 끝까지 합친 뒤 다음 묶음은 그 다음 칸부터 본다(훑는 순서·합치는 구간·쿼드 순서가 원래와 같다).
+                int x = _layer.dirtyMinX;
+                while (0UL != chunks)
+                {
+                    // 가장 낮은 켜진 비트(왼쪽 묶음)부터
+                    ulong lowest = chunks & (~chunks + 1UL);
+                    chunks ^= lowest;
+                    int c = DeBruijnIndex[(int)((lowest * DeBruijn64) >> 58)];
 
-                    for (int k = start; k <= end; k++) _layer.cells[row + k] = ToneNone;
-
-                    x++;
-
-                    if (_budget * 4 <= _buffer.VertexCount) continue;
-
-                    int wx0 = originPixelX + _layer.minX + start;
-                    int wx1 = originPixelX + _layer.minX + end + 1;
-                    int wy = originPixelY - (_layer.minY + gy);
-                    _buffer.AddWorldRect(wx0, wy, wx1, wy + 1, toneColors[tone]);
-
-                    if (wx0 < boundsOwner.worldMinX) boundsOwner.worldMinX = wx0;
-                    if (wy < boundsOwner.worldMinY) boundsOwner.worldMinY = wy;
-                    if (boundsOwner.worldMaxX < wx1) boundsOwner.worldMaxX = wx1;
-                    if (boundsOwner.worldMaxY < wy + 1) boundsOwner.worldMaxY = wy + 1;
+                    int from = Mathf.Max(x, c * RowChunkSize);
+                    int to = Mathf.Min(_layer.dirtyMaxX, c * RowChunkSize + RowChunkSize - 1);
+                    if (from <= to) x = EmitRow(_layer, _buffer, _budget, boundsOwner, gy, row, from, to);
                 }
             }
 
             ResetDirty(_layer);
+        }
+
+        // gy줄의 [_from, _to] 칸을 훑어 같은 톤 구간을 쿼드로 넣고 칸을 비운다. 구간은 _to를 넘어서도 더러운 범위(dirtyMaxX) 끝까지 이어 합친다.
+        // 다음에 볼 칸 번호를 돌려준다.
+        private int EmitRow(Layer _layer, PixelQuadBuffer _buffer, int _budget, Layer _boundsOwner, int _gy, int _row, int _from, int _to)
+        {
+            int x = _from;
+
+            while (x <= _to)
+            {
+                byte tone = _layer.cells[_row + x];
+                if (ToneNone == tone)
+                {
+                    x++;
+                    continue;
+                }
+
+                int start = x;
+                while (x + 1 <= _layer.dirtyMaxX && tone == _layer.cells[_row + x + 1]) x++;
+                int end = x;
+
+                for (int k = start; k <= end; k++) _layer.cells[_row + k] = ToneNone;
+
+                x++;
+
+                if (_budget * 4 <= _buffer.VertexCount) continue;
+
+                int wx0 = originPixelX + _layer.minX + start;
+                int wx1 = originPixelX + _layer.minX + end + 1;
+                int wy = originPixelY - (_layer.minY + _gy);
+                _buffer.AddWorldRect(wx0, wy, wx1, wy + 1, toneColors[tone]);
+
+                if (wx0 < _boundsOwner.worldMinX) _boundsOwner.worldMinX = wx0;
+                if (wy < _boundsOwner.worldMinY) _boundsOwner.worldMinY = wy;
+                if (_boundsOwner.worldMaxX < wx1) _boundsOwner.worldMaxX = wx1;
+                if (_boundsOwner.worldMaxY < wy + 1) _boundsOwner.worldMaxY = wy + 1;
+            }
+
+            return x;
         }
 
         private static void UploadMesh(PixelQuadBuffer _buffer, Mesh _mesh, MeshRenderer _renderer, Vector3 _objectPosition, Layer _boundsSource, ref int _uploadedVertexCount, ref ulong _uploadedHash)

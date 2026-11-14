@@ -114,7 +114,7 @@ namespace PresentationLayer.VFX
         };
 
         // 화면에 그릴 쿼드는 이펙트 종류별 공유 버퍼에 모은다(매 프레임 Clear 후 채우고, 메인 스레드 단일 실행이라 인스턴스끼리 공유해도 안전하다)
-        private static readonly PixelQuadBuffer quadBuffer = new PixelQuadBuffer(512);
+        private static readonly PixelQuadBuffer quadBuffer = new PixelQuadBuffer(512, false);
 
         //내부 의존성
         private MeshFilter meshFilter;

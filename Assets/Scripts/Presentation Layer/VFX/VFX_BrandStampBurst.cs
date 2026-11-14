@@ -52,6 +52,7 @@ namespace PresentationLayer.VFX
         private const float FlashStage0End = 0.025f;
         private const float FlashStage1End = 0.05f;
         private const float FlashEnd = 0.075f;
+        private const float FlashReachPx = 16.0f; // 섬광이 닿는 가장 먼 픽셀(십자 광선 끝 15px + 1)
 
         // 점선 충격파
         private const float RingStart = 0.02f;
@@ -95,7 +96,7 @@ namespace PresentationLayer.VFX
         }
 
         // 메쉬 버퍼는 매 프레임 Clear 후 채우므로 인스턴스끼리 공유해도 안전하다(메인 스레드 단일 실행)
-        private static readonly PixelQuadBuffer quadBuffer = new PixelQuadBuffer(512);
+        private static readonly PixelQuadBuffer quadBuffer = new PixelQuadBuffer(512, false);
         private static readonly Vector3 MeshBoundsSize = new Vector3(200.0f, 200.0f, 10.0f);
 
         //내부 의존성
@@ -565,7 +566,45 @@ namespace PresentationLayer.VFX
                 }
             }
 
+            // 화면 밖이면 시간과 입자만 흐르게 두고 그리지 않는다. 그리기는 상태와 난수를 건드리지 않으므로 다시 보이는 프레임에 같은 그림이 나온다.
+            if (false == IsOnScreen())
+            {
+                meshRenderer.enabled = false;
+                return;
+            }
+
             RebuildMesh();
+        }
+
+        // 이번 프레임에 그릴 수 있는 범위(각인 중심 기준 픽셀)가 화면에 걸치는지 본다. 섬광·고리·별은 설정값으로 정해지는 최대 범위를,
+        // 별가루는 지금 위치에 모양 크기(팔 2px, 큰 점 2px)를 더해 잡는다. 픽셀 스냅 오차는 PixelVfxCulling 여유가 덮는다.
+        // 대부분 화면 안이므로 고정 범위로 먼저 보고, 그 범위가 화면 밖일 때만 별가루까지 넓혀 다시 본다.
+        private bool IsOnScreen()
+        {
+            Vector3 pos = transform.position;
+            float starRadius = Mathf.Max(constellationRadiusMin, constellationRadiusMax);
+            float halfX = Mathf.Max(FlashReachPx, Mathf.Max(ringMaxRadius + 2.0f, starRadius + 4.0f));
+            float halfY = Mathf.Max(FlashReachPx, Mathf.Max(ringMaxRadius * ringSquashY + 2.0f, starRadius * 0.75f + 4.0f));
+            Vector3 fixedSize = new Vector3(halfX * 2.0f / PixelsPerUnit + PixelVfxCulling.MarginUnits * 2.0f, halfY * 2.0f / PixelsPerUnit + PixelVfxCulling.MarginUnits * 2.0f, PixelVfxCulling.BoundsDepth);
+            if (true == PixelVfxCulling.IsVisible(pos, fixedSize)) return true;
+
+            float minX = -halfX;
+            float maxX = halfX;
+            float minY = -halfY;
+            float maxY = halfY;
+
+            for (int i = 0; i < dusts.Length; i++)
+            {
+                if (false == dusts[i].bActive) continue;
+                if (dusts[i].x - 3.0f < minX) minX = dusts[i].x - 3.0f;
+                if (dusts[i].x + 3.0f > maxX) maxX = dusts[i].x + 3.0f;
+                if (dusts[i].y - 3.0f < minY) minY = dusts[i].y - 3.0f;
+                if (dusts[i].y + 3.0f > maxY) maxY = dusts[i].y + 3.0f;
+            }
+
+            Vector3 center = new Vector3(pos.x + (minX + maxX) * 0.5f / PixelsPerUnit, pos.y + (minY + maxY) * 0.5f / PixelsPerUnit, pos.z);
+            Vector3 size = new Vector3((maxX - minX) / PixelsPerUnit + PixelVfxCulling.MarginUnits * 2.0f, (maxY - minY) / PixelsPerUnit + PixelVfxCulling.MarginUnits * 2.0f, PixelVfxCulling.BoundsDepth);
+            return PixelVfxCulling.IsVisible(center, size);
         }
 
         private void OnDisable()

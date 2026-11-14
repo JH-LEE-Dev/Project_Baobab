@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -64,16 +65,20 @@ namespace PresentationLayer.VFX
         private float translationY;
         private float translationZ;
         private float meshZ;
+        // ContentHash를 읽는 곳이 없는 버퍼는 쿼드마다 해시를 섞지 않는다(정점 내용은 같다).
+        private readonly bool bTrackHash;
 
         public int VertexCount => vertexCount;
 
         /// <summary>
         /// 이번에 채운 쿼드(좌표, 색, 순서)의 해시. 직전 업로드 때의 값과 정점 수가 모두 같으면 메쉬 내용도 같다.
+        /// 해시를 끄고 만든 버퍼(_bTrackHash = false)는 늘 처음 값이라 쓰면 안 된다.
         /// </summary>
         public ulong ContentHash => contentHash;
 
-        public PixelQuadBuffer(int _quadCapacity)
+        public PixelQuadBuffer(int _quadCapacity, bool _bTrackHash = true)
         {
+            bTrackHash = _bTrackHash;
             vertices = new QuadVertex[Mathf.Clamp(_quadCapacity * 4, 4, MaxVertices)];
             Clear();
         }
@@ -111,7 +116,7 @@ namespace PresentationLayer.VFX
         /// </summary>
         public void AddWorldRect(int _x0, int _y0, int _x1, int _y1, Color32 _color)
         {
-            AddWorldRect((float)_x0, (float)_y0, (float)_x1, (float)_y1, _color);
+            PutWorldRect((float)_x0, (float)_y0, (float)_x1, (float)_y1, _color);
         }
 
         /// <summary>
@@ -120,37 +125,76 @@ namespace PresentationLayer.VFX
         /// </summary>
         public void AddWorldRect(float _x0, float _y0, float _x1, float _y1, Color32 _color)
         {
-            EnsureCapacity(vertexCount + 4);
+            PutWorldRect(_x0, _y0, _x1, _y1, _color);
+        }
+
+        // 쿼드마다 불리는 경로라 정점은 배열 칸을 직접 참조해 채우고, 해시 섞기·색 채우기·용량 확인을 함수 호출 없이 한다.
+        // 좌표 계산은 예전과 같다: 1/32(2의 거듭제곱)을 곱하는 것은 반올림이 없고, 평행이동은 float 덧셈 한 번이라 결과 비트가 같다.
+        // 해시도 예전과 같은 값을 같은 순서(0번 정점 x·y·z, 2번 정점 x·y, 색)로 섞는다.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void PutWorldRect(float _x0, float _y0, float _x1, float _y1, Color32 _color)
+        {
+            int v = vertexCount;
+            if (vertices.Length < v + 4) EnsureCapacity(v + 4);
 
             float x0 = _x0 * PixelUnit;
             float y0 = _y0 * PixelUnit;
             float x1 = _x1 * PixelUnit;
             float y1 = _y1 * PixelUnit;
 
-            int v = vertexCount;
+            QuadVertex[] verts = vertices;
+            ref QuadVertex q0 = ref verts[v];
+            ref QuadVertex q1 = ref verts[v + 1];
+            ref QuadVertex q2 = ref verts[v + 2];
+            ref QuadVertex q3 = ref verts[v + 3];
+
             if (true == bTranslationOnly)
             {
                 float z = meshZ + translationZ;
-                vertices[v].position = new Vector3(x0 + translationX, y0 + translationY, z);
-                vertices[v + 1].position = new Vector3(x0 + translationX, y1 + translationY, z);
-                vertices[v + 2].position = new Vector3(x1 + translationX, y1 + translationY, z);
-                vertices[v + 3].position = new Vector3(x1 + translationX, y0 + translationY, z);
+                q0.position.x = x0 + translationX;
+                q0.position.y = y0 + translationY;
+                q0.position.z = z;
+                q1.position.x = x0 + translationX;
+                q1.position.y = y1 + translationY;
+                q1.position.z = z;
+                q2.position.x = x1 + translationX;
+                q2.position.y = y1 + translationY;
+                q2.position.z = z;
+                q3.position.x = x1 + translationX;
+                q3.position.y = y0 + translationY;
+                q3.position.z = z;
             }
             else
             {
-                vertices[v].position = worldToLocal.MultiplyPoint3x4(new Vector3(x0, y0, meshZ));
-                vertices[v + 1].position = worldToLocal.MultiplyPoint3x4(new Vector3(x0, y1, meshZ));
-                vertices[v + 2].position = worldToLocal.MultiplyPoint3x4(new Vector3(x1, y1, meshZ));
-                vertices[v + 3].position = worldToLocal.MultiplyPoint3x4(new Vector3(x1, y0, meshZ));
+                q0.position = worldToLocal.MultiplyPoint3x4(new Vector3(x0, y0, meshZ));
+                q1.position = worldToLocal.MultiplyPoint3x4(new Vector3(x0, y1, meshZ));
+                q2.position = worldToLocal.MultiplyPoint3x4(new Vector3(x1, y1, meshZ));
+                q3.position = worldToLocal.MultiplyPoint3x4(new Vector3(x1, y0, meshZ));
             }
 
+            q0.color = _color;
+            q1.color = _color;
+            q2.color = _color;
+            q3.color = _color;
+            vertexCount = v + 4;
+
+            if (false == bTrackHash) return;
+
             // 월드 경로는 변환된 좌표가 바뀌면 내용도 바뀐 것이므로 실제 정점 좌표의 비트를 해시에 섞는다
-            MixFloat(vertices[v].position.x);
-            MixFloat(vertices[v].position.y);
-            MixFloat(vertices[v].position.z);
-            MixFloat(vertices[v + 2].position.x);
-            MixFloat(vertices[v + 2].position.y);
-            FinishQuad(v, _color);
+            FloatBits bits = default;
+            ulong hash = contentHash;
+            bits.value = q0.position.x;
+            hash = unchecked((hash ^ bits.bits) * HashPrime);
+            bits.value = q0.position.y;
+            hash = unchecked((hash ^ bits.bits) * HashPrime);
+            bits.value = q0.position.z;
+            hash = unchecked((hash ^ bits.bits) * HashPrime);
+            bits.value = q2.position.x;
+            hash = unchecked((hash ^ bits.bits) * HashPrime);
+            bits.value = q2.position.y;
+            hash = unchecked((hash ^ bits.bits) * HashPrime);
+            hash = unchecked((hash ^ ((uint)_color.r | ((uint)_color.g << 8) | ((uint)_color.b << 16) | ((uint)_color.a << 24))) * HashPrime);
+            contentHash = hash;
         }
 
         /// <summary>
@@ -158,29 +202,53 @@ namespace PresentationLayer.VFX
         /// </summary>
         public void AddLocalRect(int _x0, int _y0, int _x1, int _y1, Color32 _color)
         {
-            EnsureCapacity(vertexCount + 4);
+            int v = vertexCount;
+            if (vertices.Length < v + 4) EnsureCapacity(v + 4);
 
             float x0 = _x0 * PixelUnit;
             float y0 = _y0 * PixelUnit;
             float x1 = _x1 * PixelUnit;
             float y1 = _y1 * PixelUnit;
 
-            int v = vertexCount;
-            vertices[v].position = new Vector3(x0, y0, 0.0f);
-            vertices[v + 1].position = new Vector3(x0, y1, 0.0f);
-            vertices[v + 2].position = new Vector3(x1, y1, 0.0f);
-            vertices[v + 3].position = new Vector3(x1, y0, 0.0f);
+            QuadVertex[] verts = vertices;
+            ref QuadVertex q0 = ref verts[v];
+            ref QuadVertex q1 = ref verts[v + 1];
+            ref QuadVertex q2 = ref verts[v + 2];
+            ref QuadVertex q3 = ref verts[v + 3];
+
+            q0.position.x = x0;
+            q0.position.y = y0;
+            q0.position.z = 0.0f;
+            q1.position.x = x0;
+            q1.position.y = y1;
+            q1.position.z = 0.0f;
+            q2.position.x = x1;
+            q2.position.y = y1;
+            q2.position.z = 0.0f;
+            q3.position.x = x1;
+            q3.position.y = y0;
+            q3.position.z = 0.0f;
+
+            q0.color = _color;
+            q1.color = _color;
+            q2.color = _color;
+            q3.color = _color;
+            vertexCount = v + 4;
 
             if (_x0 < minPixelX) minPixelX = _x0;
             if (_y0 < minPixelY) minPixelY = _y0;
             if (_x1 > maxPixelX) maxPixelX = _x1;
             if (_y1 > maxPixelY) maxPixelY = _y1;
 
-            Mix(unchecked((uint)_x0));
-            Mix(unchecked((uint)_y0));
-            Mix(unchecked((uint)_x1));
-            Mix(unchecked((uint)_y1));
-            FinishQuad(v, _color);
+            if (false == bTrackHash) return;
+
+            ulong hash = contentHash;
+            hash = unchecked((hash ^ (uint)_x0) * HashPrime);
+            hash = unchecked((hash ^ (uint)_y0) * HashPrime);
+            hash = unchecked((hash ^ (uint)_x1) * HashPrime);
+            hash = unchecked((hash ^ (uint)_y1) * HashPrime);
+            hash = unchecked((hash ^ ((uint)_color.r | ((uint)_color.g << 8) | ((uint)_color.b << 16) | ((uint)_color.a << 24))) * HashPrime);
+            contentHash = hash;
         }
 
         /// <summary>
@@ -256,29 +324,6 @@ namespace PresentationLayer.VFX
             QuadVertex[] grown = new QuadVertex[capacity];
             System.Array.Copy(vertices, grown, vertexCount);
             vertices = grown;
-        }
-
-        private void FinishQuad(int _firstVertex, Color32 _color)
-        {
-            vertices[_firstVertex].color = _color;
-            vertices[_firstVertex + 1].color = _color;
-            vertices[_firstVertex + 2].color = _color;
-            vertices[_firstVertex + 3].color = _color;
-            vertexCount = _firstVertex + 4;
-
-            Mix((uint)_color.r | ((uint)_color.g << 8) | ((uint)_color.b << 16) | ((uint)_color.a << 24));
-        }
-
-        private void Mix(uint _value)
-        {
-            contentHash = unchecked((contentHash ^ _value) * HashPrime);
-        }
-
-        private void MixFloat(float _value)
-        {
-            FloatBits bits = default;
-            bits.value = _value;
-            Mix(bits.bits);
         }
 
         // 정점 버퍼(위치 + 색 한 스트림)와 쿼드 인덱스 패턴을 용량만큼 잡는다. 정점 버퍼를 다시 잡으면 기존 정점 내용은 사라진다.

@@ -219,7 +219,60 @@ namespace PresentationLayer.VFX
                 if (sparks[i].age >= SparkLife) sparks[i].bActive = false;
             }
 
+            // 화면 밖이면 따라가기와 반짝이만 진행하고 그리지 않는다. 그리기는 상태와 난수를 건드리지 않고, 메쉬도 그대로라
+            // 저장해 둔 해시가 계속 메쉬 내용과 맞으므로 다시 보이는 프레임에 같은 그림이 올라간다.
+            if (false == IsOnScreen())
+            {
+                if (meshRenderer.enabled) meshRenderer.enabled = false;
+                return;
+            }
+
             Draw();
+        }
+
+        // 꼬리 자리와 반짝이를 모두 감싸는 월드 픽셀 범위(모양 크기 2px 포함)가 화면에 걸치는지 본다. 그릴 것이 없으면 화면 밖으로 본다.
+        // 대부분 화면 안이므로 가장 최근 자리 근처만 먼저 보고(보이면 그 자체로 충분), 화면 밖일 때만 전체 범위를 모아 다시 본다.
+        private bool IsOnScreen()
+        {
+            float z = transform.position.z;
+            if (0 < historyCount)
+            {
+                Sample head = history[(historyStart + historyCount - 1) % HistoryCapacity];
+                Vector3 headCenter = new Vector3((head.x + 0.5f) / PixelsPerUnit, (head.y + 0.5f) / PixelsPerUnit, z);
+                Vector3 headSize = new Vector3(PixelVfxCulling.MarginUnits * 2f, PixelVfxCulling.MarginUnits * 2f, PixelVfxCulling.BoundsDepth);
+                if (true == PixelVfxCulling.IsVisible(headCenter, headSize)) return true;
+            }
+
+            int minX = int.MaxValue;
+            int maxX = int.MinValue;
+            int minY = int.MaxValue;
+            int maxY = int.MinValue;
+
+            for (int i = 0; i < historyCount; i++)
+            {
+                Sample s = history[(historyStart + i) % HistoryCapacity];
+                if (s.x < minX) minX = s.x;
+                if (s.x > maxX) maxX = s.x;
+                if (s.y < minY) minY = s.y;
+                if (s.y > maxY) maxY = s.y;
+            }
+
+            for (int i = 0; i < sparks.Length; i++)
+            {
+                if (false == sparks[i].bActive) continue;
+                int px = Mathf.RoundToInt(sparks[i].x);
+                int py = Mathf.RoundToInt(sparks[i].y);
+                if (px < minX) minX = px;
+                if (px > maxX) maxX = px;
+                if (py < minY) minY = py;
+                if (py > maxY) maxY = py;
+            }
+
+            if (minX > maxX) return false;
+
+            Vector3 center = new Vector3((minX + maxX + 1) * 0.5f / PixelsPerUnit, (minY + maxY + 1) * 0.5f / PixelsPerUnit, z);
+            Vector3 size = new Vector3((maxX - minX + 5) / PixelsPerUnit + PixelVfxCulling.MarginUnits * 2f, (maxY - minY + 5) / PixelsPerUnit + PixelVfxCulling.MarginUnits * 2f, PixelVfxCulling.BoundsDepth);
+            return PixelVfxCulling.IsVisible(center, size);
         }
 
         private void PushSample(int _x, int _y)
