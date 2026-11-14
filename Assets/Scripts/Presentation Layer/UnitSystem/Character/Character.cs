@@ -980,25 +980,117 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void UpdateItemAcquireBounce(float _deltaTime)
     {
+        bool bHandoffBouncing = axeHandoffBounceTime < axeHandoffBounceDuration;
+        if (bHandoffBouncing) axeHandoffBounceTime += _deltaTime;
+        UpdateHeldAxeHandoffBounce();
+
         if (characterVisualObjects == null) return;
 
-        if (itemAcquireBounceTime >= ITEM_ACQUIRE_BOUNCE_DURATION)
+        bool bItemBouncing = itemAcquireBounceTime < ITEM_ACQUIRE_BOUNCE_DURATION;
+
+        if (false == bItemBouncing && false == bHandoffBouncing)
         {
             if (characterVisualObjects.transform.localScale != characterVisualObjectsOriginalScale)
                 characterVisualObjects.transform.localScale = characterVisualObjectsOriginalScale;
             return;
         }
 
-        itemAcquireBounceTime += _deltaTime;
-        float t = itemAcquireBounceTime / ITEM_ACQUIRE_BOUNCE_DURATION;
+        float stretchX = 1f;
+        float stretchY = 1f;
 
-        // 쫀득함(Squash & Stretch) 연출: 감쇠 진동 곡선(Damped Sine Wave). OffroadContainer.UpdateBounce와 동일한 방식.
-        float curve = Mathf.Sin(t * Mathf.PI * 3f) * (1f - t) * 0.3f;
+        if (bItemBouncing)
+        {
+            itemAcquireBounceTime += _deltaTime;
+            float t = itemAcquireBounceTime / ITEM_ACQUIRE_BOUNCE_DURATION;
+
+            // 쫀득함(Squash & Stretch) 연출: 감쇠 진동 곡선(Damped Sine Wave). OffroadContainer.UpdateBounce와 동일한 방식.
+            float curve = Mathf.Sin(t * Mathf.PI * 3f) * (1f - t) * 0.3f;
+            stretchX += curve;
+            stretchY -= curve;
+        }
+
+        // 모루에 도끼를 던지거나 돌려받을 때의 뽀잉. 아이템 뽀잉과 겹치면 더한다.
+        if (bHandoffBouncing)
+        {
+            float spring = AxeHandoffSpring(axeHandoffBounceTime, axeHandoffBounceDuration) * axeHandoffBounceAmplitude;
+            stretchX += spring;
+            stretchY -= spring;
+        }
 
         characterVisualObjects.transform.localScale = new Vector3(
-            characterVisualObjectsOriginalScale.x * (1f + curve),
-            characterVisualObjectsOriginalScale.y * (1f - curve),
+            characterVisualObjectsOriginalScale.x * stretchX,
+            characterVisualObjectsOriginalScale.y * stretchY,
             characterVisualObjectsOriginalScale.z);
+    }
+
+    // ===== 모루 도끼 주고받기 뽀잉 =====
+    // 수치는 모루(RepairBox) 인스펙터에서 넘어온다. 모루의 뽀잉과 같은 감쇠 스프링(처음엔 옆으로 눌리고 이어서 위로 늘어난다).
+    private float axeHandoffBounceTime = float.MaxValue;
+    private float axeHandoffBounceDuration = 0f;
+    private float axeHandoffBounceAmplitude = 0f;
+    private float axeHandoffBounceFrequency = 22f;
+    private float axeHandoffBounceDamping = 6f;
+    private float heldAxeBounceAmplitude = 0f;
+    private Transform heldAxeBounceTransform;
+    private Vector3 heldAxeBounceBaseScale = Vector3.one;
+
+    /// <summary>
+    /// 모루에 도끼를 던질 때·돌려받을 때 캐릭터 그림(발밑 기준)을 뽀잉시킨다.
+    /// _heldAxeAmplitude가 0보다 크면 손에 든 도끼 그림도 따로 뽀잉한다(돌려받는 순간).
+    /// </summary>
+    public void PlayAxeHandoffBounce(float _duration, float _amplitude, float _frequency, float _damping, float _heldAxeAmplitude)
+    {
+        if (_duration <= 0f) return;
+
+        axeHandoffBounceTime = 0f;
+        axeHandoffBounceDuration = _duration;
+        axeHandoffBounceAmplitude = _amplitude;
+        axeHandoffBounceFrequency = _frequency;
+        axeHandoffBounceDamping = _damping;
+
+        RestoreHeldAxeBounceScale();
+        heldAxeBounceAmplitude = _heldAxeAmplitude;
+        if (_heldAxeAmplitude > 0f)
+        {
+            SpriteRenderer weaponRenderer = armComponent != null ? armComponent.currentWeapon?.spriteRenderer : null;
+            if (weaponRenderer != null)
+            {
+                heldAxeBounceTransform = weaponRenderer.transform;
+                heldAxeBounceBaseScale = heldAxeBounceTransform.localScale;
+            }
+        }
+    }
+
+    private float AxeHandoffSpring(float _elapsed, float _duration)
+    {
+        float t = _duration > 0f ? Mathf.Clamp01(_elapsed / _duration) : 1f;
+        return t < 1f ? Mathf.Exp(-axeHandoffBounceDamping * t) * Mathf.Sin(axeHandoffBounceFrequency * t) : 0f;
+    }
+
+    // 손에 든 도끼 그림의 뽀잉. 캐릭터 그림 뽀잉과 같은 시간축을 쓰고, 끝나면 원래 크기로 돌린다.
+    private void UpdateHeldAxeHandoffBounce()
+    {
+        if (heldAxeBounceTransform == null) return;
+
+        if (axeHandoffBounceTime >= axeHandoffBounceDuration)
+        {
+            RestoreHeldAxeBounceScale();
+            return;
+        }
+
+        float spring = AxeHandoffSpring(axeHandoffBounceTime, axeHandoffBounceDuration) * heldAxeBounceAmplitude;
+        heldAxeBounceTransform.localScale = new Vector3(
+            heldAxeBounceBaseScale.x * (1f + spring),
+            heldAxeBounceBaseScale.y * (1f - spring),
+            heldAxeBounceBaseScale.z);
+    }
+
+    private void RestoreHeldAxeBounceScale()
+    {
+        if (heldAxeBounceTransform == null) return;
+
+        heldAxeBounceTransform.localScale = heldAxeBounceBaseScale;
+        heldAxeBounceTransform = null;
     }
 
     private void UpdateItemDetection()

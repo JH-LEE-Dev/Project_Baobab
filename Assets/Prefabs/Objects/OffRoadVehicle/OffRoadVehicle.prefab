@@ -4899,8 +4899,17 @@ MonoBehaviour:
   throwAxeMaterial: {fileID: 2100000, guid: e880c8cc906e30a49a8f8e63742acf0b, type: 2}
   throwDuration: 0.3
   throwArcHeight: 1
-  throwSpinDegrees: 540
+  throwSpinDegrees: 360
   throwLocalTarget: {x: -0.15625, y: 0.65625}
+  axeBounceDuration: 0.45
+  axeBounceAmplitude: 0.3
+  axeBounceFrequency: 22
+  axeBounceDamping: 6
+  characterBounceDuration: 0.45
+  characterBounceAmplitude: 0.2
+  characterBounceFrequency: 22
+  characterBounceDamping: 6
+  heldAxeBounceAmplitude: 0.3
 --- !u!114 &2253289437639516120
 MonoBehaviour:
   m_ObjectHideFlags: 0
