@@ -287,6 +287,9 @@ public enum SkillType
     StarMarkDamage3,
     BarrierPenetration2,
     ManifestationBrand2,
+    LogCapacityIncrease3,
+    WoodenTransportBoxExpansion3,
+    SawmillLogStorageExpansion3,
     MAX
 }
 
