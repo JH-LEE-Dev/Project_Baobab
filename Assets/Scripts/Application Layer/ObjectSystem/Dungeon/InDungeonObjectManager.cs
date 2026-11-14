@@ -2526,6 +2526,26 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             {
                 inDungeonVFXManager.PlayCriticalImpactVFX(_treeObj.treeVisualComponent);
             }
+
+            // "약점 타격" 특성: 보너스가 들어간 도끼 타격이면 관통, 아니면 이 피격으로 절반 이하로 내려온 순간에 노출 표식(특성이 있을 때만).
+            int axeAccent = _treeObj.AxeAccentInProgress;
+            if (0 != (axeAccent & TreeObj.AxeAccentWeakPoint))
+            {
+                int exitDirX = 0 != (axeAccent & TreeObj.AxeAccentFromRight) ? -1 : 1;
+                inDungeonVFXManager.PlayWeakPointHitVFX(_treeObj.treeVisualComponent, PresentationLayer.VFX.VFX_WeakPointHit.ModeStrike, exitDirX);
+            }
+            else if (_treeObj.bCrossedHalfHpInProgress && null != character && null != character.statComponent
+                && character.statComponent.weakPointDamageMul > 0f)
+            {
+                inDungeonVFXManager.PlayWeakPointHitVFX(_treeObj.treeVisualComponent, PresentationLayer.VFX.VFX_WeakPointHit.ModeExpose, 1);
+            }
+
+            // "첫 인사" 특성: 처음 맞은 나무에 보너스가 들어간 도끼 타격. 쓰러지지 않았으면 나무 꼭대기가 화답한다.
+            if (0 != (axeAccent & TreeObj.AxeAccentHello))
+            {
+                int awayDirX = 0 != (axeAccent & TreeObj.AxeAccentFromRight) ? -1 : 1;
+                inDungeonVFXManager.PlayHelloHitVFX(_treeObj.treeVisualComponent, awayDirX, false == _treeObj.bDead);
+            }
         }
 
         if (null != currentTreeGenerationStrategy)

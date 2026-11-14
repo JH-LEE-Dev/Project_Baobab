@@ -462,6 +462,22 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
     // 이번 피격이 치명타인지. TakeDamageInternal이 TreeGetHitEvent를 쏘는 동안에만 켜진다(연출 전용, 판정과 무관).
     public bool bCriticalHitInProgress { get; private set; } = false;
 
+    // 도끼 타격 보너스 연출 표시(연출 전용, 판정과 무관). AttackComponent.ProcessAxeHit이 TakeDamage 직전에 SetPendingAxeAccent로 걸고,
+    // TakeDamageInternal이 들어오자마자 가져가(일찍 끝나도 남지 않게) 이 피격의 TreeGetHitEvent 동안에만 AxeAccentInProgress로 보여 준다.
+    public const int AxeAccentWeakPoint = 1;   // "약점 타격" 보너스가 들어간 타격
+    public const int AxeAccentHello = 2;       // "첫 인사" 보너스가 들어간 타격(아직 한 번도 맞지 않은 나무)
+    public const int AxeAccentFromRight = 4;   // 공격자가 나무 오른쪽에 있었다(관통 줄기·첫 인사 반짝이는 왼쪽으로 빠진다)
+    private int pendingAxeAccent;
+    public int AxeAccentInProgress { get; private set; } = 0;
+
+    // 이번 피격으로 HP가 절반 위에서 절반 이하로 내려왔는지(쓰러지지 않았고 보석 단계도 그대로일 때만). TreeGetHitEvent 동안에만 켜진다(연출 전용).
+    public bool bCrossedHalfHpInProgress { get; private set; } = false;
+
+    public void SetPendingAxeAccent(int _flags)
+    {
+        pendingAxeAccent = _flags;
+    }
+
     private static bool TryConsumeDotTickFeedback()
     {
         float now = Time.time;
@@ -834,6 +850,10 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
 
     private void TakeDamageInternal(float _damage, bool _bPlayHaptic, bool _bCritical, bool _bPlayHitSound = true, bool _bBurnTick = false)
     {
+        // 도끼 보너스 연출 표시는 이 피격 한 번에만 쓴다. 아래에서 일찍 끝나도 다음 피격에 남지 않게 먼저 가져간다.
+        int axeAccent = pendingAxeAccent;
+        pendingAxeAccent = 0;
+
         // 이 타격이 들어가지 않고 끝나면 뒤따르는 ApplyOverheatBurn이 예전 타격 값으로 화상을 걸지 않도록 먼저 비운다.
         if (false == _bBurnTick) lastHitDamage = 0f;
 
@@ -903,6 +923,10 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
             lastHitDamage = _damage;
         }
 
+        // 약점 노출 연출용: 맞기 전 HP 비율(도끼의 약점 타격 판정과 같은 HP 기준).
+        float maxHpBeforeHit = healthComponent.GetMaxHealth();
+        float hpRatioBeforeHit = maxHpBeforeHit > 0f ? healthComponent.GetCurrentHealth() / maxHpBeforeHit : 0f;
+
         healthComponent.DecreaseHealth(_damage);
 
         // 이 타격으로 죽는다면 흔들림·번쩍임은 사망 이벤트 뒤로 미룬다. 던전에서는 사망 이벤트 안에서 나무가 풀로
@@ -959,9 +983,21 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         }
 
         // 이번 피격이 치명타였는지를 피격 이벤트 동안에만 알린다(InDungeonObjectManager.OnTreeHit가 치명타 임팩트를 고를 때 읽는다).
+        // 약점 노출: 절반 위에서 절반 이하로 처음 내려왔을 때만. 쓰러졌거나 보석 단계가 바뀌어(HP가 새 단계로 바뀜) 비율이 이어지지 않으면 뺀다.
+        bool bCrossedHalfHp = false;
+        if (false == bDead && gemStageBeforeHit == currentGemStage && hpRatioBeforeHit > 0.5f)
+        {
+            float maxHpAfterHit = healthComponent.GetMaxHealth();
+            bCrossedHalfHp = maxHpAfterHit > 0f && healthComponent.GetCurrentHealth() / maxHpAfterHit <= 0.5f;
+        }
+
         bCriticalHitInProgress = _bCritical;
+        AxeAccentInProgress = axeAccent;
+        bCrossedHalfHpInProgress = bCrossedHalfHp;
         TreeGetHitEvent?.Invoke(this);
         bCriticalHitInProgress = false;
+        AxeAccentInProgress = 0;
+        bCrossedHalfHpInProgress = false;
 
         // 이 타격으로 죽었는지는 반드시 여기서 확정해 둔다. 아래 TreeDeadEvent를 타면 풀 반환
         // (OnTreeDead -> TryReleaseTree -> OnReleaseTree -> ResetTree)이 bDead를 false로

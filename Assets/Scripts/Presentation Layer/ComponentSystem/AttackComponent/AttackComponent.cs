@@ -793,6 +793,7 @@ public class AttackComponent : PComponent
         using var _playerAttackScope = PlayerAttackDamageScope.Enter();
 
         float damage = ctx.characterStat.axeDamage * _damageScale;
+        int axeAccent = 0; // 이 타격에 붙은 보너스 연출 표시(TreeObj.AxeAccent*, 연출 전용)
         if (damageable.health != null)
         {
             float currentHp = damageable.health.GetCurrentHealth();
@@ -810,11 +811,13 @@ public class AttackComponent : PComponent
                 if (!damageable.health.bIsFirstDamage)
                 {
                     extraDamage += damage * ctx.characterStat.helloDamageMul;
+                    if (ctx.characterStat.helloDamageMul > 0f) axeAccent |= TreeObj.AxeAccentHello;
                 }
 
                 if (maxHp > 0f && (currentHp / maxHp) <= 0.5f)
                 {
                     extraDamage += damage * ctx.characterStat.weakPointDamageMul;
+                    if (ctx.characterStat.weakPointDamageMul > 0f) axeAccent |= TreeObj.AxeAccentWeakPoint;
                 }
 
                 damage += extraDamage;
@@ -829,6 +832,11 @@ public class AttackComponent : PComponent
 
         if (damageable is TreeObj hitTree)
         {
+            if (0 != axeAccent)
+            {
+                if (centerPos.x > hitTree.transform.position.x) axeAccent |= TreeObj.AxeAccentFromRight;
+                hitTree.SetPendingAxeAccent(axeAccent);
+            }
             hitTree.TakeDamage(damage, true, bCritical);
         }
         else
