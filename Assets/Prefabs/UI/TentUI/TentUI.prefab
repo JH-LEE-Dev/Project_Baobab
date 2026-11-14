@@ -456,6 +456,12 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: 7cfa1b9cfe1b5ee428129d7e06ba78dd, type: 3}
   - skillType: 147
     sprite: {fileID: 21300000, guid: fcf1d2a586597a84eac0e232b2aa9c50, type: 3}
+  - skillType: 148
+    sprite: {fileID: 21300000, guid: 186c9034fe987c04f8043b7d5c259d61, type: 3}
+  - skillType: 149
+    sprite: {fileID: 21300000, guid: 9cb863cbce9ded844905d35481598aeb, type: 3}
+  - skillType: 150
+    sprite: {fileID: 21300000, guid: b68e03c59b26dd643bfe8340f2b603ec, type: 3}
   levelBadgeBindings:
   - levelBadge: 1
     sprite: {fileID: 8086268826789988410, guid: 914ac703c90021144a8a7973a041eeff, type: 3}

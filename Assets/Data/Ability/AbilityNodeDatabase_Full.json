@@ -1,6 +1,54 @@
 ﻿{
     "nodes": [
         {
+            "skillType": "LogCapacityIncrease3",
+            "nameLocId": 288,
+            "levelBadge": "III",
+            "requiredPrestigeLevel": 0,
+            "gridX": 9,
+            "gridY": 6,
+            "parents": [
+                {
+                    "skillType": "WoodenTransportBoxExpansion3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "WoodenTransportBoxExpansion3",
+            "nameLocId": 289,
+            "levelBadge": "III",
+            "requiredPrestigeLevel": 0,
+            "gridX": 9,
+            "gridY": 4,
+            "parents": [
+                {
+                    "skillType": "WoodenTransportBoxExpansion2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "SawmillLogStorageExpansion3",
+            "nameLocId": 290,
+            "levelBadge": "III",
+            "requiredPrestigeLevel": 0,
+            "gridX": 11,
+            "gridY": -6,
+            "parents": [
+                {
+                    "skillType": "ProcessLineExpand1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
             "skillType": "Drone2",
             "nameLocId": 272,
             "levelBadge": "II",
@@ -207,33 +255,11 @@
             ]
         },
         {
-            "skillType": "Repair1",
-            "nameLocId": 282,
-            "levelBadge": "I",
-            "requiredPrestigeLevel": 0,
-            "gridX": -13,
-            "gridY": -4,
-            "parents": [
-                {
-                    "skillType": "AutoLoadInRestArea",
-                    "usePivot": false,
-                    "pivotX": 0,
-                    "pivotY": 0
-                },
-                {
-                    "skillType": "StaminaRecover",
-                    "usePivot": false,
-                    "pivotX": 0,
-                    "pivotY": 0
-                }
-            ]
-        },
-        {
             "skillType": "RemoteLogTransport",
             "nameLocId": 283,
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
-            "gridX": -15,
+            "gridX": -13,
             "gridY": -4,
             "parents": [
                 {
@@ -855,7 +881,7 @@
             "levelBadge": "II",
             "requiredPrestigeLevel": 0,
             "gridX": 7,
-            "gridY": 6,
+            "gridY": 4,
             "parents": [
                 {
                     "skillType": "LogCapacityIncrease1",
@@ -887,10 +913,10 @@
             "levelBadge": "II",
             "requiredPrestigeLevel": 0,
             "gridX": 7,
-            "gridY": 4,
+            "gridY": 6,
             "parents": [
                 {
-                    "skillType": "LogCapacityIncrease1",
+                    "skillType": "WoodenTransportBoxExpansion2",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0

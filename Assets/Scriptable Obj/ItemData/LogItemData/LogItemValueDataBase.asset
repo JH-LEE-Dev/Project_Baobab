@@ -30,7 +30,7 @@ MonoBehaviour:
   - treeType: 8
     value: 16000
   - treeType: 9
-    value: 55000
+    value: 75000
   - treeType: 10
     value: 150000
   - treeType: 11

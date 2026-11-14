@@ -156,6 +156,9 @@ public static class LocKeys
         public const int manifestationBrand2Name = 4194590;
         public const int constellationAfterimage1Name = 4194591;
         public const int abilityDescriptionConstellationAfterimage = 4203488;
+        public const int logCapacityIncrease3Name = 4194592;
+        public const int woodenTransportBoxExpansion3Name = 4194593;
+        public const int sawmillLogStorageExpansion3Name = 4194594;
         public const int commonLevel = 4203304;
         public const int commonFree = 4203305;
         public const int commonMaxLevel = 4203306;
