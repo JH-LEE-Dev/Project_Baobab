@@ -174,6 +174,9 @@ public class LogProcessLine : MonoBehaviour
     /// </summary>
     public float SupplyRateMultiplier => inBelt.SpeedMultiplier;
 
+    /// <summary>입고벨트 투입 지점 근처(_minDistance 안)에 원목이 없어 새 원목을 올려도 겹치지 않으면 true.</summary>
+    public bool IsEntryClear(float _minDistance) => inBelt.IsEntryClear(_minDistance);
+
     public void SetMapType(MapType _mapType)
     {
         cutter.SetMapType(_mapType);
