@@ -176,7 +176,7 @@ namespace PresentationLayer.VFX
         private readonly float[] heat = new float[GridWidth * GridHeight];
         private readonly float[] edgeCool = new float[GridWidth];
         private readonly float[] sourceMask = new float[GridWidth];
-        private readonly Particle[] particles = new Particle[ParticleCapacity];
+        private Particle[] particles = new Particle[ParticleCapacity];
         private readonly int[] coalX = new int[CoalCount];
         private readonly int[] coalY = new int[CoalCount];
         private readonly float[] glowFalloff = new float[(2 * GlowRadiusX + 1) * (2 * GlowRadiusY + 1)];
@@ -581,7 +581,10 @@ namespace PresentationLayer.VFX
                 if (false == particles[i].bAlive) return i;
             }
 
-            return -1;
+            // 꽉 차면 입자를 버리지 않고 배열을 두 배로 늘려 늘어난 첫 칸을 준다
+            int grownIndex = particles.Length;
+            System.Array.Resize(ref particles, particles.Length * 2);
+            return grownIndex;
         }
 
         private void SpawnEmber()

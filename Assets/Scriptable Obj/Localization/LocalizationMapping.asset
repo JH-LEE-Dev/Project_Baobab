@@ -517,3 +517,23 @@ MonoBehaviour:
     enumValueName: ObsidianTree
     enumIntValue: 12
     compositeKey: 14680076
+  - enumTypeName: SkillCommandType
+    enumValueName: DroneCritical
+    enumIntValue: 130
+    compositeKey: 4203484
+  - enumTypeName: SkillCommandType
+    enumValueName: IncreaseJackPotChance
+    enumIntValue: 50
+    compositeKey: 4203485
+  - enumTypeName: SkillCommandType
+    enumValueName: Repair
+    enumIntValue: 63
+    compositeKey: 4203486
+  - enumTypeName: SkillCommandType
+    enumValueName: RemoteLogTransport
+    enumIntValue: 120
+    compositeKey: 4203487
+  - enumTypeName: SkillCommandType
+    enumValueName: ConstellationAfterimage
+    enumIntValue: 99
+    compositeKey: 4203488

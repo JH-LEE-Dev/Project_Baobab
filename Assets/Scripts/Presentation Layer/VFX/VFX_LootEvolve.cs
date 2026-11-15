@@ -1084,6 +1084,7 @@ namespace PresentationLayer.VFX
 
             int width = _source.width;
             PixelQuadBuffer buffer = _target.buffer;
+            int budgetVertices = quadBudget * 4;
 
             for (int gy = _source.dirtyMinY; gy <= _source.dirtyMaxY; gy++)
             {
@@ -1106,7 +1107,8 @@ namespace PresentationLayer.VFX
                     for (int k = start; k <= end; k++) _source.cells[row + k] = ToneNone;
                     x++;
 
-                    if (quadBudget * 4 <= buffer.VertexCount) continue;
+                    // 예산이 꽉 차도 쿼드를 버리지 않고 예산을 두 배로 늘린다(버퍼는 스스로 늘어난다)
+                    if (budgetVertices <= buffer.VertexCount) budgetVertices *= 2;
 
                     int wx0 = originPixelX + GridMinX + start;
                     int wx1 = originPixelX + GridMinX + end + 1;

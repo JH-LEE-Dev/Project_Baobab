@@ -167,9 +167,11 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     private RepairBox repairBox;
 
     [Header("Repair Box Settings")]
-    public float repairBoxCount = 0f;
-    public float repairAmount = 0.25f;
-    private PercentAccumulator repairAmountAccum;
+    [Tooltip("수리 특성으로 모루가 해금됐는지. 해금되면 숲에 들어올 때마다 차량 옆에 모루가 놓인다.")]
+    public bool bRepairBoxUnlocked = false;
+    [Tooltip("수리 효율 특성으로 더해지는 초당 수리량(최대 내구도 대비 비율, 0.01 = 1%/s)")]
+    public float repairRateBonus = 0f;
+    private PercentAccumulator repairRateBonusAccum;
 
     // 차량+컨테이너 발밑에 깔린(RepairBox 소유가 아닌) ColliderTilemap - 길찾기 상 이동 불가 타일로 등록하기 위함
     private TilemapFootprintCollider footprintCollider;
@@ -313,11 +315,10 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
     public void ResetRepairBox()
     {
-        if (repairBoxCount > 0)
+        if (bRepairBoxUnlocked)
         {
             repairBox.gameObject.SetActive(true);
-            repairBox.SetRepairBoxCount(repairBoxCount);
-            repairBox.SetRepairAmount(repairAmount);
+            repairBox.SetRepairRateBonus(repairRateBonus);
         }
         else
         {
@@ -1238,13 +1239,13 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         innerSR?.SetPropertyBlock(_flashMPB);
     }
 
-    public void IncreaseRepairBoxCount(float _amount)
+    public void SetRepairBoxUnlocked(bool _bUnlocked)
     {
-        repairBoxCount = _amount;
+        bRepairBoxUnlocked = _bUnlocked;
     }
 
-    public void IncreaseRepairAmount(float _amount)
+    public void IncreaseRepairRatePercent(float _amount)
     {
-        repairAmount = repairAmountAccum.Add(repairAmount, _amount);
+        repairRateBonus = repairRateBonusAccum.Add(repairRateBonus, _amount);
     }
 }

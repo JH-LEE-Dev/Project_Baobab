@@ -148,7 +148,7 @@ namespace PresentationLayer.VFX
         private readonly float[] historyX = new float[MaxWisps * HistoryLength];
         private readonly float[] historyY = new float[MaxWisps * HistoryLength];
         private readonly Tongue[] tongues = new Tongue[MaxTongues];
-        private readonly Ember[] embers = new Ember[EmberCapacity];
+        private Ember[] embers = new Ember[EmberCapacity]; // 꽉 차면 두 배로 늘어난다(EmberCapacity는 처음 크기)
         private readonly Color32[] toneColors = new Color32[3];   // 톤마다 GlowOf 세기를 실은 색(켜질 때 미리 계산)
         private readonly Color32[] tongueColors = new Color32[3]; // 줄기 불꽃 혀용(GlowOf * 0.85)
         private MeshFilter backFilter;
@@ -276,7 +276,7 @@ namespace PresentationLayer.VFX
 
             BuildToneColors();
 
-            for (int i = 0; i < EmberCapacity; i++) embers[i].bActive = false;
+            for (int i = 0; i < embers.Length; i++) embers[i].bActive = false;
 
             BuildWisps();
             BuildTongues();
@@ -451,8 +451,16 @@ namespace PresentationLayer.VFX
 
             for (int n = 0; n < count; n++)
             {
+                // 꽉 차면 아직 살아있는 불씨를 덮어쓰지 않고 배열을 두 배로 늘려 늘어난 첫 자리에 넣는다
+                if (true == embers[emberCursor].bActive)
+                {
+                    int oldLength = embers.Length;
+                    System.Array.Resize(ref embers, oldLength * 2);
+                    emberCursor = oldLength;
+                }
+
                 int slot = emberCursor;
-                emberCursor = (emberCursor + 1) % EmberCapacity;
+                emberCursor = (emberCursor + 1) % embers.Length;
 
                 // 절반은 여우불에서, 절반은 줄기의 불꽃 혀에서 피어오른다
                 float x;
@@ -490,7 +498,7 @@ namespace PresentationLayer.VFX
             float minY = float.MaxValue;
             float maxX = float.MinValue;
             float maxY = float.MinValue;
-            for (int i = 0; i < EmberCapacity; i++)
+            for (int i = 0; i < embers.Length; i++)
             {
                 if (false == embers[i].bActive) continue;
 
@@ -522,7 +530,7 @@ namespace PresentationLayer.VFX
 
         private bool HasActiveEmbers()
         {
-            for (int i = 0; i < EmberCapacity; i++)
+            for (int i = 0; i < embers.Length; i++)
             {
                 if (true == embers[i].bActive) return true;
             }
@@ -699,7 +707,7 @@ namespace PresentationLayer.VFX
         // 불씨: `.`, `+`, `x`, 대시. `+`와 `x`는 0.09초마다 번갈아 바뀌어 회전하는 것처럼 보이고 후반에 깜빡이다 사라진다.
         private void DrawEmbers()
         {
-            for (int i = 0; i < EmberCapacity; i++)
+            for (int i = 0; i < embers.Length; i++)
             {
                 if (false == embers[i].bActive) continue;
 

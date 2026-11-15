@@ -73,7 +73,7 @@ public class IdleState : CharacterState
         // 입력이 발생하면 마을 상태일 때 즉시 방향 설정 후 RunState로 전환
         if (Vector2.zero != _input)
         {
-            if (false == character.bInDungeon)
+            if (character.bFacesMoveDirection)
             {
                 character.SetFacingDirection(new Vector2(_input.x, _input.y * 0.5f));
             }

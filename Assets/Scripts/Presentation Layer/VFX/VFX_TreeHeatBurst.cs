@@ -205,7 +205,7 @@ namespace PresentationLayer.VFX
         private static readonly int TimeSeedId = Shader.PropertyToID("_TimeSeed");
 
         //내부 의존성
-        private readonly Ember[] embers = new Ember[EmberCapacity];
+        private Ember[] embers = new Ember[EmberCapacity]; // 꽉 차면 두 배로 늘어난다(EmberCapacity는 처음 크기)
         private readonly Smoke[] smokes = new Smoke[MaxSmoke];
         private readonly Fragment[] fragments = new Fragment[MaxFragments];
         private readonly Color32[] toneColors = new Color32[ToneSmokeFirst + SmokeShades]; // 톤마다 고정 발광 세기를 실은 색(Tint 결과를 재생 시작 때 미리 계산)
@@ -336,7 +336,7 @@ namespace PresentationLayer.VFX
 
             BuildToneColors();
 
-            for (int i = 0; i < EmberCapacity; i++) embers[i].bActive = false;
+            for (int i = 0; i < embers.Length; i++) embers[i].bActive = false;
 
             BuildFragments();
             BuildSmokes();
@@ -475,12 +475,26 @@ namespace PresentationLayer.VFX
 
         // ---------- 불씨 ----------
 
+        // 다음 불씨 자리(링 커서). 꽉 차면 아직 살아있는 불씨를 덮어쓰지 않고 배열을 두 배로 늘려 늘어난 첫 자리에 넣는다
+        private int NextEmberSlot()
+        {
+            if (true == embers[emberCursor].bActive)
+            {
+                int oldLength = embers.Length;
+                System.Array.Resize(ref embers, oldLength * 2);
+                emberCursor = oldLength;
+            }
+
+            int slot = emberCursor;
+            emberCursor = (emberCursor + 1) % embers.Length;
+            return slot;
+        }
+
         private void SpawnBurstEmber()
         {
             float angle = Rand01() * TwoPi;
             float speed = Mathf.Lerp(emberSpeedMin, emberSpeedMax, Rand01());
-            int slot = emberCursor;
-            emberCursor = (emberCursor + 1) % EmberCapacity;
+            int slot = NextEmberSlot();
 
             embers[slot].bActive = true;
             embers[slot].x = Mathf.Cos(angle) * 6.0f;
@@ -495,8 +509,7 @@ namespace PresentationLayer.VFX
 
         private void SpawnTrickleEmber()
         {
-            int slot = emberCursor;
-            emberCursor = (emberCursor + 1) % EmberCapacity;
+            int slot = NextEmberSlot();
 
             embers[slot].bActive = true;
             embers[slot].x = (Rand01() - 0.5f) * 30.0f;
@@ -525,7 +538,7 @@ namespace PresentationLayer.VFX
             float minY = float.MaxValue;
             float maxX = float.MinValue;
             float maxY = float.MinValue;
-            for (int i = 0; i < EmberCapacity; i++)
+            for (int i = 0; i < embers.Length; i++)
             {
                 if (false == embers[i].bActive) continue;
 
@@ -562,7 +575,7 @@ namespace PresentationLayer.VFX
 
         private bool HasActiveEmbers()
         {
-            for (int i = 0; i < EmberCapacity; i++)
+            for (int i = 0; i < embers.Length; i++)
             {
                 if (true == embers[i].bActive) return true;
             }
@@ -1031,7 +1044,7 @@ namespace PresentationLayer.VFX
 
         private void DrawEmbers()
         {
-            for (int i = 0; i < EmberCapacity; i++)
+            for (int i = 0; i < embers.Length; i++)
             {
                 if (false == embers[i].bActive || 0.0f >= embers[i].age) continue;
 

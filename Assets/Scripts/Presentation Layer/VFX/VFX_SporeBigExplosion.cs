@@ -227,7 +227,7 @@ namespace PresentationLayer.VFX
         private ParticleSystemRenderer rootParticleRenderer;
 
         private readonly CloudParticle[] cloud = new CloudParticle[CloudCapacity];
-        private readonly InhaleParticle[] inhale = new InhaleParticle[InhaleCapacity];
+        private InhaleParticle[] inhale = new InhaleParticle[InhaleCapacity];
         private readonly RayData[] rays = new RayData[RayCount];
         private readonly float[] ringGapCenter = new float[10];
         private readonly float[] ringGapHalf = new float[10];
@@ -393,7 +393,14 @@ namespace PresentationLayer.VFX
             activePuffFrames = (null != tierFrames && PuffFirstFrame < tierFrames.Length) ? tierFrames : puffFrames;
 
             float scale = Mathf.Max(0.1f, density);
-            inhaleCount = Mathf.Clamp(Mathf.RoundToInt(BaseInhale * scale), 8, InhaleCapacity);
+            inhaleCount = Mathf.Max(8, Mathf.RoundToInt(BaseInhale * scale));
+            // 밀도가 높아 정한 개수가 배열보다 많으면 잘라내지 않고 배열을 두 배씩 늘린다
+            if (inhale.Length < inhaleCount)
+            {
+                int grown = inhale.Length;
+                while (grown < inhaleCount) grown *= 2;
+                System.Array.Resize(ref inhale, grown);
+            }
 
             SetupPuffLayout();
             for (int i = 0; i < PuffTotal; i++)

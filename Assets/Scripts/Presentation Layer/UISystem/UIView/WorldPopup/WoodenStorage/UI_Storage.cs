@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using PresentationLayer.DOTweenAnimationSystem;
 using DG.Tweening;
 
@@ -16,6 +17,10 @@ public class UI_Storage : MonoBehaviour
     [SerializeField] private bool useDynamicPositioning = true;
     [SerializeField] private float tweenDuration = 0.3f;
     [SerializeField] private Ease easeType = Ease.OutQuad;
+
+    [Header("8 Slot Layout")]
+    [SerializeField] private bool useFourByTwoAtEightSlots = false;
+    [SerializeField] private Vector2 fourByTwoOffset = Vector2.zero;
 
     [Header("Smart Swap Settings")]
     [Tooltip("스마트 스왑 단일 인디케이터 프리팹 (Visuals 하위에 1회 인스턴스화)")]
@@ -55,6 +60,11 @@ public class UI_Storage : MonoBehaviour
     private bool isOnShow = false;
     private bool isOpenAnimated = false;
 
+    private GridLayoutGroup slotGrid;
+    private GridLayoutGroup.Constraint defaultGridConstraint;
+    private int defaultGridConstraintCount;
+    private bool isFourByTwo = false;
+
 
     // //퍼블릭 초기화 및 제어 메서드
 
@@ -68,6 +78,16 @@ public class UI_Storage : MonoBehaviour
             omp.Initialize();
 
         rect = GetComponent<RectTransform>();
+
+        if (null != slotBackground && null == slotGrid)
+        {
+            slotGrid = slotBackground.GetComponent<GridLayoutGroup>();
+            if (null != slotGrid)
+            {
+                defaultGridConstraint = slotGrid.constraint;
+                defaultGridConstraintCount = slotGrid.constraintCount;
+            }
+        }
 
         SnapToPerfectPixel();
 
@@ -273,6 +293,13 @@ public class UI_Storage : MonoBehaviour
 
             slot.gameObject.SetActive(_i < _itemCount);
             slot.UpdateBindSlotData(item, storage.maxItemCntPerSlot);
+        }
+
+        // 배치가 바뀌면 높이·가로폭이 달라지므로, 노출 중이면 위치를 다시 잡는다.
+        if (true == ApplySlotLayout(_itemCount) && true == isOnShow && null != rect)
+        {
+            rect.position = GetTargetWorldPosition();
+            SnapToPerfectPixel();
         }
 
         if (true == IsOpening)
@@ -488,6 +515,34 @@ public class UI_Storage : MonoBehaviour
         popdown = omp.Play(_targetPopdownTag, bReset: true, _onComplete: OnCompleteAnim);
     }
 
+    /// <summary>
+    /// 8칸일 때만 4x2로 고정하고, 그 외에는 프리팹 원래 배치로 되돌립니다. 배치가 바뀌었으면 true.
+    /// </summary>
+    private bool ApplySlotLayout(int _activeCount)
+    {
+        if (false == useFourByTwoAtEightSlots || null == slotGrid)
+            return false;
+
+        bool _bFourByTwo = 8 == _activeCount;
+        if (_bFourByTwo == isFourByTwo)
+            return false;
+
+        isFourByTwo = _bFourByTwo;
+
+        if (true == isFourByTwo)
+        {
+            slotGrid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            slotGrid.constraintCount = 4;
+        }
+        else
+        {
+            slotGrid.constraint = defaultGridConstraint;
+            slotGrid.constraintCount = defaultGridConstraintCount;
+        }
+
+        return true;
+    }
+
     // slotBackground의 RectTransform을 한 번만 가져와 재사용한다(SnapToPerfectPixel은 위치 트윈 도중 매 프레임 불린다).
     private RectTransform GetSlotBackgroundRect()
     {
@@ -512,6 +567,10 @@ public class UI_Storage : MonoBehaviour
         Vector3 _storagePos = storage.GetTransform().position;
         float _targetOffsetX = offset.x;
 
+        // 4x2 보정. 가로 보정은 고정 위치일 때만 쓰인다(동적 배치는 아래에서 X를 새로 계산).
+        if (true == isFourByTwo)
+            _targetOffsetX += fourByTwoOffset.x;
+
         if (true == useDynamicPositioning && null != playerTransform)
         {
             // 슬롯 변경 직후에도 정확한 가로폭을 얻기 위해 레이아웃을 강제 갱신한다.
@@ -535,6 +594,9 @@ public class UI_Storage : MonoBehaviour
         Vector3 _targetPos = _storagePos;
         _targetPos.x += _targetOffsetX;
         _targetPos.y += offset.y;
+
+        if (true == isFourByTwo)
+            _targetPos.y += fourByTwoOffset.y;
 
         return _targetPos;
     }

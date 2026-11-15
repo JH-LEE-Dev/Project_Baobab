@@ -159,6 +159,14 @@ public class LogProcessLine : MonoBehaviour
         cutter.SetGlobalSpeedMultiplier(_mul);
     }
 
+    /// <summary>가공 콤보 스택에 따른 벨트·커터 루프 사운드 피치 배율(1 = 콤보 없음). 소리 높이만 바꾼다.</summary>
+    public void SetComboPitchMultiplier(float _multiplier)
+    {
+        inBelt.SetComboPitchMultiplier(_multiplier);
+        outBelt.SetComboPitchMultiplier(_multiplier);
+        cutter.SetComboPitchMultiplier(_multiplier);
+    }
+
     public void IncreaseConveyorSpeed(float _percentage)
     {
         inBelt.IncreaseSpeed(_percentage);
@@ -171,6 +179,9 @@ public class LogProcessLine : MonoBehaviour
     /// 일정하게 유지된다(빨라진 벨트 뒤로 빈 구간만 길어지는 것을 막는다).
     /// </summary>
     public float SupplyRateMultiplier => inBelt.SpeedMultiplier;
+
+    /// <summary>입고벨트 투입 지점 근처(_minDistance 안)에 원목이 없어 새 원목을 올려도 겹치지 않으면 true.</summary>
+    public bool IsEntryClear(float _minDistance) => inBelt.IsEntryClear(_minDistance);
 
     public void SetMapType(MapType _mapType)
     {

@@ -27,15 +27,16 @@ namespace PresentationLayer.VFX
         private const float HeadRadians1 = 0.1f * TwoPi;
         private const float HeadRadians2 = 0.2f * TwoPi;
 
-        private static readonly int[] linePixelX = new int[LineCapacity];
-        private static readonly int[] linePixelY = new int[LineCapacity];
+        // LineCapacity / SpacedCapacity는 처음 크기다. 넘치면 두 배로 늘어난다.
+        private static int[] linePixelX = new int[LineCapacity];
+        private static int[] linePixelY = new int[LineCapacity];
 
         // 내부 의존성
         private PixelQuadBuffer buffer;
-        private readonly int[] spacedMinX = new int[SpacedCapacity];
-        private readonly int[] spacedMinY = new int[SpacedCapacity];
-        private readonly int[] spacedMaxX = new int[SpacedCapacity];
-        private readonly int[] spacedMaxY = new int[SpacedCapacity];
+        private int[] spacedMinX = new int[SpacedCapacity];
+        private int[] spacedMinY = new int[SpacedCapacity];
+        private int[] spacedMaxX = new int[SpacedCapacity];
+        private int[] spacedMaxY = new int[SpacedCapacity];
 
         // 상태 변수
         private int spacedCount;
@@ -392,7 +393,15 @@ namespace PresentationLayer.VFX
                 if (x0 <= spacedMaxX[i] + 1 && spacedMinX[i] - 1 <= x1 && y0 <= spacedMaxY[i] + 1 && spacedMinY[i] - 1 <= y1) return false;
             }
 
-            if (SpacedCapacity <= spacedCount) return false;
+            // 기록 상자가 꽉 차면 입자를 버리지 않고 네 배열을 함께 두 배로 늘린다
+            if (spacedMinX.Length <= spacedCount)
+            {
+                int grown = spacedMinX.Length * 2;
+                System.Array.Resize(ref spacedMinX, grown);
+                System.Array.Resize(ref spacedMinY, grown);
+                System.Array.Resize(ref spacedMaxX, grown);
+                System.Array.Resize(ref spacedMaxY, grown);
+            }
 
             spacedMinX[spacedCount] = x0;
             spacedMinY[spacedCount] = y0;
@@ -454,7 +463,12 @@ namespace PresentationLayer.VFX
 
             while (true)
             {
-                if (LineCapacity <= n) return 0;
+                // 선이 버퍼보다 길면 통째로 버리지 않고 버퍼를 두 배로 늘린다
+                if (linePixelX.Length <= n)
+                {
+                    System.Array.Resize(ref linePixelX, linePixelX.Length * 2);
+                    System.Array.Resize(ref linePixelY, linePixelY.Length * 2);
+                }
 
                 linePixelX[n] = x;
                 linePixelY[n] = y;

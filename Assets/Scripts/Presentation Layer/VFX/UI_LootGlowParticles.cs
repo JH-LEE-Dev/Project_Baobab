@@ -23,7 +23,7 @@ namespace PresentationLayer.VFX
         }
 
         //상태 변수
-        private readonly PixelQuad[] quads = new PixelQuad[QuadCapacity];
+        private PixelQuad[] quads = new PixelQuad[QuadCapacity];
         private int quadCount;
         private int committedCount = -1;
 
@@ -53,7 +53,10 @@ namespace PresentationLayer.VFX
         /// <summary>정수 칸 [_x0, _x1) x [_y0, _y1) (부모 기준 px)</summary>
         public void Rect(int _x0, int _y0, int _x1, int _y1, Color32 _color)
         {
-            if (QuadCapacity <= quadCount || _x1 <= _x0 || _y1 <= _y0) return;
+            if (_x1 <= _x0 || _y1 <= _y0) return;
+
+            // 꽉 차면 사각형을 버리지 않고 배열을 두 배로 늘린다
+            if (quads.Length <= quadCount) System.Array.Resize(ref quads, quads.Length * 2);
 
             ref PixelQuad q = ref quads[quadCount];
             q.x0 = _x0;

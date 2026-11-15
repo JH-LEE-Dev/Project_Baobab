@@ -4,8 +4,8 @@ public interface IInDungeonObjManagerCH
 {
     public void IncreaseGrowthSpeed(float _amount);
     public void SetPicnicBasket(bool _bPicnicBasket);
-    public void IncreaseRepairBoxCount(float _amount);
-    public void IncreaseRepairAmount(float _amount);
+    public void SetRepairBoxUnlocked(bool _bUnlocked);
+    public void IncreaseRepairRatePercent(float _amount);
     public void IncreaseShieldDamageMultiplier(float _amount);
     public void IncreaseShieldPenetration(float _amount);
     public void IncreaseShieldRegenReduction(float _amount);

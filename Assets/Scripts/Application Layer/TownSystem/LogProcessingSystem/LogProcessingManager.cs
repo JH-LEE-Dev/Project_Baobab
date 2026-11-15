@@ -22,6 +22,12 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
     [SerializeField] GameObject shopPrefab;
     [SerializeField] GameObject shopSpawnPoint;
 
+    // 가공 콤보 게이지 그림(그림 전용, 동작과 무관). 기존 마을 UI 판과 커터 진행 막대 스프라이트를 그대로 쓴다.
+    [SerializeField] Sprite comboGaugePanelSprite;
+    [SerializeField] Sprite comboGaugeTrackSprite;
+    [SerializeField] Sprite comboGaugeFillSprite;
+    [SerializeField] Shader comboGaugeShader;
+
 
     private GameObject shopObj;
 
@@ -40,6 +46,9 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
     // 진행이 멈춘다(가공이 오래 걸릴수록 다음 출고가 즉시 튀어나오는 것을 방지).
     private float[] lineElapsedTime;
     private LogProcessLine pendingRequestLine;
+
+    // 새 원목을 올릴 때 투입 지점에서 앞 원목까지 최소한 비어 있어야 하는 거리(유닛). PollLineSupply 참고.
+    private const float MinEntryClearance = 0.5f;
 
     /// <summary>현재 가동 중인 가공 라인 수(1~3). 제재소 건물 증설 단계와 1:1로 대응한다.</summary>
     public int ActiveLineCount => activeLineCount;
@@ -65,6 +74,24 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
     private int logProcessingStack = 0;
     private float amountMultiplier = 0f;
     private bool bRemoteDepositActive = false;
+
+    // 가공 콤보(LogProcessorSpeedUp) 최대 중첩 수.
+    private const int MaxProcessingStack = 10;
+    // 콤보가 최대로 쌓였을 때 벨트·커터 루프 사운드가 올라가는 피치 배율(새 소리 없이 같은 루프의 높이만 바꾼다).
+    private const float MaxComboLoopPitch = 1.3f;
+
+    // 가공 콤보 연출(톱밥·달아오름·연기·게이지). 그림만 그리고 가공 동작에는 관여하지 않는다.
+    private SawmillComboPresenter comboPresenter;
+    private MapType currentMapType = MapType.Town;
+
+    /// <summary>지금 쌓인 가공 콤보 수(0~ProcessorComboMaxStack).</summary>
+    public int ProcessorComboStack => logProcessingStack;
+    /// <summary>가공 콤보 최대 중첩 수.</summary>
+    public int ProcessorComboMaxStack => MaxProcessingStack;
+    /// <summary>가공 콤보 특성을 가지고 있으면 true(스택이 0이어도).</summary>
+    public bool IsProcessorComboActive => amountMultiplier > 0f;
+    /// <summary>제재소가 지금 보이는 맵(마을이 아니면 제재소는 화면 밖에서 돈다).</summary>
+    public MapType CurrentMapType => currentMapType;
 
 
     public void Initialize(InputManager _inputManager)
@@ -113,6 +140,11 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         }
 
         BindEvents();
+
+        // 가공 콤보 연출은 상점 오브젝트에 붙인다(상점이 던전 동안 화면 밖으로 옮겨질 때 함께 움직인다).
+        comboPresenter = shopObj.GetComponent<SawmillComboPresenter>();
+        if (comboPresenter == null) comboPresenter = shopObj.AddComponent<SawmillComboPresenter>();
+        comboPresenter.Setup(this, comboGaugePanelSprite, comboGaugeTrackSprite, comboGaugeFillSprite, comboGaugeShader);
     }
 
     public void Release()
@@ -394,8 +426,8 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
     private void LogToEvaluator(LogProcessLine _line, LogItem _item, ILogItemData _itemData)
     {
         ++logProcessingStack;
-        if (logProcessingStack >= 10)
-            logProcessingStack = 10;
+        if (logProcessingStack >= MaxProcessingStack)
+            logProcessingStack = MaxProcessingStack;
 
         UpdateProcessorSpeed();
 
@@ -455,6 +487,9 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
 
     public void SetMapType(MapType _mapType)
     {
+        currentMapType = _mapType;
+        if (comboPresenter != null) comboPresenter.SetMapType(_mapType);
+
         for (int i = 0; i < allLines.Count; i++) allLines[i].SetMapType(_mapType);
         shopNPC?.SetMapType(_mapType);
         logContainer?.SetMapType(_mapType);
@@ -523,6 +558,12 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
 
         float baseInterval = logContainer.GetEffectiveTransferInterval();
 
+        // 가공 콤보 배속은 출고 간격을 줄이는 대신 타이머를 배율만큼 빨리 돌린다(벨트와 같은 "라인 시간").
+        // 예전엔 간격을 배율로 나눠서, 스택이 오르는 순간 이미 쌓인 경과시간이 줄어든 간격을 넘어 다음 원목이
+        // 바로 튀어나와 벨트 위 간격이 좁아졌다. 이렇게 하면 배율이 언제 바뀌어도 원목 간격이 일정하다.
+        // 배율 1(콤보 미적용)에서는 예전과 똑같다.
+        float lineDeltaTime = Time.deltaTime * logProcessorSpeedMul;
+
         for (int i = 0; i < activeLineCount; i++)
         {
             // 커터가 가공 중(라인이 바쁨)인 동안은 타이머 진행 자체를 멈춘다. 가공이 오래
@@ -534,10 +575,16 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
             // 시간에 수렴할 뿐 라인 증설(ProcessLineExpand)을 대체하지 못한다. 정지를 없애지 말 것.
             if (allLines[i].IsBusy) continue;
 
-            lineElapsedTime[i] += Time.deltaTime;
+            lineElapsedTime[i] += lineDeltaTime;
 
             if (lineElapsedTime[i] < GetLineSupplyInterval(baseInterval, i)) continue;
             if (!logContainer.HasAvailableItem()) continue;
+
+            // 가공 콤보 배속이 아주 높으면 한 프레임이 출고 간격보다 길어져, 프레임 단위 타이머만으로는 벨트 위
+            // 간격을 지킬 수 없다(그 프레임 중간에 벨트가 서도 타이머는 한 프레임을 통째로 센다). 앞 원목이 아직
+            // 투입 지점 근처에 있으면 이번에는 올리지 않고, 타이머는 그대로 둬 자리가 나는 즉시 올린다.
+            // 정상 출고 간격의 원목 사이 거리(약 0.75 이상)보다 짧게 잡아 평소에는 걸리지 않는다.
+            if (!allLines[i].IsEntryClear(MinEntryClearance)) continue;
 
             pendingRequestLine = allLines[i];
             logContainer.TakeFirstItem();
@@ -547,7 +594,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         }
     }
 
-    // 라인 i의 실제 출고 간격. 컨테이너의 기본 간격(가공 콤보 전역 배율 반영)을 그 라인 입고벨트의
+    // 라인 i의 실제 출고 간격. 컨테이너의 기본 간격(가공 콤보 배율은 타이머 쪽에서 반영)을 그 라인 입고벨트의
     // 컨베이어 특성 배율로 나눈다. 배율은 모든 라인에 같은 값이 브로드캐스트되지만, 라인이 자기
     // 벨트 상태를 기준으로 삼아야 나중에 라인별 차등이 생겨도 벨트 위 간격이 항상 일정하게 유지된다.
     private float GetLineSupplyInterval(float _baseInterval, int _lineIdx)
@@ -638,7 +685,13 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         }
 
         for (int i = 0; i < activeLineCount; i++) allLines[i].SetGlobalSpeedMultiplier(logProcessorSpeedMul);
-        if (logContainer != null) logContainer.SetGlobalSpeedMultiplier(logProcessorSpeedMul);
+
+        // 콤보가 쌓인 만큼 벨트·커터 루프 소리를 높인다(배율이 아니라 스택 기준이라 수치가 커도 상한이 일정하다).
+        float comboPitch = (amountMultiplier > 0f)
+            ? Mathf.Lerp(1f, MaxComboLoopPitch, logProcessingStack / (float)MaxProcessingStack)
+            : 1f;
+        for (int i = 0; i < activeLineCount; i++) allLines[i].SetComboPitchMultiplier(comboPitch);
+        // 출고 주기에는 PollLineSupply가 타이머를 배율만큼 빨리 돌려 반영한다(컨테이너 간격은 배율 1 기준).
     }
 
     private void LogContainerIsEmpty()

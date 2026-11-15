@@ -13,7 +13,7 @@ namespace PresentationLayer.VFX
     /// - 떨어지는 불티(Shed): 드랍 비행 꼬리에서 떨어져 나가 중력(60px/초²)으로 처지며 식는다. 흰 노랑 -> 노랑 -> 주황 -> 빨강,
     ///   `+` -> `x` -> `.`로 줄고 수명 끝 무렵 깜빡인다.
     ///
-    /// 좌표는 월드 픽셀(실수, y 위쪽), 속도는 px/초. 고정 용량 구조체 배열이라 힙 할당이 없다. 가득 차면 새 입자는 버린다.
+    /// 좌표는 월드 픽셀(실수, y 위쪽), 속도는 px/초. 구조체 배열이라 평소엔 힙 할당이 없다. 가득 차면 새 입자를 버리지 않고 배열을 두 배로 늘린다.
     /// </summary>
     public sealed class OverheatEmberParticles
     {
@@ -45,7 +45,7 @@ namespace PresentationLayer.VFX
         }
 
         // 내부 의존성
-        private readonly Particle[] items;
+        private Particle[] items;
 
         // 상태 변수
         private int count;
@@ -67,7 +67,8 @@ namespace PresentationLayer.VFX
         /// <summary>불티. _delay초 뒤 나타난다. _drag가 0보다 크면 감속하며 아래로 조금 처진다.</summary>
         public void SpawnSpark(float _x, float _y, float _vx, float _vy, float _life, int _shape, bool _bTrail, float _drag, float _delay, float _sway)
         {
-            if (count >= items.Length) return;
+            // 꽉 차면 새 입자를 버리지 않고 배열을 두 배로 늘린다
+            EnsureRoom(count + 1);
 
             items[count] = new Particle
             {
@@ -89,7 +90,8 @@ namespace PresentationLayer.VFX
         /// <summary>불길 조각. _bHot이면 주황에서 시작하고 아니면 빨강에서 시작한다. _buoy(px/초²)만큼 위로 떠오른다.</summary>
         public void SpawnChunk(float _x, float _y, float _vx, float _vy, float _life, int _shape, bool _bHot, float _drag, float _buoy, float _startAge, float _sway)
         {
-            if (count >= items.Length) return;
+            // 꽉 차면 새 입자를 버리지 않고 배열을 두 배로 늘린다
+            EnsureRoom(count + 1);
 
             items[count] = new Particle
             {
@@ -112,7 +114,8 @@ namespace PresentationLayer.VFX
         /// <summary>떨어지는 불티. 중력으로 처지며 식는다. _tag는 깜빡임 위상이다.</summary>
         public void SpawnShed(float _x, float _y, float _vx, float _vy, float _life, int _shape, int _tag)
         {
-            if (count >= items.Length) return;
+            // 꽉 차면 새 입자를 버리지 않고 배열을 두 배로 늘린다
+            EnsureRoom(count + 1);
 
             items[count] = new Particle
             {
@@ -130,7 +133,8 @@ namespace PresentationLayer.VFX
 
         public void SpawnSmoke(float _x, float _y, float _vy, float _life, float _sway)
         {
-            if (count >= items.Length) return;
+            // 꽉 차면 새 입자를 버리지 않고 배열을 두 배로 늘린다
+            EnsureRoom(count + 1);
 
             items[count] = new Particle
             {
@@ -150,7 +154,8 @@ namespace PresentationLayer.VFX
         {
             for (int i = 0; i < count; i++)
             {
-                if (_target.count >= _target.items.Length) break;
+                // 받는 쪽이 꽉 차면 남은 입자를 버리지 않고 받는 쪽 배열을 두 배로 늘린다
+                _target.EnsureRoom(_target.count + 1);
 
                 _target.items[_target.count] = items[i];
                 _target.count++;
@@ -160,6 +165,16 @@ namespace PresentationLayer.VFX
         }
 
         // 일반 비즈니스 로직 및 내부 메서드
+
+        // _needed개가 들어가도록 배열을 두 배씩 늘린다. 넘칠 때만 할당한다.
+        private void EnsureRoom(int _needed)
+        {
+            if (_needed <= items.Length) return;
+
+            int size = Mathf.Max(1, items.Length);
+            while (size < _needed) size *= 2;
+            System.Array.Resize(ref items, size);
+        }
 
         public void Step(float _dt, float _time)
         {

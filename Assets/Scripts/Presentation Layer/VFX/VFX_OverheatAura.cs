@@ -258,7 +258,8 @@ namespace PresentationLayer.VFX
         private ParticleSystemRenderer rootParticleRenderer;
 
         private readonly OverheatSilhouette silhouette = new OverheatSilhouette();
-        private readonly Ember[] embers = new Ember[EmberCapacity];
+        // 꽉 차면 두 배로 늘리므로 readonly가 아니다(EmberCapacity는 처음 크기)
+        private Ember[] embers = new Ember[EmberCapacity];
         private readonly float[] tongueHeights = new float[GridWidth]; // 열마다 불꽃 혀 높이(px). 아우라를 다시 만들 때만 갱신한다.
 
         //상태 변수
@@ -341,7 +342,7 @@ namespace PresentationLayer.VFX
             lastAuraFrame = -1;
             lastAuraIntensity = -1.0f;
 
-            for (int i = 0; i < EmberCapacity; i++) embers[i].bActive = false;
+            for (int i = 0; i < embers.Length; i++) embers[i].bActive = false;
 
             Vector3 pos = transform.position;
             characterWorldPx = new Vector2(pos.x * PixelsPerUnit, pos.y * PixelsPerUnit);
@@ -510,8 +511,16 @@ namespace PresentationLayer.VFX
             ember.seed = (int)(Rand01() * 1000.0f);
             ember.color = _color;
 
+            // 꽉 차면 아직 살아있는 불씨를 덮어쓰지 않고 배열을 두 배로 늘린다
+            if (true == embers[emberCursor].bActive)
+            {
+                int oldLength = embers.Length;
+                System.Array.Resize(ref embers, oldLength * 2);
+                emberCursor = oldLength;
+            }
+
             embers[emberCursor] = ember;
-            emberCursor = (emberCursor + 1) % EmberCapacity;
+            emberCursor = (emberCursor + 1) % embers.Length;
         }
 
         private Color32 RandomEmberColor()
@@ -565,7 +574,7 @@ namespace PresentationLayer.VFX
             float footWorldY = characterWorldPx.y + silhouette.FootY;
             float debrisFriction = Mathf.Max(0.0f, 1.0f - 3.2f * _dt);
 
-            for (int i = 0; i < EmberCapacity; i++)
+            for (int i = 0; i < embers.Length; i++)
             {
                 if (false == embers[i].bActive) continue;
 
@@ -731,7 +740,7 @@ namespace PresentationLayer.VFX
             float jump = (characterWorldPx - lastCharacterWorldPx).magnitude;
             if (40.0f < jump)
             {
-                for (int i = 0; i < EmberCapacity; i++) embers[i].bActive = false;
+                for (int i = 0; i < embers.Length; i++) embers[i].bActive = false;
                 moveSpeedPx = 0.0f;
             }
             else if (0.0001f < _dt)
@@ -1412,7 +1421,7 @@ namespace PresentationLayer.VFX
             Color32 fadeColor = GetEmberFadeColor();
             float emberGlowScale = true == IsTongueMode() ? TongueGlowScale : 1.0f;
 
-            for (int i = 0; i < EmberCapacity; i++)
+            for (int i = 0; i < embers.Length; i++)
             {
                 if (false == embers[i].bActive) continue;
 
@@ -1531,7 +1540,7 @@ namespace PresentationLayer.VFX
 
         private bool HasActiveEmbers()
         {
-            for (int i = 0; i < EmberCapacity; i++)
+            for (int i = 0; i < embers.Length; i++)
             {
                 if (true == embers[i].bActive) return true;
             }

@@ -230,11 +230,32 @@ public class WhirlwindVFX : MonoBehaviour
     private ulong airHash;
     private int airVertexCount;
 
-    private readonly Hit[] hits = new Hit[HitCapacity];
-    private readonly Spark[] sparks = new Spark[SparkCapacity];
+    // 처음 크기는 HitCapacity / SparkCapacity. 한 번에 그보다 많이 베면 버리지 않고 두 배로 늘린다(AddHit).
+    private Hit[] hits = new Hit[HitCapacity];
+    private Spark[] sparks = new Spark[SparkCapacity];
     private int hitCount;
     private int sparkCount;
+    // 앞에서부터 이미 다 사라진 타격·불꽃은 다시 훑지 않는다(DrawHits). 맞은 순서대로 쌓이고 시간은 거꾸로 가지 않으므로
+    // 한 번 사라진 것은 다시 그려지지 않는다 - 건너뛰어도 그림은 같다.
+    private int firstLiveHit;
+    private int firstLiveSpark;
     private float lastHitTime;
+
+    // 바람 먼지마다 재생 동안 바뀌지 않는 값(해시·방향·출발 시각·속도). 매 프레임 같은 식으로 다시 계산하던 것을 재생마다 한 번만 계산한다.
+    // 출발 시각은 반복 재생 여부에 따라 식이 다르므로(GetMoteEmitTime) 그 여부가 바뀌면 다시 채운다.
+    private struct WindMote
+    {
+        public float emit;
+        public float life;
+        public float startX;
+        public float startY;
+        public float vx;
+        public float vy;
+    }
+
+    private readonly WindMote[] windMotes = new WindMote[WindMoteCount];
+    private bool bWindMotesReady;
+    private bool bWindMotesLooping;
     private uint randomState;
 
     private int centerX;
@@ -321,7 +342,11 @@ public class WhirlwindVFX : MonoBehaviour
     /// </summary>
     public void AddHit(int _playId, Vector3 _treePoint, Vector2 _offsetFromCenter)
     {
-        if (false == bPlaying || _playId != PlayId || hitCount >= HitCapacity) return;
+        if (false == bPlaying || _playId != PlayId) return;
+
+        // 꽉 차면 베인 자국·불꽃을 빠뜨리지 않고 배열을 두 배로 늘린다(넘치지 않으면 예전과 같다).
+        if (hitCount >= hits.Length) System.Array.Resize(ref hits, hits.Length * 2);
+        if (sparkCount + SparksPerHit > sparks.Length) System.Array.Resize(ref sparks, Mathf.Max(sparks.Length * 2, sparkCount + SparksPerHit));
 
         float angle = Mathf.Atan2(_offsetFromCenter.y * 2f, _offsetFromCenter.x);
         float tangentX = -Mathf.Sin(angle);
@@ -338,7 +363,7 @@ public class WhirlwindVFX : MonoBehaviour
         hits[hitCount++] = new Hit { x = x, y = y, tangentX = tangentX, tangentY = tangentY, time = elapsed };
         lastHitTime = elapsed;
 
-        for (int i = 0; i < SparksPerHit && sparkCount < SparkCapacity; i++)
+        for (int i = 0; i < SparksPerHit; i++)
         {
             // 칼날이 도는 방향으로 세게, 바깥과 위로 조금 튄다. 갈래마다 각도를 흩뜨린다.
             float spread = (NextRandom() - 0.5f) * 1.2f;
@@ -482,6 +507,9 @@ public class WhirlwindVFX : MonoBehaviour
         elapsed = 0f;
         hitCount = 0;
         sparkCount = 0;
+        firstLiveHit = 0;
+        firstLiveSpark = 0;
+        bWindMotesReady = false;
         lastHitTime = -1f;
         scarHash = 0UL;
         scarVertexCount = -1;
@@ -784,8 +812,8 @@ public class WhirlwindVFX : MonoBehaviour
         for (int k = 1; k <= lapsBack; k++) DrawWindMotes(elapsed + k * SweepDuration);
     }
 
-    // _time: 이번 바퀴(또는 지난 바퀴)의 시작부터 잰 시각.
-    private void DrawWindMotes(float _time)
+    // 먼지마다 고정 값을 채운다. 식과 계산 순서는 예전 DrawWindMotes 안의 것 그대로다(결과 비트가 같다).
+    private void BuildWindMotes()
     {
         for (int i = 0; i < WindMoteCount; i++)
         {
@@ -797,25 +825,41 @@ public class WhirlwindVFX : MonoBehaviour
             float a = angleDeg * Mathf.Deg2Rad;
             float cos = Mathf.Cos(a);
             float sin = Mathf.Sin(a);
-            float emit = GetMoteEmitTime(cos, sin);
-            float age = _time - emit;
-            float life = Mathf.Lerp(0.22f, 0.4f, h1);
-            if (age < 0f || age >= life) continue;
 
             float rho = Mathf.Lerp(0.9f, 1.04f, h2);
-            float startX = cos * radiusPx * rho;
-            float startY = sin * radiusPx * rho * 0.5f;
-
             float tangentX = -sin;
             float tangentY = cos * 0.5f;
             float tangentLength = Mathf.Sqrt(tangentX * tangentX + tangentY * tangentY);
             float speed = Mathf.Lerp(70f, 140f, h1);
-            float vx = tangentX / tangentLength * speed + cos * 30f;
-            float vy = tangentY / tangentLength * speed + sin * 15f + 25f;
+
+            ref WindMote mote = ref windMotes[i];
+            mote.emit = GetMoteEmitTime(cos, sin);
+            mote.life = Mathf.Lerp(0.22f, 0.4f, h1);
+            mote.startX = cos * radiusPx * rho;
+            mote.startY = sin * radiusPx * rho * 0.5f;
+            mote.vx = tangentX / tangentLength * speed + cos * 30f;
+            mote.vy = tangentY / tangentLength * speed + sin * 15f + 25f;
+        }
+
+        bWindMotesReady = true;
+        bWindMotesLooping = bLooping;
+    }
+
+    // _time: 이번 바퀴(또는 지난 바퀴)의 시작부터 잰 시각.
+    private void DrawWindMotes(float _time)
+    {
+        if (false == bWindMotesReady || bWindMotesLooping != bLooping) BuildWindMotes();
+
+        for (int i = 0; i < WindMoteCount; i++)
+        {
+            ref readonly WindMote mote = ref windMotes[i];
+            float age = _time - mote.emit;
+            float life = mote.life;
+            if (age < 0f || age >= life) continue;
 
             float travel = (1f - Mathf.Exp(-3f * age)) / 3f;
-            int x = centerX + Mathf.RoundToInt(startX + vx * travel);
-            int y = centerY + Mathf.RoundToInt(startY + vy * travel);
+            int x = centerX + Mathf.RoundToInt(mote.startX + mote.vx * travel);
+            int y = centerY + Mathf.RoundToInt(mote.startY + mote.vy * travel);
 
             float p = age / life;
             if (p < 0.3f) painter.Shape(PixelPainter.ShapePlus, x, y, SlashLight);
@@ -840,7 +884,20 @@ public class WhirlwindVFX : MonoBehaviour
     /// <summary>나무마다 베인 자국 번쩍임과 튀는 불꽃.</summary>
     private void DrawHits()
     {
-        for (int i = 0; i < hitCount; i++)
+        // 맨 앞부터 이어서 다 사라진 것은 다음 프레임부터 훑지 않는다(반복 재생은 시간이 되감기므로 건드리지 않는다 - 타격도 받지 않는다).
+        if (false == bLooping)
+        {
+            while (firstLiveHit < hitCount)
+            {
+                float headAge = elapsed - hits[firstLiveHit].time;
+                if (false == (headAge >= HitRingSeconds && headAge >= HitFlashSeconds)) break;
+                firstLiveHit++;
+            }
+
+            while (firstLiveSpark < sparkCount && elapsed - sparks[firstLiveSpark].time >= sparks[firstLiveSpark].life) firstLiveSpark++;
+        }
+
+        for (int i = firstLiveHit; i < hitCount; i++)
         {
             Hit hit = hits[i];
             float age = elapsed - hit.time;
@@ -896,7 +953,7 @@ public class WhirlwindVFX : MonoBehaviour
             }
         }
 
-        for (int i = 0; i < sparkCount; i++)
+        for (int i = firstLiveSpark; i < sparkCount; i++)
         {
             Spark spark = sparks[i];
             float age = elapsed - spark.time;

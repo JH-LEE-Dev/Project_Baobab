@@ -64,7 +64,7 @@ namespace PresentationLayer.VFX
 
         private const float PixelsPerUnit = 32f;
         private const float PixelUnit = 1f / PixelsPerUnit;
-        private const int MaxVertices = 60000;
+        private const int MaxVertices = 60000; // UInt16 인덱스로 담는 정점 한도. 넘으면 버리지 않고 메쉬만 UInt32 인덱스로 바꾼다
 
         private const int KindMain = 0;
         private const int KindStrand = 1;
@@ -436,6 +436,11 @@ namespace PresentationLayer.VFX
             }
 
             mesh.Clear();
+
+            // 정점이 UInt16 한도(MaxVertices) 안이면 예전 그대로 UInt16, 넘칠 때만 UInt32 인덱스로 바꿔 넘친 쿼드도 다 담는다
+            UnityEngine.Rendering.IndexFormat indexFormat = MaxVertices <= meshVertices.Count ? UnityEngine.Rendering.IndexFormat.UInt32 : UnityEngine.Rendering.IndexFormat.UInt16;
+            if (indexFormat != mesh.indexFormat) mesh.indexFormat = indexFormat;
+
             mesh.SetVertices(meshVertices);
             mesh.SetColors(meshColors);
             mesh.SetTriangles(meshTriangles, 0, false);
@@ -603,8 +608,7 @@ namespace PresentationLayer.VFX
         // 픽셀 좌표 직사각형 [x0,x1) x [y0,y1)를 쿼드로 추가한다. 월드 -> 로컬은 행렬 하나로 변환해 드론이 움직여도 월드 위치에 고정된다.
         private void AddPixelRect(int _x0, int _y0, int _x1, int _y1, Color32 _color)
         {
-            if (MaxVertices <= meshVertices.Count + 4) return;
-
+            // MaxVertices를 넘어도 쿼드를 버리지 않는다(넘친 경우에만 RebuildMesh가 이 메쉬를 UInt32 인덱스로 바꿔 담는다)
             int v = meshVertices.Count;
             meshVertices.Add(worldToLocal.MultiplyPoint3x4(new Vector3(_x0 * PixelUnit, _y0 * PixelUnit, meshZ)));
             meshVertices.Add(worldToLocal.MultiplyPoint3x4(new Vector3(_x0 * PixelUnit, _y1 * PixelUnit, meshZ)));

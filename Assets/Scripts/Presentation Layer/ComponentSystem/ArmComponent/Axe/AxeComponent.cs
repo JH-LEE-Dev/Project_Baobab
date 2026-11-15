@@ -284,6 +284,47 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         DurabilityRepairedEvent?.Invoke();
     }
 
+    /// <summary>
+    /// 모루에 맡겨 둔 동안 내구도를 조금씩 채운다(내구도 수치 그대로, 최대치까지). 매 프레임 불리므로 HUD 갱신 이벤트는 내지 않는다 -
+    /// 화면 갱신은 모루가 두드릴 때마다 NotifyRepairTick으로 한다. 0에서 벗어나는 순간에만 DurabilityRestoredEvent를 낸다.
+    /// </summary>
+    public void RestoreDurabilityGradually(float _amount)
+    {
+        float maxDurability = ctx.characterStat.axeDurability;
+        if (_amount <= 0f || durability >= maxDurability) return;
+
+        bool bWasEmpty = durability <= 0f;
+        durability = Mathf.Min(maxDurability, durability + _amount);
+        UpdateSpriteByDurability();
+
+        if (bWasEmpty && 0f < durability)
+        {
+            DurabilityRestoredEvent?.Invoke();
+        }
+    }
+
+    /// <summary>
+    /// 모루가 한 번 두드릴 때 지금 내구도를 HUD에 반영한다. _bPlayRepairEffect면 RepairDurability와 같은 수리 연출(HUD 도끼 번쩍임)도 낸다.
+    /// </summary>
+    public void NotifyRepairTick(bool _bPlayRepairEffect)
+    {
+        AxeAttackedEvent?.Invoke();
+
+        if (_bPlayRepairEffect)
+        {
+            DurabilityRepairedEvent?.Invoke();
+        }
+    }
+
+    public float DurabilityRatio
+    {
+        get
+        {
+            float maxDurability = ctx != null && ctx.characterStat != null ? ctx.characterStat.axeDurability : 0f;
+            return maxDurability > 0f ? Mathf.Clamp01(durability / maxDurability) : 0f;
+        }
+    }
+
     private void UpdateSpriteByDurability()
     {
         float maxDurability = ctx.characterStat.axeDurability;

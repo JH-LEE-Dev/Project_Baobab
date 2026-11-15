@@ -10,14 +10,12 @@ namespace PresentationLayer.VFX
     ///
     /// 장면
     /// - 등장(PlayReveal): 커터 톱날이 금을 긁은 듯 톱날에서 불티 줄기가 벨트 쪽으로 튀고, 쌍둥이가 나오는 출구에서는
-    ///   금빛 톱밥이 뿜어진다. 동시에 커터 윗면에서 "×2" 글자가 솟아올라 반짝임이 한 번 훑고 지나간 뒤
-    ///   떠오르며 깜빡여 사라진다. 다시 나오면 ×2는 처음부터 다시 솟는다.
+    ///   금빛 톱밥이 뿜어진다.
     /// - 착지(PlayLand): 원목 등 위에 내려앉는 순간 작은 별이 반짝이고 양옆으로 먼지가 튄다.
     /// - 업혀 가기(EmitRideSparkle): 쌍둥이 둘레에서 금빛 반짝임이 하나씩 피어올라 사라진다(절제해서 드문드문).
     /// - 쾅(PlayStamp): 평가기에서 큰 십자 섬광 → 점선 충격파 → 금화·금가루 분수가 솟았다 떨어진다.
     ///   콤보(연달아 터짐)일수록 분수와 충격파가 조금씩 커진다.
     ///
-    /// 글자는 숫자와 곱셈 기호뿐이라 언어와 무관하다(현지화 대상 아님).
     /// 반투명 페이드 없이 계단식 크기 변화·점멸로만 사라진다. 고정 크기 배열만 써서 재생 중 힙 할당이 없다.
     /// 그림일 뿐이라 판정·돈·벨트와는 무관하다. 모든 요소는 나무·원목 위(FlyingItem)에 그린다.
     /// </summary>
@@ -102,57 +100,6 @@ namespace PresentationLayer.VFX
         private const float TwinkleLife = 0.34f;
         private const float TwinkleRise = 14f;          // px/s
 
-        // //×2 글자
-
-        private const float LabelDuration = 1.0f;
-        private const float LabelFlashEnd = 0.05f;
-        private const float LabelRiseTime = 0.2f;
-        private const float LabelRiseFromPx = -10f;     // 커터 윗면 안쪽에서부터 솟아 나온다
-        private const float LabelShineStart = 0.12f;
-        private const float LabelShineTime = 0.24f;
-        private const int LabelShineWidth = 3;
-        private const float LabelExitStart = 0.78f;
-        private const float LabelExitRisePx = 5f;
-        private const float LabelBlinkStart = 0.86f;
-        private const float LabelTwinkleLife = 0.2f;
-        private static readonly float[] LabelTwinkleStarts = { 0.18f, 0.32f };
-
-        // 글자 그림(위 줄부터). '#'가 채운 픽셀이다. 테두리는 바깥 8방향 한 칸으로 자동으로 두른다.
-        // 커터 윗면(톱날 폭)에 얹혀 읽히는 크기로, 테두리까지 합친 폭을 15px(× 5 + 간격 1 + 2 7 + 테두리 2)로 맞췄다.
-        private static readonly string[] GlyphTimes =
-        {
-            "##.##",
-            ".###.",
-            "..#..",
-            ".###.",
-            "##.##",
-        };
-
-        private static readonly string[] GlyphTwo =
-        {
-            ".#####.",
-            "##...##",
-            ".....##",
-            ".....##",
-            "...###.",
-            "..##...",
-            ".##....",
-            "##.....",
-            "#######",
-            "#######",
-        };
-
-        private const int GlyphGap = 1;
-        private const int TimesBottom = 2;   // × 를 2 높이의 가운데쯤에 놓는다(아래에서 몇 칸 위)
-
-        // 글자 픽셀 표(정적 1회 생성). 좌표는 글자 상자 왼쪽 아래 기준.
-        private static int labelWidth;
-        private static int labelHeight;
-        private static int[] labelFillX;
-        private static int[] labelFillY;
-        private static int[] labelOutlineX;
-        private static int[] labelOutlineY;
-
         // //공유 자원
 
         private static readonly PixelQuadBuffer buffer = new PixelQuadBuffer(1024);
@@ -204,18 +151,13 @@ namespace PresentationLayer.VFX
         private ulong meshHash;
         private int meshVertexCount = -1;
 
-        private readonly Flash[] flashes = new Flash[FlashCapacity];
-        private readonly Ring[] rings = new Ring[RingCapacity];
-        private readonly Dust[] dusts = new Dust[DustCapacity];
+        private Flash[] flashes = new Flash[FlashCapacity];
+        private Ring[] rings = new Ring[RingCapacity];
+        private Dust[] dusts = new Dust[DustCapacity];
         private int flashCursor;
         private int ringCursor;
         private int dustCursor;
 
-        private bool bLabelActive;
-        private bool bLabelFresh;
-        private int labelX;           // 글자 상자 가운데(월드 px)
-        private int labelY;           // 글자 상자 바닥(월드 px)
-        private float labelAge;
 
         private bool bAnyActive;
         private uint randomState = 1u;
@@ -239,9 +181,9 @@ namespace PresentationLayer.VFX
         /// <summary>
         /// 쌍둥이 원목이 커터에서 튀어나오는 순간.
         /// _twinPos: 쌍둥이가 출발하는 자리(커터 출구), _bladePos: 커터 톱날(불티가 튀는 자리),
-        /// _labelPos: ×2 글자 바닥 가운데(커터 윗면 바로 위), _outDir: 출고 방향(커터 → 평가기, 길이 무관).
+        /// _outDir: 출고 방향(커터 → 평가기, 길이 무관).
         /// </summary>
-        public void PlayReveal(Vector3 _twinPos, Vector3 _bladePos, Vector3 _labelPos, Vector2 _outDir)
+        public void PlayReveal(Vector3 _twinPos, Vector3 _bladePos, Vector2 _outDir)
         {
             Vector2 dir = _outDir.sqrMagnitude > 0.0001f ? _outDir.normalized : new Vector2(0.9f, 0.45f);
 
@@ -285,26 +227,6 @@ namespace PresentationLayer.VFX
                     0.02f, Mathf.Lerp(0.3f, 0.45f, Rand01()), KindSparkle, PickSparkColor());
             }
 
-            // 3) ×2: 커터 윗면에서 솟아 나온다.
-            labelX = ToPixel(_labelPos.x);
-            labelY = ToPixel(_labelPos.y);
-            labelAge = 0f;
-            bLabelActive = true;
-            bLabelFresh = true;
-            bAnyActive = true;
-        }
-
-        /// <summary>
-        /// ×2 글자만 띄운다(섬광·가루 없이). _labelPos는 글자 바닥 가운데. 원목 드랍 잭팟(LogItemController)이
-        /// 특등품과 같은 글자를 쓰려고 부른다. 이미 떠 있으면 처음부터 다시 솟는다.
-        /// </summary>
-        public void PlayLabel(Vector3 _labelPos)
-        {
-            labelX = ToPixel(_labelPos.x);
-            labelY = ToPixel(_labelPos.y);
-            labelAge = 0f;
-            bLabelActive = true;
-            bLabelFresh = true;
             bAnyActive = true;
         }
 
@@ -358,10 +280,9 @@ namespace PresentationLayer.VFX
         /// <summary>그리던 것을 모두 지운다(맵을 떠나거나 라인이 꺼질 때).</summary>
         public void ClearAll()
         {
-            for (int i = 0; i < FlashCapacity; i++) flashes[i].bActive = false;
-            for (int i = 0; i < RingCapacity; i++) rings[i].bActive = false;
-            for (int i = 0; i < DustCapacity; i++) dusts[i].bActive = false;
-            bLabelActive = false;
+            for (int i = 0; i < flashes.Length; i++) flashes[i].bActive = false;
+            for (int i = 0; i < rings.Length; i++) rings[i].bActive = false;
+            for (int i = 0; i < dusts.Length; i++) dusts[i].bActive = false;
             bAnyActive = false;
             if (null != meshRenderer) meshRenderer.enabled = false;
         }
@@ -370,7 +291,7 @@ namespace PresentationLayer.VFX
 
         private static bool EnsureShared()
         {
-            if (null == labelFillX) BuildLabelPixels();
+
             if (false == bPaletteReady) BuildPalette();
             if (null != sharedMaterial) return true;
 
@@ -432,109 +353,45 @@ namespace PresentationLayer.VFX
             return (byte)Mathf.RoundToInt(Mathf.GammaToLinearSpace(_value / 255f) * 255f);
         }
 
-        // 글자 상자: [×][간격][2], 높이는 2의 높이. 채움 픽셀과 그 바깥 8방향 테두리 픽셀 표를 만든다.
-        private static void BuildLabelPixels()
-        {
-            int timesW = GlyphTimes[0].Length;
-            int twoW = GlyphTwo[0].Length;
-            labelWidth = timesW + GlyphGap + twoW;
-            labelHeight = GlyphTwo.Length;
-
-            bool[,] fill = new bool[labelWidth, labelHeight];
-            Stamp(fill, GlyphTimes, 0, TimesBottom);
-            Stamp(fill, GlyphTwo, timesW + GlyphGap, 0);
-
-            int fillCount = 0;
-            int outlineCount = 0;
-            bool[,] outline = new bool[labelWidth + 2, labelHeight + 2];
-            for (int x = -1; x <= labelWidth; x++)
-            {
-                for (int y = -1; y <= labelHeight; y++)
-                {
-                    if (IsFilled(fill, x, y))
-                    {
-                        fillCount++;
-                        continue;
-                    }
-
-                    bool bTouch = false;
-                    for (int dx = -1; dx <= 1 && false == bTouch; dx++)
-                        for (int dy = -1; dy <= 1 && false == bTouch; dy++)
-                            if (IsFilled(fill, x + dx, y + dy)) bTouch = true;
-
-                    if (bTouch)
-                    {
-                        outline[x + 1, y + 1] = true;
-                        outlineCount++;
-                    }
-                }
-            }
-
-            labelFillX = new int[fillCount];
-            labelFillY = new int[fillCount];
-            labelOutlineX = new int[outlineCount];
-            labelOutlineY = new int[outlineCount];
-
-            int f = 0;
-            int o = 0;
-            for (int y = -1; y <= labelHeight; y++)
-            {
-                for (int x = -1; x <= labelWidth; x++)
-                {
-                    if (IsFilled(fill, x, y))
-                    {
-                        labelFillX[f] = x;
-                        labelFillY[f] = y;
-                        f++;
-                    }
-                    else if (outline[x + 1, y + 1])
-                    {
-                        labelOutlineX[o] = x;
-                        labelOutlineY[o] = y;
-                        o++;
-                    }
-                }
-            }
-        }
-
-        private static void Stamp(bool[,] _fill, string[] _glyph, int _left, int _bottom)
-        {
-            int rows = _glyph.Length;
-            for (int row = 0; row < rows; row++)
-            {
-                string line = _glyph[row];
-                int y = _bottom + (rows - 1 - row);
-                for (int col = 0; col < line.Length; col++)
-                {
-                    if ('#' == line[col]) _fill[_left + col, y] = true;
-                }
-            }
-        }
-
-        private static bool IsFilled(bool[,] _fill, int _x, int _y)
-        {
-            if (_x < 0 || _y < 0 || _x >= _fill.GetLength(0) || _y >= _fill.GetLength(1)) return false;
-            return _fill[_x, _y];
-        }
-
         // //생성 도우미
 
         private void AddFlash(int _x, int _y, bool _bBig)
         {
+            if (true == flashes[flashCursor].bActive)
+            {
+                // 꽉 차면 아직 살아있는 섬광을 덮어쓰지 않고 배열을 두 배로 늘린다
+                flashCursor = flashes.Length;
+                System.Array.Resize(ref flashes, flashes.Length * 2);
+            }
+
             flashes[flashCursor] = new Flash { bActive = true, bFresh = true, bBig = _bBig, x = _x, y = _y, age = 0f };
-            flashCursor = (flashCursor + 1) % FlashCapacity;
+            flashCursor = (flashCursor + 1) % flashes.Length;
             bAnyActive = true;
         }
 
         private void AddRing(int _x, int _y, float _maxRadius)
         {
+            if (true == rings[ringCursor].bActive)
+            {
+                // 꽉 차면 아직 살아있는 충격파를 덮어쓰지 않고 배열을 두 배로 늘린다
+                ringCursor = rings.Length;
+                System.Array.Resize(ref rings, rings.Length * 2);
+            }
+
             rings[ringCursor] = new Ring { bActive = true, bFresh = true, x = _x, y = _y, age = 0f, maxRadius = _maxRadius };
-            ringCursor = (ringCursor + 1) % RingCapacity;
+            ringCursor = (ringCursor + 1) % rings.Length;
             bAnyActive = true;
         }
 
         private void AddDust(float _x, float _y, float _vx, float _vy, float _drag, float _gravity, float _delay, float _life, int _kind, Color32 _color)
         {
+            if (true == dusts[dustCursor].bActive)
+            {
+                // 꽉 차면 아직 살아있는 조각을 덮어쓰지 않고 배열을 두 배로 늘린다
+                dustCursor = dusts.Length;
+                System.Array.Resize(ref dusts, dusts.Length * 2);
+            }
+
             dusts[dustCursor] = new Dust
             {
                 bActive = true,
@@ -551,7 +408,7 @@ namespace PresentationLayer.VFX
                 seed = (int)(Rand01() * 997f),
                 color = _color,
             };
-            dustCursor = (dustCursor + 1) % DustCapacity;
+            dustCursor = (dustCursor + 1) % dusts.Length;
             bAnyActive = true;
         }
 
@@ -603,7 +460,7 @@ namespace PresentationLayer.VFX
             bool bActive = false;
             float minX = float.MaxValue, minY = float.MaxValue, maxX = float.MinValue, maxY = float.MinValue;
 
-            for (int i = 0; i < FlashCapacity; i++)
+            for (int i = 0; i < flashes.Length; i++)
             {
                 if (false == flashes[i].bActive) continue;
                 if (flashes[i].bFresh) flashes[i].bFresh = false;
@@ -619,7 +476,7 @@ namespace PresentationLayer.VFX
                 Encapsulate(flashes[i].x, flashes[i].y, ref minX, ref minY, ref maxX, ref maxY);
             }
 
-            for (int i = 0; i < RingCapacity; i++)
+            for (int i = 0; i < rings.Length; i++)
             {
                 if (false == rings[i].bActive) continue;
                 if (rings[i].bFresh) rings[i].bFresh = false;
@@ -635,7 +492,7 @@ namespace PresentationLayer.VFX
                 Encapsulate(rings[i].x, rings[i].y, ref minX, ref minY, ref maxX, ref maxY);
             }
 
-            for (int i = 0; i < DustCapacity; i++)
+            for (int i = 0; i < dusts.Length; i++)
             {
                 if (false == dusts[i].bActive) continue;
 
@@ -667,23 +524,6 @@ namespace PresentationLayer.VFX
 
                 bActive = true;
                 Encapsulate(dusts[i].x, dusts[i].y, ref minX, ref minY, ref maxX, ref maxY);
-            }
-
-            if (bLabelActive)
-            {
-                if (bLabelFresh) bLabelFresh = false;
-                else labelAge += dt;
-
-                if (labelAge >= LabelDuration)
-                {
-                    bLabelActive = false;
-                }
-                else
-                {
-                    bActive = true;
-                    Encapsulate(labelX, labelY, ref minX, ref minY, ref maxX, ref maxY);
-                    Encapsulate(labelX, labelY + labelHeight, ref minX, ref minY, ref maxX, ref maxY);
-                }
             }
 
             if (false == bActive)
@@ -723,7 +563,7 @@ namespace PresentationLayer.VFX
             DrawRings();
             DrawDusts();
             DrawFlashes();
-            DrawLabel();
+
 
             painter.Commit(mesh, meshRenderer, ref meshHash, ref meshVertexCount);
         }
@@ -736,7 +576,7 @@ namespace PresentationLayer.VFX
         // 계단식으로 줄어드는 십자 섬광. 큰 섬광(쾅)은 금색 대각 광선이 함께 터진다.
         private void DrawFlashes()
         {
-            for (int i = 0; i < FlashCapacity; i++)
+            for (int i = 0; i < flashes.Length; i++)
             {
                 if (false == flashes[i].bActive) continue;
 
@@ -785,7 +625,7 @@ namespace PresentationLayer.VFX
         // 점선 타원 충격파. 계단식으로 커지고, 바깥으로 갈수록 식으며 점이 하나씩 빠진다.
         private void DrawRings()
         {
-            for (int r = 0; r < RingCapacity; r++)
+            for (int r = 0; r < rings.Length; r++)
             {
                 if (false == rings[r].bActive) continue;
 
@@ -816,7 +656,7 @@ namespace PresentationLayer.VFX
 
         private void DrawDusts()
         {
-            for (int i = 0; i < DustCapacity; i++)
+            for (int i = 0; i < dusts.Length; i++)
             {
                 if (false == dusts[i].bActive || dusts[i].age < 0f) continue;
 
@@ -966,81 +806,6 @@ namespace PresentationLayer.VFX
             painter.HLine(_x - arm, _x + arm, _y, color);
             painter.Rect(_x, _y - arm, _x + 1, _y + arm + 1, color);
             if (2 == arm) painter.Dot(_x, _y, WithGlow(ColorWhite, 1f));
-        }
-
-        // ×2 글자: 흰 섬광으로 나타나 아래에서 튀어 오르고(살짝 넘침), 반짝임 띠가 대각선으로 한 번 훑은 뒤
-        // 떠오르며 깜빡여 사라진다. 위는 크림, 가운데는 금, 아래는 주황으로 칠하고 진한 테두리를 두른다.
-        private void DrawLabel()
-        {
-            if (false == bLabelActive) return;
-
-            float t = labelAge;
-            if (t > LabelBlinkStart && 0 != ((int)(t * 30f) & 1)) return;
-
-            float rise = Mathf.Clamp01(t / LabelRiseTime);
-            float yOffset = Mathf.LerpUnclamped(LabelRiseFromPx, 0f, EaseOutBack(rise));
-            if (t > LabelExitStart) yOffset += (t - LabelExitStart) / (LabelDuration - LabelExitStart) * LabelExitRisePx;
-
-            int left = labelX - labelWidth / 2;
-            int bottom = labelY + Mathf.RoundToInt(yOffset);
-
-            bool bFlash = t < LabelFlashEnd;
-            Color32 outlineColor = bFlash ? WithGlow(ColorGold, 0.5f) : WithGlow(ColorOutline, 0f);
-            for (int i = 0; i < labelOutlineX.Length; i++)
-            {
-                painter.Dot(left + labelOutlineX[i], bottom + labelOutlineY[i], outlineColor);
-            }
-
-            float shine = (t - LabelShineStart) / LabelShineTime;
-            int shinePos = Mathf.RoundToInt(Mathf.Lerp(-LabelShineWidth - 2, labelWidth + labelHeight + 2, shine));
-            bool bShine = shine >= 0f && shine <= 1f;
-
-            Color32 white = WithGlow(ColorWhite, bFlash ? 1f : 0.55f);
-            Color32 cream = WithGlow(ColorCream, 0.05f);
-            Color32 gold = WithGlow(ColorGold, 0f);
-            Color32 orange = WithGlow(ColorOrange, 0f);
-
-            for (int i = 0; i < labelFillX.Length; i++)
-            {
-                int gx = labelFillX[i];
-                int gy = labelFillY[i];
-                int rowFromTop = labelHeight - 1 - gy;
-
-                Color32 color;
-                if (bFlash)
-                {
-                    color = white;
-                }
-                else
-                {
-                    int band = gx + rowFromTop - shinePos;
-                    if (bShine && band >= 0 && band < LabelShineWidth) color = white;
-                    else if (rowFromTop < 3) color = cream;
-                    else if (rowFromTop < 7) color = gold;
-                    else color = orange;
-                }
-
-                painter.Dot(left + gx, bottom + gy, color);
-            }
-
-            // 글자 모서리 두 곳에서 차례로 반짝임이 핀다.
-            for (int k = 0; k < LabelTwinkleStarts.Length; k++)
-            {
-                float u = (t - LabelTwinkleStarts[k]) / LabelTwinkleLife;
-                if (u < 0f || u >= 1f) continue;
-
-                int tx = 0 == k ? left - 2 : left + labelWidth + 1;
-                int ty = 0 == k ? bottom + labelHeight : bottom + 2;
-                DrawTwinkle(tx, ty, u, ColorWhite);
-            }
-        }
-
-        private static float EaseOutBack(float _t)
-        {
-            const float c1 = 1.70158f;
-            const float c3 = c1 + 1f;
-            float x = _t - 1f;
-            return 1f + c3 * x * x * x + c1 * x * x;
         }
 
         // //수명

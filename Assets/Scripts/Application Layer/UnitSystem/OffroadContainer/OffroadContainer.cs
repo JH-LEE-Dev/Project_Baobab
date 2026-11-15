@@ -2806,8 +2806,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     // 전송이 쉬는 동안 보낼 원목이 생겼는지 다시 볼 간격.
     private const float REMOTE_TRANSPORT_CHECK_INTERVAL = 0.25f;
     // 상자 -> 보관함 포물선 높이. 캐릭터 -> 보관함(0.8~1.2)보다 거리가 멀어 높게 띄운다.
-    private const float REMOTE_TRANSPORT_HEIGHT_MIN = 2.4f;
-    private const float REMOTE_TRANSPORT_HEIGHT_MAX = 3.0f;
+    private const float REMOTE_TRANSPORT_HEIGHT_MIN = 2.0f;
+    private const float REMOTE_TRANSPORT_HEIGHT_MAX = 2.5f;
 
     public void SetRemoteLogTransport(bool _bActive)
     {

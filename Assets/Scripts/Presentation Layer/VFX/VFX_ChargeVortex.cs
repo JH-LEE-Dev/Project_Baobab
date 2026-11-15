@@ -120,7 +120,8 @@ namespace PresentationLayer.VFX
         private MeshFilter meshFilter;
         private MeshRenderer meshRenderer;
         private Mesh mesh;
-        private readonly Particle[] particles = new Particle[ParticleCapacity];
+        // 꽉 차면 두 배로 늘리므로 readonly가 아니다(ParticleCapacity는 처음 크기)
+        private Particle[] particles = new Particle[ParticleCapacity];
         private ParticleSystem rootParticleSystem;
         private ParticleSystemRenderer rootParticleRenderer;
 
@@ -179,7 +180,7 @@ namespace PresentationLayer.VFX
             bFirstFrame = true;
             bOverheat = false;
 
-            for (int i = 0; i < ParticleCapacity; i++) particles[i].bActive = false;
+            for (int i = 0; i < particles.Length; i++) particles[i].bActive = false;
 
             Vector3 pos = transform.position;
             randomState = unchecked((uint)(Time.frameCount * 2654435761u) ^ (uint)Mathf.FloorToInt(pos.x * 97.0f));
@@ -256,7 +257,14 @@ namespace PresentationLayer.VFX
                 spawnAngle += GoldenAngle + (Rand01() - 0.5f) * 0.6f;
 
                 int slot = particleCursor;
-                particleCursor = (particleCursor + 1) % ParticleCapacity;
+                // 꽉 차면 아직 살아있는 입자를 덮어쓰지 않고 배열을 두 배로 늘린다
+                if (true == particles[slot].bActive)
+                {
+                    int oldLength = particles.Length;
+                    System.Array.Resize(ref particles, oldLength * 2);
+                    slot = oldLength;
+                }
+                particleCursor = (slot + 1) % particles.Length;
 
                 Particle particle = new Particle();
                 particle.bActive = true;
@@ -285,7 +293,7 @@ namespace PresentationLayer.VFX
             if (VortexPhase.Releasing == phase) ageDt = _dt * rushSpeedScale;
             else if (VortexPhase.Extinguishing == phase) ageDt = -_dt * retreatSpeedScale;
 
-            for (int i = 0; i < ParticleCapacity; i++)
+            for (int i = 0; i < particles.Length; i++)
             {
                 if (false == particles[i].bActive) continue;
 
@@ -488,7 +496,7 @@ namespace PresentationLayer.VFX
         // 입자: 꼬리 없는 작은 픽셀 모양(`.`, `+`, `x`). 위치는 매 프레임 계산해 정수 픽셀에 스냅한다. 중심에 가까워지면 모두 1x1 점이 된다.
         private void DrawParticles()
         {
-            for (int i = 0; i < ParticleCapacity; i++)
+            for (int i = 0; i < particles.Length; i++)
             {
                 if (false == particles[i].bActive) continue;
 
@@ -555,7 +563,7 @@ namespace PresentationLayer.VFX
 
         private bool HasActiveParticles()
         {
-            for (int i = 0; i < ParticleCapacity; i++)
+            for (int i = 0; i < particles.Length; i++)
             {
                 if (true == particles[i].bActive) return true;
             }

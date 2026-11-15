@@ -22,7 +22,6 @@ namespace PresentationLayer.VFX
         private const string ResourcePath = "TreeSporeDebuff/TreeSporeDebuffVfxManager";
         private const float PixelsPerUnit = 32.0f;
         private const float TickRate = 24.0f;
-        private const int MaxEntries = 128;
         private const int QuadBudget = 6000;
 
         private const float FallGravity = 360.0f;
@@ -147,8 +146,7 @@ namespace PresentationLayer.VFX
                 return;
             }
 
-            if (MaxEntries <= entries.Count) return;
-
+            // 예전에는 128그루가 차면 새 나무를 건너뛰었다. 이제는 목록이 늘어나 모든 감염 나무에 이펙트를 붙인다(전체 연출 수는 maxFullTrees가 따로 제한한다).
             SpriteRenderer top = FindTopRenderer(_tree);
             if (null == top)
             {

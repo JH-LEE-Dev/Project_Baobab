@@ -32,6 +32,23 @@ public class LogItem : Item, IStaticCollidable
     private ItemMoveState state = ItemMoveState.None;
     public ItemMoveState MoveState => state;
     public bool IsMoving => state != ItemMoveState.Dropped && state != ItemMoveState.None;
+
+    // 이펙트가 날아가는 원목을 따라갈 때 읽는 값(읽기 전용). 보석 나무 원목 잔광(VFX_GemLogTrail)이 쓴다.
+    public bool IsLaunching => state == ItemMoveState.Launching;
+    public Vector3 VisualPosition => visualTransform != null ? visualTransform.position : transform.position;
+
+    public void GetSpriteSorting(out int _sortingLayerID, out int _sortingOrder)
+    {
+        if (spriteRenderer != null)
+        {
+            _sortingLayerID = spriteRenderer.sortingLayerID;
+            _sortingOrder = spriteRenderer.sortingOrder;
+            return;
+        }
+
+        _sortingLayerID = 0;
+        _sortingOrder = 0;
+    }
     private Transform suckTarget;
     private Transform dynamicTarget;
     private bool bDrop = true;

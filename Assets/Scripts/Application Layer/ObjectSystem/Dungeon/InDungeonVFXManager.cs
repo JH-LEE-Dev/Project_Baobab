@@ -251,10 +251,39 @@ public class InDungeonVFXManager : MonoBehaviour
     private const int BrandStarWrapPrewarmCount = 4;
 
     // 치명타 전용 임팩트(VFX_CriticalImpact). 프리팹 없이 이 매니저 아래에 런타임으로 만들고, 끝난 인스턴스를 다시 쓴다.
-    // 다중 공격·충격파로 한 번에 여러 그루가 치명타를 맞아도 동시에 이만큼까지만 그린다(넘는 것은 생략, 나무 번쩍임·반동은 그대로).
+    // 다중 공격·충격파로 한 번에 여러 그루가 치명타를 맞으면 쉬는 인스턴스가 모자랄 때 새로 만들어 모두 그린다(아래 MaxActive는 목록 처음 크기).
     private const int CriticalImpactMaxActive = 12;
     private const int CriticalImpactPrewarmCount = 4;
     private readonly List<PresentationLayer.VFX.VFX_CriticalImpact> criticalImpacts = new List<PresentationLayer.VFX.VFX_CriticalImpact>(CriticalImpactMaxActive);
+
+    // "약점 타격" 특성 연출(VFX_WeakPointHit: 절반 이하로 내려온 순간의 노출, 보너스가 들어간 타격의 관통). 치명타 임팩트와 같은 방식으로
+    // 이 매니저 아래에 런타임으로 만들고 끝난 인스턴스를 다시 쓴다. 회전 베기·다중 공격으로 여러 그루가 한꺼번에 나오면 모자란 만큼 새로 만든다.
+    // 미리 만드는 수는 상한과 같다. 회전 베기 한 번에 여러 그루가 처음 절반을 넘으면 그 프레임에 생성(오브젝트+메쉬)이 몰렸었다.
+    // 쉬는 인스턴스는 컴포넌트·렌더러가 꺼져 있어 매 프레임 비용이 없다.
+    private const int WeakPointHitMaxActive = 12;
+    private const int WeakPointHitPrewarmCount = WeakPointHitMaxActive;
+    private readonly List<PresentationLayer.VFX.VFX_WeakPointHit> weakPointHits = new List<PresentationLayer.VFX.VFX_WeakPointHit>(WeakPointHitMaxActive);
+    private const string WeakPointStrikeSortingLayerName = "FlyingItem";
+
+    // "첫 인사" 특성 연출(VFX_HelloHit: 아직 한 번도 맞지 않은 나무에 보너스가 들어간 첫 타). 나무마다 첫 타에 나오고 회전 베기·다중 공격이면
+    // 처음 보는 나무 여러 그루가 한꺼번에 맞으므로 상한을 약점보다 넉넉히 둔다. 약점 관통과 같은 이유로 날아다니는 것 층에 그린다.
+    private const int HelloHitMaxActive = 16;
+    private const int HelloHitPrewarmCount = HelloHitMaxActive;   // 약점과 같은 이유로 상한만큼 미리 만든다
+    private readonly List<PresentationLayer.VFX.VFX_HelloHit> helloHits = new List<PresentationLayer.VFX.VFX_HelloHit>(HelloHitMaxActive);
+
+    // 보석 나무 변신·사망 단계별 추가 연출(VFX_GemTierBurst), 다이아·무지개 원목 잔광(VFX_GemLogTrail).
+    // 치명타 임팩트와 같이 이 매니저 아래에 런타임으로 만들고 끝난 인스턴스를 다시 쓴다. 쉬는 인스턴스가 모자라면 새로 만든다(생략하지 않는다).
+    // 쉬는 인스턴스는 컴포넌트가 꺼져 있어 매 프레임 비용이 없으므로, 재생 순간에 새로 만드는 일이 없도록 넉넉히 미리 만든다
+    // (원목 잔광: 보석 원목 4~7개 x 드랍 배율 x 잭팟 2배, 연출: 여러 그루가 한꺼번에 변신·사망).
+    private const int GemTierBurstMaxActive = 10;
+    private const int GemTierBurstPrewarmCount = 4;
+    private const int GemLogTrailMaxActive = 40;
+    private const int GemLogTrailPrewarmCount = 16;
+    private readonly List<PresentationLayer.VFX.VFX_GemTierBurst> gemTierBursts = new List<PresentationLayer.VFX.VFX_GemTierBurst>(GemTierBurstMaxActive);
+    private readonly List<PresentationLayer.VFX.VFX_GemLogTrail> gemLogTrails = new List<PresentationLayer.VFX.VFX_GemLogTrail>(GemLogTrailMaxActive);
+
+    // 보석 원목을 주울 때 캐릭터 몸에서 터지는 연출(VFX_GemLogPickup). 캐릭터 하나를 따라다니며 연달아 주운 것을 한 인스턴스에 쌓는다.
+    private PresentationLayer.VFX.VFX_GemLogPickup gemLogPickup;
 
     public void Initialize()
     {
@@ -417,11 +446,131 @@ public class InDungeonVFXManager : MonoBehaviour
             if (vfx == null) break;
             criticalImpacts.Add(vfx);
         }
+
+        // 약점 타격 연출도 같은 이유로 몇 개를 미리 만든다(재생은 하지 않는다).
+        while (weakPointHits.Count < WeakPointHitPrewarmCount)
+        {
+            PresentationLayer.VFX.VFX_WeakPointHit vfx = PresentationLayer.VFX.VFX_WeakPointHit.Create(transform);
+            if (vfx == null) break;
+            weakPointHits.Add(vfx);
+        }
+
+        while (helloHits.Count < HelloHitPrewarmCount)
+        {
+            PresentationLayer.VFX.VFX_HelloHit vfx = PresentationLayer.VFX.VFX_HelloHit.Create(transform);
+            if (vfx == null) break;
+            helloHits.Add(vfx);
+        }
+
+        // 보석 단계 연출·원목 잔광도 같은 이유로 몇 개를 미리 만든다(재생은 하지 않는다).
+        while (gemTierBursts.Count < GemTierBurstPrewarmCount)
+        {
+            PresentationLayer.VFX.VFX_GemTierBurst vfx = PresentationLayer.VFX.VFX_GemTierBurst.Create(transform);
+            if (vfx == null) break;
+            gemTierBursts.Add(vfx);
+        }
+
+        while (gemLogTrails.Count < GemLogTrailPrewarmCount)
+        {
+            PresentationLayer.VFX.VFX_GemLogTrail vfx = PresentationLayer.VFX.VFX_GemLogTrail.Create(transform);
+            if (vfx == null) break;
+            gemLogTrails.Add(vfx);
+        }
+
+        if (gemLogPickup == null)
+        {
+            gemLogPickup = PresentationLayer.VFX.VFX_GemLogPickup.Create(transform);
+        }
+    }
+
+    /// <summary>
+    /// 캐릭터가 보석 원목을 주운 순간의 연출(발밑 터짐, 몸을 타고 솟는 반짝이, 발밑 실선 고리, 머리 위 별).
+    /// _anchor는 원목이 빨려 들어간 캐릭터, _tier는 1 황금 / 2 다이아 / 3 무지개.
+    /// </summary>
+    public void PlayGemLogPickup(Transform _anchor, int _tier)
+    {
+        if (_anchor == null || _tier <= 0 || gemLogPickup == null) return;
+
+        gemLogPickup.Play(_anchor, _tier);
+    }
+
+    /// <summary>
+    /// 나무가 보석 단계로 변하는 순간의 단계별 추가 연출(껍질 금·새는 빛·고리, 다이아 이상 결정 조각·반짝이 별, 무지개 두 번째 고리).
+    /// _gemStage는 바뀐 뒤 단계(1 황금, 2 다이아, 3 무지개).
+    /// </summary>
+    public void PlayGemTransformBurst(TreeVisualComponent _visual, int _gemStage)
+    {
+        if (_visual == null || _gemStage <= 0) return;
+
+        PresentationLayer.VFX.VFX_GemTierBurst vfx = GetIdleGemTierBurst();
+        if (vfx == null) return;
+
+        vfx.Play(PresentationLayer.VFX.VFX_GemTierBurst.ModeTransform, _gemStage, _visual.GetTopRootPosition(), _visual.GetBottomRootPosition());
+    }
+
+    /// <summary>보석 나무가 쓰러질 때 보석 사망 이펙트 위에 더하는 단계별 연출(_pose 자리, _gemStage는 최종 단계).</summary>
+    public void PlayGemDeathBurst(in TreeDeadVfxPose _pose, int _gemStage)
+    {
+        if (_gemStage <= 0) return;
+
+        PresentationLayer.VFX.VFX_GemTierBurst vfx = GetIdleGemTierBurst();
+        if (vfx == null) return;
+
+        vfx.Play(PresentationLayer.VFX.VFX_GemTierBurst.ModeDeath, _gemStage, _pose.topPosition, _pose.bottomPosition);
+    }
+
+    /// <summary>다이아·무지개 보석 나무에서 튄 원목들(_logs)에 잔광 꼬리를 붙인다. 황금 이하는 아무것도 하지 않는다.</summary>
+    public void PlayGemLogTrails(List<LogItem> _logs, int _gemStage)
+    {
+        if (_logs == null || _gemStage < 2) return;
+
+        int searchFrom = 0;
+        for (int i = 0; i < _logs.Count; i++)
+        {
+            if (_logs[i] == null) continue;
+
+            PresentationLayer.VFX.VFX_GemLogTrail vfx = null;
+            for (; searchFrom < gemLogTrails.Count; searchFrom++)
+            {
+                PresentationLayer.VFX.VFX_GemLogTrail candidate = gemLogTrails[searchFrom];
+                if (candidate != null && false == candidate.IsPlaying)
+                {
+                    vfx = candidate;
+                    searchFrom++;
+                    break;
+                }
+            }
+
+            if (vfx == null)
+            {
+                // 동시 상한(GemLogTrailMaxActive)에서 생략하지 않고 쉬는 인스턴스가 없으면 새로 만들어 목록을 늘린다
+                vfx = PresentationLayer.VFX.VFX_GemLogTrail.Create(transform);
+                if (vfx == null) return;
+                gemLogTrails.Add(vfx);
+                searchFrom = gemLogTrails.Count;
+            }
+
+            vfx.Play(_logs[i], _gemStage);
+        }
+    }
+
+    private PresentationLayer.VFX.VFX_GemTierBurst GetIdleGemTierBurst()
+    {
+        for (int i = 0; i < gemTierBursts.Count; i++)
+        {
+            PresentationLayer.VFX.VFX_GemTierBurst candidate = gemTierBursts[i];
+            if (candidate != null && false == candidate.IsPlaying) return candidate;
+        }
+
+        // 동시 상한(GemTierBurstMaxActive)에서 생략하지 않고 쉬는 인스턴스가 없으면 새로 만들어 목록을 늘린다
+        PresentationLayer.VFX.VFX_GemTierBurst vfx = PresentationLayer.VFX.VFX_GemTierBurst.Create(transform);
+        if (vfx != null) gemTierBursts.Add(vfx);
+        return vfx;
     }
 
     /// <summary>
     /// 치명타 전용 임팩트(베기 줄기·별 섬광·점선 충격파·파편)를 맞은 자리(밑동 쪽, 기본 피격 톱밥이 터지는 자리)에서 재생한다.
-    /// 맞은 나무의 가장 앞 렌더러보다 한 단계 더 앞에 그린다. 동시에 CriticalImpactMaxActive개를 넘으면 생략한다.
+    /// 맞은 나무의 가장 앞 렌더러보다 한 단계 더 앞에 그린다. 쉬는 인스턴스가 없으면 새로 만든다(생략하지 않는다).
     /// </summary>
     public void PlayCriticalImpactVFX(TreeVisualComponent _visual)
     {
@@ -440,13 +589,86 @@ public class InDungeonVFXManager : MonoBehaviour
 
         if (vfx == null)
         {
-            if (criticalImpacts.Count >= CriticalImpactMaxActive) return;
+            // 동시 상한(CriticalImpactMaxActive)에서 생략하지 않고 쉬는 인스턴스가 없으면 새로 만들어 목록을 늘린다
             vfx = PresentationLayer.VFX.VFX_CriticalImpact.Create(transform);
             if (vfx == null) return;
             criticalImpacts.Add(vfx);
         }
 
         vfx.Play(_visual.GetBottomRootPosition(), TreeSortingLayerName, _visual.GetFrontEffectSortingOrder() + 1);
+    }
+
+    /// <summary>
+    /// "약점 타격" 연출을 맞은 나무 밑동(기본 피격 톱밥이 터지는 자리)에서 재생한다. _mode는 VFX_WeakPointHit.ModeExpose(절반 이하로 내려온 순간)
+    /// 또는 ModeStrike(보너스가 들어간 도끼 타격), _exitDirX는 관통 줄기가 빠지는 쪽(공격자 반대편, 1 또는 -1)이다.
+    /// 노출은 맞은 나무의 가장 앞 렌더러보다 한 단계 더 앞에, 관통은 날아다니는 것 층에 그린다. 쉬는 인스턴스가 없으면 새로 만든다(생략하지 않는다).
+    /// </summary>
+    public void PlayWeakPointHitVFX(TreeVisualComponent _visual, int _mode, int _exitDirX)
+    {
+        if (_visual == null) return;
+
+        PresentationLayer.VFX.VFX_WeakPointHit vfx = null;
+        for (int i = 0; i < weakPointHits.Count; i++)
+        {
+            PresentationLayer.VFX.VFX_WeakPointHit candidate = weakPointHits[i];
+            if (candidate != null && false == candidate.IsPlaying)
+            {
+                vfx = candidate;
+                break;
+            }
+        }
+
+        if (vfx == null)
+        {
+            // 동시 상한(WeakPointHitMaxActive)에서 생략하지 않고 쉬는 인스턴스가 없으면 새로 만들어 목록을 늘린다
+            vfx = PresentationLayer.VFX.VFX_WeakPointHit.Create(transform);
+            if (vfx == null) return;
+            weakPointHits.Add(vfx);
+        }
+
+        Vector3 bottom = _visual.GetBottomRootPosition();
+        if (PresentationLayer.VFX.VFX_WeakPointHit.ModeStrike == _mode)
+        {
+            // 관통은 이 타격으로 쓰러지는 경우가 많아(약점은 HP 절반 이하라 마지막 타격이 되기 쉽다) 나무 층에 두면 사망 이펙트에 묻힌다.
+            // 보석 단계 연출(VFX_GemTierBurst)의 앞 층과 같은 규칙으로 날아다니는 것 층(FlyingItem)에 밑동 y 순서로 그린다.
+            vfx.Play(_mode, bottom, _exitDirX, WeakPointStrikeSortingLayerName, -Mathf.RoundToInt(bottom.y * 100f) + 100);
+        }
+        else
+        {
+            vfx.Play(_mode, bottom, _exitDirX, TreeSortingLayerName, _visual.GetFrontEffectSortingOrder() + 1);
+        }
+    }
+
+    /// <summary>
+    /// "첫 인사" 연출을 맞은 나무 밑동에서 재생한다. _bReply면 나무 꼭대기에 화답 반짝임을 더한다(이 타격으로 쓰러진 나무는 false).
+    /// _awayDirX는 공격자 반대편(1 또는 -1)이다. 쉬는 인스턴스가 없으면 새로 만든다(생략하지 않는다).
+    /// </summary>
+    public void PlayHelloHitVFX(TreeVisualComponent _visual, int _awayDirX, bool _bReply)
+    {
+        if (_visual == null) return;
+
+        PresentationLayer.VFX.VFX_HelloHit vfx = null;
+        for (int i = 0; i < helloHits.Count; i++)
+        {
+            PresentationLayer.VFX.VFX_HelloHit candidate = helloHits[i];
+            if (candidate != null && false == candidate.IsPlaying)
+            {
+                vfx = candidate;
+                break;
+            }
+        }
+
+        if (vfx == null)
+        {
+            // 동시 상한(HelloHitMaxActive)에서 생략하지 않고 쉬는 인스턴스가 없으면 새로 만들어 목록을 늘린다
+            vfx = PresentationLayer.VFX.VFX_HelloHit.Create(transform);
+            if (vfx == null) return;
+            helloHits.Add(vfx);
+        }
+
+        // 첫 타가 곧 마지막 타인 경우(한 방에 쓰러짐)도 많아 나무 층에 두면 사망 이펙트에 묻힌다. 약점 관통과 같은 층·순서 규칙을 쓴다.
+        Vector3 bottom = _visual.GetBottomRootPosition();
+        vfx.Play(bottom, _visual.GetTopRootPosition(), _bReply, _awayDirX, WeakPointStrikeSortingLayerName, -Mathf.RoundToInt(bottom.y * 100f) + 100);
     }
 
     // 쉬고 있는 인스턴스가 _count개(풀 보관 상한 이내)가 되도록 꺼냈다가 돌려놓는다. 꺼낸 동안 동시에 들고 있어야 서로 다른
@@ -1252,6 +1474,28 @@ public class InDungeonVFXManager : MonoBehaviour
         {
             if (criticalImpacts[i] != null) criticalImpacts[i].StopImmediate();
         }
+
+        for (int i = 0; i < weakPointHits.Count; i++)
+        {
+            if (weakPointHits[i] != null) weakPointHits[i].StopImmediate();
+        }
+
+        for (int i = 0; i < helloHits.Count; i++)
+        {
+            if (helloHits[i] != null) helloHits[i].StopImmediate();
+        }
+
+        for (int i = 0; i < gemTierBursts.Count; i++)
+        {
+            if (gemTierBursts[i] != null) gemTierBursts[i].StopImmediate();
+        }
+
+        for (int i = 0; i < gemLogTrails.Count; i++)
+        {
+            if (gemLogTrails[i] != null) gemLogTrails[i].StopImmediate();
+        }
+
+        if (gemLogPickup != null) gemLogPickup.StopImmediate();
     }
 
     /// <summary>
@@ -1399,6 +1643,12 @@ public class InDungeonVFXManager : MonoBehaviour
     /// </summary>
     public void PlayTreeDeadVFX(in TreeDeadVfxPose _pose, TreeType _treeType, int _finalGemStage = 0)
     {
+        // 보석 나무는 보석 사망 이펙트 위에 단계별 추가 연출을 더한다(지진에 튀어 꼭대기에서 터지는 경우도 이 자리를 지난다).
+        if (0 < _finalGemStage)
+        {
+            PlayGemDeathBurst(_pose, _finalGemStage);
+        }
+
         if (vfxComponent == null) return;
 
         // 보석 이펙트는 프리팹 고유 색(보석 팔레트) 그대로 재생한다.

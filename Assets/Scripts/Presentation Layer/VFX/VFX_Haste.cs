@@ -98,8 +98,9 @@ namespace PresentationLayer.VFX
         private ParticleSystemRenderer rootParticleRenderer;
         private ParticleSystem rootParticleSystem;
 
-        private readonly HastePuff[] puffs = new HastePuff[PuffCapacity];
-        private readonly HasteSpark[] sparks = new HasteSpark[SparkCapacity];
+        // 꽉 차면 두 배로 늘리므로 readonly가 아니다(PuffCapacity/SparkCapacity는 처음 크기)
+        private HastePuff[] puffs = new HastePuff[PuffCapacity];
+        private HasteSpark[] sparks = new HasteSpark[SparkCapacity];
 
         // 상태 변수
         private bool bActive;
@@ -295,8 +296,11 @@ namespace PresentationLayer.VFX
             float footY = transform.position.y * PixelsPerUnit + side * groundDirX * 1.5f;
             int count = 2 + (Rand01() < 0.6f ? 1 : 0);
 
-            for (int i = 0; i < count && puffCount < PuffCapacity; i++)
+            for (int i = 0; i < count; i++)
             {
+                // 꽉 차면 새 먼지를 버리지 않고 배열을 두 배로 늘린다
+                if (puffCount >= puffs.Length) System.Array.Resize(ref puffs, puffs.Length * 2);
+
                 HastePuff puff = new HastePuff();
                 puff.x = footX + (Rand01() - 0.5f) * 4.0f;
                 puff.y = footY + 1.0f;
@@ -317,8 +321,11 @@ namespace PresentationLayer.VFX
         {
             int count = 3 + (Rand01() < 0.5f ? 1 : 0);
 
-            for (int i = 0; i < count && sparkCount < SparkCapacity; i++)
+            for (int i = 0; i < count; i++)
             {
+                // 꽉 차면 새 스파크를 버리지 않고 배열을 두 배로 늘린다
+                if (sparkCount >= sparks.Length) System.Array.Resize(ref sparks, sparks.Length * 2);
+
                 HasteSpark spark = new HasteSpark();
                 spark.x = _footX;
                 spark.y = _footY + 2.0f;

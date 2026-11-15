@@ -154,14 +154,8 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     // 이유는 GetEffectiveTransferInterval()의 주석 참고.
     public float itemTransferSpeedMul = 1f;
     private PercentAccumulator itemTransferSpeedAccum;
-    private float globalSpeedMultiplier = 1f;
 
     private MapType mapType;
-
-    public void SetGlobalSpeedMultiplier(float _mul)
-    {
-        globalSpeedMultiplier = _mul;
-    }
 
     // LogCutter.GetSoundVolume()과 동일한 규칙: 마을이 아니면(=던전에 있는 동안 배경에서 계속
     // 납품이 진행되는 상태) 납품 사운드도 재생하지 않는다.
@@ -306,7 +300,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     }
 
     /// <summary>
-    /// 속도 배율이 반영된 실제 출고 간격. 각 라인이 자기 타이머를 이 간격과 비교해
+    /// 출고 간격(배율 1 기준). 각 라인이 자기 타이머를 이 간격과 비교해
     /// TakeFirstItem() 호출 시점을 판단한다.
     ///
     /// [itemTransferSpeedMul을 여기에 곱하지 않는다 - 되돌리지 마십시오]
@@ -322,8 +316,9 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     ///   TransferRoutine의 transferSlotInterval 대기 / TransferOneSlotVisualRoutine의 FLY_INTERVAL.
     /// (NPCTransferRoutine에도 남아 있지만 운반 NPC를 쓰지 않기로 해 실행되지 않는다)
     ///
-    /// globalSpeedMultiplier는 그대로 둔다. 이쪽은 가공 콤보 배속(LogProcessorSpeedUp)이 거는
-    /// 전역 배율이라 제재소 속도 축이 맞다. 다만 그 커맨드가 아직 미배선이라 현재는 항상 1이다.
+    /// 가공 콤보 배속(LogProcessorSpeedUp)도 여기서 나누지 않는다. LogProcessingManager가 라인
+    /// 타이머를 배율만큼 빨리 돌려 반영한다(벨트와 같은 "라인 시간"). 간격을 배율로 나누면 스택이
+    /// 오르는 순간 이미 쌓인 경과시간이 줄어든 간격을 넘어 원목이 바로 튀어나와 벨트 위에서 겹쳤다.
     ///
     /// 컨베이어 특성(ConveyorSpeed) 배율은 여기서 곱하지 않고 LogProcessingManager가 라인별로
     /// 나눈다(GetLineSupplyInterval). 벨트 속도에 출고 주기가 반비례해야 벨트 위 원목 간격이
@@ -332,7 +327,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     /// </summary>
     public float GetEffectiveTransferInterval()
     {
-        return transferInterval / Mathf.Max(0.01f, globalSpeedMultiplier);
+        return transferInterval;
     }
 
     private void LateUpdate()

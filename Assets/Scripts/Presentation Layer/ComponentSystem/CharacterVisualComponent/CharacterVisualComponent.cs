@@ -97,6 +97,8 @@ public class CharacterVisualComponent : MonoBehaviour
     private DashAfterimage[] dashAfterimages;
     private int nextDashAfterimageIndex;
     private SpriteRenderer[] dashAfterimageSources;
+    // 링 버퍼를 늘릴 때 기존 잔상과 같은 머티리얼로 만들기 위해 처음 만들 때의 머티리얼을 기억한다
+    private Material dashAfterimageMaterial;
     private SortingGroup dashAfterimageSortingGroup;
     private bool bDashAfterimageEmitting = false;
     // 대시 시작 자리의 첫 장. 대시는 물리 틱에서 시작해 몸통 스프라이트가 아직 바뀌기 전이므로, 다음 LateUpdate에서
@@ -502,19 +504,26 @@ public class CharacterVisualComponent : MonoBehaviour
 
         dashAfterimageSources = characterVisualComponent.GetComponentsInChildren<SpriteRenderer>(true);
         dashAfterimageSortingGroup = characterVisualComponent.GetComponent<SortingGroup>();
+        dashAfterimageMaterial = _material;
 
-        // 한 번의 대시에서 찍는 장수 + 마지막 장이 사라질 때까지 겹치는 장수. 연속 대시로 모자라면 가장 오래된 잔상부터 다시 쓴다.
+        // 한 번의 대시에서 찍는 장수 + 마지막 장이 사라질 때까지 겹치는 장수. 연속 대시로 모자라면 사라지는 중인 잔상을 덮어쓰지 않고 늘린다(EmitDashAfterimage).
         int count = Mathf.CeilToInt((Mathf.Max(_emitDuration, 0f) + dashAfterimageFadeDuration) / dashAfterimageInterval) + 1;
         dashAfterimages = new DashAfterimage[count];
 
         for (int i = 0; i < count; i++)
         {
-            dashAfterimages[i] = DashAfterimage.Create(dashAfterimageSources.Length, _material);
-            // 캐릭터는 씬을 넘어 재사용되므로 잔상도 씬 전환에 함께 남는다(파괴는 OnDestroy에서).
-            DontDestroyOnLoad(dashAfterimages[i].gameObject);
+            dashAfterimages[i] = CreateDashAfterimage();
         }
 
         nextDashAfterimageIndex = 0;
+    }
+
+    private DashAfterimage CreateDashAfterimage()
+    {
+        DashAfterimage afterimage = DashAfterimage.Create(dashAfterimageSources.Length, dashAfterimageMaterial);
+        // 캐릭터는 씬을 넘어 재사용되므로 잔상도 씬 전환에 함께 남는다(파괴는 OnDestroy에서).
+        DontDestroyOnLoad(afterimage.gameObject);
+        return afterimage;
     }
 
     private void UpdateDashAfterimages(float _deltaTime)
@@ -544,6 +553,22 @@ public class CharacterVisualComponent : MonoBehaviour
         if (null == dashAfterimages || 0 == dashAfterimages.Length) return;
 
         DashAfterimage afterimage = dashAfterimages[nextDashAfterimageIndex];
+        // 꽉 차면(연속 대시 등) 아직 사라지는 중인 잔상을 덮어쓰지 않고 링 버퍼를 두 배로 늘린다.
+        // 늘어난 칸의 잔상은 처음 만들 때와 같은 방식으로 쓸 때 하나씩 만든다.
+        if (null != afterimage && true == afterimage.gameObject.activeSelf)
+        {
+            int oldLength = dashAfterimages.Length;
+            System.Array.Resize(ref dashAfterimages, oldLength * 2);
+            nextDashAfterimageIndex = oldLength;
+            afterimage = null;
+        }
+
+        if (null == afterimage)
+        {
+            afterimage = CreateDashAfterimage();
+            dashAfterimages[nextDashAfterimageIndex] = afterimage;
+        }
+
         nextDashAfterimageIndex = (nextDashAfterimageIndex + 1) % dashAfterimages.Length;
 
         // 잔상은 찍힌 자리의 캐릭터 정렬값보다 한 칸 뒤에 둔다 - 시작 위치에서 캐릭터와 겹쳐도 캐릭터를 덮지 않는다.
