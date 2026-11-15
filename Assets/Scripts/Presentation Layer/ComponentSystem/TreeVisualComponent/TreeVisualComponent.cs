@@ -765,12 +765,39 @@ public class TreeVisualComponent : MonoBehaviour
         // 피격마다 새 Tweener를 만들지 않도록 재활용한다. 죽일 때는 target이 visualRoot인지 확인하므로
         // 다른 나무에 재활용된 트윈을 잘못 죽일 일이 없다(KillHitPunchTween 참조).
         float punchX = _bCritical ? hitPunchX * criticalPunchMultiplier : hitPunchX;
-        hitPunchTween = visualRoot.DOPunchPosition(new Vector3(punchX, 0f, 0f), hitDuration, hitVibrato, hitElasticity).SetRecyclable(true);
+        if (hitDuration <= 0f)
+        {
+            // DOPunchPosition은 길이가 0 이하면 경고만 남기고 null을 돌려준다. 그 경로는 그대로 둔다.
+            hitPunchTween = visualRoot.DOPunchPosition(new Vector3(punchX, 0f, 0f), hitDuration, hitVibrato, hitElasticity).SetRecyclable(true);
+        }
+        else
+        {
+            // DOPunchPosition 본문(DOTween.Punch(getter, setter, ...).SetTarget(target).SetOptions(false))과 같다.
+            // 피격마다 새로 만들던 getter/setter 대리자만 visualRoot별로 한 번 만들어 둔다.
+            EnsureHitPunchAccessors();
+            hitPunchTween = DOTween.Punch(hitPunchGetter, hitPunchSetter, new Vector3(punchX, 0f, 0f), hitDuration, hitVibrato, hitElasticity)
+                .SetTarget(visualRoot).SetOptions(false).SetRecyclable(true);
+        }
 
         if (_bCritical)
         {
             PlayCriticalHitScale();
         }
+    }
+
+    // 피격 펀치용 getter/setter. DOPunchPosition이 매번 만들던 것과 같은 대상(그 시점의 visualRoot)을 붙잡는다.
+    private Transform hitPunchAccessorTarget;
+    private DG.Tweening.Core.DOGetter<Vector3> hitPunchGetter;
+    private DG.Tweening.Core.DOSetter<Vector3> hitPunchSetter;
+
+    private void EnsureHitPunchAccessors()
+    {
+        if (null != hitPunchGetter && ReferenceEquals(hitPunchAccessorTarget, visualRoot)) return;
+
+        Transform target = visualRoot;
+        hitPunchAccessorTarget = target;
+        hitPunchGetter = () => target.localPosition;
+        hitPunchSetter = x => target.localPosition = x;
     }
 
     // 치명타: 빠르게(OutQuad) 커졌다가, 줄어들며 반대로 한 번 출렁이고(감쇠 진동) 원래 크기로 돌아온다.

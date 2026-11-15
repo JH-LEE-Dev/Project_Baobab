@@ -141,7 +141,8 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     {
         bAttacked = true;
         Sound.Play(SoundID.Swing, transform.position);
-        axeAnimation.PlaySwing(OnAttackImpact);
+        if (null == cachedOnAttackImpact) cachedOnAttackImpact = OnAttackImpact;
+        axeAnimation.PlaySwing(cachedOnAttackImpact);
 
         if (!bIsSpeedReduced)
         {
@@ -166,9 +167,14 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         }
 
         AttackEvent?.Invoke();
-        axeAnimation.PlayReturn(OnAttackFinish);
+        if (null == cachedOnAttackFinish) cachedOnAttackFinish = OnAttackFinish;
+        axeAnimation.PlayReturn(cachedOnAttackFinish);
         attackCoolDownCoroutine = StartCoroutine(AttackCoolDownRoutine());
     }
+
+    // 스윙마다 새 Action을 만들지 않도록 한 번만 만든다(AxeAnimation은 받은 콜백을 부르기만 한다).
+    private System.Action cachedOnAttackImpact;
+    private System.Action cachedOnAttackFinish;
 
     private void OnAttackFinish()
     {

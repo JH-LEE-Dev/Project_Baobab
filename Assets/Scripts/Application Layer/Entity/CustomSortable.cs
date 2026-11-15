@@ -36,7 +36,9 @@ public class CustomSortable : MonoBehaviour
     public static void CollectEnabled(List<CustomSortable> _into)
     {
         _into.Clear();
-        _into.AddRange(enabledSortables);
+        // AddRange(HashSet)은 임시 배열을 새로 만들어 복사한다. 같은 순서(HashSet 열거 순서 = CopyTo 순서)로 직접 담는다.
+        if (_into.Capacity < enabledSortables.Count) _into.Capacity = enabledSortables.Count;
+        foreach (CustomSortable sortable in enabledSortables) _into.Add(sortable);
     }
 
     private void OnEnable() => enabledSortables.Add(this);

@@ -41,7 +41,17 @@ public class AxeAnimation : MonoBehaviour
         cachedNotifyReturnComplete = NotifyReturnComplete;
         cachedOnSwingKilled = OnSwingKilled;
         cachedOnReturnKilled = OnReturnKilled;
+
+        // DOLocalRotate / DOLocalRotateQuaternion 본문이 매번 만들던 getter/setter를 한 번만 만든다(대상은 같은 transform).
+        Transform target = transform;
+        cachedRotationTarget = target;
+        cachedLocalRotationGetter = () => target.localRotation;
+        cachedLocalRotationSetter = x => target.localRotation = x;
     }
+
+    private Transform cachedRotationTarget;
+    private DG.Tweening.Core.DOGetter<Quaternion> cachedLocalRotationGetter;
+    private DG.Tweening.Core.DOSetter<Quaternion> cachedLocalRotationSetter;
 
     public void PlaySwing(Action _onComplete)
     {
@@ -53,7 +63,12 @@ public class AxeAnimation : MonoBehaviour
 
         // 2. 휘두르기 회전 시작
         // 스윙마다 새 Tweener를 할당하지 않도록 재활용한다. OnKill(완료 후 자동 Kill 포함)에서 참조를 비운다.
-        swingTween = transform.DOLocalRotate(new Vector3(0, 0, endRotationZ), swingDuration, RotateMode.LocalAxisAdd)
+        // transform.DOLocalRotate(...)와 같다: DOTween.To(getter, setter, end, duration) -> SetTarget(transform) -> rotateMode 지정
+        DG.Tweening.Core.TweenerCore<Quaternion, Vector3, DG.Tweening.Plugins.Options.QuaternionOptions> swing =
+            DOTween.To(cachedLocalRotationGetter, cachedLocalRotationSetter, new Vector3(0, 0, endRotationZ), swingDuration);
+        swing.SetTarget(cachedRotationTarget);
+        swing.plugOptions.rotateMode = RotateMode.LocalAxisAdd;
+        swingTween = swing
             .SetEase(swingEase)
             .SetRecyclable(true)
             .OnKill(cachedOnSwingKilled)
@@ -65,7 +80,9 @@ public class AxeAnimation : MonoBehaviour
         onReturnComplete = _onComplete;
 
         // 3. 원래 회전으로 복귀 시작
-        returnTween = transform.DOLocalRotateQuaternion(initialLocalRot, returnDuration)
+        // transform.DOLocalRotateQuaternion(...)와 같다: DOTween.To(PureQuaternionPlugin, getter, setter, end, duration).SetTarget(transform)
+        returnTween = DOTween.To(DG.Tweening.CustomPlugins.PureQuaternionPlugin.Plug(), cachedLocalRotationGetter, cachedLocalRotationSetter, initialLocalRot, returnDuration)
+            .SetTarget(cachedRotationTarget)
             .SetEase(returnEase)
             .SetRecyclable(true)
             .OnKill(cachedOnReturnKilled)

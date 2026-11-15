@@ -115,6 +115,91 @@ public sealed class QuakeObjectRide
     private static readonly int ColorId = Shader.PropertyToID("_Color");
 
     private static readonly List<Part> partBuffer = new List<Part>(16);
+
+    // [재사용] 물결마다 수백~수천 개씩 만들던 Rider·Part와 그 배열(길이 그대로)을 Stop에서 돌려받아 다음에 다시 쓴다.
+    // 꺼낼 때 모든 필드를 선언 기본값으로 되돌리므로 새로 만든 것과 같다. 배열은 길이별로 따로 모은다(길이가 달라지면 안 된다).
+    private static readonly Stack<Part> partPool = new Stack<Part>(256);
+    private static readonly Stack<Rider> riderPool = new Stack<Rider>(256);
+    private static readonly Dictionary<int, Stack<Part[]>> partArrayPool = new Dictionary<int, Stack<Part[]>>();
+    private static readonly Dictionary<int, Stack<bool[]>> boolArrayPool = new Dictionary<int, Stack<bool[]>>();
+    private static readonly Dictionary<int, Stack<Transform[]>> transformArrayPool = new Dictionary<int, Stack<Transform[]>>();
+
+    private static Part RentPart()
+    {
+        return partPool.Count > 0 ? partPool.Pop() : new Part();
+    }
+
+    private static void ReturnPart(Part _part)
+    {
+        if (null == _part) return;
+        _part.transform = null;
+        _part.source = null;
+        _part.sample = null;
+        _part.standIn = null;
+        _part.standInMaterial = null;
+        partPool.Push(_part);
+    }
+
+    // List.ToArray와 같은 내용·길이의 배열(길이 0이면 빈 배열)
+    private static T[] RentArrayCopy<T>(Dictionary<int, Stack<T[]>> _pool, List<T> _source)
+    {
+        int count = _source.Count;
+        T[] array;
+        if (_pool.TryGetValue(count, out Stack<T[]> stack) && stack.Count > 0) array = stack.Pop();
+        else array = new T[count];
+
+        _source.CopyTo(array);
+        return array;
+    }
+
+    private static T[] RentArrayCleared<T>(Dictionary<int, Stack<T[]>> _pool, int _count)
+    {
+        if (_pool.TryGetValue(_count, out Stack<T[]> stack) && stack.Count > 0) return stack.Pop();
+        return new T[_count];
+    }
+
+    private static void ReturnArray<T>(Dictionary<int, Stack<T[]>> _pool, T[] _array)
+    {
+        if (null == _array) return;
+        System.Array.Clear(_array, 0, _array.Length);
+        if (false == _pool.TryGetValue(_array.Length, out Stack<T[]> stack))
+        {
+            stack = new Stack<T[]>(16);
+            _pool.Add(_array.Length, stack);
+        }
+        stack.Push(_array);
+    }
+
+    private static void ReturnRider(Rider _rider)
+    {
+        if (null == _rider) return;
+
+        if (null != _rider.parts)
+        {
+            for (int p = 0; p < _rider.parts.Length; p++) ReturnPart(_rider.parts[p]);
+            ReturnArray(partArrayPool, _rider.parts);
+        }
+        ReturnArray(boolArrayPool, _rider.popParts);
+        ReturnArray(transformArrayPool, _rider.grounded);
+
+        _rider.root = null;
+        _rider.parts = null;
+        _rider.bTree = false;
+        _rider.pop = PopKind.None;
+        _rider.popParts = null;
+        _rider.grounded = null;
+        _rider.squash = null;
+        _rider.ground = null;
+        _rider.look = null;
+        riderPool.Push(_rider);
+    }
+
+    // partBuffer에 모았다가 쓰지 않고 버리는 Part를 돌려받는다.
+    private static void ReturnBufferedParts()
+    {
+        for (int p = 0; p < partBuffer.Count; p++) ReturnPart(partBuffer[p]);
+        partBuffer.Clear();
+    }
     private static readonly List<int> pixelBuffer = new List<int>(16);
     private static readonly List<CustomSortable> sortableBuffer = new List<CustomSortable>(1024);
     private static readonly List<CustomSortable> innerSortables = new List<CustomSortable>(8);
@@ -193,6 +278,7 @@ public sealed class QuakeObjectRide
         bActive = false;
         ripple = null;
         ClearGather();
+        for (int i = 0; i < riders.Count; i++) ReturnRider(riders[i]);
         riders.Clear();
         roots.Clear();
         known.Clear();
@@ -344,7 +430,11 @@ public sealed class QuakeObjectRide
         // 나무는 루트 하나가 통째로 한 부분이다(충돌체 없음·정렬기 하나). 그 부분에만 높이를 담는다.
         bool bTree = bTreeRoot && partBuffer.Count == 1 && partBuffer[0].transform == root && null == partBuffer[0].source;
         // 칸 높이를 따르지 않으면 높이를 담을 수 있는 나무와 튀는 물체만 둔다(다른 모양은 움직일 일이 없다).
-        if (false == bRideHeights && false == bTree && PopKind.None == pop) return;
+        if (false == bRideHeights && false == bTree && PopKind.None == pop)
+        {
+            ReturnBufferedParts();
+            return;
+        }
 
         SampleNearest(root, partBuffer);
         for (int p = 0; p < partBuffer.Count; p++)
@@ -356,7 +446,10 @@ public sealed class QuakeObjectRide
             standIns.Add(part.standIn);
         }
 
-        Rider rider = new Rider { root = root, parts = partBuffer.ToArray(), bTree = bTree };
+        Rider rider = riderPool.Count > 0 ? riderPool.Pop() : new Rider();
+        rider.root = root;
+        rider.parts = RentArrayCopy(partArrayPool, partBuffer);
+        rider.bTree = bTree;
         if (PopKind.None != pop && false == bTree) SetupPop(rider, pop);
 
         roots.Add(root);
@@ -382,7 +475,7 @@ public sealed class QuakeObjectRide
 
         _rider.pop = _pop;
         _rider.ground = _rider.root.GetComponent<CustomSortable>();
-        _rider.popParts = new bool[_rider.parts.Length];
+        _rider.popParts = RentArrayCleared(boolArrayPool, _rider.parts.Length);
         groundedBuffer.Clear();
 
         for (int p = 0; p < _rider.parts.Length; p++)
@@ -421,7 +514,7 @@ public sealed class QuakeObjectRide
             rendererBuffer.Clear();
         }
 
-        _rider.grounded = groundedBuffer.ToArray();
+        _rider.grounded = RentArrayCopy(transformArrayPool, groundedBuffer);
         groundedBuffer.Clear();
 
         if (PopKind.Character == _pop)
@@ -492,7 +585,10 @@ public sealed class QuakeObjectRide
         {
             if (null != _transform.GetComponentInChildren<Renderer>(true))
             {
-                _into.Add(new Part { transform = _transform, sample = null != _inherited ? _inherited : single });
+                Part whole = RentPart();
+                whole.transform = _transform;
+                whole.sample = null != _inherited ? _inherited : single;
+                _into.Add(whole);
             }
             return;
         }
@@ -501,7 +597,11 @@ public sealed class QuakeObjectRide
         SpriteRenderer sprite = _transform.GetComponent<SpriteRenderer>();
         if (null != sprite && null == sprite.GetComponentInParent<SortingGroup>(true))
         {
-            _into.Add(new Part { transform = _transform, source = sprite, sample = _inherited });
+            Part ownPart = RentPart();
+            ownPart.transform = _transform;
+            ownPart.source = sprite;
+            ownPart.sample = _inherited;
+            _into.Add(ownPart);
         }
 
         for (int c = 0; c < _transform.childCount; c++)

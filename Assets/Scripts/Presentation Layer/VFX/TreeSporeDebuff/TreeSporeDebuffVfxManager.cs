@@ -88,6 +88,8 @@ namespace PresentationLayer.VFX
 
         // 내부 의존성
         private readonly List<Entry> entries = new List<Entry>(32);
+        // 목록에서 빠진 Entry를 모아 다음 등록에 다시 쓴다(빠질 때 모든 필드를 선언 기본값으로 되돌린다). 목록 밖에서 Entry를 들고 있는 곳은 없다.
+        private readonly Stack<Entry> entryPool = new Stack<Entry>(32);
         private readonly Stack<SpriteRenderer> overlayPool = new Stack<SpriteRenderer>(16);
         private readonly Stack<SpriteRenderer> groundPool = new Stack<SpriteRenderer>(16);
         private Mesh groundMesh;
@@ -164,7 +166,7 @@ namespace PresentationLayer.VFX
                 return;
             }
 
-            Entry e = new Entry();
+            Entry e = 0 < entryPool.Count ? entryPool.Pop() : new Entry();
             e.tree = _tree;
             e.topSprite = top;
             e.tier = Mathf.Clamp(_tier, 1, 3);
@@ -249,6 +251,28 @@ namespace PresentationLayer.VFX
                 groundPool.Push(_e.ground);
                 _e.ground = null;
             }
+
+            // 새 Entry와 같은 상태로 되돌려 재사용한다(필드 선언 기본값 그대로).
+            _e.tree = null;
+            _e.topSprite = null;
+            _e.lastSprite = null;
+            _e.tier = 0;
+            _e.variant = 0;
+            _e.seed = 0u;
+            _e.mask = default;
+            _e.layout = default;
+            _e.bGroundPlaced = false;
+            _e.groundX = 0;
+            _e.groundY = 0;
+            _e.groundZBits = 0;
+            _e.hitTime = -100.0f;
+            _e.hitSequence = 0;
+            _e.baseX = 0;
+            _e.baseY = 0;
+            _e.bVisible = false;
+            _e.bFull = false;
+            _e.distance = 0.0f;
+            entryPool.Push(_e);
         }
 
         private SpriteRenderer GetRenderer(Stack<SpriteRenderer> _pool, string _name)

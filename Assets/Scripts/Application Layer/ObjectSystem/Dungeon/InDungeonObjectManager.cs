@@ -619,6 +619,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     }
 
     private static readonly Comparison<ConstellationHit> ConstellationHitTimeComparison = (a, b) => a.hitTime.CompareTo(b.hitTime);
+    // 같은 비교를 IComparer로 감싼 것. List.Sort(Comparison)이 정렬마다 만드는 비교 객체를 없앤다.
+    private static readonly IComparer<ConstellationHit> ConstellationHitTimeComparer = Comparer<ConstellationHit>.Create(ConstellationHitTimeComparison);
 
     // 발현 폭발 타격음 칸(초). 파동(0.4초) 안에서 범위 안쪽 나무는 거의 한꺼번에 맞아, 나무마다 타격음을 내면 체력 비율마다
     // 다른 피치의 타격음이 수십 개 겹친다. 폭발 한 번 안에서 이 간격의 칸마다 처음 맞은 나무 한 그루만 타격음을 내고
@@ -3207,6 +3209,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     // 포자 대폭발 음원(SporeBigExplosion 큐 3종)은 재생 후 약 0.1초에 터지는 소리가 시작된다.
     private const float SporeBigExplosionSoundLead = 0.1f;
+    // 대기 길이가 상수라(BurstDelay = 상수 PreTime) 매번 같은 값이므로 하나를 같이 쓴다. 유니티는 yield 때 초를 읽기만 해서 겹쳐 써도 된다.
+    private static readonly WaitForSeconds SporeBigExplosionSoundWait = new WaitForSeconds(Mathf.Max(0f, PresentationLayer.VFX.VFX_SporeBigExplosion.BurstDelay - SporeBigExplosionSoundLead));
 
     /// <summary>
     /// 폭발음이 이펙트의 응집이 끝나고 터지는 순간(VFX_SporeBigExplosion.BurstDelay)에 들리도록 늦춰 재생한다.
@@ -3215,7 +3219,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     {
         int version = sporeBigExplosionVersion;
 
-        yield return new WaitForSeconds(Mathf.Max(0f, PresentationLayer.VFX.VFX_SporeBigExplosion.BurstDelay - SporeBigExplosionSoundLead));
+        yield return SporeBigExplosionSoundWait;
 
         // 기다리는 사이 던전을 떠났으면 울리지 않는다.
         if (version != sporeBigExplosionVersion) yield break;
@@ -3547,6 +3551,14 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // 지진 연출(분출 자리·쓰러진 나무 기울기) 전용 난수. 게임 판정이 쓰는 UnityEngine.Random 순서를 건드리지 않도록 따로 둔다.
     private static readonly System.Random quakeVisualRandom = new System.Random();
 
+    // 분출 자리 정렬 비교(z 오름차순). 정렬마다 비교 객체를 새로 만들지 않도록 하나를 쓴다(같은 비교, 같은 정렬 알고리즘).
+    private sealed class QuakeEruptionPointZComparer : IComparer<Vector3>
+    {
+        public int Compare(Vector3 _a, Vector3 _b) => _a.z.CompareTo(_b.z);
+    }
+
+    private static readonly QuakeEruptionPointZComparer QuakeEruptionPointComparer = new QuakeEruptionPointZComparer();
+
     // 피해 범위(_strikeRect) 안에서 분출 자리를 고른다. x·y = 바닥 자리, z = 진원에서의 바닥 평면 거리(앞머리가 닿는 순서로 정렬).
     private static List<Vector3> PickQuakeEruptionPoints(Vector3 _origin, Rect _strikeRect)
     {
@@ -3569,7 +3581,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             }
         }
 
-        points.Sort((_a, _b) => _a.z.CompareTo(_b.z));
+        points.Sort(QuakeEruptionPointComparer);
         return points;
     }
 
@@ -3914,7 +3926,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             });
         }
 
-        _hits.Sort(ConstellationHitTimeComparison);
+        _hits.Sort(ConstellationHitTimeComparer);
     }
 
     // 나무를 실제로 때렸으면 true(건너뛴 나무는 false - 그 칸의 타격음을 다음 나무가 이어받는다).

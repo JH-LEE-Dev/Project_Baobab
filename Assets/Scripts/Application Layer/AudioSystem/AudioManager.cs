@@ -364,6 +364,13 @@ public class AudioManager : MonoBehaviour
 
     private void OnDisable()
     {
+        // 오브젝트가 꺼지면 유니티가 이 컴포넌트의 코루틴을 모두 멈춘다(원래 동기화 코루틴도 이때 사라졌다).
+        if (false == gameObject.activeInHierarchy)
+        {
+            volumeSyncDriver = null;
+            pendingVolumeSyncCount = 0;
+        }
+
         if (Instance != this) return;
 
         UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
@@ -1428,7 +1435,7 @@ public class AudioManager : MonoBehaviour
         // 이후 이동이나 카메라 변화에 따른 동적 거리 감쇠가 Unity 엔진 표준 방식으로 계속 적용되게 한다.
         if (is3DSound)
         {
-            StartCoroutine(SyncVolumeNextFrameRoutine(handle));
+            QueueSyncVolumeNextFrame(handle);
         }
 
         return handle;
@@ -1440,6 +1447,108 @@ public class AudioManager : MonoBehaviour
         if (!is3DSound || cachedRolloffCurve == null || GetListenerCamera(out Vector3 listenerPos) == null) return 1f;
 
         return cachedRolloffCurve.Evaluate(Vector3.Distance(FlattenToListenerZ(position), listenerPos));
+    }
+
+    /// <summary>
+    /// 효과음 클립의 오디오 데이터를 미리 불러온다(스트리밍인 배경음은 제외). 클립은 모두 "미리 불러오기 꺼짐"이라 원래는
+    /// 처음 재생하는 순간 메인 스레드에서 동기로 불러와 그 프레임이 20~40ms 멈췄다. 불러온 데이터는 원래도 세션 내내 남으므로
+    /// (UnloadAudioData를 부르지 않는다) 재생 결과는 같고 처음 재생할 때의 멈춤만 없어진다.
+    /// 한 프레임에 _frameBudgetSeconds 정도만 쓰고 다음 프레임으로 넘긴다. 다 불러오기 전에 재생되는 클립은 원래처럼 그때 불러온다.
+    /// </summary>
+    public System.Collections.IEnumerator PreloadSfxClipsRoutine(float _frameBudgetSeconds)
+    {
+        if (null == database || null == database.sounds) yield break;
+
+        HashSet<AudioClip> visited = new HashSet<AudioClip>();
+        float frameStart = Time.realtimeSinceStartup;
+
+        for (int i = 0; i < database.sounds.Count; i++)
+        {
+            AudioData data = database.sounds[i];
+            if (null == data) continue;
+
+            if (true == PreloadClip(data.clip, visited) && Time.realtimeSinceStartup - frameStart >= _frameBudgetSeconds)
+            {
+                yield return null;
+                frameStart = Time.realtimeSinceStartup;
+            }
+
+            if (null == data.cueData || null == data.cueData.clips) continue;
+
+            for (int c = 0; c < data.cueData.clips.Count; c++)
+            {
+                if (true == PreloadClip(data.cueData.clips[c], visited) && Time.realtimeSinceStartup - frameStart >= _frameBudgetSeconds)
+                {
+                    yield return null;
+                    frameStart = Time.realtimeSinceStartup;
+                }
+            }
+        }
+    }
+
+    // 불러오기를 실제로 했으면 true
+    private static bool PreloadClip(AudioClip _clip, HashSet<AudioClip> _visited)
+    {
+        if (null == _clip || false == _visited.Add(_clip)) return false;
+        if (AudioClipLoadType.Streaming == _clip.loadType) return false;
+        if (AudioDataLoadState.Unloaded != _clip.loadState) return false;
+
+        _clip.LoadAudioData();
+        return true;
+    }
+
+    // 3D 소리마다 코루틴을 새로 시작하던 것(SyncVolumeNextFrameRoutine)을 상주 코루틴 하나가 대신 처리한다.
+    // - 원래 코루틴은 시작한 다음 프레임의 yield null 단계에서 한 번 깨어난다. 상주 코루틴도 같은 단계에서 매 프레임 깨어나
+    //   "등록 프레임 < 지금 프레임"인 항목만 처리하므로 같은 프레임에 처리된다.
+    // - 그 단계의 다른 코루틴(페이드/램프/연출 계수)도 모두 ApplySourceVolume과 같은 식(목표 볼륨 x 계수)으로만 쓰고,
+    //   이 처리도 같은 식을 다시 쓸 뿐이라 서로의 순서와 무관하게 프레임 끝 볼륨이 같다.
+    // - 오브젝트가 꺼져 코루틴이 멈추면 원래처럼 남은 항목도 버린다. 꺼져 있을 때는 원래 경로(StartCoroutine) 그대로 둔다.
+    private struct PendingVolumeSync
+    {
+        public AudioHandle handle;
+        public int frame;
+    }
+
+    private PendingVolumeSync[] pendingVolumeSyncs = new PendingVolumeSync[64];
+    private int pendingVolumeSyncCount;
+    private Coroutine volumeSyncDriver;
+
+    private void QueueSyncVolumeNextFrame(AudioHandle handle)
+    {
+        if (false == isActiveAndEnabled)
+        {
+            StartCoroutine(SyncVolumeNextFrameRoutine(handle));
+            return;
+        }
+
+        if (null == volumeSyncDriver) volumeSyncDriver = StartCoroutine(VolumeSyncDriverRoutine());
+
+        if (pendingVolumeSyncCount == pendingVolumeSyncs.Length) System.Array.Resize(ref pendingVolumeSyncs, pendingVolumeSyncs.Length * 2);
+        pendingVolumeSyncs[pendingVolumeSyncCount++] = new PendingVolumeSync { handle = handle, frame = Time.frameCount };
+    }
+
+    private System.Collections.IEnumerator VolumeSyncDriverRoutine()
+    {
+        while (true)
+        {
+            yield return null;
+
+            int frame = Time.frameCount;
+            int keep = 0;
+            for (int i = 0; i < pendingVolumeSyncCount; i++)
+            {
+                PendingVolumeSync entry = pendingVolumeSyncs[i];
+                if (entry.frame < frame)
+                {
+                    if (IsHandleValid(entry.handle)) ApplySourceVolume(entry.handle.sourceIndex);
+                }
+                else
+                {
+                    pendingVolumeSyncs[keep++] = entry;
+                }
+            }
+            pendingVolumeSyncCount = keep;
+        }
     }
 
     private System.Collections.IEnumerator SyncVolumeNextFrameRoutine(AudioHandle handle)

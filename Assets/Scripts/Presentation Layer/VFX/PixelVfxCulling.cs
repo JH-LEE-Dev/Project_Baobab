@@ -19,6 +19,13 @@ namespace PresentationLayer.VFX
         public const float BoundsDepth = 10.0f;
 
         private static readonly Plane[] frustumPlanes = new Plane[6];
+        // 평면 값을 관리 코드에서 바로 쓰려고 풀어 둔 것(nx, ny, nz, |nx|, |ny|, |nz|, d 순서로 평면 6개)
+        private static readonly float[] planeData = new float[6 * 7];
+
+        // 관리 코드로 먼저 판정할 때 둘 여유(월드 유닛). 평면까지 거리 + 반경이 이보다 확실히 크거나 작을 때만 바로 답하고,
+        // 경계 근처(±여유 안)는 원래처럼 TestPlanesAABB에 맡긴다. 좌표가 수백 유닛이어도 float 계산 오차는 1e-3보다 훨씬 작아서,
+        // 바로 답하는 경우는 TestPlanesAABB도 반드시 같은 답을 낸다(결과 동일, 대부분 네이티브 호출만 줄어든다).
+        private const float ManagedTestSlack = 0.01f;
         private static Camera cachedCamera;
         private static int cachedFrame = -1;
         private static bool bHasCamera;
@@ -35,10 +42,40 @@ namespace PresentationLayer.VFX
                 if (null == cachedCamera || false == cachedCamera.isActiveAndEnabled) cachedCamera = Camera.main;
 
                 bHasCamera = null != cachedCamera;
-                if (true == bHasCamera) GeometryUtility.CalculateFrustumPlanes(cachedCamera, frustumPlanes);
+                if (true == bHasCamera)
+                {
+                    GeometryUtility.CalculateFrustumPlanes(cachedCamera, frustumPlanes);
+                    for (int i = 0; i < 6; i++)
+                    {
+                        Vector3 n = frustumPlanes[i].normal;
+                        int o = i * 7;
+                        planeData[o] = n.x;
+                        planeData[o + 1] = n.y;
+                        planeData[o + 2] = n.z;
+                        planeData[o + 3] = Mathf.Abs(n.x);
+                        planeData[o + 4] = Mathf.Abs(n.y);
+                        planeData[o + 5] = Mathf.Abs(n.z);
+                        planeData[o + 6] = frustumPlanes[i].distance;
+                    }
+                }
             }
 
             if (false == bHasCamera) return true;
+
+            // 상자가 어느 평면의 완전히 바깥이면 안 보인다(TestPlanesAABB와 같은 판정: 평면까지 거리 + 반경 < 0).
+            float ex = _size.x * 0.5f;
+            float ey = _size.y * 0.5f;
+            float ez = _size.z * 0.5f;
+            bool bNearBoundary = false;
+            for (int o = 0; o < 6 * 7; o += 7)
+            {
+                float reach = planeData[o] * _center.x + planeData[o + 1] * _center.y + planeData[o + 2] * _center.z + planeData[o + 6]
+                    + planeData[o + 3] * ex + planeData[o + 4] * ey + planeData[o + 5] * ez;
+                if (-ManagedTestSlack > reach) return false;
+                if (ManagedTestSlack > reach) bNearBoundary = true;
+            }
+
+            if (false == bNearBoundary) return true;
             return GeometryUtility.TestPlanesAABB(frustumPlanes, new Bounds(_center, _size));
         }
 

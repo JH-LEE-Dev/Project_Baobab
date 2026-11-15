@@ -114,6 +114,10 @@ public class WhirlwindVFX : MonoBehaviour
     // 바람 먼지
     private const int WindMoteCount = 36;
     private const float WindMoteLifeMax = 0.4f;
+    // 칼날이 식는 시간, 마지막 베인 자국·바람 먼지·별빛이 사라지는 시간 중 가장 늦은 때. 인자가 전부 상수라 매 프레임
+    // 같은 값이므로(params 배열 할당만 생기던 것) 한 번만 계산한다. 식은 Update에 있던 그대로다.
+    private static readonly float DrawTailSeconds = Mathf.Max(BladeFadeSeconds, WindMoteLifeMax,
+        (FinaleTwinkleCount - 1) * FinaleTwinkleStep + FinaleTwinkleLife);
 
 
 
@@ -551,8 +555,7 @@ public class WhirlwindVFX : MonoBehaviour
         elapsed += Time.deltaTime;
 
         // 칼날이 식는 시간, 마지막 베인 자국·바람 먼지·별빛이 사라지는 시간 중 가장 늦은 때까지 그린다.
-        float tail = Mathf.Max(BladeFadeSeconds, WindMoteLifeMax,
-            (FinaleTwinkleCount - 1) * FinaleTwinkleStep + FinaleTwinkleLife);
+        float tail = DrawTailSeconds;
         float bladeEnd = SweepDuration + tail;
         float hitEnd = lastHitTime >= 0f ? lastHitTime + HitTailSeconds : 0f;
         if (elapsed >= bladeEnd && elapsed >= hitEnd)

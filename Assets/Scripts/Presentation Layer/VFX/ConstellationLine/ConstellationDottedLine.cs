@@ -144,6 +144,10 @@ public class ConstellationDottedLine : MonoBehaviour
     private readonly List<float> nodeBlendRaw = new List<float>(16);
     private readonly List<float> nodeBlendDelay = new List<float>(16);
 
+    // 전환 중(큰 별인데 진행도 1 미만)인 노드가 있을 수 있으면 true. 노드나 진행도를 바꾸는 곳에서 켜고,
+    // AdvanceNodeBlends가 전부 끝난 것을 확인하면 끈다. 꺼져 있으면 원래 반복문도 아무것도 바꾸지 않으므로 건너뛴다.
+    private bool bBlendMaybePending = false;
+
     // 런타임 추적 상태
     private bool bHasDynamicTargets = false;
 
@@ -274,6 +278,7 @@ public class ConstellationDottedLine : MonoBehaviour
         activeNodes.Clear();
         nodeBlendRaw.Clear();
         nodeBlendDelay.Clear();
+        bBlendMaybePending = true;
 
         if (null != pool)
         {
@@ -529,6 +534,7 @@ public class ConstellationDottedLine : MonoBehaviour
         if (null != activeNodes && 3 <= activeNodes.Count)
         {
             UntangleList(activeNodes);
+            bBlendMaybePending = true;
         }
 
         RebuildActiveMesh();
@@ -563,6 +569,8 @@ public class ConstellationDottedLine : MonoBehaviour
     // nodeBlendRaw/Delay 길이를 activeNodes에 맞춘다(모자란 칸은 큰 별 여부에 따라 채운다).
     private void SyncNodeBlendCount()
     {
+        bBlendMaybePending = true;
+
         while (nodeBlendRaw.Count < activeNodes.Count)
         {
             int index = nodeBlendRaw.Count;
@@ -588,9 +596,12 @@ public class ConstellationDottedLine : MonoBehaviour
     // 큰 별 노드의 전환 진행도를 시간에 따라 올린다. 값이 바뀌었으면(메쉬 재빌드 필요) true.
     private bool AdvanceNodeBlends(float _deltaTime)
     {
+        if (false == bBlendMaybePending) return false;
+
         bool bChanged = false;
         if (nodeBlendRaw.Count != activeNodes.Count) return false;
 
+        bool bStillPending = false;
         float duration = Mathf.Max(0.0001f, felledTransitionSeconds);
         for (int i = 0; i < activeNodes.Count; i++)
         {
@@ -599,12 +610,17 @@ public class ConstellationDottedLine : MonoBehaviour
             if (0.0f < nodeBlendDelay[i])
             {
                 nodeBlendDelay[i] -= _deltaTime;
+                bStillPending = true;
                 continue;
             }
 
             nodeBlendRaw[i] = Mathf.Min(1.0f, nodeBlendRaw[i] + _deltaTime / duration);
             bChanged = true;
+            if (1.0f > nodeBlendRaw[i]) bStillPending = true;
         }
+
+        // 남은 전환이 없으면 다음 변경 전까지 반복문을 건너뛴다.
+        if (false == bStillPending) bBlendMaybePending = false;
 
         return bChanged;
     }
