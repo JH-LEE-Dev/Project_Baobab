@@ -58,6 +58,13 @@ public class RestAreaVisual : MonoBehaviour
     private bool bOpen = false;
     private float elapsed = 0f;
 
+    // 타원 MPB에 마지막으로 쓴 값(비트). 다 드러난 뒤에는 매 프레임 같은 값이라 다시 쓰지 않는다.
+    // 이 MPB 값은 이 스크립트만 쓰지만, 열림/닫힘·다시 켜질 때는 안전하게 한 번 다시 쓴다.
+    private bool bEllipseApplied = false;
+    private int lastFadeBits;
+    private int lastRevealBits;
+    private int lastWaveGateBits;
+
     private void Awake()
     {
         if (campfireVisual != null) campfireBaseScale = campfireVisual.localScale;
@@ -106,6 +113,7 @@ public class RestAreaVisual : MonoBehaviour
 
         bOpen = _bOpen;
         elapsed = 0f;
+        bEllipseApplied = false;
 
         if (null != plusVfx) plusVfx.SetOpen(bOpen);
         if (null != flameVfx) flameVfx.SetOpen(bOpen, campfireRevealDelay);
@@ -154,6 +162,7 @@ public class RestAreaVisual : MonoBehaviour
         // 크기는 다음 Update에서야 바뀌므로, 지금 바로 시작 크기를 입히지 않으면 켜지는 프레임에
         // 지난 원정의 다 큰 모습이 한 번 그려졌다가 0으로 줄어든다.
         elapsed = 0f;
+        bEllipseApplied = false;
         if (bOpen) ApplyRevealPose();
         RefreshFootprint();
     }
@@ -205,13 +214,30 @@ public class RestAreaVisual : MonoBehaviour
         ApplyEllipse(Mathf.SmoothStep(0f, 1f, ellipseT), firstWaveT, waveGateT);
         if (campfireVisual != null)
         {
-            campfireVisual.localScale = campfireBaseScale * EaseOutBack(campfireT);
+            // 다 커진 뒤에는 같은 크기라 지금 값과 비트까지 같으면 다시 쓰지 않는다.
+            Vector3 scale = campfireBaseScale * EaseOutBack(campfireT);
+            Vector3 current = campfireVisual.localScale;
+            if (System.BitConverter.SingleToInt32Bits(current.x) != System.BitConverter.SingleToInt32Bits(scale.x)
+                || System.BitConverter.SingleToInt32Bits(current.y) != System.BitConverter.SingleToInt32Bits(scale.y)
+                || System.BitConverter.SingleToInt32Bits(current.z) != System.BitConverter.SingleToInt32Bits(scale.z))
+            {
+                campfireVisual.localScale = scale;
+            }
         }
     }
 
     private void ApplyEllipse(float _fade, float _reveal, float _waveGate)
     {
         if (ellipseRenderer == null) return;
+
+        int fadeBits = System.BitConverter.SingleToInt32Bits(_fade);
+        int revealBits = System.BitConverter.SingleToInt32Bits(_reveal);
+        int waveGateBits = System.BitConverter.SingleToInt32Bits(_waveGate);
+        if (true == bEllipseApplied && fadeBits == lastFadeBits && revealBits == lastRevealBits && waveGateBits == lastWaveGateBits) return;
+        bEllipseApplied = true;
+        lastFadeBits = fadeBits;
+        lastRevealBits = revealBits;
+        lastWaveGateBits = waveGateBits;
 
         ellipseRenderer.GetPropertyBlock(ellipseMPB);
         ellipseMPB.SetFloat(FadeID, _fade);
@@ -222,6 +248,7 @@ public class RestAreaVisual : MonoBehaviour
 
     private void ApplyClosedState()
     {
+        bEllipseApplied = false;
         if (ellipseRenderer != null) ellipseRenderer.enabled = false;
         if (campfireObj != null && !bOpen) campfireObj.SetActive(false);
     }

@@ -1134,15 +1134,33 @@ public class TreeVisualComponent : MonoBehaviour
 
         if (bCritFlashActive)
         {
-            ApplyFlashColorToRenderers(EvaluateCriticalFlashColor(_progress));
+            // 색과 점멸량을 렌더러마다 한 번의 Get/Set으로 함께 쓴다. 외곽선 단계는 별도 외곽선 렌더러만 건드리므로
+            // 쓰는 순서가 바뀌어도 각 렌더러에 남는 값은 예전(색 전부 → 외곽선 → 점멸량 전부)과 같다.
+            Color critColor = EvaluateCriticalFlashColor(_progress);
+            SetFlashColorAndAmountToRenderer(topRenderer, critColor, _flash);
+            SetFlashColorAndAmountToRenderer(bottomRenderer, critColor, _flash);
+            SetFlashColorAndAmountToRenderer(topShieldRenderer, critColor, _flash);
+            SetFlashColorAndAmountToRenderer(bottomShieldRenderer, critColor, _flash);
+            SetFlashColorAndAmountToRenderer(topHighlightRenderer, critColor, _flash);
+            SetFlashColorAndAmountToRenderer(bottomHighlightRenderer, critColor, _flash);
 
             if (_progress >= 1f)
                 EndCriticalFlash();
             else
                 ApplyCriticalOutlineFlash(_progress);
+            return;
         }
 
         ApplyFlashAmountToRenderers(_flash);
+    }
+
+    private void SetFlashColorAndAmountToRenderer(SpriteRenderer sr, Color _color, float flash)
+    {
+        if (sr == null) return;
+        sr.GetPropertyBlock(_flashMPB);
+        _flashMPB.SetColor(FlashColorID, _color);
+        _flashMPB.SetFloat(FlashAmountID, flash);
+        sr.SetPropertyBlock(_flashMPB);
     }
 
     private Color EvaluateCriticalFlashColor(float _progress)

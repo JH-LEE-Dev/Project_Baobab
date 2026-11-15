@@ -82,10 +82,23 @@ namespace PresentationLayer.VFX
         private const byte ToneNewD = 9;
         private const int ToneCount = 10;
 
+        // 줄마다 16칸 묶음 중 어디를 칠했는지 비트로 표시한다(격자 폭 201칸 = 13묶음이라 ulong 하나에 담긴다).
+        private const int RowChunkShift = 4;
+        private const int RowChunkSize = 1 << RowChunkShift;
+        private const ulong DeBruijn64 = 0x03F79D71B4CB0A89UL;
+        private static readonly int[] DeBruijnIndex =
+        {
+            0, 1, 48, 2, 57, 49, 28, 3, 61, 58, 50, 42, 38, 29, 17, 4,
+            62, 55, 59, 36, 53, 51, 43, 22, 45, 39, 33, 30, 24, 18, 12, 5,
+            63, 47, 56, 27, 60, 41, 37, 16, 54, 35, 52, 21, 44, 32, 23, 11,
+            46, 26, 40, 15, 34, 20, 31, 10, 25, 14, 19, 9, 13, 8, 7, 6,
+        };
+
         private sealed class Layer
         {
             public PixelQuadBuffer buffer;
             public byte[] cells;
+            public ulong[] rowChunks;
             public int minY;
             public int width;
             public int height;
@@ -193,6 +206,7 @@ namespace PresentationLayer.VFX
             layer.width = GridMaxX - GridMinX + 1;
             layer.height = GridMaxY - _minY + 1;
             layer.cells = new byte[layer.width * layer.height];
+            layer.rowChunks = new ulong[layer.height];
             ResetDirty(layer);
             return layer;
         }
@@ -370,9 +384,10 @@ namespace PresentationLayer.VFX
 
         private void HideAll()
         {
-            if (null != meshRenderer) meshRenderer.enabled = false;
-            if (null != haloMeshRenderer) haloMeshRenderer.enabled = false;
-            if (null != groundMeshRenderer) groundMeshRenderer.enabled = false;
+            // 화면 밖 프레임마다 불리므로 이미 꺼져 있으면 다시 쓰지 않는다
+            if (null != meshRenderer && true == meshRenderer.enabled) meshRenderer.enabled = false;
+            if (null != haloMeshRenderer && true == haloMeshRenderer.enabled) haloMeshRenderer.enabled = false;
+            if (null != groundMeshRenderer && true == groundMeshRenderer.enabled) groundMeshRenderer.enabled = false;
         }
 
         // ---------- 해시 ----------
@@ -415,6 +430,7 @@ namespace PresentationLayer.VFX
             if (gx < 0 || _layer.width <= gx || gy < 0 || _layer.height <= gy) return;
 
             _layer.cells[gy * _layer.width + gx] = _tone;
+            _layer.rowChunks[gy] |= 1UL << (gx >> RowChunkShift);
 
             if (gx < _layer.dirtyMinX) _layer.dirtyMinX = gx;
             if (gy < _layer.dirtyMinY) _layer.dirtyMinY = gy;
@@ -1089,36 +1105,51 @@ namespace PresentationLayer.VFX
             for (int gy = _source.dirtyMinY; gy <= _source.dirtyMaxY; gy++)
             {
                 int row = gy * width;
+                ulong chunks = _source.rowChunks[gy];
+                _source.rowChunks[gy] = 0UL;
+
+                // 칠하지 않은 16칸 묶음은 모두 빈 칸이라 건너뛴다(칸을 쓰는 곳은 Plot뿐이고, 훑은 칸은 모두 비운다).
+                // 묶음은 왼쪽부터 보고, 묶음 끝을 넘어 이어진 같은 톤 구간은 원래처럼 dirtyMaxX까지 합친 뒤 다음 묶음은 그 다음 칸부터 본다
+                // (훑는 순서·합치는 구간·쿼드 순서가 원래와 같다).
                 int x = _source.dirtyMinX;
-
-                while (x <= _source.dirtyMaxX)
+                while (0UL != chunks)
                 {
-                    byte tone = _source.cells[row + x];
-                    if (ToneNone == tone)
+                    ulong lowest = chunks & (~chunks + 1UL);
+                    chunks ^= lowest;
+                    int c = DeBruijnIndex[(int)((lowest * DeBruijn64) >> 58)];
+
+                    if (x < c * RowChunkSize) x = c * RowChunkSize;
+                    int to = Mathf.Min(_source.dirtyMaxX, c * RowChunkSize + RowChunkSize - 1);
+
+                    while (x <= to)
                     {
+                        byte tone = _source.cells[row + x];
+                        if (ToneNone == tone)
+                        {
+                            x++;
+                            continue;
+                        }
+
+                        int start = x;
+                        while (x + 1 <= _source.dirtyMaxX && tone == _source.cells[row + x + 1]) x++;
+                        int end = x;
+
+                        for (int k = start; k <= end; k++) _source.cells[row + k] = ToneNone;
                         x++;
-                        continue;
+
+                        // 예산이 꽉 차도 쿼드를 버리지 않고 예산을 두 배로 늘린다(버퍼는 스스로 늘어난다)
+                        if (budgetVertices <= buffer.VertexCount) budgetVertices *= 2;
+
+                        int wx0 = originPixelX + GridMinX + start;
+                        int wx1 = originPixelX + GridMinX + end + 1;
+                        int wy = originPixelY - (_source.minY + gy);
+                        buffer.AddWorldRect(wx0, wy, wx1, wy + 1, toneColors[tone]);
+
+                        if (wx0 < _target.worldMinX) _target.worldMinX = wx0;
+                        if (wy < _target.worldMinY) _target.worldMinY = wy;
+                        if (_target.worldMaxX < wx1) _target.worldMaxX = wx1;
+                        if (_target.worldMaxY < wy + 1) _target.worldMaxY = wy + 1;
                     }
-
-                    int start = x;
-                    while (x + 1 <= _source.dirtyMaxX && tone == _source.cells[row + x + 1]) x++;
-                    int end = x;
-
-                    for (int k = start; k <= end; k++) _source.cells[row + k] = ToneNone;
-                    x++;
-
-                    // 예산이 꽉 차도 쿼드를 버리지 않고 예산을 두 배로 늘린다(버퍼는 스스로 늘어난다)
-                    if (budgetVertices <= buffer.VertexCount) budgetVertices *= 2;
-
-                    int wx0 = originPixelX + GridMinX + start;
-                    int wx1 = originPixelX + GridMinX + end + 1;
-                    int wy = originPixelY - (_source.minY + gy);
-                    buffer.AddWorldRect(wx0, wy, wx1, wy + 1, toneColors[tone]);
-
-                    if (wx0 < _target.worldMinX) _target.worldMinX = wx0;
-                    if (wy < _target.worldMinY) _target.worldMinY = wy;
-                    if (_target.worldMaxX < wx1) _target.worldMaxX = wx1;
-                    if (_target.worldMaxY < wy + 1) _target.worldMaxY = wy + 1;
                 }
             }
 

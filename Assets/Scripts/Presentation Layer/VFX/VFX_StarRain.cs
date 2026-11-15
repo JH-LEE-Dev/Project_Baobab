@@ -1215,8 +1215,9 @@ namespace PresentationLayer.VFX
 
         private void HideAll()
         {
-            if (null != meshRenderer) meshRenderer.enabled = false;
-            if (null != groundMeshRenderer) groundMeshRenderer.enabled = false;
+            // 화면 밖·끝난 뒤 프레임마다 불리므로 이미 꺼져 있으면 다시 쓰지 않는다
+            if (null != meshRenderer && true == meshRenderer.enabled) meshRenderer.enabled = false;
+            if (null != groundMeshRenderer && true == groundMeshRenderer.enabled) groundMeshRenderer.enabled = false;
         }
 
         // 유니티 이벤트 함수

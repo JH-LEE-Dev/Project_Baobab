@@ -1251,13 +1251,13 @@ namespace PresentationLayer.VFX
             // 메쉬 경계는 실제로 그린 픽셀 범위로 좁게 잡는다(GPU 프러스텀 컬링이 효과를 내게 한다)
             skyBuffer.Upload(mesh, 0);
             ApplyTightBounds(mesh, transform.position, 0);
-            meshRenderer.enabled = true;
+            if (false == meshRenderer.enabled) meshRenderer.enabled = true;
 
             if (true == bSplit)
             {
                 groundBuffer.Upload(groundMesh, 0);
                 ApplyTightBounds(groundMesh, groundMeshRenderer.transform.position, 1);
-                groundMeshRenderer.enabled = true;
+                if (false == groundMeshRenderer.enabled) groundMeshRenderer.enabled = true;
             }
 
             UpdatePuffs(t);
@@ -1707,8 +1707,9 @@ namespace PresentationLayer.VFX
 
             if (TimelineLength <= elapsed)
             {
-                meshRenderer.enabled = false;
-                if (null != groundMeshRenderer) groundMeshRenderer.enabled = false;
+                // 끝난 뒤 풀로 돌아갈 때까지 매 프레임 같은 값을 다시 쓰지 않는다(이미 꺼져 있으면 그대로)
+                if (true == meshRenderer.enabled) meshRenderer.enabled = false;
+                if (null != groundMeshRenderer && true == groundMeshRenderer.enabled) groundMeshRenderer.enabled = false;
                 HidePuffs();
                 return;
             }

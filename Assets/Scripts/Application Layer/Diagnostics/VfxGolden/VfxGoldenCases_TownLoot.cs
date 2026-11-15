@@ -74,6 +74,9 @@ namespace Diagnostics.VfxGolden
             _cases.Add(new TownLootCuttingEffectCase("TownLoot_CuttingEffect_Tree", false));
             _cases.Add(new TownLootCuttingEffectCase("TownLoot_CuttingEffect_Gem", true));
             _cases.Add(new TownLootPuppyDustCase());
+
+            // 포자 디버프 표시(TreeSporeDebuffVfxManager, 클래스는 VfxGoldenCases_Dungeon.cs). 시작 프레임이 목록 순서를 따르므로 전체 목록 맨 끝에 둔다.
+            _cases.Add(new DungeonTreeSporeDebuffCase("Dungeon_TreeSporeDebuff"));
         }
     }
 

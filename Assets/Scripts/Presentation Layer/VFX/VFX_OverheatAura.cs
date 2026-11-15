@@ -463,7 +463,13 @@ namespace PresentationLayer.VFX
 
         private void BuildSilhouette()
         {
-            silhouette.Build(GetOriginPosition(), GetReachMarginCells());
+            // 불꽃 혀 모드는 그리는 칸이 (1) 몸 가장자리 칸, (2) 몸에 상하좌우로 닿는 외곽선 칸, (3) 열 꼭대기 위의 혀 칸(옆으로 최대 1칸 흔들림)뿐이라
+            // 좌우·아래로는 실루엣에서 1칸 밖까지만 닿는다. 좌우·아래 여백은 2칸으로 줄이고, 혀가 솟는 위쪽만 원래 여백을 둔다(그리는 칸·순서 동일).
+            int margin = GetReachMarginCells();
+            if (true == IsTongueMode())
+                silhouette.Build(GetOriginPosition(), Mathf.Min(2, margin), Mathf.Min(2, margin), margin);
+            else
+                silhouette.Build(GetOriginPosition(), margin);
         }
 
         // ---------- 갱신 ----------

@@ -105,6 +105,8 @@ Shader "Custom/ShockWaveArc"
                 float cosThreshold = cos(halfAngle);
                 float angleDot = dot(dir, normalize(_AttackDir.xy));
                 float angleMask = smoothstep(cosThreshold, cosThreshold + _AngleEdgeFade, angleDot);
+                // 각도 밖이거나 텍스처가 투명하면 본체·꼬리 모두 0이라 아래 clip에서 어차피 버려진다(노이즈 계산 생략).
+                if (angleMask <= 0.0 || tex.a <= 0.0) discard;
 
                 float angleCoord = atan2(dir.y, dir.x);
                 float seedA = _TrailSeed * 37.17;

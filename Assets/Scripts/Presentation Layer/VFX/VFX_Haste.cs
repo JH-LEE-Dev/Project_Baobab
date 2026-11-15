@@ -518,7 +518,18 @@ namespace PresentationLayer.VFX
                 return;
             }
 
-            if (null != target) transform.position = target.position;
+            // 대상이 서 있으면 매 프레임 같은 자리라, 지금 위치와 비트까지 같을 때는 다시 쓰지 않는다.
+            if (null != target)
+            {
+                Vector3 targetPosition = target.position;
+                Vector3 current = transform.position;
+                if (System.BitConverter.SingleToInt32Bits(current.x) != System.BitConverter.SingleToInt32Bits(targetPosition.x)
+                    || System.BitConverter.SingleToInt32Bits(current.y) != System.BitConverter.SingleToInt32Bits(targetPosition.y)
+                    || System.BitConverter.SingleToInt32Bits(current.z) != System.BitConverter.SingleToInt32Bits(targetPosition.z))
+                {
+                    transform.position = targetPosition;
+                }
+            }
 
             elapsed += dt;
             if (burstTime >= 0.0f)

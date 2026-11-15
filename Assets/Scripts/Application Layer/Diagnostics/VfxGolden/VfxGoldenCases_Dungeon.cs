@@ -1184,6 +1184,66 @@ namespace Diagnostics.VfxGolden
             DungeonGolden.PlayTreeDeadEffectPart(_context, leafTop, "TreeDeadEffect_LeafTop", top, Quaternion.identity, false, topColor);
         }
     }
+    /// <summary>
+    /// TreeSporeDebuffVfxManager.GetOrCreate → Register(나무, 단계) / NotifyHit / Unregister (InDungeonObjectManager 포자 감염 경로와 같은 호출).
+    /// 시드는 원래 나무 GetHashCode에서 나와 실행마다 달라지므로, 등록 직후 케이스 시드로 덮어 써서 실행마다 같은 그림이 나오게 한다.
+    /// 나무 4그루: 단계 1·2·3이 화면 안, 하나는 화면 밖에서 시작해 들어온다. 중간에 단계 상승, 타격 두 번, 나무 이동, 해제가 있다.
+    /// </summary>
+    public class DungeonTreeSporeDebuffCase : DungeonGoldenCase
+    {
+        private TreeObj[] trees;
+        private TreeSporeDebuffVfxManager manager;
+
+        public DungeonTreeSporeDebuffCase(string _caseName)
+            : base(_caseName, 200, new Vector2(0.0f, 0.8f), new Vector2(10.0f, 7.0f))
+        {
+        }
+
+        public override void Setup(VfxGoldenContext _context)
+        {
+            trees = new TreeObj[4];
+            trees[0] = DungeonGolden.SpawnTree(_context, new Vector3(-2.0f, 0.0f, 0.0f));
+            trees[1] = DungeonGolden.SpawnTree(_context, new Vector3(0.0f, 0.3f, 0.0f));
+            trees[2] = DungeonGolden.SpawnTree(_context, new Vector3(2.0f, -0.2f, 0.0f));
+            trees[3] = DungeonGolden.SpawnTree(_context, new Vector3(30.0f, 0.0f, 0.0f));
+
+            manager = TreeSporeDebuffVfxManager.GetOrCreate();
+            if (null == manager) throw new System.InvalidOperationException("[VfxGolden] TreeSporeDebuffVfxManager를 만들지 못했습니다.");
+            _context.Track(manager.gameObject);
+
+            manager.Register(trees[0], 1);
+            manager.Register(trees[1], 2);
+            manager.Register(trees[2], 3);
+            manager.Register(trees[3], 1);
+            FixSeeds(_context);
+        }
+
+        public override void OnFrame(VfxGoldenContext _context, int _frame)
+        {
+            if (30 == _frame) manager.NotifyHit(trees[1]);
+            if (50 == _frame) manager.Register(trees[0], 3);
+            if (80 == _frame) manager.NotifyHit(trees[2]);
+            if (100 == _frame) trees[2].transform.position = new Vector3(2.5f, 0.4f, 0.0f);
+            if (120 == _frame) trees[3].transform.position = new Vector3(-3.5f, 1.2f, 0.0f);
+            if (160 == _frame) manager.Unregister(trees[1]);
+        }
+
+        // 등록 순서대로 각 Entry의 seed/variant를 케이스 시드로 덮어쓴다(첫 틱 전이라 배치는 아직 만들어지지 않았다).
+        private void FixSeeds(VfxGoldenContext _context)
+        {
+            FieldInfo entriesField = typeof(TreeSporeDebuffVfxManager).GetField("entries", BindingFlags.Instance | BindingFlags.NonPublic);
+            System.Collections.IList list = null != entriesField ? entriesField.GetValue(manager) as System.Collections.IList : null;
+            if (null == list) throw new System.MissingFieldException("[VfxGolden] TreeSporeDebuffVfxManager.entries 필드가 없습니다.");
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                object entry = list[i];
+                uint seed = SkillGoldenUtil.DeriveSeed(_context, 101u + (uint)i);
+                SkillGoldenUtil.SetPrivateField(entry, "seed", seed);
+                SkillGoldenUtil.SetPrivateField(entry, "variant", (int)(seed & 1u));
+            }
+        }
+    }
 }
 
 #endif

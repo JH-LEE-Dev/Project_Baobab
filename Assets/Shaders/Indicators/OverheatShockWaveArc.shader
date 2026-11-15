@@ -86,6 +86,8 @@ Shader "Custom/OverheatShockWaveArc"
                 float angleDot = dot(direction, attackDirection);
                 float threshold = cos(radians(_Angle * 0.5));
                 float angleMask = smoothstep(threshold, threshold + _AngleEdgeFade, angleDot);
+                // 각도 밖이거나 텍스처가 투명하면 bodyMask가 0이라 아래 clip에서 어차피 버려진다(노이즈 계산 생략).
+                if (angleMask <= 0.0 || textureAlpha <= 0.0) discard;
 
                 float side = dot(direction, float2(-attackDirection.y, attackDirection.x));
                 float angularPosition = atan2(side, angleDot);

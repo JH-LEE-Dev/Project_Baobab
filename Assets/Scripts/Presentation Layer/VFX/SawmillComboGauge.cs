@@ -58,6 +58,9 @@ namespace PresentationLayer.VFX
         private float flashAge = float.MaxValue;
         private float drainAge = float.MaxValue;
         private int drainFrom;
+        // 막대 머티리얼에 마지막으로 쓴 Update 값(비트). 같은 값이면 다시 쓰지 않는다(이 머티리얼은 이 게이지만 쓴다).
+        private readonly int[] lastBarBits = new int[5];
+        private bool bBarBitsValid;
 
         /// <summary>_parent 아래에 게이지를 만든다. 그림이나 셰이더가 없으면 null(게이지 없이 진행).</summary>
         public static SawmillComboGauge Create(Transform _parent, Sprite _panelSprite, Sprite _trackSprite, Sprite _fillSprite, Shader _shader)
@@ -191,10 +194,21 @@ namespace PresentationLayer.VFX
         {
             Sprite sprite = _renderer.sprite;
             Vector2 pivot = new Vector2(sprite.pivot.x / sprite.rect.width, sprite.pivot.y / sprite.rect.height);
-            _renderer.transform.position = new Vector3(
+            Vector3 target = new Vector3(
                 (_left + pivot.x * _widthPx) / PixelsPerUnit,
                 (_bottom + pivot.y * _heightPx) / PixelsPerUnit,
                 0f);
+            // 매 프레임 같은 자리면 다시 쓰지 않는다. 지금 월드 위치와 비트까지 같을 때만 건너뛴다(부모가 움직였으면 그대로 다시 쓴다).
+            Transform t = _renderer.transform;
+            if (true == SameBits(t.position, target)) return;
+            t.position = target;
+        }
+
+        private static bool SameBits(Vector3 _a, Vector3 _b)
+        {
+            return System.BitConverter.SingleToInt32Bits(_a.x) == System.BitConverter.SingleToInt32Bits(_b.x)
+                && System.BitConverter.SingleToInt32Bits(_a.y) == System.BitConverter.SingleToInt32Bits(_b.y)
+                && System.BitConverter.SingleToInt32Bits(_a.z) == System.BitConverter.SingleToInt32Bits(_b.z);
         }
 
         private void Update()
@@ -214,11 +228,20 @@ namespace PresentationLayer.VFX
                 cooling = lit;
             }
 
-            barMaterial.SetFloat(IdLit, lit);
-            barMaterial.SetFloat(IdCoolIndex, cooling);
-            barMaterial.SetFloat(IdPopIndex, popAge < PopDuration ? popIndex : -1);
-            barMaterial.SetFloat(IdFlash, flashAge < FlashDuration ? 1f : 0f);
-            barMaterial.SetFloat(IdShine, stack >= segments && flashAge >= FlashDuration ? 1f : 0f);
+            SetBarFloat(0, IdLit, lit);
+            SetBarFloat(1, IdCoolIndex, cooling);
+            SetBarFloat(2, IdPopIndex, popAge < PopDuration ? popIndex : -1);
+            SetBarFloat(3, IdFlash, flashAge < FlashDuration ? 1f : 0f);
+            SetBarFloat(4, IdShine, stack >= segments && flashAge >= FlashDuration ? 1f : 0f);
+            bBarBitsValid = true;
+        }
+
+        private void SetBarFloat(int _slot, int _id, float _value)
+        {
+            int bits = System.BitConverter.SingleToInt32Bits(_value);
+            if (true == bBarBitsValid && lastBarBits[_slot] == bits) return;
+            lastBarBits[_slot] = bits;
+            barMaterial.SetFloat(_id, _value);
         }
 
         private void ResetAnimation()
