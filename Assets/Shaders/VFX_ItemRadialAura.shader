@@ -233,6 +233,10 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
                 float totalRays = 0.0;
                 half3 accumulatedRaysColor = half3(0.0, 0.0, 0.0);
 
+                // 모든 광선의 도달 거리(baseReach * globalReachMultiplier)는 0.46 * globalReachMultiplier 이하라, 그보다 먼 픽셀은
+                // 광선 가중치가 전부 0이다. 반복문을 건너뛰어도 totalRays·accumulatedRaysColor는 똑같이 0으로 남는다(화면 결과 동일).
+                if (radius < 0.46 * globalReachMultiplier)
+                {
                 for (int k = 0; k < 32; ++k)
                 {
                     if (k >= exactRayCount) break;
@@ -362,6 +366,7 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
 
                     accumulatedRaysColor += thisRayColor * rayWeight;
                     totalRays += rayWeight;
+                }
                 }
 
                 // 6. 마스킹 및 단면 처리
