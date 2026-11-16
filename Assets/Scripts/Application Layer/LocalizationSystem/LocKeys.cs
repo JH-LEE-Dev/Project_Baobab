@@ -625,6 +625,8 @@ public static class LocKeys
         public const int roguelikeHintBack = 37749298;
         public const int roguelikeHintTab = 37749299;
         public const int roguelikeCardSelectPick = 37749300;
+        public const int roguelikeMenuChallenges = 37749301;
+        public const int roguelikeChallengesEmpty = 37749302;
     }
 
     public static class SaveCheckUI

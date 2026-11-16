@@ -59,7 +59,6 @@ public class UIView_RoguelikeResult : UIView_RoguelikeModalBase
     private const string MainMenuKey = "Roguelike_Result_MainMenu";
     private const string HintMoveKey = "Roguelike_Hint_Move";
     private const string HintSelectKey = "Roguelike_Hint_Select";
-    private const string MaxKey = "Roguelike_CardLevel_Max";
     private const string WaveLabel = "WAVE";
     private const string UnlimitLabel = "UNLIMIT";
     private static readonly Color NewRecordColor = new Color(1f, 0.83f, 0.35f, 1f);
@@ -247,7 +246,6 @@ public class UIView_RoguelikeResult : UIView_RoguelikeModalBase
     private void FillSlots(List<RoguelikeOwnedCardViewData> _cards)
     {
         int count = null != _cards ? _cards.Count : 0;
-        string maxLabel = Localize(MaxKey);
 
         while (slots.Count < count && null != slotTemplate && null != slotRoot)
         {
@@ -259,7 +257,7 @@ public class UIView_RoguelikeResult : UIView_RoguelikeModalBase
         {
             bool bUsed = i < count;
             slots[i].gameObject.SetActive(bUsed);
-            if (true == bUsed) slots[i].SetCard(_cards[i], maxLabel);
+            if (true == bUsed) slots[i].SetCard(_cards[i]);
         }
     }
 

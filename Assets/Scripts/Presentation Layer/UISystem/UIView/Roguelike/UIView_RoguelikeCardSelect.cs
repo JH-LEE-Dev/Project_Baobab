@@ -35,9 +35,15 @@ using UnityEngine.UI;
 /// [퇴장 단계] 연출이 끝나면 Complete 전에 퇴장 0.18초가 돈다: 화면 전체(딤 포함)가 흐려지고(screenGroup) Content가 4px 떠오른다. 끝나면 Complete.
 ///
 /// [레어 카드 케이스] 레어(에메랄드 · 프리즘 · 루비)를 고르면 기존 이동 · 잠깐 머묾 대신 아크릴 케이스에 끼우는 연출(UI_RoguelikeAcrylicCase, 약 1.26초)이 돈다.
-///   카드가 케이스 위쪽에 걸친 자리로 이동 → 쏙 끼움 → 딸깍(반동 · 번쩍 · 입자 · 효과음) → 광택 → 정지 → 퇴장 → Complete. 일반 카드는 기존 이동 · 머묾 뒤 퇴장(0.88초), 레어는 약 1.74초.
+///   카드가 케이스 위쪽에 걸친 자리로 이동 → 쏙 끼움 → 딸깍(반동 · 번쩍 · 입자 · 효과음) → 광택 → 정지 → 보관 연출 → Complete.
 ///
-/// [아직 없는 것] 카드 뒷면 리소스(지금은 프레임을 어둡게 쓰는 임시 뒷면), 자물쇠 해제, 보관함 보관 연출(레어 케이스를 보관함 쇼케이스 칸으로 옮기고 접는 것, 일반 카드 비닐 슬리브), 카드 착지 효과음(호출 지점만 UI_RoguelikeCardSlot.StartLanding 주석).
+/// [보관 연출] 이동 · 머묾(일반) 또는 케이스 연출(레어)이 끝나면 Exit(퇴장) 대신 보관 연출(UI_RoguelikeCardStoreDrop)이 돈다.
+///   일반 카드는 슬리브가 씌워진 뒤(0.18초), 레어 카드는 케이스째, 카드가 위로 살짝 떴다 아래로 뚝 떨어진다(0.3초, 화면 밖). 낙하가 시작되는 순간 딤만 0.18초 동안 걷힌다(카드는 흐려지지 않는다).
+///   낙하가 끝나면 HUD 보관함 트레이(RoguelikeHUDLink.OwnedTray)가 도착 반응을 하고(트레이가 꺼져 있으면 생략) 화면이 닫힌다(Complete). 합계 일반 약 1.18초, 레어 약 1.86초.
+///   트레이 숫자는 시스템이 PlayPurchase보다 먼저 새 값으로 보낸다 - PlayPurchase가 직전 값으로 되돌려 잡아 두었다가(HoldPreviousCount) 도착 순간 푼다.
+///   storeDrop · dimImage가 연결되어 있지 않으면 기존 퇴장(Exit)으로 닫는다.
+///
+/// [아직 없는 것] 카드 뒷면 리소스(지금은 프레임을 어둡게 쓰는 임시 뒷면), 보관함 쇼케이스 칸 보관(레어 케이스를 쇼케이스 칸으로 옮기고 접는 것), 카드 착지 · 보관 도착 효과음(호출 지점만 UI_RoguelikeCardSlot.StartLanding · UI_RoguelikeOwnedCardTray.ReleaseCountWithEffect 주석).
 /// </summary>
 public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 {
@@ -48,6 +54,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         PurchaseMove,
         PurchaseHold,
         PurchaseRareCase,
+        PurchaseStore,
         Exit,
     }
 
@@ -58,6 +65,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     private const float HoldSeconds = 0.1f;
     private const float CloseSeconds = 0.2f;
     private const float ExitSeconds = 0.18f;
+    private const float DimFadeSeconds = 0.18f;
     private const int ExitLiftPixels = 4;
     private const float ShakeStepSeconds = 0.03f;
     private const float DisabledButtonAlpha = 0.4f;
@@ -98,6 +106,11 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     [Header("레어 카드 케이스")]
     [SerializeField] private UI_RoguelikeAcrylicCase acrylicCase;
 
+    [Header("보관 연출")]
+    [SerializeField] private UI_RoguelikeCardStoreDrop storeDrop;
+    [Tooltip("화면 전체를 어둡게 덮는 딤 이미지. 보관 낙하가 시작되면 이것만 걷힌다(카드 · 화면 전체는 흐려지지 않는다).")]
+    [SerializeField] private Image dimImage;
+
     [Header("리롤 버튼")]
     [SerializeField] private Button rerollButton;
     [SerializeField] private CanvasGroup rerollGroup;
@@ -129,6 +142,11 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     private LocalizationManager localizationManager;
     private Action languageChangedHandler;
     private Action rareCaseDoneHandler;
+    private Action storeDropStartHandler;
+    private Action storeDropDoneHandler;
+    private bool bDimFading;
+    private float dimFadeTime;
+    private float dimBaseAlpha = 1f;
     private float contentDefaultY;
     private float exitDuration;
     private float exitBaseY;
@@ -187,8 +205,10 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 
     /// <summary>
     /// 구매가 확정됐다. 고르지 않은 카드는 흐려지며 사라지고(배타 카드는 더 빠르게) → 고른 카드가 화면 중앙으로 → 잠깐 머문 뒤
-    /// 퇴장(0.18초: 화면 전체 흐려짐 + Content 4px 상승, 일반 0.88초 / 레어 약 1.74초) 뒤 화면을 닫고 _onComplete를 부른다. 보관함 보관 연출(기획서 10-2)은 아직 없다 - 여기서 이어 붙인다.
+    /// 보관 연출(UI_RoguelikeCardStoreDrop: 일반은 슬리브 0.18초 + 아래로 뚝 0.3초, 레어는 케이스째 0.3초, 낙하 시작과 함께 딤만 걷힘, 일반 약 1.18초 / 레어 약 1.86초)
+    /// → HUD 트레이 도착 반응 → 화면을 닫고 _onComplete를 부른다.
     /// 레어 카드(_purchase.displayGrade)는 이동 · 잠깐 머묾 대신 아크릴 케이스에 끼우는 연출(UI_RoguelikeAcrylicCase)이 돈다.
+    /// 트레이가 켜져 있으면 숫자를 직전 값으로 되돌려 잡아 둔다(시스템이 보유 카드 갱신을 이 호출보다 먼저 보낸다).
     /// </summary>
     public virtual void PlayPurchase(in RoguelikeCardPurchaseViewData _purchase, IReadOnlyList<int> _discardedIndices, Action _onComplete)
     {
@@ -219,6 +239,9 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         phase = EPhase.PurchaseFade;
         phaseTime = 0f;
         Sound.PlayUI(SoundID.GetItem);
+
+        UI_RoguelikeOwnedCardTray tray = GetActiveTray();
+        if (null != tray) tray.HoldPreviousCount();
     }
 
     /// <summary>건너뛰기 등으로 구매 없이 닫는다. 화면 전체가 흐려지며 닫힌 뒤 _onComplete를 부른다.</summary>
@@ -693,11 +716,16 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 
             case EPhase.PurchaseHold:
                 if (phaseTime < HoldSeconds) break;
-                StartExit(ExitSeconds);
+                StartStore();
                 break;
 
             case EPhase.PurchaseRareCase:
                 // 끝은 아크릴 케이스가 알려 준다(OnRareCaseDone).
+                break;
+
+            case EPhase.PurchaseStore:
+                // 끝은 보관 연출이 알려 준다(OnStoreDropDone). 딤은 낙하가 시작된 뒤 따로 걷힌다.
+                UpdateDimFade();
                 break;
 
             case EPhase.Exit:
@@ -724,6 +752,38 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     {
         if (EPhase.Exit == phase) contentRoot.anchoredPosition = new Vector2(contentRoot.anchoredPosition.x, exitBaseY);
         if (null != screenGroup) screenGroup.alpha = 1f;
+        RestoreDim();
+    }
+
+    /// <summary>보관 연출이 걷은 딤 알파를 원래대로 돌린다.</summary>
+    private void RestoreDim()
+    {
+        bDimFading = false;
+        dimFadeTime = 0f;
+        if (null == dimImage) return;
+
+        Color color = dimImage.color;
+        color.a = dimBaseAlpha;
+        dimImage.color = color;
+    }
+
+    /// <summary>딤 이미지만 1 - t^2로 걷는다(카드 · 화면 전체는 그대로). 낙하가 시작된 뒤(OnStoreDropStart)부터 DimFadeSeconds 동안.</summary>
+    private void UpdateDimFade()
+    {
+        if (false == bDimFading || null == dimImage) return;
+
+        dimFadeTime += Time.unscaledDeltaTime;
+        float t = Mathf.Clamp01(dimFadeTime / DimFadeSeconds);
+        Color color = dimImage.color;
+        color.a = dimBaseAlpha * (1f - t * t);
+        dimImage.color = color;
+    }
+
+    /// <summary>HUD 보관함 트레이. 연결되어 있지 않거나 꺼져 있으면(첫 선택) null - 트레이 관련 호출을 모두 건너뛴다.</summary>
+    private static UI_RoguelikeOwnedCardTray GetActiveTray()
+    {
+        UI_RoguelikeOwnedCardTray tray = RoguelikeHUDLink.OwnedTray;
+        return null != tray && true == tray.gameObject.activeInHierarchy ? tray : null;
     }
 
     /// <summary>
@@ -747,7 +807,47 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     {
         if (EPhase.PurchaseRareCase != phase) return;
 
-        StartExit(ExitSeconds);
+        StartStore();
+    }
+
+    /// <summary>
+    /// 보관 연출 시작(일반: 이동 · 머묾 뒤, 레어: 케이스 연출 뒤). 고른 카드(레어는 케이스째)가 아래로 뚝 떨어진다.
+    /// 호버로 떠 있던 것을 풀고 카드 밑 그림자를 끈다(레어는 StartRareCase가 이미 했다). storeDrop · dimImage · 고른 슬롯 중 하나라도 없으면 기존 퇴장으로 닫는다
+    /// (이때 PlayPurchase가 잡아 둔 트레이 숫자는 화면이 닫힐 때 OnHideContent가 반응 없이 푼다).
+    /// </summary>
+    private void StartStore()
+    {
+        if (null == storeDrop || null == dimImage || null == chosenSlot)
+        {
+            StartExit(ExitSeconds);
+            return;
+        }
+
+        chosenSlot.SetFocused(false);
+        chosenSlot.Card.SetShadowVisible(false);
+
+        // Play 안에서 낙하 시작 콜백이 바로 불릴 수 있으므로(슬리브 없음) 단계를 먼저 바꾼다.
+        phase = EPhase.PurchaseStore;
+        phaseTime = 0f;
+        storeDrop.Play((RectTransform)chosenSlot.transform, true == bRarePurchase ? acrylicCase : null, false == bRarePurchase, storeDropStartHandler, storeDropDoneHandler);
+    }
+
+    private void OnStoreDropStart()
+    {
+        if (EPhase.PurchaseStore != phase) return;
+
+        bDimFading = true;
+        dimFadeTime = 0f;
+    }
+
+    private void OnStoreDropDone()
+    {
+        if (EPhase.PurchaseStore != phase) return;
+
+        UI_RoguelikeOwnedCardTray tray = GetActiveTray();
+        if (null != tray) tray.ReleaseCountWithEffect();
+
+        Complete();
     }
 
     /// <summary>고른 카드가 멈출 곳. 카드 한 장의 중심이 화면 중앙에 오는 Content 기준 정수 좌표.</summary>
@@ -820,12 +920,14 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         }
 
         if (null != screenGroup) screenGroup.alpha = 1f;
+        RestoreDim();
         LayoutControls();
         pendingComplete = null;
         phase = EPhase.Idle;
         bLocked = false;
         bRarePurchase = false;
         focusedRelay = null;
+        if (null != storeDrop) storeDrop.ResetDrop();
         if (null != acrylicCase) acrylicCase.ResetCase();
     }
 
@@ -841,8 +943,13 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         bLocked = false;
         bRarePurchase = false;
         chosenSlot = null;
-        // 연출 중 밖에서 닫혀도(ForceCloseCardSelection) 케이스를 숨기고 카드를 원래 자리로 돌린다(완료 콜백은 부르지 않는다).
+        // 연출 중 밖에서 닫혀도(ForceCloseCardSelection) 슬리브를 숨기고 카드 · 케이스를 원래 자리로 돌린다(완료 콜백은 부르지 않는다).
+        // 보관 낙하는 케이스를 같이 옮기므로 낙하를 먼저 되돌린 뒤 케이스를 되돌린다.
+        if (null != storeDrop) storeDrop.ResetDrop();
         if (null != acrylicCase) acrylicCase.ResetCase();
+        // 보관 연출이 잡아 둔 트레이 숫자가 강제 닫힘으로 묶이지 않게 반응 없이 푼다(정상 종료는 OnStoreDropDone이 이미 풀었다).
+        UI_RoguelikeOwnedCardTray tray = RoguelikeHUDLink.OwnedTray;
+        if (null != tray) tray.ReleaseCount();
         FindSlotByRelay(focusedRelay)?.SetFocused(false);
         focusedRelay = null;
         UnsubscribeLanguage();
@@ -873,8 +980,12 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 
         languageChangedHandler = OnLanguageChanged;
         rareCaseDoneHandler = OnRareCaseDone;
+        storeDropStartHandler = OnStoreDropStart;
+        storeDropDoneHandler = OnStoreDropDone;
         cursorMotion = CursorMotionSettings.Card;
         if (null != acrylicCase) acrylicCase.Initialize();
+        if (null != storeDrop) storeDrop.Initialize();
+        if (null != dimImage) dimBaseAlpha = dimImage.color.a;
 
         // 프리팹에 잡아 둔 Content 기본 위치. 이후 레이아웃은 이 값에서 다시 계산한다.
         contentDefaultY = contentRoot.anchoredPosition.y;

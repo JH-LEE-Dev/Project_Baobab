@@ -71,6 +71,8 @@ public class UIView_RoguelikeHUD : UIView
         // 본편 HUD(UIView_HUD)가 스태미너 · 대쉬 값을 이 두 컴포넌트에도 전달하도록 정적 연결점에 등록한다.
         RoguelikeHUDLink.StaminaBar = staminaBar;
         RoguelikeHUDLink.DashCells = dashCells;
+        // 카드 선택 화면이 보관 연출이 끝나는 순간 트레이 도착 반응을 걸 수 있게 등록한다.
+        RoguelikeHUDLink.OwnedTray = ownedTray;
     }
 
     protected override void OnShow()
@@ -92,7 +94,7 @@ public class UIView_RoguelikeHUD : UIView
     /// <param name="_regionStartWaves">지역(티어)이 바뀌는 시작 웨이브(1웨이브 제외, 오름차순). 웨이브 진행 점 간격 계산용(WavePips_AppLayer_Request.md). null일 수 있다.</param>
     public virtual void SetWave(int _waveNumber, bool _bUnlimit, int _unlimitIndex, IReadOnlyList<int> _regionStartWaves = null)
     {
-        if (null != waveLabel) waveLabel.SetWave(_waveNumber, _bUnlimit, _unlimitIndex);
+        if (null != waveLabel) waveLabel.SetWave(_waveNumber, _bUnlimit, _unlimitIndex, _regionStartWaves);
         if (null != pressureStrip) pressureStrip.SnapNext();
     }
 
@@ -224,6 +226,7 @@ public class UIView_RoguelikeHUD : UIView
     {
         if (RoguelikeHUDLink.StaminaBar == staminaBar) RoguelikeHUDLink.StaminaBar = null;
         if (RoguelikeHUDLink.DashCells == dashCells) RoguelikeHUDLink.DashCells = null;
+        if (RoguelikeHUDLink.OwnedTray == ownedTray) RoguelikeHUDLink.OwnedTray = null;
 
         DOTween.Kill(this);
         for (int i = 0; exitRects.Length > i; i++)
