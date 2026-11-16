@@ -3361,8 +3361,13 @@ public class UI_TentAbilityComponent : MonoBehaviour
         float horizontalRequiredZoom = viewportRect.width * 0.5f / horizontalContentHalfSize;
         float verticalRequiredZoom = viewportRect.height * 0.5f / verticalContentHalfSize;
 
+        // Mathf.Max(params float[])와 같은 순서로 비교한다(매 프레임 params 배열 44B 할당을 피한다).
+        float requiredZoom = MinZoom;
+        if (horizontalRequiredZoom > requiredZoom) requiredZoom = horizontalRequiredZoom;
+        if (verticalRequiredZoom > requiredZoom) requiredZoom = verticalRequiredZoom;
+
         return Mathf.Clamp(
-            Mathf.Max(MinZoom, horizontalRequiredZoom, verticalRequiredZoom),
+            requiredZoom,
             MinZoom,
             MaxZoom);
     }
