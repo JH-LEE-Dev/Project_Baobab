@@ -173,6 +173,15 @@ public class UIView_HUD : UIView
             _runBar.PlayRecoverWasted();
     }
 
+    /// <summary>캐릭터가 맞은 순간(나무 열기): 붉은 화면을 한 번 띄우고 피로도 바를 가볍게 흔든다. 피로도 감소량과 무관하다.</summary>
+    public void PlayHitFeedback()
+    {
+        if (null != hudScreenBlood)
+            hudScreenBlood.PlayHitPulse();
+
+        hudStaminaBar?.PlayHitShake();
+    }
+
     private void OnStaminaDamaged(float _lossRatio)
     {
         hudStaminaBar?.PlayDamaged(_lossRatio);

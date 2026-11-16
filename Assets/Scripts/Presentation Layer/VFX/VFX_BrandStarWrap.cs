@@ -86,7 +86,7 @@ namespace PresentationLayer.VFX
         }
 
         // 메쉬 버퍼(뒤/앞 두 층)는 매 프레임 Clear 후 채우므로 인스턴스끼리 공유해도 안전하다(메인 스레드 단일 실행)
-        private static readonly PixelQuadBuffer[] quadBuffers = { new PixelQuadBuffer(128), new PixelQuadBuffer(128) };
+        private static readonly PixelQuadBuffer[] quadBuffers = { new PixelQuadBuffer(128, false), new PixelQuadBuffer(128, false) };
 
         // 팔레트: 흰색 / 하늘색 2색 / 금색 2색 (낙인 각인과 같은 5색)
         private static readonly Color32 ColorWhite = new Color32(255, 255, 255, 255);

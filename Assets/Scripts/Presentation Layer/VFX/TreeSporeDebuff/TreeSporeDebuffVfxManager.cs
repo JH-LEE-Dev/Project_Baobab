@@ -48,6 +48,11 @@ namespace PresentationLayer.VFX
             public TreeDebuffLayout layout;
             public SpriteRenderer overlay;
             public SpriteRenderer ground;
+            // 바닥 링에 마지막으로 쓴 위치(픽셀 정수 좌표 + z 비트). 같은 값이면 위치를 다시 쓰지 않는다(풀에서 새로 받으면 무효).
+            public bool bGroundPlaced;
+            public int groundX;
+            public int groundY;
+            public int groundZBits;
             public float hitTime = -100.0f;
             public int hitSequence;
             public int baseX;
@@ -83,6 +88,8 @@ namespace PresentationLayer.VFX
 
         // 내부 의존성
         private readonly List<Entry> entries = new List<Entry>(32);
+        // 목록에서 빠진 Entry를 모아 다음 등록에 다시 쓴다(빠질 때 모든 필드를 선언 기본값으로 되돌린다). 목록 밖에서 Entry를 들고 있는 곳은 없다.
+        private readonly Stack<Entry> entryPool = new Stack<Entry>(32);
         private readonly Stack<SpriteRenderer> overlayPool = new Stack<SpriteRenderer>(16);
         private readonly Stack<SpriteRenderer> groundPool = new Stack<SpriteRenderer>(16);
         private Mesh groundMesh;
@@ -159,7 +166,7 @@ namespace PresentationLayer.VFX
                 return;
             }
 
-            Entry e = new Entry();
+            Entry e = 0 < entryPool.Count ? entryPool.Pop() : new Entry();
             e.tree = _tree;
             e.topSprite = top;
             e.tier = Mathf.Clamp(_tier, 1, 3);
@@ -244,6 +251,28 @@ namespace PresentationLayer.VFX
                 groundPool.Push(_e.ground);
                 _e.ground = null;
             }
+
+            // 새 Entry와 같은 상태로 되돌려 재사용한다(필드 선언 기본값 그대로).
+            _e.tree = null;
+            _e.topSprite = null;
+            _e.lastSprite = null;
+            _e.tier = 0;
+            _e.variant = 0;
+            _e.seed = 0u;
+            _e.mask = default;
+            _e.layout = default;
+            _e.bGroundPlaced = false;
+            _e.groundX = 0;
+            _e.groundY = 0;
+            _e.groundZBits = 0;
+            _e.hitTime = -100.0f;
+            _e.hitSequence = 0;
+            _e.baseX = 0;
+            _e.baseY = 0;
+            _e.bVisible = false;
+            _e.bFull = false;
+            _e.distance = 0.0f;
+            entryPool.Push(_e);
         }
 
         private SpriteRenderer GetRenderer(Stack<SpriteRenderer> _pool, string _name)
@@ -315,12 +344,13 @@ namespace PresentationLayer.VFX
             for (int i = 0; i < entries.Count; i++)
             {
                 Entry e = entries[i];
-                Sprite sprite = e.topSprite.sprite;
+                // 보이지 않는 나무는 스프라이트를 읽지 않고 바로 끈다(두 조건 모두 같은 처리라 결과는 같다). 이미 꺼져 있으면 다시 쓰지 않는다.
+                Sprite sprite = true == e.bVisible ? e.topSprite.sprite : null;
 
-                if (false == e.bVisible || null == sprite)
+                if (null == sprite)
                 {
-                    if (null != e.overlay) e.overlay.enabled = false;
-                    if (null != e.ground) e.ground.enabled = false;
+                    if (null != e.overlay && true == e.overlay.enabled) e.overlay.enabled = false;
+                    if (null != e.ground && true == e.ground.enabled) e.ground.enabled = false;
                     continue;
                 }
 
@@ -344,11 +374,25 @@ namespace PresentationLayer.VFX
                     e.ground = GetRenderer(groundPool, "DebuffGround");
                     e.ground.sortingLayerID = groundLayerId;
                     e.ground.sortingOrder = groundSpriteOrder;
+                    e.bGroundPlaced = false;
                 }
 
-                e.ground.sprite = TreeDebuffOverlayBaker.GetGround(e.tier);
-                e.ground.transform.position = new Vector3(gx / PixelsPerUnit, gy / PixelsPerUnit, e.tree.transform.position.z);
-                e.ground.enabled = true;
+                // 같은 값이면 다시 쓰지 않는다(바닥 링 렌더러는 이 관리자만 건드린다)
+                Sprite groundSprite = TreeDebuffOverlayBaker.GetGround(e.tier);
+                if (e.ground.sprite != groundSprite) e.ground.sprite = groundSprite;
+
+                float groundZ = e.tree.transform.position.z;
+                int groundZBits = System.BitConverter.SingleToInt32Bits(groundZ);
+                if (false == e.bGroundPlaced || gx != e.groundX || gy != e.groundY || groundZBits != e.groundZBits)
+                {
+                    e.ground.transform.position = new Vector3(gx / PixelsPerUnit, gy / PixelsPerUnit, groundZ);
+                    e.bGroundPlaced = true;
+                    e.groundX = gx;
+                    e.groundY = gy;
+                    e.groundZBits = groundZBits;
+                }
+
+                if (false == e.ground.enabled) e.ground.enabled = true;
 
                 if (true == e.bFull)
                 {
@@ -366,11 +410,14 @@ namespace PresentationLayer.VFX
                         e.overlay.sprite = TreeDebuffOverlayBaker.GetOverlay(sprite, e.mask, e.layout, e.tier, e.variant);
                     }
 
-                    e.overlay.sortingLayerID = e.topSprite.sortingLayerID;
-                    e.overlay.sortingOrder = e.tree.treeVisualComponent.GetTopHighlightSortingOrder() + 2;
-                    e.overlay.enabled = true;
+                    // 정렬은 렌더러의 지금 값과 비교해 다를 때만 쓴다(다른 코드가 바꿔도 원래처럼 틱마다 되돌린다)
+                    int overlayLayer = e.topSprite.sortingLayerID;
+                    if (e.overlay.sortingLayerID != overlayLayer) e.overlay.sortingLayerID = overlayLayer;
+                    int overlayOrder = e.tree.treeVisualComponent.GetTopHighlightSortingOrder() + 2;
+                    if (e.overlay.sortingOrder != overlayOrder) e.overlay.sortingOrder = overlayOrder;
+                    if (false == e.overlay.enabled) e.overlay.enabled = true;
                 }
-                else if (null != e.overlay)
+                else if (null != e.overlay && true == e.overlay.enabled)
                 {
                     e.overlay.enabled = false;
                 }

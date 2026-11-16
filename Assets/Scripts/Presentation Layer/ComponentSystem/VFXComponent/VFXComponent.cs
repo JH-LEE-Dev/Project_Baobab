@@ -958,7 +958,9 @@ public class VFXComponent : MonoBehaviour
         if (null == _effect)
             return;
 
-        ParticleSystem[] _particles = _effect.GetComponentsInChildren<ParticleSystem>(true);
+        // 풀 인스턴스는 Initialize에서 모은 자식 목록(같은 루트·비활성 포함)을 재사용해 배열 할당을 없앤다.
+        VFXPoolInstanceHelper _helper = GetHelper(_effect);
+        ParticleSystem[] _particles = (null != _helper && null != _helper.ChildSystems) ? _helper.ChildSystems : _effect.GetComponentsInChildren<ParticleSystem>(true);
         if (null == _particles)
             return;
 

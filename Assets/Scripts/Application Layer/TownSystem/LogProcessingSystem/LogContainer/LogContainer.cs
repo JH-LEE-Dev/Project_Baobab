@@ -7,7 +7,6 @@ using UnityEngine.Rendering;
 
 public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 {
-    public event Action LogContainerIsEmptyEvent;
     public event Action ItemAddedEvent;
     public event Action ContainerSpecChangedEvent;
     public event Action<LogItemData> LogOutEvent;
@@ -1253,11 +1252,6 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 // 생성함) 아무도 참조를 보관하지 않으므로, 디스패치가 끝난 이 시점에 풀로 반납해 재사용한다.
                 // 반납하지 않으면 출고 때마다 새 LogItemData가 할당되어 풀링이 무력화된다.
                 itemDataPool.Release(resultData);
-
-                if (((IInventory)this).currentItemCount == 0)
-                {
-                    LogContainerIsEmptyEvent?.Invoke();
-                }
 
                 return;
             }

@@ -16,7 +16,6 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     public event Action SourceOfSpeedForceEndedEvent;
     public event Action<float> StarPathSpeedBoostActivatedEvent;
     public event Action StarPathSpeedBoostForceEndedEvent;
-    public event Action<int, float> OverheatLevelChangedEvent;
 
     private Character character;
     private InputManager inputManager;
@@ -64,9 +63,6 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
 
         character.StarPathSpeedBoostForceEndedEvent -= StarPathSpeedBoostForceEnded;
         character.StarPathSpeedBoostForceEndedEvent += StarPathSpeedBoostForceEnded;
-
-        character.OverheatLevelChangedEvent -= OverheatLevelChanged;
-        character.OverheatLevelChangedEvent += OverheatLevelChanged;
     }
 
     private void ReleaseEvents()
@@ -81,7 +77,6 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
         character.SourceOfSpeedForceEndedEvent -= SourceOfSpeedForceEnded;
         character.StarPathSpeedBoostActivatedEvent -= StarPathSpeedBoostActivated;
         character.StarPathSpeedBoostForceEndedEvent -= StarPathSpeedBoostForceEnded;
-        character.OverheatLevelChangedEvent -= OverheatLevelChanged;
     }
 
     public void SetCharacter(Character _character)
@@ -184,11 +179,6 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     private void StarPathSpeedBoostForceEnded()
     {
         StarPathSpeedBoostForceEndedEvent?.Invoke();
-    }
-
-    private void OverheatLevelChanged(int _level, float _maxValue)
-    {
-        OverheatLevelChangedEvent?.Invoke(_level, _maxValue);
     }
 
     public void RefreshCharacter()

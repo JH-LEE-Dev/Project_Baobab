@@ -168,13 +168,13 @@ namespace PresentationLayer.VFX
 
             // 바깥 가장자리 띠에 성긴 도트를 깔아 범위의 면을 은은하게 알린다
             Color32 fieldColor = 1 == _level ? GlowColor(ColorBlue3, 0.0f) : (2 == _level ? GlowColor(bPulse ? ColorBlue2 : ColorBlue3, 0.05f) : GlowColor(ColorBlue, 0.1f));
-            painter.LatticeBand(_cx, _cy, rx - 5, 12, GroundSquashY, 5, fieldColor);
+            painter.LatticeBandCached(_cx, _cy, rx - 5, 12, GroundSquashY, 5, fieldColor);
 
             // 끊김 없는 실선 링 + 링을 따라 도는 밝은 구간. 밝은 구간만 별 표식과 같은 방향(시계)으로 돈다.
             float head = elapsed * RingOrbitSpeed;
             if (1 == _level)
             {
-                painter.RingArc(_cx, _cy, rx, ry, 1, 0, 0.0f, GlowColor(ColorBlue3, RingGlow * 0.4f));
+                painter.RingArcCached(_cx, _cy, rx, ry, 1, 0, 0.0f, GlowColor(ColorBlue3, RingGlow * 0.4f));
             }
             else if (3 == _level)
             {
@@ -188,7 +188,7 @@ namespace PresentationLayer.VFX
 
             // 바깥 보조 링(세로 2줄 띄움) - 고정
             int outerRx = rx + OuterRingGap;
-            painter.RingArc(_cx, _cy, outerRx, Mathf.Max(1, Mathf.RoundToInt(outerRx * GroundSquashY)), 1, 7, 0.0f, GlowColor(1 == _level ? ColorBlue3 : ColorBlue2, 0.05f));
+            painter.RingArcCached(_cx, _cy, outerRx, Mathf.Max(1, Mathf.RoundToInt(outerRx * GroundSquashY)), 1, 7, 0.0f, GlowColor(1 == _level ? ColorBlue3 : ColorBlue2, 0.05f));
 
             if (3 == _level)
             {

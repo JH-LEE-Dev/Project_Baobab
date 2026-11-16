@@ -37,6 +37,8 @@ Shader "Custom/GroundStencil"
 
             ZWrite Off
             Blend SrcAlpha OneMinusSrcAlpha
+            // 색은 (0,0,0,0)이라 블렌딩 결과가 원래 색 그대로다. 색 쓰기를 꺼서 스텐실만 남긴다(화면 결과 동일, 블렌딩 읽기·쓰기 생략).
+            ColorMask 0
 
             HLSLPROGRAM
 

@@ -22,6 +22,8 @@ public class HomeWaterGrassSway : MonoBehaviour
     };
 
     private Coroutine swayRoutine;
+    private WaitForSeconds frameWait;
+    private float frameWaitDuration = -1f;
 
     private void Reset()
     {
@@ -76,10 +78,17 @@ public class HomeWaterGrassSway : MonoBehaviour
         {
             int[] pattern = Patterns[Random.Range(0, Patterns.Length)];
 
+            // 프레임 간격은 런타임에 바뀌지 않으므로 대기 객체를 재사용한다(인스턴스당 코루틴 1개라 안전, DecoSpritePatternAnimator와 같은 방식).
+            if (frameWait == null || frameWaitDuration != frameDuration)
+            {
+                frameWait = new WaitForSeconds(frameDuration);
+                frameWaitDuration = frameDuration;
+            }
+
             for (int i = 0; i < pattern.Length; i++)
             {
                 SetFrame(pattern[i]);
-                yield return new WaitForSeconds(frameDuration);
+                yield return frameWait;
             }
 
             yield return new WaitForSeconds(GetRandomWait());

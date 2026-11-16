@@ -12,6 +12,7 @@ using UnityEngine.Pool;
 /// 3) 벌목 드랍: 나무가 쓰러질 때와 희귀나무 등급이 바뀔 때마다 dropCountMin~Max개를 튀어나오게 한다("불씨 드랍량 증가" 특성 배율을 곱한다).
 ///    이렇게 떨어진 불씨만 droppedLifetime초 뒤 사라진다(1, 2는 남아 있다).
 /// 과열이 최대면 2, 3은 더 생기지 않는다. 이미 바닥에 있는 불씨는 계속 주울 수 있다(효과만 없다).
+/// 1~3 모두 차량 휴식 구역 안에는 놓지 않는다(BeginRun이 받는 판정, 휴식 특성으로 구역이 열렸을 때만).
 ///
 /// 이펙트 담당 연결 지점: 이 오브젝트의 VFXComponent에 이펙트를 등록하고 아래 태그를 채우면 된다(비어 있으면 재생하지 않는다).
 /// </summary>
@@ -73,6 +74,8 @@ public class EmberItemController : MonoBehaviour
     private float dropMultiplierThisRun = 1f;
     // 자연 생성·드랍을 지금 해도 되는지(원정 종료 중·사망·과열 최대면 false). InDungeonObjectManager가 넘겨준다.
     private Func<bool> canSpawnMore;
+    // 불씨를 놓으면 안 되는 자리(차량 휴식 구역 안)인지. InDungeonObjectManager가 넘겨준다.
+    private Func<Vector3, bool> isBlockedPosition;
     private float naturalSpawnTimer;
 
     private static readonly Vector3Int[] NeighborOffsets =
@@ -117,14 +120,17 @@ public class EmberItemController : MonoBehaviour
     /// <summary>
     /// 새 원정이 시작될 때(나무 초기 스폰 직전) 부른다. 이전 원정의 불씨를 치우고 이번 맵에서 불씨가 나오는지 정한다.
     /// _bEverywhere("산불 조심" 특성)면 적용 맵이 아니어도 불씨가 나온다. _dropMultiplier는 벌목 드랍 개수 배율이다.
+    /// _isBlockedPosition이 true를 돌려주는 자리(차량 휴식 구역 안)에는 어떤 경로로도 불씨를 놓지 않는다.
     /// </summary>
-    public void BeginRun(MapType _mapType, bool _bStageGimmicksDisabled, Func<bool> _canSpawnMore, bool _bEverywhere, float _dropMultiplier)
+    public void BeginRun(MapType _mapType, bool _bStageGimmicksDisabled, Func<bool> _canSpawnMore, bool _bEverywhere, float _dropMultiplier,
+        Func<Vector3, bool> _isBlockedPosition)
     {
         ClearAll();
 
         bEnabledThisRun = emberItemPrefab != null && false == _bStageGimmicksDisabled && (_bEverywhere || enabledMapTypes.Contains(_mapType));
         dropMultiplierThisRun = Mathf.Max(0f, _dropMultiplier);
         canSpawnMore = _canSpawnMore;
+        isBlockedPosition = _isBlockedPosition;
         naturalSpawnTimer = 0f;
     }
 
@@ -173,9 +179,16 @@ public class EmberItemController : MonoBehaviour
             // 떨어질 칸이 물·용암·나무처럼 서 있을 수 없는 칸이면 나무 바로 옆의 설 수 있는 칸으로 바꾼다.
             // 나무 자리로 당기면 등급만 바뀌고 살아 있는 희귀나무는 밑동에 가려지고 걸어서 닿을 수 없다.
             // 옆 칸이 전부 막혔을 때만 나무 자리에 둔다(쓰러진 나무는 그 칸이 비어 있다).
-            if (tilemap != null && !IsCellLandable(tilemap.WorldToCell(endPos)))
+            // 흩뿌린 자리가 휴식 구역 안이어도 같은 방법으로 구역 밖 옆 칸에 내린다. 나무 자리까지 구역 안이면 이 불씨는 내지 않는다.
+            if (tilemap != null && (!IsCellLandable(tilemap.WorldToCell(endPos)) || IsBlockedPosition(endPos)))
             {
                 endPos = TryPickNeighborCell(treeCell, true, out Vector3Int landCell) ? tilemap.CellToWorld(landCell) : _treePosition;
+
+                if (IsBlockedPosition(endPos))
+                {
+                    TryReleaseEmber(ember);
+                    continue;
+                }
             }
 
             ember.Launch(_treePosition, endPos, UnityEngine.Random.Range(0.75f, 1.25f));
@@ -187,6 +200,7 @@ public class EmberItemController : MonoBehaviour
     {
         bEnabledThisRun = false;
         canSpawnMore = null;
+        isBlockedPosition = null;
         ClearAll();
     }
 
@@ -321,7 +335,8 @@ public class EmberItemController : MonoBehaviour
         return false;
     }
 
-    // 불씨가 놓일 수 있는 칸: 걸을 수 있고(나무·장애물 없음) 물·바위 장식·위험 지형이 아닌 칸.
+    // 불씨가 놓일 수 있는 칸: 걸을 수 있고(나무·장애물 없음) 물·바위 장식·위험 지형이 아니며 휴식 구역 밖인 칸.
+    // 휴식 구역 판정은 불씨가 실제로 놓이는 자리(PlaceEmber와 같은 CellToWorld)로 한다.
     private bool IsCellLandable(Vector3Int _cell)
     {
         ITilemapDataProvider tilemap = environmentProvider?.tilemapDataProvider;
@@ -330,8 +345,14 @@ public class EmberItemController : MonoBehaviour
         if (!tilemap.IsWalkable(_cell)) return false;
         if (tilemap.IsWaterTile(_cell) || tilemap.HasRockDeco(_cell)) return false;
         if (tilemap.GetHazardStaminaDrainPerSecond(_cell) > 0f) return false;
+        if (IsBlockedPosition(tilemap.CellToWorld(_cell))) return false;
 
         return true;
+    }
+
+    private bool IsBlockedPosition(Vector3 _worldPosition)
+    {
+        return isBlockedPosition != null && isBlockedPosition(_worldPosition);
     }
 
     // 비어 있는 칸: 놓일 수 있는 칸 중 유닛이 서 있지 않고 불씨가 이미 놓이지 않은 칸(입장 배치·자연 생성용).

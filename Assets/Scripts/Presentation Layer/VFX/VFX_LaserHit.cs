@@ -61,6 +61,7 @@ namespace PresentationLayer.VFX
         [SerializeField, Range(0.0f, 2.0f), Tooltip("전체 발광 배율. 1이면 기준값")] private float glowScale = 1.0f;
 
         private const float TwoPi = Mathf.PI * 2.0f;
+        private const float PixelUnitSize = 1.0f / 32.0f; // 로컬 픽셀 1칸의 월드 크기(32 PPU)
         private const int SparkCapacity = 32;
         private const int EmberCapacity = 8;
         private const int MaxLinePixels = 64;
@@ -109,7 +110,7 @@ namespace PresentationLayer.VFX
         };
 
         // 매 프레임 Clear 후 채우고, 메인 스레드 단일 실행이라 인스턴스끼리 공유해도 안전하다
-        private static readonly PixelQuadBuffer quadBuffer = new PixelQuadBuffer(768);
+        private static readonly PixelQuadBuffer quadBuffer = new PixelQuadBuffer(768, false);
 
         //내부 의존성
         private MeshFilter meshFilter;
@@ -636,7 +637,50 @@ namespace PresentationLayer.VFX
 
             UpdateSparks(dt);
             UpdateEmbers(dt);
+
+            // 화면 밖이면 시간과 입자만 흐르게 두고 그리지 않는다. 그리기는 상태와 난수를 건드리지 않으므로 다시 보이는 프레임에 같은 그림이 나온다.
+            if (false == IsOnScreen())
+            {
+                HideRenderer();
+                return;
+            }
+
             RebuildMesh();
+        }
+
+        // 이번 프레임에 그릴 수 있는 범위(메쉬 중심 기준 로컬 픽셀)가 화면에 걸치는지 본다. 중심 충격·번개는 설정값으로 정해지는 최대 범위를,
+        // 스파크(머리와 꼬리)와 잔불은 지금 위치에 모양 크기를 더해 잡는다. 메쉬 회전은 그릴 때 0으로 맞추므로 회전과 무관한 정사각형으로 본다.
+        // 대부분 화면 안이므로 고정 범위로 먼저 보고, 그 범위가 화면 밖일 때만 스파크·잔불까지 넓혀 다시 본다.
+        private bool IsOnScreen()
+        {
+            float boltLength = Mathf.Max(boltLengthMinPx, boltLengthMaxPx);
+            float reach = Mathf.Max(rayMaxLengthPx + 2.0f, discRadiusPx + 2.0f);
+            reach = Mathf.Max(reach, 4.0f + ringRadiusPx + 3.0f);
+            reach = Mathf.Max(reach, boltLength * (1.0f + BranchLengthRatio) + Mathf.Abs(boltJitterPx) * 2.0f + 3.0f);
+
+            Transform meshTransform = meshRenderer.transform;
+            Vector3 center = meshTransform.position;
+            Vector3 scale = meshTransform.lossyScale;
+            float unitsPerPixel = PixelUnitSize * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y));
+            float fixedExtent = reach * unitsPerPixel * 2.0f + PixelVfxCulling.MarginUnits * 2.0f;
+            if (true == PixelVfxCulling.IsVisible(center, new Vector3(fixedExtent, fixedExtent, PixelVfxCulling.BoundsDepth))) return true;
+
+            for (int i = 0; i < SparkCapacity; i++)
+            {
+                if (false == sparks[i].bActive) continue;
+                float tailX = sparks[i].x - sparks[i].vx * sparkStreakTime;
+                float tailY = sparks[i].y - sparks[i].vy * sparkStreakTime;
+                reach = Mathf.Max(reach, Mathf.Max(Mathf.Max(Mathf.Abs(sparks[i].x), Mathf.Abs(sparks[i].y)), Mathf.Max(Mathf.Abs(tailX), Mathf.Abs(tailY))) + 2.0f);
+            }
+
+            for (int i = 0; i < EmberCapacity; i++)
+            {
+                if (false == embers[i].bActive) continue;
+                reach = Mathf.Max(reach, Mathf.Max(Mathf.Abs(embers[i].x), Mathf.Abs(embers[i].y)) + 3.0f);
+            }
+
+            float extent = reach * unitsPerPixel * 2.0f + PixelVfxCulling.MarginUnits * 2.0f;
+            return PixelVfxCulling.IsVisible(center, new Vector3(extent, extent, PixelVfxCulling.BoundsDepth));
         }
 
         private void OnDisable()

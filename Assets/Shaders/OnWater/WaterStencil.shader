@@ -37,6 +37,8 @@ Shader "Custom/WaterStencil"
             // 색상 출력을 0,0,0,0으로 하기 위해 블렌딩 설정 및 깊이 쓰기 비활성화
             ZWrite Off
             Blend SrcAlpha OneMinusSrcAlpha
+            // 색은 (0,0,0,0)이라 블렌딩 결과가 원래 색 그대로다. 색 쓰기를 꺼서 스텐실만 남긴다(화면 결과 동일, 블렌딩 읽기·쓰기 생략).
+            ColorMask 0
 
             HLSLPROGRAM
 

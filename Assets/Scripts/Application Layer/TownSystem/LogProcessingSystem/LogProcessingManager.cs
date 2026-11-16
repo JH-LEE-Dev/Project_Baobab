@@ -22,13 +22,6 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
     [SerializeField] GameObject shopPrefab;
     [SerializeField] GameObject shopSpawnPoint;
 
-    // 가공 콤보 게이지 그림(그림 전용, 동작과 무관). 기존 마을 UI 판과 커터 진행 막대 스프라이트를 그대로 쓴다.
-    [SerializeField] Sprite comboGaugePanelSprite;
-    [SerializeField] Sprite comboGaugeTrackSprite;
-    [SerializeField] Sprite comboGaugeFillSprite;
-    [SerializeField] Shader comboGaugeShader;
-
-
     private GameObject shopObj;
 
     private IInventory inventory;
@@ -69,6 +62,9 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
     private Character character;
 
     private int preCutItemCnt = 0;
+    // 가공(절단)은 끝났지만 아직 평가기에 닿지 않은 원목 수(활성 라인 출고벨트 위). preCutItemCnt와 합쳐
+    // 제재소 파이프라인(상자 → 입고벨트 → 커터 → 출고벨트) 전체가 비었는지 본다.
+    private int postCutItemCnt = 0;
     private bool bLogProcessorActive = false;
     private float logProcessorSpeedMul = 1f;
     private int logProcessingStack = 0;
@@ -80,7 +76,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
     // 콤보가 최대로 쌓였을 때 벨트·커터 루프 사운드가 올라가는 피치 배율(새 소리 없이 같은 루프의 높이만 바꾼다).
     private const float MaxComboLoopPitch = 1.3f;
 
-    // 가공 콤보 연출(톱밥·달아오름·연기·게이지). 그림만 그리고 가공 동작에는 관여하지 않는다.
+    // 가공 콤보 연출(톱밥·달아오름·연기). 그림만 그리고 가공 동작에는 관여하지 않는다.
     private SawmillComboPresenter comboPresenter;
     private MapType currentMapType = MapType.Town;
 
@@ -144,7 +140,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         // 가공 콤보 연출은 상점 오브젝트에 붙인다(상점이 던전 동안 화면 밖으로 옮겨질 때 함께 움직인다).
         comboPresenter = shopObj.GetComponent<SawmillComboPresenter>();
         if (comboPresenter == null) comboPresenter = shopObj.AddComponent<SawmillComboPresenter>();
-        comboPresenter.Setup(this, comboGaugePanelSprite, comboGaugeTrackSprite, comboGaugeFillSprite, comboGaugeShader);
+        comboPresenter.Setup(this);
     }
 
     public void Release()
@@ -199,9 +195,6 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
 
         logContainer.ItemAddedEvent -= ItemAddedInContainer;
         logContainer.ItemAddedEvent += ItemAddedInContainer;
-
-        logContainer.LogContainerIsEmptyEvent -= LogContainerIsEmpty;
-        logContainer.LogContainerIsEmptyEvent += LogContainerIsEmpty;
     }
 
     private void ReleaseEvents()
@@ -214,7 +207,6 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         logContainer.ContainerSpecChangedEvent -= LogContainerSpecChanged;
         shopNPC.InteractStateEvent -= ShopInteractStateChanged;
         logContainer.ItemAddedEvent -= ItemAddedInContainer;
-        logContainer.LogContainerIsEmptyEvent -= LogContainerIsEmpty;
 
         for (int i = 0; i < activeLineCount; i++) ReleaseLineEvents(allLines[i]);
     }
@@ -394,6 +386,11 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
             UpdateProcessorActiveState();
         }
 
+        // 출고벨트 위(가공 끝, 평가 전) 원목 수도 복원된 벨트 그대로 센다. 파이프라인이 비어 있으면 콤보도 0이어야 한다
+        // (예전 규칙 "상자가 비면 초기화"로 저장된 세이브는 빈 파이프라인에 콤보가 남아 있을 수 있다).
+        RecountPostCutItems();
+        if (IsPipelineEmpty()) logProcessingStack = 0;
+
         UpdateProcessorSpeed();
 
         Debug.Log("[LogProcessingManager] Log Processing System Save Data Loaded.");
@@ -419,15 +416,28 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
 
     private void OnLineFreed(LogProcessLine _line)
     {
+        // 절단이 끝난 원목은 LogProcessLine.CuttingDone에서 이미 출고벨트에 올라갔다.
         --preCutItemCnt;
+        ++postCutItemCnt;
         UpdateProcessorActiveState();
     }
 
     private void LogToEvaluator(LogProcessLine _line, LogItem _item, ILogItemData _itemData)
     {
-        ++logProcessingStack;
-        if (logProcessingStack >= MaxProcessingStack)
-            logProcessingStack = MaxProcessingStack;
+        if (postCutItemCnt > 0) --postCutItemCnt;
+
+        // 가공 콤보: 원목이 평가기에 닿을 때마다 쌓이고, 이 원목이 제재소 파이프라인의 마지막 원목이면
+        // (상자·입고벨트·커터·출고벨트 모두 빔) 초기화한다.
+        if (IsPipelineEmpty())
+        {
+            logProcessingStack = 0;
+        }
+        else
+        {
+            ++logProcessingStack;
+            if (logProcessingStack >= MaxProcessingStack)
+                logProcessingStack = MaxProcessingStack;
+        }
 
         UpdateProcessorSpeed();
 
@@ -558,24 +568,22 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
 
         float baseInterval = logContainer.GetEffectiveTransferInterval();
 
-        // 가공 콤보 배속은 출고 간격을 줄이는 대신 타이머를 배율만큼 빨리 돌린다(벨트와 같은 "라인 시간").
-        // 예전엔 간격을 배율로 나눠서, 스택이 오르는 순간 이미 쌓인 경과시간이 줄어든 간격을 넘어 다음 원목이
-        // 바로 튀어나와 벨트 위 간격이 좁아졌다. 이렇게 하면 배율이 언제 바뀌어도 원목 간격이 일정하다.
-        // 배율 1(콤보 미적용)에서는 예전과 똑같다.
-        float lineDeltaTime = Time.deltaTime * logProcessorSpeedMul;
-
         for (int i = 0; i < activeLineCount; i++)
         {
-            // 커터가 가공 중(라인이 바쁨)인 동안은 타이머 진행 자체를 멈춘다. 가공이 오래
-            // 걸려도 그동안 쌓인 경과시간이 인터벌을 이미 채워버려 가공 완료 즉시 다음 원목이
-            // 튀어나오는 것을 막기 위함.
+            // 타이머는 입고벨트가 넘겨주는 진행량(라인 시간)만큼 간다. 벨트가 등속으로 돌면 흐른 시간 x 가공 콤보
+            // 배율과 같고(콤보 배속은 벨트와 같은 "라인 시간"이라 배율이 언제 바뀌어도 간격이 일정하다), 가감속 중에는
+            // 벨트가 실제로 간 거리만큼만 간다. 예전처럼 시간만 세면 벨트가 커터 때문에 서며 미끄러진 거리와 다시
+            // 출발하며 덜 간 거리가 원목 간격에 남아, 컨베이어 특성이 높을수록 간격이 크게 들쭉날쭉했다.
             //
+            // 커터가 가공 중(라인이 바쁨)인 동안 벨트는 서 있으므로 진행량도 0이다(멈추며 미끄러지는 거리만 센다).
+            // 가공이 오래 걸려도 그동안 경과시간이 쌓여 가공 완료 즉시 다음 원목이 튀어나오는 일은 없다.
             // 이 정지 덕분에 라인의 실제 처리 주기는 "절단 시간 + max(출고 간격, 벨트 이동 시간)"
             // 아래로 내려가지 않는다. 그래서 컨베이어 특성으로 출고 간격이 줄어도 처리량은 절단
             // 시간에 수렴할 뿐 라인 증설(ProcessLineExpand)을 대체하지 못한다. 정지를 없애지 말 것.
-            if (allLines[i].IsBusy) continue;
-
-            lineElapsedTime[i] += lineDeltaTime;
+            //
+            // 멈추며 미끄러지는 동안 간격만큼 갔으면 라인이 바빠도 그 자리에서 원목을 올린다. 커터를 기다리는 벨트는
+            // 새 원목이 올라와도 다시 돌지 않고(LogInBelt.LogIn), 가공이 끝나면 함께 출발한다.
+            lineElapsedTime[i] += allLines[i].ConsumeSupplyProgress();
 
             if (lineElapsedTime[i] < GetLineSupplyInterval(baseInterval, i)) continue;
             if (!logContainer.HasAvailableItem()) continue;
@@ -691,13 +699,23 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
             ? Mathf.Lerp(1f, MaxComboLoopPitch, logProcessingStack / (float)MaxProcessingStack)
             : 1f;
         for (int i = 0; i < activeLineCount; i++) allLines[i].SetComboPitchMultiplier(comboPitch);
-        // 출고 주기에는 PollLineSupply가 타이머를 배율만큼 빨리 돌려 반영한다(컨테이너 간격은 배율 1 기준).
+        // 출고 주기에는 입고벨트가 배율만큼 빨리 도는 만큼 PollLineSupply의 타이머 진행량도 커져 반영된다(컨테이너 간격은 배율 1 기준).
     }
 
-    private void LogContainerIsEmpty()
+    // 제재소 파이프라인 전체(상자 + 활성 라인의 입고벨트·커터·출고벨트)에 가공·평가를 기다리는 원목이 하나도 없으면 true.
+    private bool IsPipelineEmpty()
     {
-        logProcessingStack = 0;
-        UpdateProcessorSpeed();
+        return preCutItemCnt <= 0 && postCutItemCnt <= 0;
+    }
+
+    // 활성 라인 출고벨트 위 원목 수를 실제 벨트 상태로 다시 센다(세이브 로드·라인 증설/철거 직후, 이벤트 처리 중이 아닐 때만).
+    private void RecountPostCutItems()
+    {
+        postCutItemCnt = 0;
+        for (int i = 0; i < activeLineCount && i < allLines.Count; i++)
+        {
+            if (allLines[i].OutBelt != null) postCutItemCnt += allLines[i].OutBelt.ItemCount;
+        }
     }
 
     // 세트(입고벨트+출고벨트+커터+평가기) 증설 - 스킬/재화 트리 등에서 호출
@@ -720,6 +738,9 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         }
 
         activeLineCount = newCount;
+
+        // 켜진 라인은 Initialize로 벨트가 비고, 꺼진 라인의 출고벨트 원목은 더 이상 평가기에 닿지 않으므로 다시 센다.
+        RecountPostCutItems();
 
         // 라인 수가 바뀌었으니 현재 전역 속도 배율을 새로 활성화된 라인에도 반영
         UpdateProcessorSpeed();

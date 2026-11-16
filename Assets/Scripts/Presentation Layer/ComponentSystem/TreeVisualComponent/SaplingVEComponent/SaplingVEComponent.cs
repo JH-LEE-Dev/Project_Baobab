@@ -53,7 +53,19 @@ public class SaplingVEComponent : MonoBehaviour
         zeroScaleVector = new Vector3(0f, 0f, 1f);
         targetScaleVector = new Vector3(targetScale.x, targetScale.y, 1f);
         onRevertTreeShrunk = OnRevertTreeShrunk;
+
+        // DOScale 본문(DOTween.To(getter, setter, ...).SetTarget(target))과 같은 대리자를 한 번만 만든다(성장마다 새로 만들지 않게).
+        Transform target = _saplingTransform;
+        scaleGetter = () => target.localScale;
+        scaleSetter = x => target.localScale = x;
+        onCheckScalePeak = CheckScalePeak;
+        onFireScalePeak = FireScalePeak;
     }
+
+    private DG.Tweening.Core.DOGetter<Vector3> scaleGetter;
+    private DG.Tweening.Core.DOSetter<Vector3> scaleSetter;
+    private TweenCallback onCheckScalePeak;
+    private TweenCallback onFireScalePeak;
 
     public void AnimateSaplingVE(bool _bIsSapling, Action _onScalePeak = null)
     {
@@ -75,14 +87,15 @@ public class SaplingVEComponent : MonoBehaviour
         // 더욱 극적인 스프링 효과를 위해 Amplitude(진동 폭)를 크게 높이고 Period(진동 주기)를 조절
         // 1.0초 동안 매우 탄력 있게 튕기며 목표 스케일로 수렴
         scaleTweenTarget = saplingTransform;
-        scaleTween = saplingTransform.DOScale(targetScaleVector, GrowDuration)
-            .SetEase(Ease.OutElastic, GrowAmplitude, GrowPeriod);
+        scaleTween = DOTween.To(scaleGetter, scaleSetter, targetScaleVector, GrowDuration);
+        scaleTween.SetTarget(saplingTransform);
+        scaleTween.SetEase(Ease.OutElastic, GrowAmplitude, GrowPeriod);
 
         if (bScalePeakFired) return;
 
         // OutElastic은 목표 스케일을 넘겨 한 번 크게 부푼 뒤 수렴하므로, 그 첫 정점이 곧 스케일 최대 시점이다.
         // 혹시 오버슈트가 없는 이징으로 바뀌더라도 트윈 완료 시점에 늦게라도 한 번은 발동하도록 보강한다.
-        scaleTween.OnUpdate(CheckScalePeak).OnComplete(FireScalePeak);
+        scaleTween.OnUpdate(onCheckScalePeak).OnComplete(onFireScalePeak);
     }
 
     /// <summary>

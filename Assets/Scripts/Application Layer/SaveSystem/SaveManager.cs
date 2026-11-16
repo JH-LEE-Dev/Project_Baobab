@@ -31,6 +31,7 @@ public enum ESaveCheckState
 public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
 {
     private BootStrap bootstrap;
+    private bool bBootstrapLookupFailed;
     private SignalHub signalHub;
     private TutorialSystem tutorialSystem;
     private RegionGuideSystem regionGuideSystem;
@@ -257,9 +258,12 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
     /// </summary>
     private bool IsAutoSaveEnabled()
     {
-        if (null == bootstrap)
+        // BootStrap이 없는 오브젝트(GameInstaller 프리팹에 남은 SaveManager)는 매 프레임(Update) 찾아도 계속 없다.
+        // 런타임에 BootStrap을 붙이는 곳이 없으므로 한 번 못 찾으면 다시 찾지 않는다(에디터에서는 실패한 GetComponent가 매번 오류 문구를 할당한다).
+        if (null == bootstrap && false == bBootstrapLookupFailed)
         {
             bootstrap = GetComponent<BootStrap>();
+            if (null == bootstrap) bBootstrapLookupFailed = true;
         }
 
         return null == bootstrap || bootstrap.IsAutoSaveEnabled;

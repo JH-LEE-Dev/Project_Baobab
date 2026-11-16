@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace PresentationLayer.VFX
@@ -126,6 +127,10 @@ namespace PresentationLayer.VFX
 
         private const int MaxOutlineRadius = 140;
         private const int QuadBudget = 16000;
+        // 로딩 때 미리 잡는 메쉬 용량(쿼드). 골든 케이스(T1~T3, 가로 반지름 48~140)에서 잰 최대 사용량은 하늘 18,008정점·바닥 2,764정점이라
+        // 여유를 두고 잡는다. 넘치면 예전처럼 그때 늘어난다(그리는 정점은 같고 버퍼 용량만 다르다).
+        private const int SkyMeshReserveQuads = 6000;
+        private const int GroundMeshReserveQuads = 900;
         private const int LineBufferSize = 160;
 
         // 연막 스프라이트 재생
@@ -210,12 +215,24 @@ namespace PresentationLayer.VFX
 
         // 타원 윤곽 표(정수 반지름별). 최초 사용 때 한 번 만든다(재생 중 할당 없음).
         private static bool[,] outlineScratch;
+        // 표를 만들 때만 쓰는 임시 버퍼: 찍힌 칸 목록(가로*세로 순 키)과 병합 정렬용 보조 배열
+        private static int[] outlineCellKeys;
+        private static int outlineCellCount;
+        private static float[] outlineSortAngle;
+        private static int[] outlineSortX;
+        private static int[] outlineSortY;
         private static int[][] outlineX;
         private static int[][] outlineY;
         private static float[][] outlineAngle;
 
-        private static readonly PixelQuadBuffer skyBuffer = new PixelQuadBuffer(QuadBudget);
-        private static readonly PixelQuadBuffer groundBuffer = new PixelQuadBuffer(2400);
+        // 충격파 고리 띠(DrawRingBandGapped)의 점별 각도 표(가로 반지름별). 최초 사용 때 만든다.
+        private static float[][] ringBandAngles;
+        private static int[] ringBandRy;
+        private static int[] ringBandW;
+        private static bool bTablesPrewarmed;
+
+        private static readonly PixelQuadBuffer skyBuffer = new PixelQuadBuffer(QuadBudget, false);
+        private static readonly PixelQuadBuffer groundBuffer = new PixelQuadBuffer(2400, false);
         private static readonly int[] linePixelX = new int[LineBufferSize];
         private static readonly int[] linePixelY = new int[LineBufferSize];
 
@@ -344,8 +361,24 @@ namespace PresentationLayer.VFX
                 groundSortingLayerId = SortingLayer.NameToID(groundSortingLayerName);
             }
 
+            // 첫 재생 중에 늘던 메쉬 용량과 반지름별 표를 로딩(풀 예열 때의 Awake)으로 옮긴다.
+            PixelQuadBuffer.ReserveMesh(mesh, SkyMeshReserveQuads);
+            if (null != groundMesh) PixelQuadBuffer.ReserveMesh(groundMesh, GroundMeshReserveQuads);
+
             EnsureOutlineTable();
+            PrewarmTables();
             EnsurePalette();
+        }
+
+        // 재생 중에 쓰일 수 있는 모든 반지름의 윤곽 표(DrawOutline: 2~MaxOutlineRadius)와 고리 띠 각도 표(DrawRings: 4 < rx, 세로 = rx * GroundSquashY, 두께 2)를
+        // 한 번에 만든다. 표 값은 반지름만으로 정해지고(만드는 순서와 무관) 처음 쓰일 때 만들던 것과 같은 함수로 만들므로 그대로다.
+        private static void PrewarmTables()
+        {
+            if (true == bTablesPrewarmed) return;
+            bTablesPrewarmed = true;
+
+            for (int rx = 2; rx <= MaxOutlineRadius; rx++) EnsureOutline(rx);
+            for (int rx = 5; rx <= MaxOutlineRadius; rx++) GetRingBandAngles(rx, Mathf.Max(1, Mathf.RoundToInt(rx * GroundSquashY)), 2);
         }
 
         private static void EnsurePalette()
@@ -712,6 +745,7 @@ namespace PresentationLayer.VFX
         }
 
         // 같은 줄에서 같은 색으로 이어지는 픽셀을 한 쿼드로 합쳐 정점 수를 줄인다(결과 픽셀은 같다).
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void FlushRun()
         {
             if (false == bRunActive) return;
@@ -721,6 +755,7 @@ namespace PresentationLayer.VFX
         }
 
         // 쿼드 한 개를 버퍼에 넣고 실제 그린 픽셀 범위(월드 픽셀)를 모은다. 메쉬 경계를 좁게 잡는 데 쓴다.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void EmitRect(int _x0, int _y0, int _x1, int _y1, Color32 _color)
         {
             activeBuffer.AddWorldRect(_x0, _y0, _x1, _y1, _color);
@@ -732,11 +767,13 @@ namespace PresentationLayer.VFX
             if (boundsMaxY[b] < _y1) boundsMaxY[b] = _y1;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool SameColor(Color32 _a, Color32 _b)
         {
             return _a.r == _b.r && _a.g == _b.g && _a.b == _b.b && _a.a == _b.a;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void AddRun(int _x0, int _x1Exclusive, int _y, Color32 _color)
         {
             if (true == bRunActive && runY == _y && runX1 == _x0 && true == SameColor(runColor, _color))
@@ -763,6 +800,7 @@ namespace PresentationLayer.VFX
             return result;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Dot(int _x, int _y, Color32 _color)
         {
             AddRun(_x, _x + 1, _y, _color);
@@ -827,7 +865,110 @@ namespace PresentationLayer.VFX
 
         // 두께 _w의 고리를 점 단위로 그리며 끊김 구간(각도)을 건너뛴다. 바깥 채운 타원에서 안쪽 채운 타원을 뺀 판정이라
         // 가장자리는 midpoint 곡선과 같다.
+        // 점마다의 각도(Atan2)는 (_rx, _ry, _w)만으로 정해지므로 반지름별 표에서 읽는다(표 값은 같은 식으로 한 번 계산한 것이라 비트까지 같다).
+        // 점을 도는 순서와 판정은 표를 만들 때와 같아서 n번째로 방문하는 점의 각도가 표의 n번째 값이다.
         private void DrawRingBandGapped(int _rx, int _ry, int _w, Color32 _color, int _ring)
+        {
+            float[] angles = GetRingBandAngles(_rx, _ry, _w);
+            if (null == angles)
+            {
+                DrawRingBandGappedDirect(_rx, _ry, _w, _color, _ring);
+                return;
+            }
+
+            int innerRx = Mathf.Max(0, _rx - _w);
+            int innerRy = Mathf.Max(0, Mathf.RoundToInt(_ry - _w * (float)_ry / Mathf.Max(1, _rx)));
+            int n = 0;
+
+            for (int y = -_ry; y <= _ry; y++)
+            {
+                int wo = FillHalfWidth(_rx, _ry, y);
+                if (wo < 0) continue;
+
+                int wi = -1;
+                if (-innerRy <= y && y <= innerRy && 0 < innerRx) wi = FillHalfWidth(innerRx, innerRy, y);
+
+                for (int x = -wo; x <= wo; x++)
+                {
+                    if (0 <= wi && x == -wi)
+                    {
+                        x = wi;
+                        continue;
+                    }
+
+                    float angle = angles[n++];
+                    if (true == InRingGap(_ring, angle)) continue;
+
+                    Dot(centerX + x, centerY + y, _color);
+                }
+            }
+        }
+
+        // (_rx, _ry, _w) 고리 띠의 점별 각도 표. 표 칸은 가로 반지름별 하나이고, 처음 쓰일 때 만든다(윤곽 표와 같은 방식).
+        // 다른 세로 반지름/두께로 불리면(현재 호출 경로에는 없음) null을 돌려 매번 계산하게 한다.
+        private static float[] GetRingBandAngles(int _rx, int _ry, int _w)
+        {
+            if (_rx < 0 || MaxOutlineRadius < _rx) return null;
+
+            if (null == ringBandAngles)
+            {
+                ringBandAngles = new float[MaxOutlineRadius + 1][];
+                ringBandRy = new int[MaxOutlineRadius + 1];
+                ringBandW = new int[MaxOutlineRadius + 1];
+            }
+
+            float[] table = ringBandAngles[_rx];
+            if (null != table) return ringBandRy[_rx] == _ry && ringBandW[_rx] == _w ? table : null;
+
+            int innerRx = Mathf.Max(0, _rx - _w);
+            int innerRy = Mathf.Max(0, Mathf.RoundToInt(_ry - _w * (float)_ry / Mathf.Max(1, _rx)));
+
+            // 1차: 점 개수(줄마다 바깥 폭에서 안쪽 구멍 폭을 뺀 값), 2차: 각도 채우기(DrawRingBandGappedDirect와 같은 순회)
+            // 안쪽 구멍 [-wi, wi]는 바깥 범위 안에 있을 때만 건너뛰어진다(-wi에 닿아야 건너뛰므로).
+            int count = 0;
+            for (int y = -_ry; y <= _ry; y++)
+            {
+                int wo = FillHalfWidth(_rx, _ry, y);
+                if (wo < 0) continue;
+
+                int wi = -1;
+                if (-innerRy <= y && y <= innerRy && 0 < innerRx) wi = FillHalfWidth(innerRx, innerRy, y);
+
+                count += 2 * wo + 1;
+                if (0 <= wi && wi <= wo) count -= 2 * wi + 1;
+            }
+
+            table = new float[count];
+            int n = 0;
+            for (int y = -_ry; y <= _ry; y++)
+            {
+                int wo = FillHalfWidth(_rx, _ry, y);
+                if (wo < 0) continue;
+
+                int wi = -1;
+                if (-innerRy <= y && y <= innerRy && 0 < innerRx) wi = FillHalfWidth(innerRx, innerRy, y);
+
+                for (int x = -wo; x <= wo; x++)
+                {
+                    if (0 <= wi && x == -wi)
+                    {
+                        x = wi;
+                        continue;
+                    }
+
+                    table[n] = Mathf.Repeat(Mathf.Atan2(y / (float)Mathf.Max(1, _ry), x / (float)Mathf.Max(1, _rx)), TwoPi);
+                    n++;
+                }
+            }
+
+            ringBandAngles[_rx] = table;
+            ringBandRy[_rx] = _ry;
+            ringBandW[_rx] = _w;
+            return table;
+        }
+
+        // 원래 방식(점마다 Atan2). 표를 쓸 수 없을 때만 쓴다.
+        private void DrawRingBandGappedDirect(int _rx, int _ry, int _w, Color32 _color, int _ring)
         {
             int innerRx = Mathf.Max(0, _rx - _w);
             int innerRy = Mathf.Max(0, Mathf.RoundToInt(_ry - _w * (float)_ry / Mathf.Max(1, _rx)));
@@ -926,7 +1067,7 @@ namespace PresentationLayer.VFX
 
         // ---------- 윤곽 표 (midpoint 타원 + L자 제거) ----------
 
-        // 표 껍데기만 만든다. 반지름별 윤곽은 처음 쓰일 때 만들어 재사용한다(전부 미리 만들면 첫 재생에서 큰 할당과 히치가 난다).
+        // 표 껍데기만 만든다. 반지름별 윤곽은 로딩 때 PrewarmTables가 전부 만들고, 그 전에 쓰이면 처음 쓰일 때 만든다.
         private static void EnsureOutlineTable()
         {
             if (null != outlineX) return;
@@ -945,15 +1086,21 @@ namespace PresentationLayer.VFX
             BuildOutline(_rx, ry, out outlineX[_rx], out outlineY[_rx], out outlineAngle[_rx]);
         }
 
+        // 찍힌 칸 키(가로 칸 * KeyStride + 세로 칸)를 오름차순으로 정렬하면 격자를 가로-세로 순으로 훑는 순서와 같다.
+        private const int OutlineKeyStride = MaxOutlineRadius + 3;
+
+        // 격자 전체를 훑는 대신 찍힌 칸 목록만 같은 순서로 돈다(빈 칸은 원래도 건너뛰었고, 지우기만 하므로 새로 켜지는 칸은 없다).
+        // 정렬은 같은 각도의 순서를 유지하는 안정 병합 정렬이라 삽입 정렬과 결과가 같다.
+        // 격자는 처음 할당 때 모두 false이고, 끝날 때 찍었던 칸만 되돌려 다음 반지름도 빈 격자로 시작한다.
         private static void BuildOutline(int _rx, int _ry, out int[] _xs, out int[] _ys, out float[] _angles)
         {
             int w = _rx * 2 + 3;
             int h = _ry * 2 + 3;
             bool[,] grid = outlineScratch;
-            for (int cx = 0; cx < w; cx++)
-            {
-                for (int cy = 0; cy < h; cy++) grid[cx, cy] = false;
-            }
+
+            int needKeys = 4 * (_rx + _ry + 4);
+            if (null == outlineCellKeys || outlineCellKeys.Length < needKeys) outlineCellKeys = new int[needKeys];
+            outlineCellCount = 0;
 
             int ox = _rx + 1;
             int oy = _ry + 1;
@@ -1005,28 +1152,32 @@ namespace PresentationLayer.VFX
                 }
             }
 
+            int[] keys = outlineCellKeys;
+            int keyCount = outlineCellCount;
+            System.Array.Sort(keys, 0, keyCount);
+
             // L자 모서리 제거(대각 연결은 유지)
             bool bChanged = true;
             while (true == bChanged)
             {
                 bChanged = false;
-                for (int gx = 1; gx < w - 1; gx++)
+                for (int k = 0; k < keyCount; k++)
                 {
-                    for (int gy = 1; gy < h - 1; gy++)
-                    {
-                        if (false == grid[gx, gy]) continue;
+                    int gx = keys[k] / OutlineKeyStride;
+                    int gy = keys[k] - gx * OutlineKeyStride;
+                    if (gx < 1 || w - 1 <= gx || gy < 1 || h - 1 <= gy) continue;
+                    if (false == grid[gx, gy]) continue;
 
-                        for (int sx = -1; sx <= 1; sx += 2)
+                    for (int sx = -1; sx <= 1; sx += 2)
+                    {
+                        for (int sy = -1; sy <= 1; sy += 2)
                         {
-                            for (int sy = -1; sy <= 1; sy += 2)
+                            if (true == grid[gx + sx, gy] && true == grid[gx, gy + sy] && false == grid[gx + sx, gy + sy])
                             {
-                                if (true == grid[gx + sx, gy] && true == grid[gx, gy + sy] && false == grid[gx + sx, gy + sy])
-                                {
-                                    grid[gx, gy] = false;
-                                    bChanged = true;
-                                    sx = 2;
-                                    break;
-                                }
+                                grid[gx, gy] = false;
+                                bChanged = true;
+                                sx = 2;
+                                break;
                             }
                         }
                     }
@@ -1034,57 +1185,134 @@ namespace PresentationLayer.VFX
             }
 
             int count = 0;
-            for (int gx = 0; gx < w; gx++)
+            for (int k = 0; k < keyCount; k++)
             {
-                for (int gy = 0; gy < h; gy++)
-                {
-                    if (true == grid[gx, gy]) count++;
-                }
+                int gx = keys[k] / OutlineKeyStride;
+                if (true == grid[gx, keys[k] - gx * OutlineKeyStride]) count++;
             }
 
             _xs = new int[count];
             _ys = new int[count];
             _angles = new float[count];
             int n = 0;
-            for (int gx = 0; gx < w; gx++)
+            for (int k = 0; k < keyCount; k++)
             {
-                for (int gy = 0; gy < h; gy++)
-                {
-                    if (false == grid[gx, gy]) continue;
-                    _xs[n] = gx - ox;
-                    _ys[n] = gy - oy;
-                    _angles[n] = Mathf.Repeat(Mathf.Atan2((gy - oy) / (float)_ry, (gx - ox) / (float)_rx), TwoPi);
-                    n++;
-                }
+                int gx = keys[k] / OutlineKeyStride;
+                int gy = keys[k] - gx * OutlineKeyStride;
+                if (false == grid[gx, gy]) continue;
+                grid[gx, gy] = false;
+                _xs[n] = gx - ox;
+                _ys[n] = gy - oy;
+                _angles[n] = Mathf.Repeat(Mathf.Atan2((gy - oy) / (float)_ry, (gx - ox) / (float)_rx), TwoPi);
+                n++;
             }
 
-            // 각도 순으로 정렬(삽입 정렬, 최초 1회)
-            for (int i = 1; i < count; i++)
+            // 각도 순으로 정렬(안정 병합 정렬, 최초 1회)
+            SortOutlineByAngle(_angles, _xs, _ys, count);
+        }
+
+        // 아래에서 위로 합치는 병합 정렬. 같은 각도면 왼쪽(앞쪽)을 먼저 내보내 원래 순서를 지킨다.
+        private static void SortOutlineByAngle(float[] _angles, int[] _xs, int[] _ys, int _count)
+        {
+            if (_count < 2) return;
+
+            if (null == outlineSortAngle || outlineSortAngle.Length < _count)
             {
-                float a = _angles[i];
-                int px = _xs[i];
-                int py = _ys[i];
-                int j = i - 1;
-                while (j >= 0 && _angles[j] > a)
+                outlineSortAngle = new float[_count];
+                outlineSortX = new int[_count];
+                outlineSortY = new int[_count];
+            }
+
+            float[] srcA = _angles;
+            int[] srcX = _xs;
+            int[] srcY = _ys;
+            float[] dstA = outlineSortAngle;
+            int[] dstX = outlineSortX;
+            int[] dstY = outlineSortY;
+
+            for (int width = 1; width < _count; width *= 2)
+            {
+                for (int lo = 0; lo < _count; lo += width * 2)
                 {
-                    _angles[j + 1] = _angles[j];
-                    _xs[j + 1] = _xs[j];
-                    _ys[j + 1] = _ys[j];
-                    j--;
+                    int mid = Mathf.Min(lo + width, _count);
+                    int hi = Mathf.Min(lo + width * 2, _count);
+                    int i = lo;
+                    int j = mid;
+                    int o = lo;
+                    while (i < mid && j < hi)
+                    {
+                        if (srcA[j] < srcA[i])
+                        {
+                            dstA[o] = srcA[j];
+                            dstX[o] = srcX[j];
+                            dstY[o] = srcY[j];
+                            j++;
+                        }
+                        else
+                        {
+                            dstA[o] = srcA[i];
+                            dstX[o] = srcX[i];
+                            dstY[o] = srcY[i];
+                            i++;
+                        }
+
+                        o++;
+                    }
+
+                    while (i < mid)
+                    {
+                        dstA[o] = srcA[i];
+                        dstX[o] = srcX[i];
+                        dstY[o] = srcY[i];
+                        i++;
+                        o++;
+                    }
+
+                    while (j < hi)
+                    {
+                        dstA[o] = srcA[j];
+                        dstX[o] = srcX[j];
+                        dstY[o] = srcY[j];
+                        j++;
+                        o++;
+                    }
                 }
 
-                _angles[j + 1] = a;
-                _xs[j + 1] = px;
-                _ys[j + 1] = py;
+                float[] tA = srcA;
+                srcA = dstA;
+                dstA = tA;
+                int[] tX = srcX;
+                srcX = dstX;
+                dstX = tX;
+                int[] tY = srcY;
+                srcY = dstY;
+                dstY = tY;
+            }
+
+            if (srcA != _angles)
+            {
+                System.Array.Copy(srcA, _angles, _count);
+                System.Array.Copy(srcX, _xs, _count);
+                System.Array.Copy(srcY, _ys, _count);
             }
         }
 
         private static void Plot4(bool[,] _grid, int _ox, int _oy, int _x, int _y)
         {
-            _grid[_ox + _x, _oy + _y] = true;
-            _grid[_ox - _x, _oy + _y] = true;
-            _grid[_ox + _x, _oy - _y] = true;
-            _grid[_ox - _x, _oy - _y] = true;
+            PlotCell(_grid, _ox + _x, _oy + _y);
+            PlotCell(_grid, _ox - _x, _oy + _y);
+            PlotCell(_grid, _ox + _x, _oy - _y);
+            PlotCell(_grid, _ox - _x, _oy - _y);
+        }
+
+        // 원래처럼 칸을 켜고, 새로 켜진 칸만 목록에 넣는다.
+        private static void PlotCell(bool[,] _grid, int _gx, int _gy)
+        {
+            if (true == _grid[_gx, _gy]) return;
+            _grid[_gx, _gy] = true;
+
+            if (outlineCellKeys.Length == outlineCellCount) System.Array.Resize(ref outlineCellKeys, outlineCellCount * 2);
+            outlineCellKeys[outlineCellCount++] = _gx * OutlineKeyStride + _gy;
         }
 
         // ---------- 한 프레임 ----------
@@ -1144,13 +1372,13 @@ namespace PresentationLayer.VFX
             // 메쉬 경계는 실제로 그린 픽셀 범위로 좁게 잡는다(GPU 프러스텀 컬링이 효과를 내게 한다)
             skyBuffer.Upload(mesh, 0);
             ApplyTightBounds(mesh, transform.position, 0);
-            meshRenderer.enabled = true;
+            if (false == meshRenderer.enabled) meshRenderer.enabled = true;
 
             if (true == bSplit)
             {
                 groundBuffer.Upload(groundMesh, 0);
                 ApplyTightBounds(groundMesh, groundMeshRenderer.transform.position, 1);
-                groundMeshRenderer.enabled = true;
+                if (false == groundMeshRenderer.enabled) groundMeshRenderer.enabled = true;
             }
 
             UpdatePuffs(t);
@@ -1600,8 +1828,9 @@ namespace PresentationLayer.VFX
 
             if (TimelineLength <= elapsed)
             {
-                meshRenderer.enabled = false;
-                if (null != groundMeshRenderer) groundMeshRenderer.enabled = false;
+                // 끝난 뒤 풀로 돌아갈 때까지 매 프레임 같은 값을 다시 쓰지 않는다(이미 꺼져 있으면 그대로)
+                if (true == meshRenderer.enabled) meshRenderer.enabled = false;
+                if (null != groundMeshRenderer && true == groundMeshRenderer.enabled) groundMeshRenderer.enabled = false;
                 HidePuffs();
                 return;
             }

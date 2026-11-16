@@ -453,8 +453,45 @@ public class LogItem : Item, IStaticCollidable
             visualTransform.localScale = Vector3.zero;
             SyncOutlineTransform();
             // 벨트는 원목을 멈춰 있는 동안 갱신하지 않으므로, 아웃라인은 트윈이 직접 따라가게 한다
-            visualTransform.DOScale(Vector3.one, 0.5f).SetEase(Ease.OutElastic, 1.7f, 0.3f).OnUpdate(GetSyncOutlineCallback()).SetLink(visualTransform.gameObject);
+            VisualScaleTween(Vector3.one, 0.5f).SetEase(Ease.OutElastic, 1.7f, 0.3f).OnUpdate(GetSyncOutlineCallback()).SetLink(visualTransform.gameObject);
         }
+    }
+
+    // DOScale·DOMove 본문(DOTween.To(getter, setter, 끝값, 시간) 뒤 DOMove만 SetOptions(snapping: false), 둘 다 SetTarget(대상))과
+    // 같은 트윈을 만들되, 벨트를 지날 때마다 getter/setter 대리자를 새로 만들지 않도록 대상별로 한 번만 만든다.
+    private Transform visualScaleTweenTarget;
+    private DG.Tweening.Core.DOGetter<Vector3> visualScaleGetter;
+    private DG.Tweening.Core.DOSetter<Vector3> visualScaleSetter;
+    private DG.Tweening.Core.DOGetter<Vector3> rootPositionGetter;
+    private DG.Tweening.Core.DOSetter<Vector3> rootPositionSetter;
+
+    private DG.Tweening.Core.TweenerCore<Vector3, Vector3, DG.Tweening.Plugins.Options.VectorOptions> VisualScaleTween(Vector3 _endValue, float _duration)
+    {
+        if (visualScaleTweenTarget != visualTransform || null == visualScaleGetter)
+        {
+            Transform target = visualTransform;
+            visualScaleGetter = () => target.localScale;
+            visualScaleSetter = x => target.localScale = x;
+            visualScaleTweenTarget = visualTransform;
+        }
+
+        var t = DOTween.To(visualScaleGetter, visualScaleSetter, _endValue, _duration);
+        t.SetTarget(visualTransform);
+        return t;
+    }
+
+    private DG.Tweening.Core.TweenerCore<Vector3, Vector3, DG.Tweening.Plugins.Options.VectorOptions> RootMoveTween(Vector3 _endValue, float _duration)
+    {
+        if (null == rootPositionGetter)
+        {
+            Transform target = transform;
+            rootPositionGetter = () => target.position;
+            rootPositionSetter = x => target.position = x;
+        }
+
+        var t = DOTween.To(rootPositionGetter, rootPositionSetter, _endValue, _duration);
+        t.SetOptions(false).SetTarget(transform);
+        return t;
     }
 
     /// <summary>
@@ -464,12 +501,12 @@ public class LogItem : Item, IStaticCollidable
     {
         bBeltTweenStarted = true;
         transform.DOKill();
-        transform.DOMove(_targetPos, _duration).SetEase(Ease.Linear).SetLink(gameObject);
+        RootMoveTween(_targetPos, _duration).SetEase(Ease.Linear).SetLink(gameObject);
 
         if (null != visualTransform)
         {
             visualTransform.DOKill();
-            visualTransform.DOScale(Vector3.zero, _duration).SetEase(Ease.InBack).OnUpdate(GetSyncOutlineCallback()).SetLink(visualTransform.gameObject);
+            VisualScaleTween(Vector3.zero, _duration).SetEase(Ease.InBack).OnUpdate(GetSyncOutlineCallback()).SetLink(visualTransform.gameObject);
         }
     }
 

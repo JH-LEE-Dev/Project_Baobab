@@ -36,6 +36,10 @@ namespace PresentationLayer.VFX
         private bool bVisible;
         private float fill;
         private float flashAge = float.MaxValue;
+        // 채움 머티리얼에 마지막으로 쓴 값(비트). 같은 값이면 다시 쓰지 않는다(이 머티리얼은 이 원판만 쓴다).
+        private int lastFillBits;
+        private int lastFlashBits;
+        private bool bFillBitsValid;
 
         /// <summary>_parent 아래에 원판을 만든다. 그림이나 셰이더가 없으면 null(원판 없이 진행).</summary>
         public static AnvilRepairGauge Create(Transform _parent, Sprite _backgroundSprite, Sprite _outlineSprite, Sprite _fillSprite, Shader _shader)
@@ -134,10 +138,18 @@ namespace PresentationLayer.VFX
         private static void SetBottomLeft(SpriteRenderer _renderer, int _left, int _bottom)
         {
             Sprite sprite = _renderer.sprite;
-            _renderer.transform.position = new Vector3(
+            Vector3 target = new Vector3(
                 (_left + sprite.pivot.x) / PixelsPerUnit,
                 (_bottom + sprite.pivot.y) / PixelsPerUnit,
                 0f);
+            // 매 프레임 같은 자리면 다시 쓰지 않는다. 지금 월드 위치와 비트까지 같을 때만 건너뛴다(부모가 움직였으면 그대로 다시 쓴다).
+            Transform t = _renderer.transform;
+            Vector3 current = t.position;
+            if (System.BitConverter.SingleToInt32Bits(current.x) == System.BitConverter.SingleToInt32Bits(target.x)
+                && System.BitConverter.SingleToInt32Bits(current.y) == System.BitConverter.SingleToInt32Bits(target.y)
+                && System.BitConverter.SingleToInt32Bits(current.z) == System.BitConverter.SingleToInt32Bits(target.z))
+                return;
+            t.position = target;
         }
 
         private void Update()
@@ -150,8 +162,14 @@ namespace PresentationLayer.VFX
 
         private void ApplyMaterial()
         {
-            fillMaterial.SetFloat(IdFill, fill);
-            fillMaterial.SetFloat(IdFlash, flashAge < FlashDuration ? 1f - flashAge / FlashDuration : 0f);
+            float flash = flashAge < FlashDuration ? 1f - flashAge / FlashDuration : 0f;
+            int fillBits = System.BitConverter.SingleToInt32Bits(fill);
+            int flashBits = System.BitConverter.SingleToInt32Bits(flash);
+            if (false == bFillBitsValid || lastFillBits != fillBits) fillMaterial.SetFloat(IdFill, fill);
+            if (false == bFillBitsValid || lastFlashBits != flashBits) fillMaterial.SetFloat(IdFlash, flash);
+            lastFillBits = fillBits;
+            lastFlashBits = flashBits;
+            bFillBitsValid = true;
         }
 
         private void SetRenderersVisible(bool _bVisible)

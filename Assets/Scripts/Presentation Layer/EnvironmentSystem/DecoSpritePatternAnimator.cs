@@ -215,7 +215,7 @@ public class DecoSpritePatternAnimator : MonoBehaviour
         {
             SetVisible(true);
             FramePattern pattern = GetNextPattern();
-            yield return PlayPattern(pattern);
+            yield return BeginPatternPlayback(pattern);
 
             switch (playbackMode)
             {
@@ -279,24 +279,104 @@ public class DecoSpritePatternAnimator : MonoBehaviour
         return result;
     }
 
-    private IEnumerator PlayPattern(FramePattern pattern)
+    // 예전 PlayPattern 반복기(아래 PatternPlayback의 설명 참고)를 패턴마다 새로 만들지 않고 재사용한다.
+    // 앞 재생이 끝나지 않은 채 남아 있으면(재생 도중 코루틴이 멈춘 경우) 그 객체는 건드리지 않고 새로 만든다.
+    private PatternPlayback BeginPatternPlayback(FramePattern _pattern)
     {
-        if (pattern == null || pattern.frameIndices == null || pattern.frameIndices.Length == 0)
+        if (null == patternPlayback || false == patternPlayback.IsFinished)
+            patternPlayback = new PatternPlayback(this);
+
+        patternPlayback.Begin(_pattern);
+        return patternPlayback;
+    }
+
+    private PatternPlayback patternPlayback;
+
+    // 예전 코루틴과 똑같이 움직이는 열거자다.
+    //   private IEnumerator PlayPattern(FramePattern pattern)
+    //   {
+    //       if (pattern == null || pattern.frameIndices == null || pattern.frameIndices.Length == 0) { yield return null; yield break; }
+    //       if (frameWait == null || frameWaitDuration != frameDuration) { frameWait = new WaitForSeconds(frameDuration); frameWaitDuration = frameDuration; }
+    //       for (int i = 0; i < pattern.frameIndices.Length; i++) { SetFrame(pattern.frameIndices[i]); yield return frameWait; }
+    //   }
+    // 첫 MoveNext에서 검사·대기 객체 준비를 하고, 길이는 매번 다시 읽는다(위 for 문과 같다).
+    private sealed class PatternPlayback : IEnumerator
+    {
+        private const int StateNotStarted = 0;
+        private const int StateEmptyYielded = 1;
+        private const int StatePlaying = 2;
+        private const int StateFinished = 3;
+
+        private readonly DecoSpritePatternAnimator owner;
+        private FramePattern pattern;
+        private int state = StateFinished;
+        private int index;
+        private object current;
+
+        public PatternPlayback(DecoSpritePatternAnimator _owner)
         {
-            yield return null;
-            yield break;
+            owner = _owner;
         }
 
-        if (frameWait == null || frameWaitDuration != frameDuration)
+        public bool IsFinished => StateFinished == state;
+
+        public object Current => current;
+
+        public void Begin(FramePattern _pattern)
         {
-            frameWait = new WaitForSeconds(frameDuration);
-            frameWaitDuration = frameDuration;
+            pattern = _pattern;
+            state = StateNotStarted;
+            index = 0;
+            current = null;
         }
 
-        for (int i = 0; i < pattern.frameIndices.Length; i++)
+        public bool MoveNext()
         {
-            SetFrame(pattern.frameIndices[i]);
-            yield return frameWait;
+            switch (state)
+            {
+                case StateNotStarted:
+                    if (pattern == null || pattern.frameIndices == null || pattern.frameIndices.Length == 0)
+                    {
+                        current = null;
+                        state = StateEmptyYielded;
+                        return true;
+                    }
+
+                    if (owner.frameWait == null || owner.frameWaitDuration != owner.frameDuration)
+                    {
+                        owner.frameWait = new WaitForSeconds(owner.frameDuration);
+                        owner.frameWaitDuration = owner.frameDuration;
+                    }
+
+                    index = 0;
+                    break;
+
+                case StatePlaying:
+                    index++;
+                    break;
+
+                default:
+                    current = null;
+                    state = StateFinished;
+                    return false;
+            }
+
+            if (index < pattern.frameIndices.Length)
+            {
+                owner.SetFrame(pattern.frameIndices[index]);
+                current = owner.frameWait;
+                state = StatePlaying;
+                return true;
+            }
+
+            current = null;
+            state = StateFinished;
+            return false;
+        }
+
+        public void Reset()
+        {
+            throw new System.NotSupportedException();
         }
     }
 

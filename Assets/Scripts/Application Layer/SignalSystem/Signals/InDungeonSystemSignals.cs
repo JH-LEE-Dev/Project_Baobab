@@ -75,6 +75,9 @@ public struct TreeShieldRecoveringSignal
     }
 }
 
+// 캐릭터가 나무 열기(4스테이지)에 맞아 밀려난 순간(본편, 쓰러지지 않았을 때만). HUD 피격 연출용.
+public struct CharacterTreeHeatHitSignal { }
+
 // 대지역 기믹 안내(RegionGuideSystem) 클리어 판정용 알림 신호들. 게임 로직에는 관여하지 않는다.
 // 포자막이 깨진 순간(나무 종류·주체 무관)
 public struct TreeShieldBrokenSignal { }

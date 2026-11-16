@@ -72,7 +72,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 70000000
+        baseValue: 80000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -90,7 +90,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 20000000
+        baseValue: 30000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -126,7 +126,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 20000000
+        baseValue: 30000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -144,7 +144,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 70000000
+        baseValue: 80000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -216,7 +216,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 20000000
+        baseValue: 25000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -234,7 +234,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 15000000
+        baseValue: 20000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -252,7 +252,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 35000000
+        baseValue: 40000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -270,7 +270,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 30000000
+        baseValue: 50000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -288,7 +288,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 20000000
+        baseValue: 30000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -306,7 +306,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 30000000
+        baseValue: 50000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -324,7 +324,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 35000000
+        baseValue: 50000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -342,7 +342,7 @@ MonoBehaviour:
     cost:
       moneyCurve:
         type: 3
-        baseValue: 80000000
+        baseValue: 100000000
         manualValues: []
       carrotCurve:
         type: 3
@@ -712,7 +712,7 @@ MonoBehaviour:
     - skillCommandType: 114
       amountCurve:
         type: 3
-        baseValue: 20
+        baseValue: 30
         manualValues: []
     prerequisiteSkills: 5b00000043000000
   - skillType: 15

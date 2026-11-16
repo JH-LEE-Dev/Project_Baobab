@@ -247,7 +247,7 @@ namespace PresentationLayer.VFX
         private static readonly Color32[] WaveColorsHeating = { ColorWhite, ColorYellow, ColorOrange, ColorRed };
 
         // 메쉬 버퍼는 매 프레임 Clear 후 채우므로 인스턴스끼리 공유해도 안전하다(BackLayer, FrontLayer, AuraLayer 순)
-        private static readonly PixelQuadBuffer[] quadBuffers = { new PixelQuadBuffer(512), new PixelQuadBuffer(512), new PixelQuadBuffer(1024) };
+        private static readonly PixelQuadBuffer[] quadBuffers = { new PixelQuadBuffer(512, false), new PixelQuadBuffer(512, false), new PixelQuadBuffer(1024, false) };
 
         //내부 의존성
         private readonly MeshFilter[] meshFilters = new MeshFilter[LayerCount];
@@ -463,7 +463,13 @@ namespace PresentationLayer.VFX
 
         private void BuildSilhouette()
         {
-            silhouette.Build(GetOriginPosition(), GetReachMarginCells());
+            // 불꽃 혀 모드는 그리는 칸이 (1) 몸 가장자리 칸, (2) 몸에 상하좌우로 닿는 외곽선 칸, (3) 열 꼭대기 위의 혀 칸(옆으로 최대 1칸 흔들림)뿐이라
+            // 좌우·아래로는 실루엣에서 1칸 밖까지만 닿는다. 좌우·아래 여백은 2칸으로 줄이고, 혀가 솟는 위쪽만 원래 여백을 둔다(그리는 칸·순서 동일).
+            int margin = GetReachMarginCells();
+            if (true == IsTongueMode())
+                silhouette.Build(GetOriginPosition(), Mathf.Min(2, margin), Mathf.Min(2, margin), margin);
+            else
+                silhouette.Build(GetOriginPosition(), margin);
         }
 
         // ---------- 갱신 ----------

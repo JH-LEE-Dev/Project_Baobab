@@ -112,8 +112,10 @@ Shader "Custom/VFX/URP2D_HeatHaze"
             half4 frag(Varyings i) : SV_Target
             {
                 // 강도가 0에 가까우면 연산 생략 (완전 투명)
+                // (0,0,0,0)은 알파 블렌딩 결과가 원래 색 그대로라, 버려도 화면은 같고 블렌딩만 생략된다.
                 if (_Intensity <= 0.001)
                 {
+                    discard;
                     return half4(0.0, 0.0, 0.0, 0.0);
                 }
 
@@ -131,6 +133,7 @@ Shader "Custom/VFX/URP2D_HeatHaze"
                 // 마스크 영역 밖이면 버림
                 if (shapeMask <= 0.001)
                 {
+                    discard;
                     return half4(0.0, 0.0, 0.0, 0.0);
                 }
 

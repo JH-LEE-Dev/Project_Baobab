@@ -142,6 +142,11 @@ namespace PresentationLayer.VFX
         private Mesh trailMesh;
         private float trailMaterialIntensity = 1.0f;
         private Vector3 cullSize;
+        // transform / sortingSource.transform 프로퍼티(네이티브 호출)를 매 프레임 부르지 않도록 캐싱(둘 다 바뀌지 않는다)
+        private Transform cachedTransform;
+        private Transform sortingSourceTransform;
+        // 세 렌더러가 모두 꺼져 있고 그 뒤로 켤 수 있는 그리기를 하지 않았으면 true. 화면 밖에 머무는 동안 HideMeshes를 반복하지 않는다.
+        private bool bMeshesHidden;
         private int flyingSortingLayerID;
         private int glowSortingLayerID;
 
@@ -188,6 +193,8 @@ namespace PresentationLayer.VFX
 
             meshFilter = GetComponent<MeshFilter>();
             meshRenderer = GetComponent<MeshRenderer>();
+            cachedTransform = transform;
+            if (null != sortingSource) sortingSourceTransform = sortingSource.transform;
 
             mesh = new Mesh { name = "VFX_OverheatEmber" };
             mesh.MarkDynamic();
@@ -290,6 +297,7 @@ namespace PresentationLayer.VFX
 
             meshVertexCount = -1;
             glowVertexCount = -1;
+            bMeshesHidden = false;
             appliedSortingLayerID = int.MinValue;
             appliedSortingOrder = int.MinValue;
         }
@@ -575,7 +583,7 @@ namespace PresentationLayer.VFX
 
             // 시작: 스케일 0(Launch 직후 같은 프레임) 또는 Visual 높이 > 0(포물선 비행 중. 첫 관측 프레임에 스케일이 이미 자라 있어도 잡힌다).
             // Visual 높이는 드랍 포물선에서만 0보다 크다(착지·흡입·제자리 배치는 0).
-            Transform visual = null != sortingSource ? sortingSource.transform : transform.parent;
+            Transform visual = null != sortingSource ? sortingSourceTransform : cachedTransform.parent;
             float height = null != visual ? visual.localPosition.y : 0.0f;
             if (DropStartScale > _scale || DropHeightEpsilon < height)
             {
@@ -682,6 +690,7 @@ namespace PresentationLayer.VFX
             if (null != trailRenderer && true == trailRenderer.enabled) trailRenderer.enabled = false;
             meshVertexCount = -1;
             glowVertexCount = -1;
+            bMeshesHidden = true;
         }
 
         // 유니티 이벤트 함수
@@ -705,10 +714,11 @@ namespace PresentationLayer.VFX
             UpdateDropFlight(scale);
 
             // 화면 밖이면 계산과 그리기를 모두 멈춘다. 다시 들어오면 이전 위치 없이 이어서 시작한다(순간 이동을 이동으로 보지 않게).
-            Vector3 pos = transform.position;
+            Vector3 pos = cachedTransform.position;
             if (false == PixelVfxCulling.IsVisible(pos + new Vector3(0.0f, CullCenterYPixels / PixelsPerUnit, 0.0f), cullSize))
             {
-                HideMeshes();
+                // 이미 모두 꺼 둔 상태면 다시 끄지 않는다(그 사이 렌더러를 켤 수 있는 그리기가 없었다).
+                if (false == bMeshesHidden) HideMeshes();
                 bHasPrevious = false;
                 // 다시 들어왔을 때 화면 밖에서 지나간 자리의 드랍 꼬리가 남지 않게 비운다
                 trail.Clear();
@@ -753,6 +763,7 @@ namespace PresentationLayer.VFX
             // 움직이는 중에는 메쉬가 로컬 좌표라 픽셀 격자에서 어긋나므로 항상 다시 그린다.
             if (0 < steps || -1 == meshVertexCount || pos != lastDrawPosition || scale != lastDrawScale)
             {
+                bMeshesHidden = false;
                 RebuildMesh(scale);
                 RebuildTrail();
                 lastDrawPosition = pos;
@@ -763,6 +774,7 @@ namespace PresentationLayer.VFX
             if (1.0f / 15.0f <= glowAccumulator || -1 == glowVertexCount || true == bMoving)
             {
                 glowAccumulator = 0.0f;
+                bMeshesHidden = false;
                 RebuildGlow();
             }
         }

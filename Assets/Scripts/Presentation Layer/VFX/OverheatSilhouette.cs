@@ -226,6 +226,15 @@ namespace PresentationLayer.VFX
         /// </summary>
         public void Build(Vector3 _origin, int _reachMarginCells)
         {
+            Build(_origin, _reachMarginCells, _reachMarginCells, _reachMarginCells);
+        }
+
+        /// <summary>
+        /// 여백을 방향별로 따로 주는 Build. 좌우(_marginX), 아래(_marginDown), 위(_marginUp) 여백만큼 거리 변환 영역을 넓힌다.
+        /// 3-4 챔퍼 거리는 실루엣을 담은 직사각형 안에서는 영역 크기와 무관하게 같은 값이 나오므로, 영역을 줄여도 남은 칸의 거리는 그대로다.
+        /// </summary>
+        public void Build(Vector3 _origin, int _marginX, int _marginDown, int _marginUp)
+        {
             ClearPrevious();
 
             // 역방향 샘플링: 격자 칸 중심(원점 기준)을 각 스프라이트 렌더러의 Transform 전체(위치, 회전, 스케일 - 음수 스케일 반전 포함)의
@@ -337,10 +346,10 @@ namespace PresentationLayer.VFX
 
             BuildFootPoint(minX, maxX, minY, maxY);
 
-            RegionMinX = Mathf.Max(0, minX - _reachMarginCells);
-            RegionMaxX = Mathf.Min(GridWidth - 1, maxX + _reachMarginCells);
-            RegionMinY = Mathf.Max(0, minY - _reachMarginCells);
-            RegionMaxY = Mathf.Min(GridHeight - 1, maxY + _reachMarginCells);
+            RegionMinX = Mathf.Max(0, minX - _marginX);
+            RegionMaxX = Mathf.Min(GridWidth - 1, maxX + _marginX);
+            RegionMinY = Mathf.Max(0, minY - _marginDown);
+            RegionMaxY = Mathf.Min(GridHeight - 1, maxY + _marginUp);
 
             BuildDistanceField();
             BuildEdgeList(minX, maxX, minY, maxY);

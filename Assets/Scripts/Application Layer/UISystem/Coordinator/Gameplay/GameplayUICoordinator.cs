@@ -154,6 +154,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<PopupUIUpSignal>(PopupUIUp);
         signalHub.Subscribe<StaminaInvincibleStateChangedSignal>(StaminaInvincibleStateChanged);
         signalHub.Subscribe<BuffHudSignal>(BuffHud);
+        signalHub.Subscribe<CharacterTreeHeatHitSignal>(CharacterTreeHeatHit);
         signalHub.Subscribe<ProvideSkillAccumulatedValueChangeSignal>(ProvideAccumulatedValueChangeEvent);
         signalHub.Subscribe<GameEndSignal>(GameEnd);
         signalHub.Subscribe<ActivateWarningUISignal>(ActivateWarningUI);
@@ -222,6 +223,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<PopupUIUpSignal>(PopupUIUp);
         signalHub.UnSubscribe<StaminaInvincibleStateChangedSignal>(StaminaInvincibleStateChanged);
         signalHub.UnSubscribe<BuffHudSignal>(BuffHud);
+        signalHub.UnSubscribe<CharacterTreeHeatHitSignal>(CharacterTreeHeatHit);
         signalHub.UnSubscribe<ProvideSkillAccumulatedValueChangeSignal>(ProvideAccumulatedValueChangeEvent);
         signalHub.UnSubscribe<GameEndSignal>(GameEnd);
         signalHub.UnSubscribe<ActivateWarningUISignal>(ActivateWarningUI);
@@ -1114,6 +1116,12 @@ public class GameplayUICoordinator
     private void BuffHud(BuffHudSignal _signal)
     {
         hudUI.ApplyBuffHud(in _signal);
+    }
+
+    // 나무 열기 피격: 붉은 화면 한 번 + 피로도 바 흔들림.
+    private void CharacterTreeHeatHit(CharacterTreeHeatHitSignal _signal)
+    {
+        hudUI.PlayHitFeedback();
     }
 
     // HUD가 완전히 다 올라온 시점. 튜토리얼 인트로 중이었다면 그 종료를 UI에 알린다.

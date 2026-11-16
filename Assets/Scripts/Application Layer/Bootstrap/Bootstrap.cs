@@ -630,6 +630,13 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
             yield return WaitForSaveCheckDecisionRoutine();
         }
 
+        // 메뉴를 세우기 전("확인 중" 화면이 덮고 있는 동안) 효과음 데이터를 미리 불러 둔다. 처음 재생할 때마다
+        // 메인 스레드에서 동기로 불러오며 생기던 프레임 멈춤을 없앤다(소리 자체는 같다). 프레임을 나눠 화면이 멈추지 않게 한다.
+        if (null != AudioManager.Instance)
+        {
+            yield return AudioManager.Instance.PreloadSfxClipsRoutine(0.008f);
+        }
+
         SetupMainMenuScene();
     }
 

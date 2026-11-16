@@ -105,9 +105,9 @@ namespace PresentationLayer.VFX
         private static readonly Color32 PuffColor = new Color32(255, 255, 255, 235);
         private static readonly Color32 SolidColor = new Color32(255, 255, 255, 255);
 
-        private static readonly PixelQuadBuffer frontBuffer = new PixelQuadBuffer(1500);
-        private static readonly PixelQuadBuffer backBuffer = new PixelQuadBuffer(1500);
-        private static readonly PixelQuadBuffer groundBuffer = new PixelQuadBuffer(800);
+        private static readonly PixelQuadBuffer frontBuffer = new PixelQuadBuffer(1500, false);
+        private static readonly PixelQuadBuffer backBuffer = new PixelQuadBuffer(1500, false);
+        private static readonly PixelQuadBuffer groundBuffer = new PixelQuadBuffer(800, false);
 
         // 내부 의존성
         private MeshFilter meshFilter;
@@ -723,20 +723,23 @@ namespace PresentationLayer.VFX
 
             frontBuffer.Upload(frontMesh, 0);
             ApplyTightBounds(frontMesh, pos, 0);
-            meshRenderer.enabled = 0 < frontBuffer.VertexCount;
+            bool bFrontVisible = 0 < frontBuffer.VertexCount;
+            if (bFrontVisible != meshRenderer.enabled) meshRenderer.enabled = bFrontVisible;
 
             if (true == bBack)
             {
                 backBuffer.Upload(backMesh, 0);
                 ApplyTightBounds(backMesh, backMeshRenderer.transform.position, 1);
-                backMeshRenderer.enabled = 0 < backBuffer.VertexCount;
+                bool bBackVisible = 0 < backBuffer.VertexCount;
+                if (bBackVisible != backMeshRenderer.enabled) backMeshRenderer.enabled = bBackVisible;
             }
 
             if (true == bGround)
             {
                 groundBuffer.Upload(groundMesh, 0);
                 ApplyTightBounds(groundMesh, groundMeshRenderer.transform.position, 2);
-                groundMeshRenderer.enabled = 0 < groundBuffer.VertexCount;
+                bool bGroundVisible = 0 < groundBuffer.VertexCount;
+                if (bGroundVisible != groundMeshRenderer.enabled) groundMeshRenderer.enabled = bGroundVisible;
             }
         }
 
@@ -764,11 +767,12 @@ namespace PresentationLayer.VFX
             if (current.center != bounds.center || current.size != bounds.size) _mesh.bounds = bounds;
         }
 
+        // 끝난 뒤·화면 밖에서 프레임마다 불리므로 이미 꺼져 있으면 다시 쓰지 않는다.
         private void HideAll()
         {
-            if (null != meshRenderer) meshRenderer.enabled = false;
-            if (null != backMeshRenderer) backMeshRenderer.enabled = false;
-            if (null != groundMeshRenderer) groundMeshRenderer.enabled = false;
+            if (null != meshRenderer && true == meshRenderer.enabled) meshRenderer.enabled = false;
+            if (null != backMeshRenderer && true == backMeshRenderer.enabled) backMeshRenderer.enabled = false;
+            if (null != groundMeshRenderer && true == groundMeshRenderer.enabled) groundMeshRenderer.enabled = false;
         }
 
         // 유니티 이벤트 함수

@@ -19,6 +19,14 @@ public class HUD_ScreenBlood : MonoBehaviour
     [SerializeField] private float fadeOutDuration = 0.5f;
     [SerializeField] private Ease fadeOutEase = Ease.OutQuad;
 
+    [Header("Hit Pulse Settings")]
+    [Tooltip("피격 한 번의 최고 알파. 깜빡임 모션(OMB_BloodScreen)의 진한 쪽 색과 같은 값")]
+    [SerializeField, Range(0f, 1f)] private float hitPulsePeakAlpha = 0.85f;
+    [Tooltip("최고 알파까지 올라가는 시간(초)")]
+    [SerializeField] private float hitPulseInDuration = 0.06f;
+    [Tooltip("최고 알파에서 사라지는 시간(초)")]
+    [SerializeField] private float hitPulseOutDuration = 0.5f;
+
     // 내부 의존성
     private MotionEntry bloodMotion;
     private Tween fadeTween;
@@ -85,6 +93,23 @@ public class HUD_ScreenBlood : MonoBehaviour
                     .SetEase(fadeOutEase)
                     .OnComplete(onFadeCompleteCallback);
         }
+    }
+
+    /// <summary>
+    /// 피격 순간 붉은 화면을 한 번 띄웠다가 사라지게 합니다. 위험 깜빡임(PlayBloodEffect)이 돌고 있으면 이미 붉으므로 건드리지 않습니다.
+    /// 위험 깜빡임이 켜지거나(PlayBloodEffect) 초기화되면(ResetAnimation) 같은 fadeTween을 끊으므로 서로 겹치지 않습니다.
+    /// </summary>
+    public void PlayHitPulse()
+    {
+        if (true == isEffectPlaying || null == screenBlood)
+            return;
+
+        fadeTween?.Kill();
+
+        Sequence _seq = DOTween.Sequence();
+        _seq.Append(screenBlood.DOFade(hitPulsePeakAlpha, hitPulseInDuration).SetEase(Ease.OutQuad));
+        _seq.Append(screenBlood.DOFade(0f, hitPulseOutDuration).SetEase(fadeOutEase));
+        fadeTween = _seq;
     }
 
     /// <summary>
