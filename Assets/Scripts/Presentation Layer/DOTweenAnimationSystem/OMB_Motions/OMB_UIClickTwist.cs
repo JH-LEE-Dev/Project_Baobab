@@ -93,6 +93,27 @@ namespace PresentationLayer.DOTweenAnimationSystem
             RestoreCachedState(false);
         }
 
+        // DOScale 본문(DOTween.To(getter, setter, 끝값, 시간).SetTarget(대상))과 같은 트윈을 만들되, 재생마다 단계별로
+        // getter/setter 대리자를 새로 만들지 않도록 마지막 대상의 것을 재사용한다(대상이 바뀌면 다시 만든다).
+        private Transform scaleTweenTarget;
+        private DG.Tweening.Core.DOGetter<Vector3> scaleTweenGetter;
+        private DG.Tweening.Core.DOSetter<Vector3> scaleTweenSetter;
+
+        private DG.Tweening.Core.TweenerCore<Vector3, Vector3, DG.Tweening.Plugins.Options.VectorOptions> ScaleTween(Transform _target, Vector3 _endValue, float _duration)
+        {
+            if (scaleTweenTarget != _target || null == scaleTweenGetter)
+            {
+                Transform target = _target;
+                scaleTweenGetter = () => target.localScale;
+                scaleTweenSetter = x => target.localScale = x;
+                scaleTweenTarget = _target;
+            }
+
+            var t = DOTween.To(scaleTweenGetter, scaleTweenSetter, _endValue, _duration);
+            t.SetTarget(_target);
+            return t;
+        }
+
         private Tween BuildScaleTween(Transform _target, Vector3 _initialScale)
         {
             Vector3 squashScale = new Vector3(
@@ -120,13 +141,13 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 Vector3 dampedSquashScale = Vector3.Lerp(_initialScale, squashScale, intensity);
                 Vector3 dampedRecoilScale = Vector3.Lerp(_initialScale, recoilScale, intensity);
 
-                sequence.Append(_target.DOScale(dampedSquashScale, squashDuration).SetEase(valueSettings.squashEase));
-                sequence.Append(_target.DOScale(dampedRecoilScale, recoilDuration).SetEase(Ease.OutQuad));
+                sequence.Append(ScaleTween(_target, dampedSquashScale, squashDuration).SetEase(valueSettings.squashEase));
+                sequence.Append(ScaleTween(_target, dampedRecoilScale, recoilDuration).SetEase(Ease.OutQuad));
 
                 intensity *= Mathf.Clamp01(valueSettings.bounceDamping);
             }
 
-            sequence.Append(_target.DOScale(_initialScale, restoreDuration).SetEase(valueSettings.restoreEase));
+            sequence.Append(ScaleTween(_target, _initialScale, restoreDuration).SetEase(valueSettings.restoreEase));
             return sequence;
         }
     }
