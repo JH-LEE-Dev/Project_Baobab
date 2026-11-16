@@ -497,6 +497,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.VFX.SortingLayerTextureGate
   captureRendererIndex: 0
   noCaptureRendererIndex: 1
+  worldCoveredRendererIndex: 2
 --- !u!1 &8144299782213539077
 GameObject:
   m_ObjectHideFlags: 0

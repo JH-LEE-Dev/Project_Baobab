@@ -92,6 +92,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private Vector2 openingZoomFocusPoint = Vector2.zero;
     private CanvasGroup abilityCanvasGroup;
     private TentUICircleRevealStencil circleRevealStencilMask;
+    // 화면 전체를 불투명하게 덮는 배경 이미지(AbilityBackGround). 덮는 동안 월드 카메라 그리기를 건너뛴다.
+    private Image worldCoverImage;
+    private bool isWorldCoverTracking;
+    private Action<UnityEngine.Rendering.ScriptableRenderContext, List<Camera>> onBeginContextRenderingDelegate;
 
     private readonly Dictionary<SkillType, AbilityNodeDefinitionJson> nodeDefinitionMap = new Dictionary<SkillType, AbilityNodeDefinitionJson>();
     private readonly List<SkillType> nodeBuildOrder = new List<SkillType>();
@@ -677,6 +681,96 @@ public class UI_TentAbilityComponent : MonoBehaviour
         BeginCircleReveal();
         RefreshOpenTransitionInput();
         RefreshLinesIfNeeded();
+        StartWorldCoverTracking();
+    }
+
+    // 열려 있는 동안 매 프레임 렌더 직전에 배경이 월드를 완전히 덮는지 판정해 월드 카메라 렌더러를 고른다.
+    // 판정을 렌더 직전에 하므로 같은 프레임의 Update/LateUpdate에서 바뀐 알파·연출 상태가 모두 반영된다.
+    private void StartWorldCoverTracking()
+    {
+        if (isWorldCoverTracking)
+            return;
+
+        if (onBeginContextRenderingDelegate == null)
+            onBeginContextRenderingDelegate = HandleBeginContextRendering;
+
+        isWorldCoverTracking = true;
+        UnityEngine.Rendering.RenderPipelineManager.beginContextRendering += onBeginContextRenderingDelegate;
+    }
+
+    private void StopWorldCoverTracking()
+    {
+        if (isWorldCoverTracking)
+        {
+            isWorldCoverTracking = false;
+            UnityEngine.Rendering.RenderPipelineManager.beginContextRendering -= onBeginContextRenderingDelegate;
+        }
+
+        PresentationLayer.VFX.SortingLayerTextureGate.SetWorldCovered(false);
+    }
+
+    private void HandleBeginContextRendering(UnityEngine.Rendering.ScriptableRenderContext _context, List<Camera> _cameras)
+    {
+        bool _covered = IsWorldFullyCovered();
+        PresentationLayer.VFX.SortingLayerTextureGate.SetWorldCovered(_covered);
+
+        // 닫기(페이드 포함)가 끝나 더 이상 덮을 일이 없으면 추적을 멈춘다.
+        if (false == _covered && false == hasOpenedView && false == isCloseFading)
+            StopWorldCoverTracking();
+    }
+
+    // 배경이 화면 전체를 알파 1로 덮는 상태(원형 공개 완료 후, 닫기 페이드 전)인지 판정한다.
+    // 하나라도 불확실하면 false를 돌려 월드를 그대로 그린다.
+    private bool IsWorldFullyCovered()
+    {
+        if (false == hasOpenedView || isCircleRevealPlaying || isCloseFading)
+            return false;
+
+        if (abilityBackground == null || false == abilityBackground.gameObject.activeInHierarchy)
+            return false;
+
+        if (abilityCanvasGroup == null || 1f > abilityCanvasGroup.alpha)
+            return false;
+
+        if (worldCoverImage == null)
+        {
+            AbilityBackGround _background = abilityBackground.GetComponentInChildren<AbilityBackGround>(true);
+            if (_background != null)
+                worldCoverImage = _background.GetComponent<Image>();
+        }
+
+        if (worldCoverImage == null ||
+            false == worldCoverImage.isActiveAndEnabled ||
+            1f > worldCoverImage.color.a ||
+            worldCoverImage.canvasRenderer.cull ||
+            1f > worldCoverImage.canvasRenderer.GetInheritedAlpha())
+            return false;
+
+        Canvas _canvas = worldCoverImage.canvas;
+        if (_canvas == null || false == _canvas.isActiveAndEnabled)
+            return false;
+
+        // 배경 크기는 열 때/원형 공개 때 맞춘 값이라, 그 뒤 화면 크기가 바뀌었으면 덮지 못할 수 있다.
+        Vector2 _fullSize = GetCircleMaskFullSize();
+        Rect _backgroundRect = abilityBackground.rect;
+        if (_backgroundRect.width < _fullSize.x || _backgroundRect.height < _fullSize.y)
+            return false;
+
+        RectTransform _canvasRect = _canvas.rootCanvas.transform as RectTransform;
+        if (_canvasRect == null || _fullSize.x < _canvasRect.rect.width || _fullSize.y < _canvasRect.rect.height)
+            return false;
+
+        // 배경은 원형 마스크 스텐실 안에서만 그려지므로 마스크가 화면 대각선 전체를 덮어야 한다.
+        if (circleMaskImage != null)
+        {
+            if (false == circleMaskImage.gameObject.activeInHierarchy)
+                return false;
+
+            if (circleMaskImage.rectTransform.rect.width < GetCircleRevealMaxRadius() * 2f)
+                return false;
+        }
+
+        return true;
     }
 
     private void BuildNodesIfNeeded()
@@ -3913,8 +4007,14 @@ public class UI_TentAbilityComponent : MonoBehaviour
         abilityHUD.SetState(_state.Experience, _state.ExperienceLimit, _state.PrestigeLevel);
     }
 
+    private void OnDisable()
+    {
+        StopWorldCoverTracking();
+    }
+
     private void OnDestroy()
     {
+        StopWorldCoverTracking();
         ReleasePadInputFocus();
 
         if (SettingsManager.HasInstance)
