@@ -180,6 +180,9 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.TreeShieldBrokenNotifyEvent -= TreeShieldBroken;
         inDungeonObjectManager.TreeShieldBrokenNotifyEvent += TreeShieldBroken;
 
+        inDungeonObjectManager.TreeHeatHitEvent -= TreeHeatHit;
+        inDungeonObjectManager.TreeHeatHitEvent += TreeHeatHit;
+
         inDungeonObjectManager.ConstellationManifestedEvent -= ConstellationManifested;
         inDungeonObjectManager.ConstellationManifestedEvent += ConstellationManifested;
 
@@ -258,6 +261,7 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.TreeGemTransformedEvent -= TreeGemTransformed;
         inDungeonObjectManager.TreeShieldRecoveringEvent -= TreeShieldRecovering;
         inDungeonObjectManager.TreeShieldBrokenNotifyEvent -= TreeShieldBroken;
+        inDungeonObjectManager.TreeHeatHitEvent -= TreeHeatHit;
         inDungeonObjectManager.ConstellationManifestedEvent -= ConstellationManifested;
         inDungeonObjectManager.EmberAcquiredNotifyEvent -= EmberAcquired;
         inDungeonObjectManager.QuakeChargeChangedEvent -= QuakeChargeChanged;
@@ -436,6 +440,11 @@ public class InDungeonSystem : MonoBehaviour
     private void TreeShieldBroken()
     {
         signalHub.Publish(new TreeShieldBrokenSignal());
+    }
+
+    private void TreeHeatHit()
+    {
+        signalHub.Publish(new CharacterTreeHeatHitSignal());
     }
 
     private void ConstellationManifested()

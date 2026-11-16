@@ -243,6 +243,9 @@ public class CameraMoveController : MonoBehaviour
         return _rawPosition + (_rawRotation * _localPos);
     }
 
+    /// <summary>ZoomCamera 펀치가 진행 중인지. 새로 부르면 진행 중인 펀치를 끝으로 건너뛰므로, 덮어쓰면 안 되는 쪽이 먼저 확인한다.</summary>
+    public bool IsZooming => zoomTween != null && zoomTween.IsActive();
+
     /// <summary>
     /// CinemachineCamera의 Lens.OrthographicSize를 일시적으로 줄였다가(줌 인) 다시 원래대로
     /// 부드럽게 복구하는 펀치 연출. _zoomMultiplier는 "몇 배 확대"인지를 뜻한다(1.15 = 1.15배 줌 인).

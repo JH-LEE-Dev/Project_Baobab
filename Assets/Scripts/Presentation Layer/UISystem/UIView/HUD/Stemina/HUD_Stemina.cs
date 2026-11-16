@@ -60,6 +60,8 @@ public class HUD_Stemina : MonoBehaviour
     [Tooltip("피격 흔들림의 최대 세기(캔버스 픽셀)")]
     [SerializeField] private float shakeStrength = 2f;
     [SerializeField] private float shakeDuration = 0.2f;
+    [Tooltip("맞은 순간(나무 열기) 피로도 감소량과 무관하게 주는 흔들림 세기(0~1, 피격 흔들림 세기 비율)")]
+    [Range(0f, 1f)][SerializeField] private float hitShakeIntensity = 1f;
 
     [Header("Recover Effect")]
     [Tooltip("게이지가 회복 전 값에서 새 값까지 차오르는 시간(초). 목표는 현재 값을 매 프레임 따라가므로 지속 소모가 겹쳐도 끊기지 않는다.")]
@@ -529,6 +531,21 @@ public class HUD_Stemina : MonoBehaviour
 
         StartFlash(damageFlashColor, _intensity, damageFlashDuration, Mathf.Max(1, damageFlashCount));
         StartShake(_intensity);
+    }
+
+    /// <summary>
+    /// 맞은 순간(나무 열기)의 가벼운 흔들림. 최대치가 커서 감소 비율이 minEffectRatio보다 작아도 흔든다.
+    /// 같은 피해로 PlayDamaged가 이미 흔들고 있으면 그대로 둔다.
+    /// </summary>
+    public void PlayHitShake()
+    {
+        if (false == bActive)
+            return;
+
+        if (null != shakeTween && shakeTween.IsActive())
+            return;
+
+        StartShake(hitShakeIntensity);
     }
 
     /// <summary>

@@ -36,6 +36,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public event Action<CarrotItem> CarrotItemAcquiredEvent;
     public event Action<GemOreItem> GemOreItemAcquiredEvent;
     public event Action<TreeObj> TreeGetHitEvent;
+    // 나무 열기에 맞아 밀려난 순간(본편, 쓰러지지 않았을 때만). HUD 피격 연출(붉은 화면·피로도 바 흔들림)용.
+    public event Action TreeHeatHitEvent;
     // 나무가 보석 단계로 변했을 때 발생. InDungeonSystem이 받아 신호로 발행한다.
     public event Action<TreeObj> TreeGemTransformedEvent;
     public event Action<TreeObj> TreeShieldRecoveringEvent;
@@ -1137,8 +1139,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             ApplyPendingRepairSkillsToVehicle();
         }
 
-        var pos = environmentProvider.tilemapDataProvider.GetPortalSpawnPosition();
-        pos.y -= 0.25f;
+        Vector3 pos = GetVehicleSpawnPosition();
 
         offroadVehicle.transform.position = pos;
         // ResetPortal() 내부에서 발밑 타일 재등록 코루틴(StartCoroutine)을 실행하므로,
@@ -1257,7 +1258,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             // 4스테이지 불씨: 이전 원정의 불씨를 치우고 이번 맵에서 나오는지 정한다(로그라이크는 스테이지 기믹을 끈다).
             // "산불 조심" 특성이면 다른 숲에서도 나오고, "불씨 드랍량 증가" 특성 배율을 이번 원정 동안 쓴다.
             itemManager?.BeginEmberRun(currentMapType, null != runTreeRules && runTreeRules.bDisableStageGimmicks, CanSpawnMoreEmbers,
-                character != null && character.bEmberEverywhere, character != null ? character.EmberDropMultiplier : 1f);
+                character != null && character.bEmberEverywhere, character != null ? character.EmberDropMultiplier : 1f, IsInOpenRestArea);
             bPreheatAppliedThisRun = false;
 
             // 일괄 스폰 구간에서는 나무마다 컬링 개수를 갱신하지 않는다. 스폰이 끝난 직후의
@@ -2611,6 +2612,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     // 열기에 맞아 밀려날 때의 손맛(본편만). 피해·넉백은 위에서 이미 끝났고 여기서는 느낌만 더한다.
     // 밀려나는 방향(나무 → 캐릭터)으로 카메라를 한 번 찍고 짧게 흔들며, 패드가 "퍽" 울리고, 캐릭터가 그을린 색으로 깜빡인다.
+    // 쓰러질 때와 같은 카메라 확대 펀치와 사망 효과음(Character_Die)을 같이 내고, HUD에 알려 붉은 화면·피로도 바 흔들림을 낸다.
     private const float TreeHeatHitKickDistance = 0.12f;
     private const float TreeHeatHitKickSeconds = 0.22f;
     private const float TreeHeatHitShakeIntensity = 1.5f;
@@ -2627,8 +2629,17 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         CameraMoveController.Instance?.ShakeCameraKick(pushDirection.normalized, TreeHeatHitKickDistance, TreeHeatHitKickSeconds,
             TreeHeatHitShakeIntensity, TreeHeatHitShakeSeconds);
+        // 쓰러질 때(Character.StaminaIsEmpty)의 확대 펀치와 같은 값.
+        // 다른 확대(지진 등)가 진행 중이면 덮어쓰지 않는다. 덮어쓰면 그 확대가 원래 크기로 튄 뒤 다시 시작된다.
+        CameraMoveController cameraController = CameraMoveController.Instance;
+        if (null != cameraController && false == cameraController.IsZooming)
+        {
+            cameraController.ZoomCamera(1.05f, 0.08f, 0.05f, 0.15f);
+        }
+        Sound.Play(SoundID.CharacterDie, character.transform.position);
         Rumble.Play(EHapticEvent.TreeHeatHit);
         character.PlayScorchFlash();
+        TreeHeatHitEvent?.Invoke();
     }
 
     public void CreateWelcomeNoobLoot()
@@ -2720,6 +2731,32 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         {
             character.AddOverheat(character.PreheatAmount);
         }
+    }
+
+    // 원정마다 차량이 놓이는 자리(ReadyPortal). 원정 중에는 옮겨지지 않는다.
+    private Vector3 GetVehicleSpawnPosition()
+    {
+        Vector3 pos = environmentProvider.tilemapDataProvider.GetPortalSpawnPosition();
+        pos.y -= 0.25f;
+        return pos;
+    }
+
+    // 휴식 구역 모양(타원 반지름·중심 오프셋). 입장 불씨 배치는 차량을 놓기(ReadyPortal) 전이라 프리팹 값을 읽는다(런타임에 바꾸는 곳 없음).
+    private StaminaRecoverCircle restAreaShape;
+
+    // 불씨를 놓으면 안 되는 자리: "휴식" 특성으로 열린 차량 휴식 구역 안(StaminaRecoverCircle과 같은 타원·같은 개방 조건).
+    private bool IsInOpenRestArea(Vector3 _worldPosition)
+    {
+        if (character == null || character.statComponent == null || character.statComponent.staminaRecoverAmount <= 0f) return false;
+
+        if (restAreaShape == null)
+        {
+            if (offroadVehiclePrefab == null) return false;
+            restAreaShape = offroadVehiclePrefab.GetComponent<StaminaRecoverCircle>();
+            if (restAreaShape == null) return false;
+        }
+
+        return restAreaShape.ContainsAt(GetVehicleSpawnPosition(), _worldPosition);
     }
 
     // 불씨를 더 만들어도 되는지(자연 생성·벌목 드랍). 차에서 내리기 전(입장 연출)이거나 원정이 끝나는 중이거나

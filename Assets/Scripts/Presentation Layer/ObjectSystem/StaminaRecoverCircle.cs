@@ -153,6 +153,18 @@ public class StaminaRecoverCircle : MonoBehaviour
         return transform.position + (Vector3)centerOffset;
     }
 
+    /// <summary>
+    /// 차량이 _vehiclePosition에 놓였을 때 _point(바닥 기준)가 휴식 구역 타원 안인지. Update의 판정과 같은 식이다.
+    /// 차량을 놓기 전에도(입장 불씨 배치) 쓸 수 있게 차량 위치를 받는다.
+    /// </summary>
+    public bool ContainsAt(Vector3 _vehiclePosition, Vector3 _point)
+    {
+        if (radiusX <= 0f || radiusY <= 0f) return false;
+
+        Vector3 diff = _point - (_vehiclePosition + (Vector3)centerOffset);
+        return ((diff.x * diff.x) / (radiusX * radiusX)) + ((diff.y * diff.y) / (radiusY * radiusY)) <= 1f;
+    }
+
     private void OnValidate()
     {
         if (restAreaVisual != null) restAreaVisual.transform.localPosition = centerOffset;

@@ -17,8 +17,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     // 별길 걸음이 걸림(지속 시간) / 강제로 풀림
     public event Action<float> StarPathSpeedBoostActivatedEvent;
     public event Action StarPathSpeedBoostForceEndedEvent;
-    // 과열 수치(내림한 정수, 최대치). 버프 HUD 표시용으로 값이 바뀔 때마다 알린다.
-    public event Action<int, float> OverheatLevelChangedEvent;
 
     // 외부 의존성
     public InputManager inputManager { get; private set; }
@@ -692,12 +690,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         statComponent.StarPathSpeedBoostForceEndedEvent -= StarPathSpeedBoostForceEnded;
         statComponent.StarPathSpeedBoostForceEndedEvent += StarPathSpeedBoostForceEnded;
 
-        if (overheatComponent != null)
-        {
-            overheatComponent.OverheatLevelChangedEvent -= OverheatLevelChanged;
-            overheatComponent.OverheatLevelChangedEvent += OverheatLevelChanged;
-        }
-
         if (armComponent.axeComponent != null)
         {
             armComponent.axeComponent.AttackComboChangedEvent -= AttackComboChanged;
@@ -747,9 +739,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             statComponent.StarPathSpeedBoostActivatedEvent -= StarPathSpeedBoostActivated;
             statComponent.StarPathSpeedBoostForceEndedEvent -= StarPathSpeedBoostForceEnded;
         }
-
-        if (overheatComponent != null)
-            overheatComponent.OverheatLevelChangedEvent -= OverheatLevelChanged;
 
         if (armComponent != null && armComponent.axeComponent != null)
         {
@@ -2612,11 +2601,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private void StarPathSpeedBoostForceEnded()
     {
         StarPathSpeedBoostForceEndedEvent?.Invoke();
-    }
-
-    private void OverheatLevelChanged(int _level)
-    {
-        OverheatLevelChangedEvent?.Invoke(_level, overheatComponent.MaxValue);
     }
 
     private void AttackComboChanged(int _stack, bool _bForcedReset)
