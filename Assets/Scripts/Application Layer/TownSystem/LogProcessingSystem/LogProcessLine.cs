@@ -216,5 +216,9 @@ public class LogProcessLine : MonoBehaviour
         bool inBeltHasPending = _data.inBeltData.deactivatingItems != null
                                 && _data.inBeltData.deactivatingItems.Count > 0;
         isBusy = _data.cutterData.bIsCutting || inBeltHasPending;
+        inBelt.SetHeldByCutter(isBusy);
     }
+
+    /// <summary>출고 타이머가 이번에 진행할 양(라인 시간). 입고벨트가 실제로 움직인 만큼이며, 커터를 기다리는 동안은 0이다.</summary>
+    public float ConsumeSupplyProgress() => inBelt.ConsumeSupplyProgress();
 }

@@ -150,6 +150,34 @@ public class LogInBelt : MonoBehaviour
     private bool stopsOnLogOut = true;
     private MapType mapType;
 
+    // 커터 투입 벨트가 원목을 커터에 넘기며 멈춘 상태(LogOut ~ 다음 StartBelt). 라인의 isBusy와 같은 구간이다.
+    // 이 동안 새 원목이 올라와도 벨트를 다시 돌리지 않는다(커터는 한 번에 하나만 받는다).
+    private bool heldByCutter = false;
+
+    // 라인 출고 타이머에 넘겨줄 진행량(라인 시간 단위, 소비하면 0). 출고 타이머가 시간만 세면, 벨트가 커터 때문에
+    // 설 때 감속으로 더 미끄러지는 거리(타이머는 멈춤)와 다시 출발할 때 가속으로 덜 가는 거리(타이머는 돎)가
+    // 원목 간격에 그대로 남아, 컨베이어 특성으로 빨라질수록 간격이 크게 들쭉날쭉했다(2.5배에서 정상 간격의
+    // 0.6~1.24배). 그래서 원목이 있으면 벨트가 실제로 움직인 거리를 등속 시간으로 바꿔 넘기고, 원목이 없거나
+    // 벨트가 서 있는데 커터를 기다리는 게 아니면(빈 벨트 등) 예전처럼 흐른 시간을 넘긴다.
+    private float supplyProgress = 0f;
+
+    /// <summary>
+    /// 지난 호출 이후 출고 타이머가 진행할 양(라인 시간)을 돌려주고 비운다. 벨트가 등속으로 돌면 흐른 라인 시간과 같고,
+    /// 가감속 중이면 실제 이동 거리만큼, 커터를 기다리며 서 있으면 0이다.
+    /// </summary>
+    public float ConsumeSupplyProgress()
+    {
+        float progress = supplyProgress;
+        supplyProgress = 0f;
+        return progress;
+    }
+
+    /// <summary>세이브 로드 때 라인이 바쁜 상태(커터 가공·투입 대기)면 벨트도 커터를 기다리는 상태로 맞춘다.</summary>
+    public void SetHeldByCutter(bool _held)
+    {
+        heldByCutter = _held;
+    }
+
     // 가공 콤보 스택에 따라 루프 사운드 피치에 곱하는 값(1 = 콤보 없음). 소리 높이만 바꾸고 동작에는 관여하지 않는다.
     private float comboPitchMultiplier = 1f;
     private const float MaxLoopPitch = 2f;
@@ -193,6 +221,8 @@ public class LogInBelt : MonoBehaviour
         deactivatingItems.Clear();
         isMoving = false;
         currentSpeed = 0f;
+        heldByCutter = false;
+        supplyProgress = 0f;
 
         // speedMultiplier는 여기서 리셋하지 않는다. 컨베이어 특성은 아직 비활성인 라인에도 미리
         // 뿌려지므로(LogProcessingManager가 allLines 전체에 브로드캐스트) 이 Initialize()보다
@@ -420,7 +450,8 @@ public class LogInBelt : MonoBehaviour
         // 보석 등급이면 벨트 위에서도 반짝임을 붙인다(제재목 포함).
         _item.PlayGemShiny();
 
-        StartBelt();
+        // 커터를 기다리며 선 벨트(감속 중 포함)에 올라온 원목은 벨트와 함께 서 있다가 가공이 끝나면 같이 출발한다.
+        if (!heldByCutter) StartBelt();
     }
 
     private void Update()
@@ -458,16 +489,23 @@ public class LogInBelt : MonoBehaviour
             }
 
             // 3. 실행 조건 확인 (속도가 0이고 목표 속도도 0이면 중단)
-            if (currentSpeed <= 0f && targetSpeedValue <= 0f) break;
+            if (currentSpeed <= 0f && targetSpeedValue <= 0f)
+            {
+                AddIdleSupplyProgress(subDeltaTime * (substeps - s));
+                break;
+            }
 
             // 4. 아이템 이동 처리. 옮길 원목이 없으면 이번 프레임의 남은 시간만큼 감속만 마저 하고 끝낸다.
             if (activeItems.Count == 0 || path.Count == 0)
             {
                 currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeedValue, acceleration * subDeltaTime * (substeps - s - 1));
+                AddIdleSupplyProgress(subDeltaTime * (substeps - s));
                 break;
             }
 
-            MoveItems(currentSpeed * subDeltaTime);
+            float beltStep = currentSpeed * subDeltaTime;
+            if (stopsOnLogOut && EffectiveBeltSpeed > 0f) supplyProgress += beltStep / EffectiveBeltSpeed;
+            MoveItems(beltStep);
         }
 
         // 애니메이션 속도는 가감속 여부와 무관하게 매 프레임 동기화한다. 예전처럼 가감속 블록 안에서만
@@ -477,6 +515,14 @@ public class LogInBelt : MonoBehaviour
         SetBeltsAnimationSpeed(currentSpeed);
 
         UpdateLoopSound();
+    }
+
+    // 벨트가 움직이지 않은(또는 옮길 원목이 없는) 시간. 커터를 기다리며 선 동안은 출고 타이머도 멈춰야 하므로
+    // 넘기지 않는다(예전에 라인이 바쁜 동안 타이머를 세우던 것과 같다).
+    private void AddIdleSupplyProgress(float _lineTime)
+    {
+        if (!stopsOnLogOut || heldByCutter) return;
+        supplyProgress += _lineTime;
     }
 
     // 벨트 위 원목을 모두 _step만큼 경로를 따라 옮긴다.
@@ -661,6 +707,7 @@ public class LogInBelt : MonoBehaviour
             // LogCutter.StartCutting의 bIsCutting 가드에 막혀 조용히 유실된다.
             // 벨트는 CuttingDone -> LogProcessLine.CuttingDone()의 inBelt.StartBelt() 호출로 재개된다.
             isMoving = false;
+            heldByCutter = true;
             BeltStopEvent?.Invoke();
         }
 
@@ -774,6 +821,9 @@ public class LogInBelt : MonoBehaviour
 
     public void StartBelt()
     {
+        // 가공이 끝나 다시 출발하라는 신호(CuttingDone)는 벨트가 비어 있어도 커터 대기를 푼다.
+        heldByCutter = false;
+
         if (activeItems.Count == 0)
             return;
 
@@ -875,6 +925,8 @@ public class LogInBelt : MonoBehaviour
         activeItems.Clear();
         deactivatingItems.Clear();
         isMoving = _data.isMoving;
+        heldByCutter = false; // 커터 투입 벨트는 LogProcessLine.LoadSaveData가 라인 바쁨 상태로 다시 맞춘다.
+        supplyProgress = 0f;
 
         EnsurePath();
 

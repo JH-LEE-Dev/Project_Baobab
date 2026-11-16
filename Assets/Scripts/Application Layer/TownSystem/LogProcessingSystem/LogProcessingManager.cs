@@ -568,24 +568,22 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
 
         float baseInterval = logContainer.GetEffectiveTransferInterval();
 
-        // 가공 콤보 배속은 출고 간격을 줄이는 대신 타이머를 배율만큼 빨리 돌린다(벨트와 같은 "라인 시간").
-        // 예전엔 간격을 배율로 나눠서, 스택이 오르는 순간 이미 쌓인 경과시간이 줄어든 간격을 넘어 다음 원목이
-        // 바로 튀어나와 벨트 위 간격이 좁아졌다. 이렇게 하면 배율이 언제 바뀌어도 원목 간격이 일정하다.
-        // 배율 1(콤보 미적용)에서는 예전과 똑같다.
-        float lineDeltaTime = Time.deltaTime * logProcessorSpeedMul;
-
         for (int i = 0; i < activeLineCount; i++)
         {
-            // 커터가 가공 중(라인이 바쁨)인 동안은 타이머 진행 자체를 멈춘다. 가공이 오래
-            // 걸려도 그동안 쌓인 경과시간이 인터벌을 이미 채워버려 가공 완료 즉시 다음 원목이
-            // 튀어나오는 것을 막기 위함.
+            // 타이머는 입고벨트가 넘겨주는 진행량(라인 시간)만큼 간다. 벨트가 등속으로 돌면 흐른 시간 x 가공 콤보
+            // 배율과 같고(콤보 배속은 벨트와 같은 "라인 시간"이라 배율이 언제 바뀌어도 간격이 일정하다), 가감속 중에는
+            // 벨트가 실제로 간 거리만큼만 간다. 예전처럼 시간만 세면 벨트가 커터 때문에 서며 미끄러진 거리와 다시
+            // 출발하며 덜 간 거리가 원목 간격에 남아, 컨베이어 특성이 높을수록 간격이 크게 들쭉날쭉했다.
             //
+            // 커터가 가공 중(라인이 바쁨)인 동안 벨트는 서 있으므로 진행량도 0이다(멈추며 미끄러지는 거리만 센다).
+            // 가공이 오래 걸려도 그동안 경과시간이 쌓여 가공 완료 즉시 다음 원목이 튀어나오는 일은 없다.
             // 이 정지 덕분에 라인의 실제 처리 주기는 "절단 시간 + max(출고 간격, 벨트 이동 시간)"
             // 아래로 내려가지 않는다. 그래서 컨베이어 특성으로 출고 간격이 줄어도 처리량은 절단
             // 시간에 수렴할 뿐 라인 증설(ProcessLineExpand)을 대체하지 못한다. 정지를 없애지 말 것.
-            if (allLines[i].IsBusy) continue;
-
-            lineElapsedTime[i] += lineDeltaTime;
+            //
+            // 멈추며 미끄러지는 동안 간격만큼 갔으면 라인이 바빠도 그 자리에서 원목을 올린다. 커터를 기다리는 벨트는
+            // 새 원목이 올라와도 다시 돌지 않고(LogInBelt.LogIn), 가공이 끝나면 함께 출발한다.
+            lineElapsedTime[i] += allLines[i].ConsumeSupplyProgress();
 
             if (lineElapsedTime[i] < GetLineSupplyInterval(baseInterval, i)) continue;
             if (!logContainer.HasAvailableItem()) continue;
@@ -701,7 +699,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
             ? Mathf.Lerp(1f, MaxComboLoopPitch, logProcessingStack / (float)MaxProcessingStack)
             : 1f;
         for (int i = 0; i < activeLineCount; i++) allLines[i].SetComboPitchMultiplier(comboPitch);
-        // 출고 주기에는 PollLineSupply가 타이머를 배율만큼 빨리 돌려 반영한다(컨테이너 간격은 배율 1 기준).
+        // 출고 주기에는 입고벨트가 배율만큼 빨리 도는 만큼 PollLineSupply의 타이머 진행량도 커져 반영된다(컨테이너 간격은 배율 1 기준).
     }
 
     // 제재소 파이프라인 전체(상자 + 활성 라인의 입고벨트·커터·출고벨트)에 가공·평가를 기다리는 원목이 하나도 없으면 true.
