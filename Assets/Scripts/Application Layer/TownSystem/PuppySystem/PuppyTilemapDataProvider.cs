@@ -34,41 +34,87 @@ public class PuppyTilemapDataProvider : ITilemapDataProvider
         if (null == _water || null == _ground) return;
 
         BoundsInt _bounds = _water.cellBounds;
+        int _sizeX = _bounds.xMax - _bounds.xMin;
+        int _sizeY = _bounds.yMax - _bounds.yMin;
+        if (0 >= _sizeX || 0 >= _sizeY) return;
+
+        // 칸마다 HasTile(= 그 칸의 타일 에셋 != null)을 부르던 것을, 같은 범위(z = 0 한 장)를 타일맵마다 한 번에 읽어 같은 검사를 한다.
+        // 블록 배열은 x가 가장 빨리 돈다(index = (x - xMin) + (y - yMin) * sizeX). 비활성 확장 타일맵은 원래도 검사하지 않았다.
+        BoundsInt _block = new BoundsInt(_bounds.xMin, _bounds.yMin, 0, _sizeX, _sizeY, 1);
+        int _count = _sizeX * _sizeY;
+        TileBase[] _waterTiles = ReadBlock(_water, _block, _count, ref waterBlock);
+        TileBase[] _groundTiles = ReadBlock(_ground, _block, _count, ref groundBlock);
+        TileBase[] _waterColliderTiles = ReadBlock(_townTileManager.WaterColliderTilemap, _block, _count, ref waterColliderBlock);
+        TileBase[] _colliderTiles = ReadBlock(_townTileManager.ColliderTilemap, _block, _count, ref colliderBlock);
+        TileBase[] _buildingColliderTiles = ReadBlock(_townTileManager.BuildingColliderTilemap, _block, _count, ref buildingColliderBlock);
+        TileBase[] _rockColliderTiles = ReadBlock(_townTileManager.RockColliderTilemap, _block, _count, ref rockColliderBlock);
+
+        IReadOnlyList<Tilemap> _expansions = _townTileManager.BuildingColliderExpansionTilemaps;
+        int _expansionBlockCount = 0;
+        for (int i = 0; i < _expansions.Count; i++)
+        {
+            Tilemap _expansion = _expansions[i];
+            if (null == _expansion || false == _expansion.gameObject.activeSelf) continue;
+
+            if (expansionBlocks.Count <= _expansionBlockCount) expansionBlocks.Add(null);
+            TileBase[] _buffer = expansionBlocks[_expansionBlockCount];
+            expansionBlocks[_expansionBlockCount] = ReadBlock(_expansion, _block, _count, ref _buffer);
+            _expansionBlockCount++;
+        }
+
         for (int _x = _bounds.xMin; _x < _bounds.xMax; _x++)
         {
             for (int _y = _bounds.yMin; _y < _bounds.yMax; _y++)
             {
-                Vector3Int _cell = new Vector3Int(_x, _y, 0);
-                if (false == _water.HasTile(_cell) || true == _ground.HasTile(_cell)) continue;
-                if (true == HasBlockingTile(_townTileManager, _cell)) continue;
+                int _index = (_x - _bounds.xMin) + (_y - _bounds.yMin) * _sizeX;
+                if (null == _waterTiles[_index] || null != _groundTiles[_index]) continue;
+                if (true == HasBlockingTile(_index, _waterColliderTiles, _colliderTiles, _buildingColliderTiles, _rockColliderTiles, _expansionBlockCount)) continue;
 
                 // 마을 길찾기 데이터와 같은 칸 좌표계(원점 보정 포함)로 바꿔 담는다.
+                Vector3Int _cell = new Vector3Int(_x, _y, 0);
                 Vector3 _world = _ground.GetCellCenterWorld(_cell) + new Vector3(0f, _ground.cellSize.y * 0.5f, 0f);
                 bridgeCells.Add(baseProvider.WorldToCell(_world));
             }
         }
     }
 
-    private static bool HasBlockingTile(TownTileManager _townTileManager, Vector3Int _cell)
-    {
-        if (true == HasTile(_townTileManager.WaterColliderTilemap, _cell)) return true;
-        if (true == HasTile(_townTileManager.ColliderTilemap, _cell)) return true;
-        if (true == HasTile(_townTileManager.BuildingColliderTilemap, _cell)) return true;
-        if (true == HasTile(_townTileManager.RockColliderTilemap, _cell)) return true;
+    // 다리 칸 검사용 타일 블록 버퍼(마을 Grid가 새로 만들어질 때만 채우고, 다음 번에 다시 쓴다).
+    private TileBase[] waterBlock;
+    private TileBase[] groundBlock;
+    private TileBase[] waterColliderBlock;
+    private TileBase[] colliderBlock;
+    private TileBase[] buildingColliderBlock;
+    private TileBase[] rockColliderBlock;
+    private readonly List<TileBase[]> expansionBlocks = new List<TileBase[]>();
 
-        IReadOnlyList<Tilemap> _expansions = _townTileManager.BuildingColliderExpansionTilemaps;
-        for (int i = 0; i < _expansions.Count; i++)
+    // 타일맵이 없으면 null(= 모든 칸 타일 없음)을 돌려준다.
+    private static TileBase[] ReadBlock(Tilemap _tilemap, BoundsInt _block, int _count, ref TileBase[] _buffer)
+    {
+        if (null == _tilemap) return null;
+
+        if (null == _buffer || _buffer.Length < _count) _buffer = new TileBase[_count];
+        _tilemap.GetTilesBlockNonAlloc(_block, _buffer);
+        return _buffer;
+    }
+
+    private bool HasBlockingTile(int _index, TileBase[] _waterCollider, TileBase[] _collider, TileBase[] _buildingCollider, TileBase[] _rockCollider, int _expansionBlockCount)
+    {
+        if (true == HasTile(_waterCollider, _index)) return true;
+        if (true == HasTile(_collider, _index)) return true;
+        if (true == HasTile(_buildingCollider, _index)) return true;
+        if (true == HasTile(_rockCollider, _index)) return true;
+
+        for (int i = 0; i < _expansionBlockCount; i++)
         {
-            Tilemap _expansion = _expansions[i];
-            if (null != _expansion && true == _expansion.gameObject.activeSelf && true == _expansion.HasTile(_cell)) return true;
+            if (null != expansionBlocks[i][_index]) return true;
         }
 
         return false;
     }
 
-    private static bool HasTile(Tilemap _tilemap, Vector3Int _cell)
+    private static bool HasTile(TileBase[] _tiles, int _index)
     {
-        return null != _tilemap && _tilemap.HasTile(_cell);
+        return null != _tiles && null != _tiles[_index];
     }
 
     public int GridWidth => baseProvider.GridWidth;

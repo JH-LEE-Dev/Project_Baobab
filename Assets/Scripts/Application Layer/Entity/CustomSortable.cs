@@ -71,10 +71,15 @@ public class CustomSortable : MonoBehaviour
     public void AddSpriteRenderer(SpriteRenderer _renderer)
     {
         if (_renderer == null) return;
-        if (!spriteRenderers.Contains(_renderer))
+
+        // List.Contains는 칸마다 UnityEngine.Object.Equals(살아있는지 확인 후 같은 참조인지)로 비교한다.
+        // _renderer는 위에서 살아있음을 확인했으므로 같은 참조인지만 보면 결과가 같다(파괴된 칸은 원래도 다르다고 봤다).
+        for (int i = 0; i < spriteRenderers.Count; i++)
         {
-            spriteRenderers.Add(_renderer);
+            if (ReferenceEquals(spriteRenderers[i], _renderer)) return;
         }
+
+        spriteRenderers.Add(_renderer);
     }
 
     public void AddSpriteRenderers(SpriteRenderer[] _renderers)

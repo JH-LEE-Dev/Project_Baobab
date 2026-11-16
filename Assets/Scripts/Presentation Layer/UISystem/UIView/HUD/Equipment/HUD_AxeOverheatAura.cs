@@ -435,10 +435,10 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                 {
                     int index = y * w + x;
                     int best = d[index];
-                    if (0 < x) best = Mathf.Min(best, d[index - 1] + 3);
-                    if (0 < y) best = Mathf.Min(best, d[index - w] + 3);
-                    if (0 < x && 0 < y) best = Mathf.Min(best, d[index - w - 1] + 4);
-                    if (x < w - 1 && 0 < y) best = Mathf.Min(best, d[index - w + 1] + 4);
+                    if (0 < x) { int c = d[index - 1] + 3; if (c < best) best = c; }
+                    if (0 < y) { int c = d[index - w] + 3; if (c < best) best = c; }
+                    if (0 < x && 0 < y) { int c = d[index - w - 1] + 4; if (c < best) best = c; }
+                    if (x < w - 1 && 0 < y) { int c = d[index - w + 1] + 4; if (c < best) best = c; }
                     d[index] = best;
                 }
             }
@@ -449,10 +449,10 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                 {
                     int index = y * w + x;
                     int best = d[index];
-                    if (x < w - 1) best = Mathf.Min(best, d[index + 1] + 3);
-                    if (y < h - 1) best = Mathf.Min(best, d[index + w] + 3);
-                    if (x < w - 1 && y < h - 1) best = Mathf.Min(best, d[index + w + 1] + 4);
-                    if (0 < x && y < h - 1) best = Mathf.Min(best, d[index + w - 1] + 4);
+                    if (x < w - 1) { int c = d[index + 1] + 3; if (c < best) best = c; }
+                    if (y < h - 1) { int c = d[index + w] + 3; if (c < best) best = c; }
+                    if (x < w - 1 && y < h - 1) { int c = d[index + w + 1] + 4; if (c < best) best = c; }
+                    if (0 < x && y < h - 1) { int c = d[index + w - 1] + 4; if (c < best) best = c; }
                     d[index] = best;
                 }
             }
