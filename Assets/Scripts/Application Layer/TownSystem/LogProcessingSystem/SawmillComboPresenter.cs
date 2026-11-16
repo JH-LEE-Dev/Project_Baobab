@@ -2,14 +2,13 @@ using PresentationLayer.VFX;
 using UnityEngine;
 
 /// <summary>
-/// 가공 콤보(LogProcessorSpeedUp: 가공 성공마다 파이프라인 속도 증가, 최대 중첩, 상자가 비면 초기화) 연출.
-/// LogProcessingManager의 콤보 상태를 매 프레임 읽어서 VFX_SawmillCombo(이펙트)와 SawmillComboGauge(게이지)에 넘기기만 한다.
+/// 가공 콤보(LogProcessorSpeedUp: 가공 성공마다 파이프라인 속도 증가, 최대 중첩, 제재소 파이프라인 전체가 비면 초기화) 연출.
+/// LogProcessingManager의 콤보 상태를 매 프레임 읽어서 VFX_SawmillCombo(이펙트)에 넘기기만 한다.
 /// 가공·벨트·판정 상태는 읽기만 하고 바꾸지 않는다(커터 그림의 색만 달아오름 연출로 바꾼다).
 ///
 /// - 콤보가 쌓일수록: 켜는 중인 커터의 톱밥이 늘어난다.
 /// - 최대 중첩에 닿는 순간: 커터마다 섬광·충격파·불티. 그동안 커터가 붉게 달아오르고 열기가 피어오른다.
-/// - 상자가 비어 풀리는 순간: 커터마다 회색 연기.
-/// - 원목 상자 위 게이지: 지금 콤보 수(특성을 가진 동안 항상). 기존 UI 판·커터 게이지 그림에 셰이더로 칸을 나눈다.
+/// - 파이프라인이 비어 풀리는 순간: 커터마다 회색 연기.
 /// 마을에 있을 때만 그린다(던전에 있는 동안 제재소는 화면 밖에서 돈다).
 /// </summary>
 public class SawmillComboPresenter : MonoBehaviour
@@ -27,12 +26,8 @@ public class SawmillComboPresenter : MonoBehaviour
     private static readonly Color HeatTint = new Color(1f, 0.74f, 0.64f, 1f);
     private const float HeatPulseSpeed = 6f;
 
-    // 게이지 바닥 자리: 상자 그림 경계 가운데에서 위로 경계 반높이의 이 비율만큼(그림 위쪽 여백을 빼고 상자 기둥 바로 위).
-    private const float GaugeHeightRatio = 0.6f;
-
     private LogProcessingManager manager;
     private VFX_SawmillCombo vfx;
-    private SawmillComboGauge gauge;
     private LogProcessLine[] lines = new LogProcessLine[0];
 
     private MapType mapType = MapType.Town;
@@ -45,13 +40,9 @@ public class SawmillComboPresenter : MonoBehaviour
     private float[] sawdustAccum = new float[0];
     private float[] heatAccum = new float[0];
 
-    // 상자 그림 위 가운데의 상자 위치 기준 오프셋(처음 한 번 잰다).
-    private bool bGaugeOffsetReady;
-    private Vector3 gaugeOffset;
-
     private uint randomState = 1u;
 
-    public void Setup(LogProcessingManager _manager, Sprite _gaugePanelSprite, Sprite _gaugeTrackSprite, Sprite _gaugeFillSprite, Shader _gaugeShader)
+    public void Setup(LogProcessingManager _manager)
     {
         manager = _manager;
 
@@ -64,12 +55,8 @@ public class SawmillComboPresenter : MonoBehaviour
         if (vfx == null) vfx = GetComponentInChildren<VFX_SawmillCombo>(true);
         if (vfx == null) vfx = VFX_SawmillCombo.Create(transform);
 
-        if (gauge == null) gauge = GetComponentInChildren<SawmillComboGauge>(true);
-        if (gauge == null) gauge = SawmillComboGauge.Create(transform, _gaugePanelSprite, _gaugeTrackSprite, _gaugeFillSprite, _gaugeShader);
-
         randomState = unchecked((uint)Random.Range(1, int.MaxValue) * 2654435761u) | 1u;
         bSynced = false;
-        bGaugeOffsetReady = false;
     }
 
     public void SetMapType(MapType _mapType)
@@ -78,7 +65,6 @@ public class SawmillComboPresenter : MonoBehaviour
 
         // 맵이 바뀌면 그리던 것을 지우고, 돌아왔을 때 그동안 바뀐 콤보를 한꺼번에 터뜨리지 않도록 다시 맞춘다.
         if (vfx != null) vfx.ClearAll();
-        if (gauge != null) gauge.Clear();
         ClearTint();
         bSynced = false;
     }
@@ -86,7 +72,6 @@ public class SawmillComboPresenter : MonoBehaviour
     private void OnDisable()
     {
         if (vfx != null) vfx.ClearAll();
-        if (gauge != null) gauge.Clear();
         ClearTint();
         bSynced = false;
     }
@@ -100,7 +85,6 @@ public class SawmillComboPresenter : MonoBehaviour
 
         if (mapType != MapType.Town || false == manager.IsProcessorComboActive)
         {
-            if (gauge != null) gauge.SetState(false, Vector3.zero, stack, max);
             ClearTint();
             lastStack = stack;
             bSynced = true;
@@ -128,8 +112,6 @@ public class SawmillComboPresenter : MonoBehaviour
             }
             lastStack = stack;
         }
-
-        if (gauge != null) gauge.SetState(true, GetGaugeAnchor(), stack, max);
 
         float ratio = stack / (float)max;
         bool bMax = stack >= max;
@@ -199,42 +181,6 @@ public class SawmillComboPresenter : MonoBehaviour
     {
         Bounds bounds = _cutter.VisualBounds;
         return new Vector3(bounds.center.x, bounds.center.y + bounds.extents.y * CutterTopRatio, 0f);
-    }
-
-    private Vector3 GetGaugeAnchor()
-    {
-        LogContainer container = manager.logContainer;
-        if (container == null) return transform.position;
-
-        if (false == bGaugeOffsetReady)
-        {
-            // 상자 그림(켜져 있는 자식 스프라이트)의 위쪽 가운데. 상자는 움직이지 않으니 상자 위치 기준으로 한 번만 잰다.
-            // 원목이 박힐 때 상자 그림이 짜부(visualTransform 크기 변화)하는 동안 재면 경계가 어긋나므로, 그동안은
-            // 이번 프레임 값만 쓰고 확정하지 않는다(적재량별 상자 그림은 크기가 같아 그림이 바뀌어도 상관없다).
-            bool bResting = container.visualTransform == null || container.visualTransform.localScale == Vector3.one;
-            SpriteRenderer[] renderers = container.GetComponentsInChildren<SpriteRenderer>(false);
-            bool bFirst = true;
-            Bounds bounds = new Bounds(container.transform.position, Vector3.zero);
-            for (int i = 0; i < renderers.Length; i++)
-            {
-                if (renderers[i] == null || renderers[i].sprite == null) continue;
-                if (bFirst)
-                {
-                    bounds = renderers[i].bounds;
-                    bFirst = false;
-                }
-                else
-                {
-                    bounds.Encapsulate(renderers[i].bounds);
-                }
-            }
-
-            gaugeOffset = new Vector3(bounds.center.x, bounds.center.y + bounds.extents.y * GaugeHeightRatio, 0f) - container.transform.position;
-            gaugeOffset.z = 0f;
-            bGaugeOffsetReady = !bFirst && bResting;
-        }
-
-        return container.transform.position + gaugeOffset;
     }
 
     private void ClearTint()

@@ -38,8 +38,6 @@ namespace Diagnostics.VfxGolden
             // 가공 콤보 (SawmillComboPresenter)
             _cases.Add(new TownLootSawmillComboCase("TownLoot_SawmillCombo_Overdrive", 2, 10, 270));
             _cases.Add(new TownLootSawmillComboCase("TownLoot_SawmillCombo_PartialDrain", 1, 5, 200));
-            _cases.Add(new TownLootSawmillGaugeCase("TownLoot_SawmillComboGauge_Static", false));
-            _cases.Add(new TownLootSawmillGaugeCase("TownLoot_SawmillComboGauge_Moving", true));
 
             // 모루 (RepairBox)
             _cases.Add(new TownLootAnvilGaugeCase("TownLoot_AnvilRepairGauge_Static", false));
@@ -675,14 +673,14 @@ namespace Diagnostics.VfxGolden
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // VFX_SawmillCombo / SawmillComboGauge (SawmillComboPresenter)
+    // VFX_SawmillCombo (SawmillComboPresenter)
     // ─────────────────────────────────────────────────────────────────────────
 
     /// <summary>
     /// 가공 콤보 연출 전체(SawmillComboPresenter.Update를 그대로 따라 함): 콤보가 쌓이는 동안 켜는 중(정방향)인 커터에서 톱밥
     /// (EmitSawdust, 초당 Lerp(6, 40, 비율)), 최대 중첩에 닿는 순간 커터마다 PlayOverdrive, 그동안 열기(EmitHeat, 초당 9),
-    /// 0으로 풀리는 순간 커터마다 PlaySmoke. 게이지(SawmillComboGauge.SetState)는 매 프레임 함께 갱신.
-    /// 끝에 콤보 0·게이지만 보이는 대기 상태가 30프레임 넘게 이어진다.
+    /// 0으로 풀리는 순간 커터마다 PlaySmoke.
+    /// 끝에 콤보 0인 대기 상태가 30프레임 넘게 이어진다.
     /// 원본: SawmillComboPresenter.cs:Setup / Update / EmitSawdust / GetCutterTop
     /// </summary>
     public sealed class TownLootSawmillComboCase : VfxGoldenCase
@@ -700,7 +698,6 @@ namespace Diagnostics.VfxGolden
         private const int CuttingForward = 120;
 
         private static readonly Vector3[] CutterPositions = { new Vector3(-0.8f, 0.0f, 0.0f), new Vector3(0.9f, -0.85f, 0.0f) };
-        private static readonly Vector3 GaugeAnchor = new Vector3(-2.3f, 0.6f, 0.0f);
 
         private readonly string caseName;
         private readonly int lineCount;
@@ -708,7 +705,6 @@ namespace Diagnostics.VfxGolden
         private readonly int frames;
 
         private VFX_SawmillCombo vfx;
-        private SawmillComboGauge gauge;
         private Vector3 effectLocal;
         private Vector3 boundsCenterLocal;
         private Vector3 boundsExtents;
@@ -745,17 +741,10 @@ namespace Diagnostics.VfxGolden
             List<TreeVFXColorData> treeColors = TownLootUtil.GetField<List<TreeVFXColorData>>(cutter, "treeVFXColorDatas");
             sawdustColor = null != treeColors && 0 < treeColors.Count ? treeColors[0].effectColor : new ParticleSystem.MinMaxGradient(Color.white);
 
-            // SawmillComboPresenter.Setup: Shop 오브젝트 아래에 이펙트와 게이지(LogProcessingManager의 그림·셰이더)
-            LogProcessingManager manager = TownLootUtil.LoadPrefabComponent<LogProcessingManager>(TownLootUtil.InstallerPath);
+            // SawmillComboPresenter.Setup: Shop 오브젝트 아래에 이펙트
             GameObject shop = _context.CreateEmpty("Shop", Vector3.zero);
             vfx = VFX_SawmillCombo.Create(shop.transform);
             if (null == vfx) throw new System.InvalidOperationException("[VfxGolden] VFX_SawmillCombo 셰이더를 찾지 못했습니다.");
-            gauge = SawmillComboGauge.Create(shop.transform,
-                TownLootUtil.GetField<Sprite>(manager, "comboGaugePanelSprite"),
-                TownLootUtil.GetField<Sprite>(manager, "comboGaugeTrackSprite"),
-                TownLootUtil.GetField<Sprite>(manager, "comboGaugeFillSprite"),
-                TownLootUtil.GetField<Shader>(manager, "comboGaugeShader"));
-            if (null == gauge) throw new System.InvalidOperationException("[VfxGolden] SawmillComboGauge를 만들지 못했습니다.");
 
             sawdustAccum = new float[lineCount];
             heatAccum = new float[lineCount];
@@ -810,8 +799,6 @@ namespace Diagnostics.VfxGolden
                 lastStack = stack;
             }
 
-            gauge.SetState(true, GaugeAnchor, stack, max);
-
             float ratio = stack / (float)max;
             bool bMax = stack >= max;
 
@@ -865,73 +852,6 @@ namespace Diagnostics.VfxGolden
         {
             randomState = unchecked(randomState * 1664525u + 1013904223u);
             return ((randomState >> 8) & 0xFFFF) / 65535f;
-        }
-    }
-
-    /// <summary>
-    /// 가공 콤보 게이지만: 콤보 0으로 보이는 대기(40프레임) → 3→10으로 쌓임(새 칸 반짝·가득 참 섬광·반짝임 회전) → 가득 찬 채 대기(40프레임)
-    /// → 0으로 풀림(위 칸부터 꺼짐) → 0으로 대기(40프레임) → 숨김(SetState(false), 30프레임). _bMoving이면 매 프레임 기준점을 옮긴다.
-    /// 원본: SawmillComboPresenter.cs:Update(gauge.SetState)
-    /// </summary>
-    public sealed class TownLootSawmillGaugeCase : VfxGoldenCase
-    {
-        private const int MaxStack = 10;
-        private static readonly Vector3 BaseAnchor = new Vector3(0.0f, -0.3f, 0.0f);
-
-        private readonly string caseName;
-        private readonly bool bMoving;
-        private SawmillComboGauge gauge;
-
-        public TownLootSawmillGaugeCase(string _caseName, bool _bMoving)
-        {
-            caseName = _caseName;
-            bMoving = _bMoving;
-        }
-
-        public override string Name => caseName;
-        public override int Frames => 270;
-        public override Vector2 ViewCenter => new Vector2(0.0f, 0.0f);
-        public override Vector2 ViewSize => bMoving ? new Vector2(6.0f, 3.0f) : new Vector2(3.0f, 2.0f);
-
-        public override void Setup(VfxGoldenContext _context)
-        {
-            LogProcessingManager manager = TownLootUtil.LoadPrefabComponent<LogProcessingManager>(TownLootUtil.InstallerPath);
-            GameObject shop = _context.CreateEmpty("Shop", Vector3.zero);
-            gauge = SawmillComboGauge.Create(shop.transform,
-                TownLootUtil.GetField<Sprite>(manager, "comboGaugePanelSprite"),
-                TownLootUtil.GetField<Sprite>(manager, "comboGaugeTrackSprite"),
-                TownLootUtil.GetField<Sprite>(manager, "comboGaugeFillSprite"),
-                TownLootUtil.GetField<Shader>(manager, "comboGaugeShader"));
-            if (null == gauge) throw new System.InvalidOperationException("[VfxGolden] SawmillComboGauge를 만들지 못했습니다.");
-
-            Apply(0);
-        }
-
-        public override void OnFrame(VfxGoldenContext _context, int _frame)
-        {
-            Apply(_frame);
-        }
-
-        private void Apply(int _frame)
-        {
-            Vector3 anchor = BaseAnchor;
-            if (bMoving) anchor += new Vector3(Mathf.Sin(_frame * 0.05f) * 1.5f, Mathf.Cos(_frame * 0.07f) * 0.4f, 0.0f);
-
-            if (_frame >= 240)
-            {
-                gauge.SetState(false, Vector3.zero, 0, MaxStack);
-                return;
-            }
-
-            gauge.SetState(true, anchor, StackAt(_frame), MaxStack);
-        }
-
-        private static int StackAt(int _frame)
-        {
-            if (_frame < 40) return 0;
-            if (_frame < 110) return Mathf.Min(MaxStack, 3 + (_frame - 40) / 10);
-            if (_frame < 160) return MaxStack;
-            return 0;
         }
     }
 
