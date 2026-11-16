@@ -11,7 +11,7 @@ using UnityEngine.Pool;
 /// 2) 자연 생성: naturalSpawnInterval초마다 캐릭터 주변(거의 한 화면, naturalSpawnHalfExtents)의 빈 칸 하나에 놓는다.
 /// 3) 벌목 드랍: 나무가 쓰러질 때와 희귀나무 등급이 바뀔 때마다 dropCountMin~Max개를 튀어나오게 한다("불씨 드랍량 증가" 특성 배율을 곱한다).
 ///    이렇게 떨어진 불씨만 droppedLifetime초 뒤 사라진다(1, 2는 남아 있다).
-/// 과열이 최대면 2, 3은 더 생기지 않는다. 이미 바닥에 있는 불씨는 계속 주울 수 있다(효과만 없다).
+/// 과열이 최대여도 2, 3은 계속 생긴다. 과열이 최대일 때 주운 불씨는 과열을 더 올리지 않는다(지진 스택은 오른다).
 /// 1~3 모두 차량 휴식 구역 안에는 놓지 않는다(BeginRun이 받는 판정, 휴식 특성으로 구역이 열렸을 때만).
 ///
 /// 이펙트 담당 연결 지점: 이 오브젝트의 VFXComponent에 이펙트를 등록하고 아래 태그를 채우면 된다(비어 있으면 재생하지 않는다).
@@ -72,7 +72,7 @@ public class EmberItemController : MonoBehaviour
     private bool bEnabledThisRun;
     // 이번 원정의 벌목 드랍 개수 배율("불씨 드랍량 증가" 특성). BeginRun에서 정한다.
     private float dropMultiplierThisRun = 1f;
-    // 자연 생성·드랍을 지금 해도 되는지(원정 종료 중·사망·과열 최대면 false). InDungeonObjectManager가 넘겨준다.
+    // 자연 생성·드랍을 지금 해도 되는지(원정 종료 중·사망·탑승 중이면 false). InDungeonObjectManager가 넘겨준다.
     private Func<bool> canSpawnMore;
     // 불씨를 놓으면 안 되는 자리(차량 휴식 구역 안)인지. InDungeonObjectManager가 넘겨준다.
     private Func<Vector3, bool> isBlockedPosition;

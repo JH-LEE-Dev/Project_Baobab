@@ -4070,7 +4070,9 @@ MonoBehaviour:
   starCompassDropChanceIncreasePerKill: 0.005
   starCompassTier2PrestigeLevel: 9
   starCompassTier3PrestigeLevel: 11
-  meteorShowerChargePerKill: 0.1
+  meteorShowerMaxStack: 100
+  meteorShowerStackPerKillMin: 6
+  meteorShowerStackPerKillMax: 12
   meteorImpactRange: 1
   meteorShowerTier1Damage: 500
   meteorShowerTier1FallRange: 5
@@ -4091,7 +4093,9 @@ MonoBehaviour:
   obsidianCharmPityMinKills: 4
   obsidianCharmPityMaxKills: 5
   obsidianCharmTier3PrestigeLevel: 11
-  quakeChargePerEmber: 0.1
+  quakeMaxStack: 100
+  quakeStackPerEmberMin: 2
+  quakeStackPerEmberMax: 3
   quakeTier1Damage: 5000
   quakeTier3Damage: 70000
   goldTreePityMinKills: 3

@@ -151,8 +151,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // "별빛 나침반" 성장 기준 프레스티지 레벨과 유성우 수치. 단계별 수치는 밸런스 작업 전 임시값이다.
     [SerializeField] private int starCompassTier2PrestigeLevel = 9;
     [SerializeField] private int starCompassTier3PrestigeLevel = 11;
-    [SerializeField, Tooltip("플레이어 공격으로 나무 한 그루를 벨 때 차는 유성우 게이지(1이면 가득)")]
-    private float meteorShowerChargePerKill = 0.1f;
+    [SerializeField, Tooltip("유성우가 발동하는 유성우 스택(버프 HUD 최대치)")]
+    private int meteorShowerMaxStack = 100;
+    [SerializeField, Tooltip("플레이어 공격으로 나무 한 그루를 벨 때 오르는 유성우 스택 최소값(포함)")]
+    private int meteorShowerStackPerKillMin = 6;
+    [SerializeField, Tooltip("플레이어 공격으로 나무 한 그루를 벨 때 오르는 유성우 스택 최대값(포함)")]
+    private int meteorShowerStackPerKillMax = 12;
     [SerializeField, Tooltip("유성 하나의 피해 범위 - 착지 위치 기준 등각 타원의 장반경(타일 가로폭 단위)")]
     private float meteorImpactRange = 1f;
     // 단계별 발동 지속시간(초)과 그동안 떨어지는 유성 수. 별 비 이펙트(VFX_StarRain)가 받는 범위로 입력을 막는다 -
@@ -174,8 +178,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     [SerializeField, Range(1, PresentationLayer.VFX.VFX_StarRain.MaxCount)] private int meteorShowerTier3Count = 25;
     // 이번 숲 방문에 적용되는 단계(0이면 효과 없음). 숲에 들어올 때 정하고 방문 도중에는 바꾸지 않는다.
     private int starCompassTierThisRun;
-    // 유성우 게이지(0~1). 숲 방문마다 비운다.
-    private float meteorShowerCharge;
+    // 유성우 스택(0~meteorShowerMaxStack). 숲 방문마다 비운다.
+    private int meteorShowerStack;
     // 유성우가 쏟아지는 중인지. 그동안은 게이지가 차지 않는다.
     private bool bMeteorShowerActive;
     // 던전 정리 때 올라간다. 쏟아지던 유성우가 다음 맵의 나무를 때리지 않게 한다.
@@ -185,7 +189,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private readonly bool[] meteorImpactDone = new bool[PresentationLayer.VFX.VFX_StarRain.MaxCount];
 
     /// <summary>유성우 게이지(0~1). 효과가 없는 숲 방문이면 0이다.</summary>
-    public float MeteorShowerCharge => meteorShowerCharge;
+    public float MeteorShowerCharge => (float)meteorShowerStack / GetMeteorShowerMaxStack();
     [SerializeField] private int starCompassPityMinKills = 4;
     [SerializeField] private int starCompassPityMaxKills = 5;
     private int starCompassPityThreshold;
@@ -208,15 +212,19 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // 피해는 4스테이지 나무 체력(잿불 100만 / 용암수액 300만 / 흑요 1000만) 기준이다. 과열 배율(최대 3배)이 뒤에 곱해진다.
     // I: 잿불은 한 번에, 용암수액은 과열 중이면 한 번에 쓰러진다. III: 잿불·용암수액은 한 번에, 흑요는 과열 절반 이상이면 한 번에 쓰러진다.
     [SerializeField] private int obsidianCharmTier3PrestigeLevel = 11;
-    [SerializeField, Tooltip("불씨 하나를 주울 때 차는 지진 게이지(1이면 가득)")]
-    private float quakeChargePerEmber = 0.1f;
+    [SerializeField, Tooltip("지진이 발동하는 지진 스택(버프 HUD 최대치)")]
+    private int quakeMaxStack = 100;
+    [SerializeField, Tooltip("불씨 하나를 주울 때 오르는 지진 스택 최소값(포함). 불씨 관련 특성 배율과 무관하다")]
+    private int quakeStackPerEmberMin = 2;
+    [SerializeField, Tooltip("불씨 하나를 주울 때 오르는 지진 스택 최대값(포함). 불씨 관련 특성 배율과 무관하다")]
+    private int quakeStackPerEmberMax = 3;
     // 범위는 단계와 상관없이 화면 전체다. 해상도·화면비마다 보이는 넓이가 달라도 똑같이 맞도록 기준 화면(1920×1080) 크기로 고정한다.
     [SerializeField] private float quakeTier1Damage = 1500000f;
     [SerializeField] private float quakeTier3Damage = 5000000f;
     // 이번 숲 방문에 적용되는 단계(0이면 효과 없음). 숲에 들어올 때 정하고 방문 도중에는 바꾸지 않는다.
     private int obsidianCharmTierThisRun;
-    // 지진 게이지(0~1). 숲 방문마다 비운다.
-    private float quakeCharge;
+    // 지진 스택(0~quakeMaxStack). 숲 방문마다 비운다.
+    private int quakeStack;
     // 던전 정리 때 올라간다. 퍼지던 지진이 다음 맵의 나무를 때리지 않게 한다.
     private int quakeVersion = 0;
     // 지진에 쓰러진 나무가 공중으로 튀어 올랐다 터지는 연출(렌더링 전용 - QuakeTreeLaunch). 처음 쓸 때 만든다.
@@ -232,7 +240,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private const float QuakeLaunchTiltMax = 9f;
 
     /// <summary>지진 게이지(0~1). 효과가 없는 숲 방문이면 0이다.</summary>
-    public float QuakeCharge => quakeCharge;
+    public float QuakeCharge => (float)quakeStack / GetQuakeMaxStack();
 
     // 구제(pity) 드랍 공통 규칙
     //
@@ -2760,11 +2768,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     }
 
     // 불씨를 더 만들어도 되는지(자연 생성·벌목 드랍). 차에서 내리기 전(입장 연출)이거나 원정이 끝나는 중이거나
-    // 쓰러졌거나 과열이 최대면 만들지 않는다.
+    // 쓰러졌으면 만들지 않는다. 과열이 최대여도 계속 만든다.
     private bool CanSpawnMoreEmbers()
     {
         return RunEndState == ERunEndState.None && false == bWarningPending
-            && character != null && false == character.bDead && false == character.bRide && false == character.IsOverheatMax;
+            && character != null && false == character.bDead && false == character.bRide;
     }
 
     /// <summary>
@@ -3328,38 +3336,43 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
     }
 
+    // 나무 한 그루를 벨 때마다 유성우 스택이 무작위(최소~최대, 둘 다 포함)로 오르고, 최대치에 닿으면 유성우가 발동한다.
+    // 넘친 몫은 버린다(발동하면 0부터 다시 찬다).
     private void ChargeMeteorShower()
     {
-        meteorShowerCharge = Mathf.Min(1f, meteorShowerCharge + Mathf.Max(0f, meteorShowerChargePerKill));
+        int maxStack = GetMeteorShowerMaxStack();
+        meteorShowerStack = Mathf.Min(maxStack, meteorShowerStack + RollStackGain(meteorShowerStackPerKillMin, meteorShowerStackPerKillMax));
 
-        int maxKills = GetMeteorShowerMaxKills();
-
-        // 0.1씩 열 번 더하면 0.99999…가 될 수 있어 이만큼은 가득 찬 것으로 본다.
-        if (meteorShowerCharge < 1f - 0.0001f)
+        if (meteorShowerStack < maxStack)
         {
-            int kills = Mathf.Clamp(Mathf.RoundToInt(meteorShowerCharge * maxKills), 0, maxKills - 1);
-            MeteorShowerChargeChangedEvent?.Invoke(kills, maxKills);
+            MeteorShowerChargeChangedEvent?.Invoke(meteorShowerStack, maxStack);
             return;
         }
 
-        MeteorShowerChargeChangedEvent?.Invoke(maxKills, maxKills);
-        meteorShowerCharge = 0f;
+        MeteorShowerChargeChangedEvent?.Invoke(maxStack, maxStack);
+        meteorShowerStack = 0;
         StartCoroutine(MeteorShowerRoutine(starCompassTierThisRun));
     }
 
     // 숲 방문 초기화. 이전 방문에서 차던 유성우 게이지 버프 HUD도 함께 내린다.
     private void ResetMeteorShowerCharge()
     {
-        meteorShowerCharge = 0f;
-        MeteorShowerChargeChangedEvent?.Invoke(0, GetMeteorShowerMaxKills());
+        meteorShowerStack = 0;
+        MeteorShowerChargeChangedEvent?.Invoke(0, GetMeteorShowerMaxStack());
     }
 
-    // 유성우 게이지가 가득 차는 벌목 수(한 그루당 0.1이면 10). 버프 HUD 숫자·게이지 기준이다.
-    private int GetMeteorShowerMaxKills()
+    // 유성우가 발동하는 스택. 버프 HUD 숫자·게이지 기준이다.
+    private int GetMeteorShowerMaxStack()
     {
-        if (0f >= meteorShowerChargePerKill) return 1;
+        return Mathf.Max(1, meteorShowerMaxStack);
+    }
 
-        return Mathf.Max(1, Mathf.CeilToInt(1f / meteorShowerChargePerKill - 0.0001f));
+    // 한 번에 오르는 스택 수(최소~최대, 둘 다 포함). 0 미만은 0으로, 최대가 최소보다 작으면 최소로 맞춘다.
+    private static int RollStackGain(int _min, int _max)
+    {
+        int min = Mathf.Max(0, _min);
+        int max = Mathf.Max(min, _max);
+        return UnityEngine.Random.Range(min, max + 1);
     }
 
     /// <summary>
@@ -3462,44 +3475,41 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
     }
 
+    // 불씨를 하나 주울 때마다 지진 스택이 무작위(최소~최대, 둘 다 포함)로 오르고, 최대치에 닿으면 지진이 발동한다.
+    // 불씨 관련 특성(획득량·효율 배율)은 곱하지 않는다. 넘친 몫은 버린다(발동하면 0부터 다시 찬다).
     private void ChargeQuake()
     {
-        quakeCharge = Mathf.Min(1f, quakeCharge + Mathf.Max(0f, quakeChargePerEmber));
+        int maxStack = GetQuakeMaxStack();
+        quakeStack = Mathf.Min(maxStack, quakeStack + RollStackGain(quakeStackPerEmberMin, quakeStackPerEmberMax));
 
-        int maxEmbers = GetQuakeMaxEmbers();
-
-        // 0.1씩 열 번 더하면 0.99999…가 될 수 있어 이만큼은 가득 찬 것으로 본다.
-        if (quakeCharge < 1f - 0.0001f)
+        if (quakeStack < maxStack)
         {
-            int embers = Mathf.Clamp(Mathf.RoundToInt(quakeCharge * maxEmbers), 0, maxEmbers - 1);
-            QuakeChargeChangedEvent?.Invoke(embers, maxEmbers);
+            QuakeChargeChangedEvent?.Invoke(quakeStack, maxStack);
             return;
         }
 
-        QuakeChargeChangedEvent?.Invoke(maxEmbers, maxEmbers);
+        QuakeChargeChangedEvent?.Invoke(maxStack, maxStack);
         TriggerQuake(obsidianCharmTierThisRun);
     }
 
     // 지진 게이지가 가득 찼을 때 지진을 일으킨다. 게이지를 비우고 캐릭터 자리에서 지진(바닥 물결 + 피해)을 시작한다.
     private void TriggerQuake(int _tier)
     {
-        quakeCharge = 0f;
+        quakeStack = 0;
         StartCoroutine(QuakeRoutine(_tier));
     }
 
     // 숲 방문 초기화. 이전 방문에서 차던 지진 게이지 버프 HUD도 함께 내린다.
     private void ResetQuakeCharge()
     {
-        quakeCharge = 0f;
-        QuakeChargeChangedEvent?.Invoke(0, GetQuakeMaxEmbers());
+        quakeStack = 0;
+        QuakeChargeChangedEvent?.Invoke(0, GetQuakeMaxStack());
     }
 
-    // 지진 게이지가 가득 차는 불씨 수(불씨 하나당 0.1이면 10). 버프 HUD 숫자·게이지 기준이다.
-    private int GetQuakeMaxEmbers()
+    // 지진이 발동하는 스택. 버프 HUD 숫자·게이지 기준이다.
+    private int GetQuakeMaxStack()
     {
-        if (0f >= quakeChargePerEmber) return 1;
-
-        return Mathf.Max(1, Mathf.CeilToInt(1f / quakeChargePerEmber - 0.0001f));
+        return Mathf.Max(1, quakeMaxStack);
     }
 
     /// <summary>
