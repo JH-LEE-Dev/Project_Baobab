@@ -3365,12 +3365,12 @@ MonoBehaviour:
   emberItemPrefab: {fileID: 6885275396082023371, guid: 4020514d49da95d4ea739865a7e3dbfe, type: 3}
   enabledMapTypes: 05000000
   overheatPerEmber: 1
-  initialEmbersPerTree: 0.25
-  naturalSpawnInterval: 5
-  naturalSpawnHalfExtents: {x: 9, y: 5}
+  initialEmbersPerTree: 0.1
+  naturalSpawnInterval: 10
+  naturalSpawnHalfExtents: {x: 16, y: 8}
   naturalSpawnAttempts: 20
-  dropCountMin: 2
-  dropCountMax: 3
+  dropCountMin: 0
+  dropCountMax: 2
   droppedLifetime: 20
   groundLoopVfxTag: 
   acquireVfxTag: OverheatEmberAcquire

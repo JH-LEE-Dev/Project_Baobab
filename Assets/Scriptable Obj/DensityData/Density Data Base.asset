@@ -188,8 +188,8 @@ MonoBehaviour:
       - treeType: 10
         regenProb: 100
       spawnAnimalTypes: []
-      treeStartDensityRatio: 0.0496
-      treeMaxDensityRatio: 0.0868
+      treeStartDensityRatio: 0.03
+      treeMaxDensityRatio: 0.06
       animalStartDensityRatio: 0
       animalMaxDensityRatio: 0
       treeRegenMinTime: 10
@@ -205,8 +205,8 @@ MonoBehaviour:
       - treeType: 11
         regenProb: 70
       spawnAnimalTypes: []
-      treeStartDensityRatio: 0.0496
-      treeMaxDensityRatio: 0.0868
+      treeStartDensityRatio: 0.03
+      treeMaxDensityRatio: 0.06
       animalStartDensityRatio: 0
       animalMaxDensityRatio: 0
       treeRegenMinTime: 10
@@ -222,8 +222,8 @@ MonoBehaviour:
       - treeType: 12
         regenProb: 40
       spawnAnimalTypes: []
-      treeStartDensityRatio: 0.0496
-      treeMaxDensityRatio: 0.0868
+      treeStartDensityRatio: 0.03
+      treeMaxDensityRatio: 0.06
       animalStartDensityRatio: 0
       animalMaxDensityRatio: 0
       treeRegenMinTime: 10
