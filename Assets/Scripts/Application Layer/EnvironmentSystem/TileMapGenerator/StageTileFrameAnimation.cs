@@ -64,7 +64,9 @@ public sealed class StageTileFrameAnimation
     /// 이번에 깔 타일들을 살펴 셰이더 애니메이션으로 바꿀 수 있으면 켠다. 먼저 이전 것을 되돌린다(End).
     /// 켜면 true. 그 뒤 타일을 깔 때 Convert로 바꾼 배열을 쓴다.
     /// </summary>
-    public bool Begin(bool _enabled, string _sceneName, Layer[] _layers)
+    /// _clockParent를 주면 시계를 씬 맨 위가 아닌 그 밑(마지막 자식)에 만들고, 엔진 타일맵 시계 방식(float 누적·한 바퀴마다 빼기)으로 흐르게 한다(마을).
+    /// 주지 않으면 지금까지와 같다(던전).
+    public bool Begin(bool _enabled, string _sceneName, Layer[] _layers, Transform _clockParent = null)
     {
         End();
 
@@ -118,13 +120,21 @@ public sealed class StageTileFrameAnimation
 
         // 타일 시계: 타일맵 애니메이션처럼 타일을 깐 때부터 게임 시간(시간 배율 적용)으로 흐른다.
         clock = new GameObject("[StageTileFrameAnimation]");
-        UnityEngine.SceneManagement.Scene targetScene = UnityEngine.SceneManagement.SceneManager.GetSceneByName(_sceneName);
-        if (targetScene.IsValid() && targetScene.isLoaded && clock.scene != targetScene)
+        if (null != _clockParent)
         {
-            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(clock, targetScene);
+            clock.transform.SetParent(_clockParent, false);
+            clock.AddComponent<StageTileFrameAnimationClock>().UseTilemapClock(frameCount / fps);
         }
+        else
+        {
+            UnityEngine.SceneManagement.Scene targetScene = UnityEngine.SceneManagement.SceneManager.GetSceneByName(_sceneName);
+            if (targetScene.IsValid() && targetScene.isLoaded && clock.scene != targetScene)
+            {
+                UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(clock, targetScene);
+            }
 
-        clock.AddComponent<StageTileFrameAnimationClock>();
+            clock.AddComponent<StageTileFrameAnimationClock>();
+        }
 
         bActive = true;
         return true;

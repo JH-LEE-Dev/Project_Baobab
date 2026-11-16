@@ -24,6 +24,13 @@ public class TownTileManager : MonoBehaviour
 
     private GameObject currentGrid;
 
+    // 물·물가·스텐실 타일 애니메이션을 타일맵 대신 셰이더로 돌린다(던전과 같은 StageTileFrameAnimation, 렌더링 전용).
+    // 애니메이션 타일 1만 2천여 칸을 타일맵이 매 프레임 훑던 비용(Tilemap.UpdateTileAnimation)이 없어진다.
+    private readonly StageTileFrameAnimation tileFrameAnimation = new StageTileFrameAnimation();
+    private readonly StageTileFrameAnimation.Layer[] tileFrameLayers = new StageTileFrameAnimation.Layer[4];
+    private readonly BoundsInt[] tileFrameBounds = new BoundsInt[4];
+    private readonly TileBase[][] tileFrameBuffers = new TileBase[4][];
+
     // 이름 뒤 숫자(_1, _2) 순서로 정렬해서 담는다. 증설 단계 N이면 앞에서 N개만 활성화한다.
     private readonly List<Tilemap> buildingColliderExpansions = new List<Tilemap>(2);
 
@@ -73,6 +80,7 @@ public class TownTileManager : MonoBehaviour
     public void DestroyGrid()
     {
         StageAmbienceShaderGlobals.ClearTown();
+        tileFrameAnimation.End();
 
         if (currentGrid != null)
         {
@@ -147,6 +155,8 @@ public class TownTileManager : MonoBehaviour
 
         ApplyBuildingExpansion();
         ApplyAmbience();
+        // 물 머티리얼을 바꿔 끼운(ApplyAmbience) 뒤에 켠다. 켜짐 사본은 그 머티리얼을 복사해 만든다.
+        ApplyTileFrameAnimation();
 
         // 기본값은 4칸 모두 활성화(콜라이더 있음)된 상태로 배치되어 있으므로, 원본을 좌상단부터 기억해두고
         // 일단 전부 비활성화한다. 실제 활성화는 ApplyLootPillarColliderState()가 획득 상태에 맞춰 적용한다.
@@ -179,12 +189,51 @@ public class TownTileManager : MonoBehaviour
         StageAmbienceShaderGlobals.ApplyTown(useWind ? windGust : null, useWater ? waterShimmer : null, colorGrading, windPetals, cloudShadows);
     }
 
+    // 프리팹에 깔려 있던 애니메이션 타일을 첫 프레임 그림 하나짜리 타일로 바꿔 다시 깐다. 조건(같은 프레임 순서·속도, 셰이더 지원 머티리얼 등)에
+    // 하나라도 안 맞으면 StageTileFrameAnimation이 아무것도 바꾸지 않는다(로그라이크도 그대로).
+    // 애니메이션 타일이 속도를 뽑으며 쓰는 난수(Random.Range)는 Instantiate 때 이미 다 쓰였고, 바꾼 타일은 난수를 쓰지 않으므로 난수 흐름도 같다.
+    private void ApplyTileFrameAnimation()
+    {
+        tileFrameLayers[0] = MakeTileFrameLayer(WaterTilemap, 0);
+        tileFrameLayers[1] = MakeTileFrameLayer(WaterCornerTilemap, 1);
+        tileFrameLayers[2] = MakeTileFrameLayer(WaterStencilTilemap, 2);
+        tileFrameLayers[3] = MakeTileFrameLayer(GroundStencilTilemap, 3);
+
+        // 시계는 Grid 밑에 둔다(씬 맨 위 오브젝트 순서를 바꾸지 않고, Grid와 함께 지워진다). 엔진 타일맵 시계와 같은 박자로 흐른다.
+        if (tileFrameAnimation.Begin(true, "TownScene", tileFrameLayers, currentGrid.transform))
+        {
+            for (int i = 0; i < tileFrameLayers.Length; i++)
+            {
+                Tilemap tilemap = tileFrameLayers[i].tilemap;
+                if (null == tilemap) continue;
+
+                tilemap.SetTilesBlock(tileFrameBounds[i], tileFrameAnimation.Convert(tileFrameLayers[i].tiles, ref tileFrameBuffers[i]));
+            }
+        }
+
+        for (int i = 0; i < tileFrameLayers.Length; i++)
+        {
+            tileFrameLayers[i] = default;
+        }
+    }
+
+    private StageTileFrameAnimation.Layer MakeTileFrameLayer(Tilemap _tilemap, int _index)
+    {
+        if (null == _tilemap) return default;
+
+        BoundsInt bounds = _tilemap.cellBounds;
+        tileFrameBounds[_index] = bounds;
+        return new StageTileFrameAnimation.Layer { tilemap = _tilemap, tiles = _tilemap.GetTilesBlock(bounds) };
+    }
+
     private void OnDestroy()
     {
         if (null != currentGrid)
         {
             StageAmbienceShaderGlobals.ClearTown();
         }
+
+        tileFrameAnimation.End();
     }
 
     /// <summary>
