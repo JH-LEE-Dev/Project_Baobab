@@ -646,8 +646,6 @@ MonoBehaviour:
   highGradeDropCntMax: 7
   enableCulling: 0
   cullingUpdateInterval: 0.05
-  jackpotTimesSprite: {fileID: -227947725, guid: b5919104e6bba484382995363357ae05, type: 3}
-  jackpotTwoSprite: {fileID: 3943169913685968393, guid: b5919104e6bba484382995363357ae05, type: 3}
 --- !u!114 &597610330652353424
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3367,12 +3365,12 @@ MonoBehaviour:
   emberItemPrefab: {fileID: 6885275396082023371, guid: 4020514d49da95d4ea739865a7e3dbfe, type: 3}
   enabledMapTypes: 05000000
   overheatPerEmber: 1
-  initialEmbersPerTree: 0.25
-  naturalSpawnInterval: 5
-  naturalSpawnHalfExtents: {x: 9, y: 5}
+  initialEmbersPerTree: 0.1
+  naturalSpawnInterval: 10
+  naturalSpawnHalfExtents: {x: 16, y: 8}
   naturalSpawnAttempts: 20
-  dropCountMin: 2
-  dropCountMax: 3
+  dropCountMin: 0
+  dropCountMax: 2
   droppedLifetime: 20
   groundLoopVfxTag: 
   acquireVfxTag: OverheatEmberAcquire
@@ -3552,11 +3550,11 @@ MonoBehaviour:
   - forestType: 10
     decAmount: 400
   - forestType: 11
-    decAmount: 2000
+    decAmount: 800
   - forestType: 12
-    decAmount: 5000
+    decAmount: 1600
   - forestType: 13
-    decAmount: 10000
+    decAmount: 2500
 --- !u!114 &8919172322634990837
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4078,14 +4076,14 @@ MonoBehaviour:
   meteorShowerTier1FallRange: 5
   meteorShowerTier1Duration: 4
   meteorShowerTier1Count: 30
-  meteorShowerTier2Damage: 450
-  meteorShowerTier2FallRange: 3.5
-  meteorShowerTier2Duration: 4
-  meteorShowerTier2Count: 20
-  meteorShowerTier3Damage: 1000
-  meteorShowerTier3FallRange: 3.5
+  meteorShowerTier2Damage: 1500
+  meteorShowerTier2FallRange: 5
+  meteorShowerTier2Duration: 5
+  meteorShowerTier2Count: 45
+  meteorShowerTier3Damage: 10000
+  meteorShowerTier3FallRange: 6
   meteorShowerTier3Duration: 5
-  meteorShowerTier3Count: 25
+  meteorShowerTier3Count: 55
   starCompassPityMinKills: 4
   starCompassPityMaxKills: 5
   obsidianCharmDropChance: 0.05
@@ -4094,8 +4092,8 @@ MonoBehaviour:
   obsidianCharmPityMaxKills: 5
   obsidianCharmTier3PrestigeLevel: 11
   quakeChargePerEmber: 0.1
-  quakeTier1Damage: 1500000
-  quakeTier3Damage: 5000000
+  quakeTier1Damage: 5000
+  quakeTier3Damage: 70000
   goldTreePityMinKills: 3
   goldTreePityMaxKills: 7
   treePrefab: {fileID: 5272385284174554040, guid: 3224048e2842e2c48bc93158251200d2, type: 3}

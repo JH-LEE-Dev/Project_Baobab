@@ -72,7 +72,7 @@ public static class MagicalSeedVisualBuilder
         new DisplaySpec(3, 2, Seq(0), Seq(0, 1, 2, 3), 8f),
         new DisplaySpec(3, 3, Seq(0, 1), None, 2f),
         // 용암 (꽃 없음: 씨앗 → 나무)
-        new DisplaySpec(4, 1, Seq(0, 1, 2, 1), None, 10f),
+        new DisplaySpec(4, 1, Seq(0), Seq(0, 1, 2, 1), 10f),
         new DisplaySpec(4, 3, Seq(0, 1), None, 2f),
     };
 
@@ -212,7 +212,7 @@ public static class MagicalSeedVisualBuilder
                 _entry.fps = DefaultFps[_tier - 1];
             }
 
-            _entry.actionInterval = ActionInterval;
+            _entry.actionInterval = _stage == 4 && _tier == 1 ? new Vector2(4f, 4f) : ActionInterval;
         }
 
         _entries.Add(_entry);
