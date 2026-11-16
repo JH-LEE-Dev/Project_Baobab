@@ -92,6 +92,23 @@ public class UIView_MainMenu : UIView
     // 엔딩을 마치고 돌아와 "계속 하려면 아무 키나 누르십시오"를 띄운 상태인지. 키를 누르면 평소 문구로 돌아간다.
     private bool bEndingPressAnyKey;
 
+    // 화면 밖에 밀어 둔 메인 메뉴의 캔버스 끄기(렌더링 전용).
+    // 마을·던전에서는 메인 메뉴를 파괴하지 않고 화면 위로 밀어 둔다(PlayExitAnimation). 그동안에도 구름 부유·글자 연출이 매 프레임
+    // 캔버스를 다시 짓게 해 보이지 않는 화면에 비용이 든다(마을 기준 프레임당 약 0.5ms). 캔버스 갱신 직전(모든 Update·LateUpdate·트윈이 끝난 뒤)에
+    // 그 캔버스의 그림이 전부 화면 위쪽 밖에 있으면 캔버스 컴포넌트만 끄고, 하나라도 화면 쪽으로 걸치면 같은 프레임에 다시 켠다.
+    // 오브젝트·스크립트·트윈은 그대로 돌아 상태가 같으므로 다시 보일 때 그림도 같다.
+    private Canvas offscreenCanvas;
+    private RectTransform offscreenCanvasRect;
+    private bool bOffscreenCanvasDisabled;
+    private int offscreenScreenWidth = -1;
+    private int offscreenScreenHeight = -1;
+    private Canvas.WillRenderCanvases onPreWillRenderCanvasesCallback;
+    private readonly List<CanvasRenderer> offscreenRendererBuffer = new List<CanvasRenderer>(32);
+    private static readonly Vector3[] offscreenCorners = new Vector3[4];
+    // 기본 머티리얼·메쉬 효과 없는 Image/RawImage는 사각형 안에만 그린다(픽셀 맞춤 오차만 둔다). 글자(넘침)·메쉬 효과(그림자 등)는 넉넉히 둔다.
+    private const float OffscreenPlainMargin = 2f;
+    private const float OffscreenEffectMargin = 64f;
+
     // 한 번 스플래시를 본 이후(예: 인게임에서 ESC로 메인 메뉴로 돌아왔을 때) 스플래시를 생략하기 위한 정적 변수
     private static bool hasPlayedSplash = false;
 
@@ -137,6 +154,9 @@ public class UIView_MainMenu : UIView
         {
             restAnchoredPosition = rootRectTransform.anchoredPosition;
         }
+
+        Canvas _parentCanvas = GetComponentInParent<Canvas>();
+        SetOffscreenCanvas(null != _parentCanvas ? _parentCanvas.rootCanvas : null);
 
         if (null == discordButton && null != otherCanvasGroup)
         {
@@ -465,6 +485,8 @@ public class UIView_MainMenu : UIView
     // 씬이 바뀌지 않으니 BootStrap의 ClearIfCovering도 불리지 않는다. 씬 전환 요청 뒤에는 이미 false라 아무것도 하지 않는다.
     private void OnDisable()
     {
+        RestoreOffscreenCanvas();
+
         if (false == bRoguelikeEntryPlaying) return;
 
         bRoguelikeEntryPlaying = false;
@@ -881,8 +903,95 @@ public class UIView_MainMenu : UIView
         callback?.Invoke();
     }
 
+    private void SetOffscreenCanvas(Canvas _canvas)
+    {
+        if (offscreenCanvas != _canvas) RestoreOffscreenCanvas();
+
+        offscreenCanvas = _canvas;
+        offscreenCanvasRect = null != _canvas ? _canvas.transform as RectTransform : null;
+
+        if (null == onPreWillRenderCanvasesCallback) onPreWillRenderCanvasesCallback = UpdateOffscreenCanvas;
+        Canvas.preWillRenderCanvases -= onPreWillRenderCanvasesCallback;
+        Canvas.preWillRenderCanvases += onPreWillRenderCanvasesCallback;
+    }
+
+    private void RestoreOffscreenCanvas()
+    {
+        if (false == bOffscreenCanvasDisabled) return;
+
+        bOffscreenCanvasDisabled = false;
+        if (null != offscreenCanvas) offscreenCanvas.enabled = true;
+    }
+
+    private void UpdateOffscreenCanvas()
+    {
+        if (null == offscreenCanvas || null == offscreenCanvasRect) return;
+
+        // 화면 크기가 바뀐 프레임에는 캔버스 크기·배율이 아직 예전 값일 수 있고, 꺼진 캔버스는 제 크기를 갱신하지 않을 수 있다.
+        // 그 프레임은 켜 두고(원래대로 그리게 하고) 다음 프레임부터 다시 판단한다.
+        if (Screen.width != offscreenScreenWidth || Screen.height != offscreenScreenHeight)
+        {
+            offscreenScreenWidth = Screen.width;
+            offscreenScreenHeight = Screen.height;
+            RestoreOffscreenCanvas();
+            return;
+        }
+
+        bool _bOffscreen = isActiveAndEnabled && IsCanvasContentAboveView();
+        if (_bOffscreen == bOffscreenCanvasDisabled) return;
+
+        if (false == _bOffscreen)
+        {
+            RestoreOffscreenCanvas();
+            return;
+        }
+
+        // 다른 곳에서 꺼 둔 캔버스는 건드리지 않는다(다시 켜는 것도 그쪽 몫이다).
+        if (false == offscreenCanvas.enabled) return;
+
+        offscreenCanvas.enabled = false;
+        bOffscreenCanvasDisabled = true;
+    }
+
+    // 캔버스가 그리는 것(켜진 CanvasRenderer)이 모두 캔버스 사각형(= 화면) 위쪽 밖에 있는지. 하나도 없으면 false(끌 이유가 없다).
+    private bool IsCanvasContentAboveView()
+    {
+        float _top = offscreenCanvasRect.rect.yMax;
+        Matrix4x4 _toCanvas = offscreenCanvasRect.worldToLocalMatrix;
+
+        offscreenRendererBuffer.Clear();
+        offscreenCanvasRect.GetComponentsInChildren(false, offscreenRendererBuffer);
+        if (0 == offscreenRendererBuffer.Count) return false;
+
+        for (int i = 0; i < offscreenRendererBuffer.Count; i++)
+        {
+            CanvasRenderer _renderer = offscreenRendererBuffer[i];
+            RectTransform _rect = _renderer.transform as RectTransform;
+            if (null == _rect) return false;
+
+            float _margin = OffscreenEffectMargin;
+            if (true == _renderer.TryGetComponent(out Graphic _graphic) && (_graphic is Image || _graphic is RawImage)
+                && _graphic.material == _graphic.defaultMaterial && false == _renderer.TryGetComponent(out IMeshModifier _))
+            {
+                _margin = OffscreenPlainMargin;
+            }
+
+            _rect.GetWorldCorners(offscreenCorners);
+            for (int k = 0; k < 4; k++)
+            {
+                if (_toCanvas.MultiplyPoint3x4(offscreenCorners[k]).y < _top + _margin) return false;
+            }
+        }
+
+        offscreenRendererBuffer.Clear();
+        return true;
+    }
+
     public override void OnDestroy()
     {
+        if (null != onPreWillRenderCanvasesCallback) Canvas.preWillRenderCanvases -= onPreWillRenderCanvasesCallback;
+        RestoreOffscreenCanvas();
+
         NewGameButtonClickedEvent = null;
         if (null != roguelikeRecordsView && null != cachedOnRoguelikeRecordsViewClosed) roguelikeRecordsView.ClosedEvent -= cachedOnRoguelikeRecordsViewClosed;
         roguelikeRecordsClosedCallback = null;
