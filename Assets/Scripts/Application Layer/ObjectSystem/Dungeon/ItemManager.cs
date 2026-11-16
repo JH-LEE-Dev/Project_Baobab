@@ -143,6 +143,11 @@ public class ItemManager : MonoBehaviour
         emberItemController?.SpawnDropEmbers(_treePosition);
     }
 
+    public void SetEmberGuideActive(bool _bActive)
+    {
+        emberItemController?.SetGuideActive(_bActive);
+    }
+
     public void SpawnCarrotItem(Vector3 _position, AnimalType _animalType)
     {
         carrrotItemController?.SpawnCarrotItem(_position, _animalType);
@@ -176,6 +181,12 @@ public class ItemManager : MonoBehaviour
     {
         add { if (emberItemController != null) emberItemController.EmberAcquiredEvent += value; }
         remove { if (emberItemController != null) emberItemController.EmberAcquiredEvent -= value; }
+    }
+
+    public event Action EmberGuideCollectedEvent
+    {
+        add { if (emberItemController != null) emberItemController.GuideEmbersCollectedEvent += value; }
+        remove { if (emberItemController != null) emberItemController.GuideEmbersCollectedEvent -= value; }
     }
 
     public void ReleaseAllItems()

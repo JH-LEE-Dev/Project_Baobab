@@ -44,8 +44,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // 대지역 기믹 안내(RegionGuideSystem) 클리어 판정용 알림. 게임 로직에는 관여하지 않는다.
     public event Action TreeShieldBrokenNotifyEvent;
     public event Action ConstellationManifestedEvent;
-    public event Action EmberAcquiredNotifyEvent;
-    public event Action OffroadVehicleInteractedEvent;
+    // 용암숲 안내 중 첫 나무에서 나온 불씨를 모두 주운 순간.
+    public event Action EmberGuideCollectedNotifyEvent;
     public event Action<bool> NPCPauseRequestedEvent;
     public event Action FlyingItemPauseRequestedEvent;
     public event Action FlyingItemResumeRequestedEvent;
@@ -807,6 +807,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
             itemManager.EmberItemAcquiredEvent -= EmberItemAcquired;
             itemManager.EmberItemAcquiredEvent += EmberItemAcquired;
+
+            itemManager.EmberGuideCollectedEvent -= EmberGuideCollected;
+            itemManager.EmberGuideCollectedEvent += EmberGuideCollected;
         }
     }
 
@@ -838,6 +841,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         itemManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
         itemManager.GemOreItemAcquiredEvent -= GemOreItemAcquired;
         itemManager.EmberItemAcquiredEvent -= EmberItemAcquired;
+        itemManager.EmberGuideCollectedEvent -= EmberGuideCollected;
 
         if (lootManager != null)
         {
@@ -2702,8 +2706,20 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         Sound.PlayUI(SoundID.GetItem);
         character.PlayItemAcquireBounce();
         character.PlayItemAcquireFlash();
+    }
 
-        EmberAcquiredNotifyEvent?.Invoke();
+    private void EmberGuideCollected()
+    {
+        EmberGuideCollectedNotifyEvent?.Invoke();
+    }
+
+    /// <summary>
+    /// 용암숲 기믹 안내(Quest UI)가 시작되거나(true) 끝날 때(false) InDungeonSystem이 부른다.
+    /// 켜져 있는 동안 바닥 불씨에 화살표를 띄우고, 첫 벌목 불씨를 다 주우면 EmberGuideCollectedNotifyEvent를 보낸다.
+    /// </summary>
+    public void SetEmberGuideActive(bool _bActive)
+    {
+        itemManager?.SetEmberGuideActive(_bActive);
     }
 
     // 과열이 가득 차는 순간의 연출 수치(화면 흔들림 세기·시간, 터지는 소리의 크기·높낮이)
@@ -2802,8 +2818,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 그 사이는 bDead로 직접 막는다. 예전엔 둘 다 없어서 시체 옆 차량에 상호작용 키가 먹혔다.
         if (RunEndState != ERunEndState.None) return;
         if (character != null && character.bDead == true) return;
-
-        OffroadVehicleInteractedEvent?.Invoke();
 
         if (CheckWarningUIActivate() == false)
         {

@@ -291,6 +291,28 @@ public class UI_TutorialQuest : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 완료하지 못한 퀘스트를 완료 연출 없이 퇴장 연출로 내린다(대지역 기믹 안내를 깨지 못한 채 원정이 끝난 경우).
+    /// 다른 퀘스트가 떠 있거나 이미 내려가는 중이면 건드리지 않는다.
+    /// </summary>
+    public void HideQuestWithoutCompletion(TutorialStep _step)
+    {
+        if (_step != currentStep)
+            return;
+
+        // ESC 일시정지로 내려가 있는 동안이면 일시정지 해제 때 다시 떠오르지 않게만 한다.
+        if (true == bPaused && true == isSuspendedByPause)
+        {
+            CancelPauseSuspension();
+            return;
+        }
+
+        if (true == HasPendingHide())
+            return;
+
+        PlayHideQuest();
+    }
+
     public void SetPauseState(bool _isPaused)
     {
         if (true == _isPaused)

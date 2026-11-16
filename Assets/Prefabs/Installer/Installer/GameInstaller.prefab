@@ -3375,6 +3375,9 @@ MonoBehaviour:
   groundLoopVfxTag: 
   acquireVfxTag: OverheatEmberAcquire
   expireVfxTag: OverheatEmberExpire
+  guideIndicatorPrefab: {fileID: 4713820055391000003, guid: fa41ca12a0ac4cb0871ff8d8780e4f80, type: 3}
+  guideIndicatorOffset: {x: 0, y: 0.75, z: 0}
+  guideFirstTreeDropCount: 2
 --- !u!1 &7565708588615142684
 GameObject:
   m_ObjectHideFlags: 0

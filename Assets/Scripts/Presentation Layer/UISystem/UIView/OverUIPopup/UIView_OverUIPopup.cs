@@ -148,6 +148,17 @@ public class UIView_OverUIPopup : UIView
     }
 
     /// <summary>
+    /// 대지역 기믹 안내를 깨지 못한 채 원정이 끝남(탈진 / 귀환) - 완료 연출 없이 Quest UI를 내린다.
+    /// </summary>
+    public void RegionGuideAborted(TutorialStep _step)
+    {
+        if (null != tutorialQuest)
+        {
+            tutorialQuest.HideQuestWithoutCompletion(_step);
+        }
+    }
+
+    /// <summary>
     /// ESC 메뉴(일시정지) 열림/닫힘에 따라 튜토리얼 퀘스트 UI를 임시로 닫거나 복원합니다.
     /// </summary>
     public void SetPauseState(bool _isPaused)

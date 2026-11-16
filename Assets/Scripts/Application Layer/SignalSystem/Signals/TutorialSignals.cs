@@ -76,6 +76,16 @@ public struct RegionGuideCompletedSignal
     }
 }
 
+// 대지역 기믹 안내를 클리어하지 못한 채 원정이 끝남(탈진 / 귀환 탑승) - 클리어 기록 없이 안내를 내린다(다음 입장에서 다시 안내).
+public struct RegionGuideAbortedSignal
+{
+    public TutorialStep step;
+    public RegionGuideAbortedSignal(TutorialStep _step)
+    {
+        step = _step;
+    }
+}
+
 public struct TutorialQuestTransitionCompletedSignal
 {
     public TutorialStep step;

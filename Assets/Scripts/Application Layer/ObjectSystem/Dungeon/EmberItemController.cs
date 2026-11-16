@@ -14,11 +14,18 @@ using UnityEngine.Pool;
 /// 과열이 최대여도 2, 3은 계속 생긴다. 과열이 최대일 때 주운 불씨는 과열을 더 올리지 않는다(지진 스택은 오른다).
 /// 1~3 모두 차량 휴식 구역 안에는 놓지 않는다(BeginRun이 받는 판정, 휴식 특성으로 구역이 열렸을 때만).
 ///
+/// 용암숲 기믹 안내(Quest UI)가 떠 있는 동안(SetGuideActive)에는:
+/// - 바닥에 놓인 모든 불씨 위에 화살표(QuestIndicator)를 띄운다(입장 배치·자연 생성·벌목 드랍 전부).
+/// - 안내 중 처음 불씨를 떨어뜨리는 나무는 무조건 guideFirstTreeDropCount개를 떨어뜨리고, 그 불씨는 사라지지 않는다.
+///   그 불씨를 모두 주우면 GuideEmbersCollectedEvent로 알린다(안내 클리어). 안내가 끝나면 화살표를 모두 내린다.
+///
 /// 이펙트 담당 연결 지점: 이 오브젝트의 VFXComponent에 이펙트를 등록하고 아래 태그를 채우면 된다(비어 있으면 재생하지 않는다).
 /// </summary>
 public class EmberItemController : MonoBehaviour
 {
     public event Action<EmberItem> EmberAcquiredEvent;
+    // 용암숲 기믹 안내 중 첫 나무에서 나온 불씨를 모두 주운 순간(안내 클리어 판정용).
+    public event Action GuideEmbersCollectedEvent;
 
     [SerializeField] private EmberItem emberItemPrefab;
 
@@ -54,6 +61,14 @@ public class EmberItemController : MonoBehaviour
     [Tooltip("수명이 다해 사라지는 순간 그 자리에서 한 번")]
     [SerializeField] private string expireVfxTag = "";
 
+    [Header("기믹 안내 (용암숲 Quest UI)")]
+    [Tooltip("안내 중 바닥의 불씨 위에 띄우는 화살표 프리팹(튜토리얼 퀘스트 화살표와 같은 것)")]
+    [SerializeField] private QuestIndicator guideIndicatorPrefab;
+    [Tooltip("불씨 원점 기준 화살표 위치(월드 단위)")]
+    [SerializeField] private Vector3 guideIndicatorOffset = new Vector3(0f, 0.75f, 0f);
+    [Tooltip("안내 중 처음 불씨를 떨어뜨리는 나무가 무조건 떨어뜨리는 불씨 수(특성 배율 무시, 사라지지 않음)")]
+    [SerializeField, Min(1)] private int guideFirstTreeDropCount = 2;
+
     private IObjectPool<EmberItem> emberPool;
     // 꺼내 쓰는 중인 불씨 전부(ClearAll용)와, 그중 매 프레임 갱신이 필요한 것(움직이는 중·착지 연출 중·수명이 도는 중).
     // 바닥에 가만히 놓인 수명 없는 불씨(입장 배치·자연 생성)는 흡입이 걸릴 때까지 갱신 목록에서 빠진다.
@@ -77,6 +92,13 @@ public class EmberItemController : MonoBehaviour
     // 불씨를 놓으면 안 되는 자리(차량 휴식 구역 안)인지. InDungeonObjectManager가 넘겨준다.
     private Func<Vector3, bool> isBlockedPosition;
     private float naturalSpawnTimer;
+
+    // 기믹 안내 상태. bGuideActive 동안 바닥 불씨에 화살표를 띄우고, 첫 벌목 드랍을 추적한다.
+    private bool bGuideActive;
+    private bool bGuideFirstDropDone;
+    private int guideEmbersRemaining;
+    // 쓰고 남은 화살표(퇴장 연출 중이어도 다시 Show하면 그대로 재사용된다).
+    private readonly Stack<QuestIndicator> freeGuideIndicators = new Stack<QuestIndicator>(16);
 
     private static readonly Vector3Int[] NeighborOffsets =
     {
@@ -132,6 +154,9 @@ public class EmberItemController : MonoBehaviour
         canSpawnMore = _canSpawnMore;
         isBlockedPosition = _isBlockedPosition;
         naturalSpawnTimer = 0f;
+
+        // 기믹 안내는 캐릭터가 조작 가능해질 때(이 뒤) 다시 켜진다.
+        SetGuideActive(false);
     }
 
     /// <summary>나무 초기 스폰이 끝난 직후 부른다. 나무 옆 빈 칸에 불씨를 드문드문 놓는다.</summary>
@@ -158,9 +183,20 @@ public class EmberItemController : MonoBehaviour
     {
         if (!CanSpawnNow()) return;
 
-        int count = UnityEngine.Random.Range(dropCountMin, Mathf.Max(dropCountMin, dropCountMax) + 1);
-        // 특성 배율의 소수 부분은 그 확률로 1개 더(배율이 1이면 굴린 개수 그대로).
-        if (dropMultiplierThisRun != 1f) count = RollCount(count * dropMultiplierThisRun);
+        // 기믹 안내 중 첫 드랍: 개수를 고정하고(특성 배율 무시) 사라지지 않게 해서, 화살표를 보고 주울 때까지 남겨 둔다.
+        bool bGuideDrop = bGuideActive && false == bGuideFirstDropDone;
+
+        int count;
+        if (bGuideDrop)
+        {
+            count = guideFirstTreeDropCount;
+        }
+        else
+        {
+            count = UnityEngine.Random.Range(dropCountMin, Mathf.Max(dropCountMin, dropCountMax) + 1);
+            // 특성 배율의 소수 부분은 그 확률로 1개 더(배율이 1이면 굴린 개수 그대로).
+            if (dropMultiplierThisRun != 1f) count = RollCount(count * dropMultiplierThisRun);
+        }
         ITilemapDataProvider tilemap = environmentProvider?.tilemapDataProvider;
         Vector3Int treeCell = tilemap != null ? tilemap.WorldToCell(_treePosition) : default;
 
@@ -169,7 +205,7 @@ public class EmberItemController : MonoBehaviour
             EmberItem ember = emberPool.Get();
             if (ember == null) continue;
 
-            ember.Initialize(character, droppedLifetime);
+            ember.Initialize(character, bGuideDrop ? 0f : droppedLifetime);
 
             // 원목과 같은 흩뿌림(LogItemController.SpawnLogItem과 같은 거리·높이).
             Vector2 randomDir = UnityEngine.Random.insideUnitCircle.normalized;
@@ -191,8 +227,71 @@ public class EmberItemController : MonoBehaviour
                 }
             }
 
+            if (bGuideDrop)
+            {
+                ember.bGuideTracked = true;
+                guideEmbersRemaining++;
+            }
+
             ember.Launch(_treePosition, endPos, UnityEngine.Random.Range(0.75f, 1.25f));
         }
+
+        // 하나라도 실제로 떨어졌을 때만 첫 나무로 친다(전부 휴식 구역에 막히면 다음 나무가 다시 첫 나무가 된다).
+        if (bGuideDrop && 0 < guideEmbersRemaining) bGuideFirstDropDone = true;
+    }
+
+    /// <summary>
+    /// 용암숲 기믹 안내(Quest UI)가 시작되거나(true) 끝날 때(false, 클리어·원정 종료) 부른다.
+    /// 시작하면 바닥에 놓인 모든 불씨 위에 화살표를 띄우고 첫 벌목 드랍 추적을 새로 시작한다. 끝나면 화살표를 모두 내린다.
+    /// </summary>
+    public void SetGuideActive(bool _bActive)
+    {
+        bGuideActive = _bActive;
+        bGuideFirstDropDone = false;
+        guideEmbersRemaining = 0;
+
+        for (int i = 0; i < activeEmbers.Count; i++)
+        {
+            EmberItem ember = activeEmbers[i];
+            if (_bActive)
+            {
+                if (ember.bGrounded) ShowGuideIndicator(ember);
+            }
+            else
+            {
+                ember.bGuideTracked = false;
+                HideGuideIndicator(ember);
+            }
+        }
+    }
+
+    private void ShowGuideIndicator(EmberItem _ember)
+    {
+        if (_ember.GuideIndicator != null || guideIndicatorPrefab == null) return;
+
+        QuestIndicator indicator;
+        if (freeGuideIndicators.Count > 0)
+        {
+            indicator = freeGuideIndicators.Pop();
+        }
+        else
+        {
+            indicator = Instantiate(guideIndicatorPrefab, transform);
+            indicator.HideImmediately();
+        }
+
+        _ember.GuideIndicator = indicator;
+        indicator.Show(_ember.transform, guideIndicatorOffset);
+    }
+
+    private void HideGuideIndicator(EmberItem _ember)
+    {
+        QuestIndicator indicator = _ember.GuideIndicator;
+        if (indicator == null) return;
+
+        _ember.GuideIndicator = null;
+        indicator.Hide();
+        freeGuideIndicators.Push(indicator);
     }
 
     /// <summary>원정이 끝날 때(마을 도착·재도전 정리) 부른다. 불씨를 치우고 다음 BeginRun까지 아무것도 만들지 않는다.</summary>
@@ -201,6 +300,7 @@ public class EmberItemController : MonoBehaviour
         bEnabledThisRun = false;
         canSpawnMore = null;
         isBlockedPosition = null;
+        SetGuideActive(false);
         ClearAll();
     }
 
@@ -369,9 +469,21 @@ public class EmberItemController : MonoBehaviour
 
     private void OnEmberAcquired(EmberItem _ember)
     {
+        bool bGuideTracked = _ember.bGuideTracked;
+
         PlayOneShotVfx(acquireVfxTag, _ember.transform.position);
         EmberAcquiredEvent?.Invoke(_ember);
         TryReleaseEmber(_ember);
+
+        // 안내 중 첫 나무에서 나온 불씨를 모두 주웠다. 회수까지 끝낸 뒤 알린다(받는 쪽이 곧바로 SetGuideActive(false)로 화살표를 내린다).
+        if (bGuideTracked && bGuideActive)
+        {
+            guideEmbersRemaining--;
+            if (guideEmbersRemaining <= 0 && bGuideFirstDropDone)
+            {
+                GuideEmbersCollectedEvent?.Invoke();
+            }
+        }
     }
 
     private void OnEmberExpired(EmberItem _ember)
@@ -401,9 +513,15 @@ public class EmberItemController : MonoBehaviour
                 // 불씨 자식으로 붙이지 않는다. 불씨는 회수되면 바로 꺼지므로, 자식이면 꺼지는 연출이 멈춘 채 다음 재사용 때 다시 보인다.
                 _ember.GroundVfx = vfxComponent.Play(groundLoopVfxTag, _ember.transform.position, Quaternion.identity);
             }
+
+            // 기믹 안내 중이면 바닥에 놓인 불씨마다 화살표를 띄운다(흡입이 취소돼 바닥으로 돌아온 경우도 다시 띄운다).
+            if (bGuideActive) ShowGuideIndicator(_ember);
         }
         else
         {
+            // 바닥을 떠나면(흡입 시작·회수) 화살표를 내린다.
+            HideGuideIndicator(_ember);
+
             if (_ember.bHasGroundCell)
             {
                 Vector3Int cell = _ember.GroundCell;

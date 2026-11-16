@@ -4,9 +4,11 @@
 //
 // 띄우는 조건: 본편 던전에서 대상 대지역에 들어와 캐릭터가 조작 가능해진 순간(ActivateCharacterSignal),
 //             그 대지역 안내를 아직 클리어한 적이 없을 때.
-// 클리어 조건: 안내가 떠 있는 동안 (대지역 기믹 트리거 | 탈진 | 오프로드 차량 상호작용).
-//             몽글포자숲의 기믹 트리거는 플레이어의 첫 벌목, 별뿌리숲은 별자리 발현, 용암숲은 불씨 획득.
-//             클리어 기록은 클리어 시점에만 남기므로, 클리어 전에 이탈하면 다음 입장에서 다시 안내한다.
+// 클리어 조건: 안내가 떠 있는 동안 대지역 기믹 트리거.
+//             몽글포자숲의 기믹 트리거는 플레이어의 첫 벌목, 별뿌리숲은 별자리 발현,
+//             용암숲은 안내 중 첫 나무에서 나온 불씨(무조건 2개, 화살표 표시)를 모두 주운 것(EmberItemController).
+// 못 깬 판정: 클리어 전에 탈진하거나 귀환(차량 탑승)하면 기록 없이 안내를 내리고(RegionGuideAbortedSignal),
+//             다음 입장에서 다시 안내한다. 클리어 기록은 클리어 시점에만 남는다.
 public class RegionGuideSystem
 {
     // 외부 의존성
@@ -66,9 +68,9 @@ public class RegionGuideSystem
         signalHub.Subscribe<TownStartedSignal>(TownStarted);
         signalHub.Subscribe<TreeIsDeadSignal>(TreeIsDead);
         signalHub.Subscribe<ConstellationManifestedSignal>(ConstellationManifested);
-        signalHub.Subscribe<EmberAcquiredSignal>(EmberAcquired);
+        signalHub.Subscribe<MagmaGuideEmbersCollectedSignal>(MagmaGuideEmbersCollected);
         signalHub.Subscribe<CharacterStaminaIsEmptySignal>(CharacterStaminaIsEmpty);
-        signalHub.Subscribe<OffroadVehicleInteractedSignal>(OffroadVehicleInteracted);
+        signalHub.Subscribe<CharacterRideStartSignal>(CharacterRideStart);
     }
 
     private void UnSubscribeSignals()
@@ -78,9 +80,9 @@ public class RegionGuideSystem
         signalHub.UnSubscribe<TownStartedSignal>(TownStarted);
         signalHub.UnSubscribe<TreeIsDeadSignal>(TreeIsDead);
         signalHub.UnSubscribe<ConstellationManifestedSignal>(ConstellationManifested);
-        signalHub.UnSubscribe<EmberAcquiredSignal>(EmberAcquired);
+        signalHub.UnSubscribe<MagmaGuideEmbersCollectedSignal>(MagmaGuideEmbersCollected);
         signalHub.UnSubscribe<CharacterStaminaIsEmptySignal>(CharacterStaminaIsEmpty);
-        signalHub.UnSubscribe<OffroadVehicleInteractedSignal>(OffroadVehicleInteracted);
+        signalHub.UnSubscribe<CharacterRideStartSignal>(CharacterRideStart);
     }
 
     private void DungeonTypeDeclared(DecalreDungeonTypeSignal _signal)
@@ -133,20 +135,30 @@ public class RegionGuideSystem
         TryCompleteGuide(TutorialStep.StarrootForestGuide);
     }
 
-    private void EmberAcquired(EmberAcquiredSignal _signal)
+    private void MagmaGuideEmbersCollected(MagmaGuideEmbersCollectedSignal _signal)
     {
         TryCompleteGuide(TutorialStep.MagmaForestGuide);
     }
 
-    // 탈진 / 차량 상호작용은 어느 대지역 안내든 클리어시킨다.
+    // 탈진 / 귀환(차량 탑승 - 귀환이 확정된 순간)은 어느 대지역 안내든 못 깬 것으로 내린다.
     private void CharacterStaminaIsEmpty(CharacterStaminaIsEmptySignal _signal)
     {
-        TryCompleteGuide(activeStep);
+        AbortGuide();
     }
 
-    private void OffroadVehicleInteracted(OffroadVehicleInteractedSignal _signal)
+    private void CharacterRideStart(CharacterRideStartSignal _signal)
     {
-        TryCompleteGuide(activeStep);
+        AbortGuide();
+    }
+
+    private void AbortGuide()
+    {
+        if (false == bGuideActive)
+            return;
+
+        bGuideActive = false;
+
+        signalHub.Publish(new RegionGuideAbortedSignal(activeStep));
     }
 
     private void TryCompleteGuide(TutorialStep _step)

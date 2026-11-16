@@ -166,6 +166,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
         signalHub.Subscribe<RegionGuideStartedSignal>(RegionGuideStarted);
         signalHub.Subscribe<RegionGuideCompletedSignal>(RegionGuideCompleted);
+        signalHub.Subscribe<RegionGuideAbortedSignal>(RegionGuideAborted);
         signalHub.Subscribe<CompleteDungeonEntrySignal>(CompleteDungeonEntry);
         signalHub.Subscribe<TreeDetectedSignal>(TreeDetected);
         signalHub.Subscribe<TreeDetectionClearedSignal>(TreeDetectionCleared);
@@ -235,6 +236,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
         signalHub.UnSubscribe<RegionGuideStartedSignal>(RegionGuideStarted);
         signalHub.UnSubscribe<RegionGuideCompletedSignal>(RegionGuideCompleted);
+        signalHub.UnSubscribe<RegionGuideAbortedSignal>(RegionGuideAborted);
         signalHub.UnSubscribe<CompleteDungeonEntrySignal>(CompleteDungeonEntry);
         signalHub.UnSubscribe<TreeDetectedSignal>(TreeDetected);
         signalHub.UnSubscribe<TreeDetectionClearedSignal>(TreeDetectionCleared);
@@ -1215,6 +1217,18 @@ public class GameplayUICoordinator
         }
 
         overUIPopupUI.RegionGuideCompleted(_signal.step);
+    }
+
+    // 안내를 깨지 못한 채 원정이 끝남(탈진 / 귀환) - 완료 연출 없이 안내를 내린다. 아직 띄우지 못한 안내면 버린다.
+    private void RegionGuideAborted(RegionGuideAbortedSignal _signal)
+    {
+        if (true == bHasPendingRegionGuide && _signal.step == pendingRegionGuideStep)
+        {
+            CancelPendingRegionGuide();
+            return;
+        }
+
+        overUIPopupUI.RegionGuideAborted(_signal.step);
     }
 
     private void DungeonMessageCompleted()

@@ -186,17 +186,14 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.ConstellationManifestedEvent -= ConstellationManifested;
         inDungeonObjectManager.ConstellationManifestedEvent += ConstellationManifested;
 
-        inDungeonObjectManager.EmberAcquiredNotifyEvent -= EmberAcquired;
-        inDungeonObjectManager.EmberAcquiredNotifyEvent += EmberAcquired;
+        inDungeonObjectManager.EmberGuideCollectedNotifyEvent -= EmberGuideCollected;
+        inDungeonObjectManager.EmberGuideCollectedNotifyEvent += EmberGuideCollected;
 
         inDungeonObjectManager.QuakeChargeChangedEvent -= QuakeChargeChanged;
         inDungeonObjectManager.QuakeChargeChangedEvent += QuakeChargeChanged;
 
         inDungeonObjectManager.MeteorShowerChargeChangedEvent -= MeteorShowerChargeChanged;
         inDungeonObjectManager.MeteorShowerChargeChangedEvent += MeteorShowerChargeChanged;
-
-        inDungeonObjectManager.OffroadVehicleInteractedEvent -= OffroadVehicleInteracted;
-        inDungeonObjectManager.OffroadVehicleInteractedEvent += OffroadVehicleInteracted;
 
         inDungeonObjectManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
         inDungeonObjectManager.CarrotItemAcquiredEvent += CarrotItemAcquired;
@@ -263,10 +260,9 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.TreeShieldBrokenNotifyEvent -= TreeShieldBroken;
         inDungeonObjectManager.TreeHeatHitEvent -= TreeHeatHit;
         inDungeonObjectManager.ConstellationManifestedEvent -= ConstellationManifested;
-        inDungeonObjectManager.EmberAcquiredNotifyEvent -= EmberAcquired;
+        inDungeonObjectManager.EmberGuideCollectedNotifyEvent -= EmberGuideCollected;
         inDungeonObjectManager.QuakeChargeChangedEvent -= QuakeChargeChanged;
         inDungeonObjectManager.MeteorShowerChargeChangedEvent -= MeteorShowerChargeChanged;
-        inDungeonObjectManager.OffroadVehicleInteractedEvent -= OffroadVehicleInteracted;
         inDungeonObjectManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
         inDungeonObjectManager.GemOreItemAcquiredEvent -= GemOreItemAcquired;
         inDungeonObjectManager.TreeDeadEvent -= TreeIsDead;
@@ -305,6 +301,9 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Subscribe<TutorialStepStartedSignal>(TutorialStepStarted);
         signalHub.Subscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
         signalHub.Subscribe<TutorialQuestHideCompletedSignal>(TutorialQuestHideCompleted);
+        signalHub.Subscribe<RegionGuideStartedSignal>(RegionGuideStarted);
+        signalHub.Subscribe<RegionGuideCompletedSignal>(RegionGuideCompleted);
+        signalHub.Subscribe<RegionGuideAbortedSignal>(RegionGuideAborted);
     }
 
     private void UnSubscribeSignals()
@@ -325,6 +324,9 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.UnSubscribe<TutorialStepStartedSignal>(TutorialStepStarted);
         signalHub.UnSubscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
         signalHub.UnSubscribe<TutorialQuestHideCompletedSignal>(TutorialQuestHideCompleted);
+        signalHub.UnSubscribe<RegionGuideStartedSignal>(RegionGuideStarted);
+        signalHub.UnSubscribe<RegionGuideCompletedSignal>(RegionGuideCompleted);
+        signalHub.UnSubscribe<RegionGuideAbortedSignal>(RegionGuideAborted);
     }
 
     private void PortalActivated()
@@ -452,9 +454,25 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Publish(new ConstellationManifestedSignal());
     }
 
-    private void EmberAcquired()
+    private void EmberGuideCollected()
     {
-        signalHub.Publish(new EmberAcquiredSignal());
+        signalHub.Publish(new MagmaGuideEmbersCollectedSignal());
+    }
+
+    // 용암숲 기믹 안내가 떠 있는 동안만 불씨 화살표·첫 나무 불씨 추적을 켠다(클리어·원정 종료로 내려가면 끈다).
+    private void RegionGuideStarted(RegionGuideStartedSignal _signal)
+    {
+        if (_signal.step == TutorialStep.MagmaForestGuide) inDungeonObjectManager.SetEmberGuideActive(true);
+    }
+
+    private void RegionGuideCompleted(RegionGuideCompletedSignal _signal)
+    {
+        if (_signal.step == TutorialStep.MagmaForestGuide) inDungeonObjectManager.SetEmberGuideActive(false);
+    }
+
+    private void RegionGuideAborted(RegionGuideAbortedSignal _signal)
+    {
+        if (_signal.step == TutorialStep.MagmaForestGuide) inDungeonObjectManager.SetEmberGuideActive(false);
     }
 
     // "흑요 부적" 지진 게이지: 타수 중첩(StackHits), 값은 주운 불씨 수. 충전 중에만 보이고 HUD 자동 감소는 쓰지 않는다.
@@ -491,11 +509,6 @@ public class InDungeonSystem : MonoBehaviour
         {
             signalHub.Publish(BuffHudSignal.Of(EBuffHudId.StarRain, EBuffHudOp.Dispel));
         }
-    }
-
-    private void OffroadVehicleInteracted()
-    {
-        signalHub.Publish(new OffroadVehicleInteractedSignal());
     }
 
     private void GoHome(GoHomeButtonClickedSignal goHomeButtonClickedSignal)
