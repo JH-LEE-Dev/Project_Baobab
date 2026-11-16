@@ -136,6 +136,9 @@ public class LogInBelt : MonoBehaviour
     // 내부 상태
     private List<BeltItem> activeItems = new List<BeltItem>(10);
     private List<DeactivatingItem> deactivatingItems = new List<DeactivatingItem>(10);
+    /// <summary>벨트 위 원목 수(주행 중 + 끝에서 빠져나가는 중).</summary>
+    public int ItemCount => activeItems.Count + deactivatingItems.Count;
+
     private bool isMoving = false;
     private float currentSpeed = 0f;
     private float slideSpeed = 1f;
