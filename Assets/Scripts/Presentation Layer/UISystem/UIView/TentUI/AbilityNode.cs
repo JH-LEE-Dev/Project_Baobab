@@ -681,7 +681,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private void SortImportantNodeLoopEffectFrames()
     {
         if (importantNodeLoopEffectFrames != null && importantNodeLoopEffectFrames.Length > 1)
-            Array.Sort(importantNodeLoopEffectFrames, CompareSpriteFrameNames);
+            SortSpriteFramesByName(importantNodeLoopEffectFrames);
     }
 
     private static bool HasMarkupTag(string _text)
@@ -767,7 +767,44 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private void SortMaxLevelUpEffectFrames()
     {
         if (maxLevelUpEffectFrames != null && maxLevelUpEffectFrames.Length > 1)
-            Array.Sort(maxLevelUpEffectFrames, CompareSpriteFrameNames);
+            SortSpriteFramesByName(maxLevelUpEffectFrames);
+    }
+
+    // 이미 CompareSpriteFrameNames 기준으로 엄격한 오름차순(같은 순위 없음)이면 정렬 결과가 입력 그대로이므로 정렬을 건너뛴다.
+    // 아니면 원래처럼 정렬한다(노드가 처음 켜질 때마다 비교 한 번에 이름 문자열을 여러 번 새로 받던 비용을 줄인다).
+    private static void SortSpriteFramesByName(Sprite[] _frames)
+    {
+        if (IsStrictlyAscendingByFrameName(_frames))
+            return;
+
+        Array.Sort(_frames, CompareSpriteFrameNames);
+    }
+
+    private static bool IsStrictlyAscendingByFrameName(Sprite[] _frames)
+    {
+        Sprite previousSprite = _frames[0];
+        string previousName = previousSprite == null ? string.Empty : previousSprite.name;
+        int previousIndex = GetSpriteFrameIndex(previousSprite, previousName);
+
+        for (int i = 1; i < _frames.Length; i++)
+        {
+            Sprite currentSprite = _frames[i];
+            string currentName = currentSprite == null ? string.Empty : currentSprite.name;
+            int currentIndex = GetSpriteFrameIndex(currentSprite, currentName);
+
+            // CompareSpriteFrameNames(previous, current) < 0 과 같은 판정
+            int indexComparison = previousIndex.CompareTo(currentIndex);
+            if (indexComparison > 0)
+                return false;
+
+            if (indexComparison == 0 && string.CompareOrdinal(previousName, currentName) >= 0)
+                return false;
+
+            previousName = currentName;
+            previousIndex = currentIndex;
+        }
+
+        return true;
     }
 
     private static int CompareSpriteFrameNames(Sprite _left, Sprite _right)
@@ -789,6 +826,25 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             return int.MaxValue;
 
         string spriteName = _sprite.name;
+        int digitStart = spriteName.Length;
+        while (digitStart > 0 && char.IsDigit(spriteName[digitStart - 1]))
+            digitStart--;
+
+        if (digitStart >= spriteName.Length)
+            return int.MaxValue;
+
+        return int.TryParse(spriteName.Substring(digitStart), out int frameIndex)
+            ? frameIndex
+            : int.MaxValue;
+    }
+
+    // GetSpriteFrameIndex(_sprite)와 같은 계산을 이미 읽어 둔 이름으로 한다.
+    private static int GetSpriteFrameIndex(Sprite _sprite, string _spriteName)
+    {
+        if (_sprite == null || string.IsNullOrEmpty(_spriteName))
+            return int.MaxValue;
+
+        string spriteName = _spriteName;
         int digitStart = spriteName.Length;
         while (digitStart > 0 && char.IsDigit(spriteName[digitStart - 1]))
             digitStart--;
