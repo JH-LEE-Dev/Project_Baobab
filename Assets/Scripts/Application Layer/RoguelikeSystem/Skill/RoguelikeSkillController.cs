@@ -1554,7 +1554,7 @@ public class RoguelikeSkillController : MonoBehaviour
             Vector3 entry = lane.entry;
             Vector3 exit = lane.exit;
 
-            PresentationLayer.VFX.VFX_OffroadLane marker = vfxPlayer.BeginOffroadLane(entry, exit, radius);
+            PresentationLayer.VFX.VFX_OffroadLane marker = vfxPlayer.BeginOffroadLane(entry, exit, radius, fieldTiles);
             if (null != marker) marker.SetRemaining(remaining);
 
             pendingOffroadLanes.Add(lane);

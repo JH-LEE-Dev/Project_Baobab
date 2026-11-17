@@ -290,10 +290,11 @@ public sealed class RoguelikeSkillVfxPlayer
     /// <summary>
     /// 오프로드 소환 위치 · 진행 방향 표시(VFX_OffroadLane)를 시작한다(기획서 v2.8: 발동 주기 시작 ~ 발동). _halfWidth는 돌진 폭의 반폭이다.
     /// 돌려받은 표시는 컨트롤러가 들고 있다가 발동 때 Fire, 웨이브 종료 때 Cancel을 부른다. 이펙트가 없으면 null.
+    /// _tiles(필드 타일맵)를 주면 물 타일 칸은 표시하지 않는다(null이면 가리지 않는다).
     /// </summary>
-    public PresentationLayer.VFX.VFX_OffroadLane BeginOffroadLane(Vector3 _from, Vector3 _to, float _halfWidth)
+    public PresentationLayer.VFX.VFX_OffroadLane BeginOffroadLane(Vector3 _from, Vector3 _to, float _halfWidth, ITilemapDataProvider _tiles = null)
     {
-        return null != vfx ? vfx.PlayOffroadLaneVFX(_from, _to, _halfWidth) : null;
+        return null != vfx ? vfx.PlayOffroadLaneVFX(_from, _to, _halfWidth, _tiles) : null;
     }
 
     /// <summary>
@@ -524,7 +525,7 @@ public sealed class RoguelikeSkillVfxPlayer
 
             linkPoints[0] = _stars[link.x].transform.position + starCenterOffset;
             linkPoints[1] = _stars[link.y].transform.position + starCenterOffset;
-            vfx.RegisterConstellationDottedLineAlwaysVisibleForRun(LinkGroupBase - i, linkPoints);
+            vfx.RegisterConstellationDottedLineAlwaysVisibleForRun(LinkGroupBase - i, linkPoints, true);
             registeredLinkCount = i + 1;
         }
     }

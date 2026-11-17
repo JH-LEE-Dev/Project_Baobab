@@ -138,24 +138,19 @@ public static class LocKeys
         public const int drone2Name = 4194576;
         public const int droneDamage2Name = 4194577;
         public const int droneCriticalName = 4194578;
-        public const int abilityDescriptionDroneCritical = 4203484;
         public const int droneAttackSpeed2Name = 4194579;
         public const int droneChainAttack1Name = 4194580;
         public const int helloName = 4194581;
         public const int increaseJackPotChance1Name = 4194582;
-        public const int abilityDescriptionIncreaseJackPotChance = 4203485;
         public const int rainbowTreeChanceName = 4194583;
         public const int logProcessorSpeedUpName = 4194584;
         public const int logProcessingSpeed5Name = 4194585;
         public const int repair1Name = 4194586;
-        public const int abilityDescriptionRepair = 4203486;
         public const int remoteLogTransportName = 4194587;
-        public const int abilityDescriptionRemoteLogTransport = 4203487;
         public const int starMarkDamage3Name = 4194588;
         public const int barrierPenetration2Name = 4194589;
         public const int manifestationBrand2Name = 4194590;
         public const int constellationAfterimage1Name = 4194591;
-        public const int abilityDescriptionConstellationAfterimage = 4203488;
         public const int logCapacityIncrease3Name = 4194592;
         public const int woodenTransportBoxExpansion3Name = 4194593;
         public const int sawmillLogStorageExpansion3Name = 4194594;
@@ -249,6 +244,11 @@ public static class LocKeys
         public const int abilityDescriptionRecoveryPower = 4203481;
         public const int abilityDescriptionTopgradeAssessment = 4203482;
         public const int abilityDescriptionBarrierPenetration = 4203483;
+        public const int abilityDescriptionDroneCritical = 4203484;
+        public const int abilityDescriptionIncreaseJackPotChance = 4203485;
+        public const int abilityDescriptionRepair = 4203486;
+        public const int abilityDescriptionRemoteLogTransport = 4203487;
+        public const int abilityDescriptionConstellationAfterimage = 4203488;
     }
 
     public static class DemoNoticeUI
@@ -625,6 +625,23 @@ public static class LocKeys
         public const int roguelikeHintBack = 37749298;
         public const int roguelikeHintTab = 37749299;
         public const int roguelikeCardSelectPick = 37749300;
+        public const int roguelikeMenuChallenges = 37749301;
+        public const int roguelikeChallengesEmpty = 37749302;
+        public const int roguelikeChallengePrismAllTitle = 37749303;
+        public const int roguelikeChallengePrismAllTip = 37749304;
+        public const int roguelikeChallengeCardMaxAllTitle = 37749305;
+        public const int roguelikeChallengeCardMaxAllTip = 37749306;
+        public const int roguelikeChallengeRubyAllTitle = 37749307;
+        public const int roguelikeChallengeRubyAllTip = 37749308;
+        public const int roguelikeChallengeTreeNTitle = 37749309;
+        public const int roguelikeChallengeTreeNTip = 37749310;
+        public const int roguelikeChallengeUnlimitNTitle = 37749311;
+        public const int roguelikeChallengeUnlimitNTip = 37749312;
+        public const int roguelikeChallengeTierAllTitle = 37749313;
+        public const int roguelikeChallengeTierAllTip = 37749314;
+        public const int roguelikeChallengeWave30Title = 37749315;
+        public const int roguelikeChallengeWave30Tip = 37749316;
+        public const int roguelikeChallengeClearedToast = 37749317;
     }
 
     public static class SaveCheckUI

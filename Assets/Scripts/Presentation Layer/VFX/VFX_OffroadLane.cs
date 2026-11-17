@@ -229,9 +229,10 @@ namespace PresentationLayer.VFX
         /// <summary>
         /// 소환 위치와 경로 표시를 시작한다. 소환될 위치가 정해지는 시점(발동 주기 시작)에 부르고, 발동 때 Fire를 부를 때까지 유지된다.
         /// _from/_to는 차량의 출발점과 도착점(월드), _halfWidthUnits는 돌진 폭의 반폭(0 이하이면 인스펙터의 laneHalfWidth).
+        /// _tiles(필드 타일맵)를 주면 물 타일 칸은 켜지 않는다(섬 가장자리 줄의 바깥쪽 옆 줄이 물 위에 켜지는 것을 막는다). null이면 물을 가리지 않는다.
         /// 풀에서 꺼내 활성화한 직후에 부른다.
         /// </summary>
-        public void Begin(Vector3 _from, Vector3 _to, float _halfWidthUnits = 0.0f)
+        public void Begin(Vector3 _from, Vector3 _to, float _halfWidthUnits = 0.0f, ITilemapDataProvider _tiles = null)
         {
             EnsureInitialized();
 
@@ -241,7 +242,7 @@ namespace PresentationLayer.VFX
             float toX = _to.x;
             float toY = _to.y - groundOffset;
 
-            BuildLaneCells(fromX, fromY, toX, toY, halfWidth);
+            BuildLaneCells(fromX, fromY, toX, toY, halfWidth, _tiles);
 
             moteSeed = Mathf.RoundToInt(fromX * PixelsPerUnit) * 73856093 ^ Mathf.RoundToInt(fromY * PixelsPerUnit) * 19349663;
 
@@ -459,8 +460,8 @@ namespace PresentationLayer.VFX
         }
 
         // 차선에 속한 칸(윗면 중심에서 직선까지의 화면 거리 <= 반폭, 진행 번호가 출발 쪽 연장 ~ 도착 쪽 끝 안)을 모으고,
-        // 칸마다 진행 방향 번호(a)와 안쪽 칸 여부를 정한다.
-        private void BuildLaneCells(float _fromX, float _fromY, float _toX, float _toY, float _halfWidth)
+        // 칸마다 진행 방향 번호(a)와 안쪽 칸 여부를 정한다. _tiles가 있으면 물 타일 칸은 뺀다.
+        private void BuildLaneCells(float _fromX, float _fromY, float _toX, float _toY, float _halfWidth, ITilemapDataProvider _tiles)
         {
             originPxX = Mathf.RoundToInt(gridOrigin.x * PixelsPerUnit);
             originPxY = Mathf.RoundToInt((gridOrigin.y + tileTopOffsetY) * PixelsPerUnit);
@@ -566,6 +567,10 @@ namespace PresentationLayer.VFX
                         ? Mathf.Abs((cellX - _fromX) * normalX + (cellY - _fromY) * normalY)
                         : Mathf.Sqrt((cellX - _fromX) * (cellX - _fromX) + (cellY - _fromY) * (cellY - _fromY));
                     if (_halfWidth < distance) continue;
+
+                    // 물 위 칸은 켜지 않는다. cellX/cellY는 윗면 중심이라, 차선 · 나무와 같은 기준(칸 그림 피벗 = 윗면 - tileTopOffsetY)으로 되돌려 타일 칸을 찾는다
+                    // (OffroadLanes.TryGetRowLandTile이 차선 위 점을 WorldToCell -> IsWaterTile로 판정하는 것과 같은 좌표계).
+                    if (null != _tiles && true == _tiles.IsWaterTile(_tiles.WorldToCell(new Vector3(cellX, cellY - tileTopOffsetY, 0.0f)))) continue;
 
                     // 진행 번호가 출발 쪽 연장(섬 가장자리 줄까지)보다 뒤이거나 도착 쪽 끝을 넘은 칸은 켜지 않는다(양 끝이 타일 줄에 맞춰 반듯하게 잘린다)
                     float along = (i - fromI) * laneStepI + (j - fromJ) * laneStepJ;

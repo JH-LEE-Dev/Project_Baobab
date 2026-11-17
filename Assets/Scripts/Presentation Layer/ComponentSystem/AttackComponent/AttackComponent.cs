@@ -754,7 +754,9 @@ public class AttackComponent : PComponent
         // N배로 들어갔다. 판정을 여기로 올려 원래 의도대로 되돌린다.
         //
         // 마스터리 쪽(FireMasteryShockWave)은 "스윙당 1회"라 원래부터 중복이 없었고, 그대로 둔다.
-        if (false == ctx.characterStat.bShockWaveMastery && shockWaveSourceTree != null && axeExtraAttackCreator != null)
+        // [로그라이크] 회전베기 스윙은 도끼 타격을 대체하므로 이 판정에서 제외한다(본편은 bWhirlwindSkipsShockWave가 false라 그대로).
+        if (false == ctx.characterStat.bShockWaveMastery && shockWaveSourceTree != null && axeExtraAttackCreator != null
+            && false == (bIsWhirlwindStrike && RunCombatOverrides.bWhirlwindSkipsShockWave))
         {
             if (UnityEngine.Random.Range(0f, 100f) < ctx.characterStat.shockWaveChance)
             {

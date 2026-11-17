@@ -22,6 +22,7 @@ using UnityEngine.UI;
 /// [정렬] 케이스 56x87의 왼쪽 아래 = 카드(슬롯) 왼쪽 아래 + (-3, -3). 카드 그림은 슬롯 안 (1, 1)~(49, 80)의 48x79라서 받침 안쪽 4px에 선다.
 /// [위치] 모든 위치는 정수 픽셀이다(Content 기준 앵커 가운데 좌표계 - 슬롯과 같다). 카드(슬롯) 위치는 Ready부터 이 컴포넌트가 직접 옮기고 끝나면 최종 위치다.
 ///        중간에 닫히면(ResetCase) 슬롯을 Play 때의 원래 자리로 되돌린다. 트윈 라이브러리를 쓰지 않아 호출당 힙 할당이 없다.
+/// [보관 낙하] 연출이 끝난 뒤 보관 연출(UI_RoguelikeCardStoreDrop)이 카드를 떨어뜨릴 때 SetCarryOffset으로 케이스(받침 · 덮개)를 카드와 같은 양만큼 내린다. ResetCase가 0으로 되돌린다.
 /// </summary>
 public class UI_RoguelikeAcrylicCase : MonoBehaviour
 {
@@ -82,6 +83,7 @@ public class UI_RoguelikeAcrylicCase : MonoBehaviour
     private bool bSnapped;
     private float time;
     private float appliedAlpha = -1f;
+    private int carryOffset;
 
     /// <summary>케이스를 숨긴 채로 준비한다(화면이 만들어질 때 한 번).</summary>
     public void Initialize()
@@ -120,12 +122,27 @@ public class UI_RoguelikeAcrylicCase : MonoBehaviour
         onDone = null;
         time = 0f;
         appliedAlpha = -1f;
+        carryOffset = 0;
 
         if (null != flashImage) flashImage.enabled = false;
         if (null != shineRoot) shineRoot.gameObject.SetActive(false);
         if (null != sparkle) sparkle.Clear();
         if (null != backRoot) backRoot.gameObject.SetActive(false);
         if (null != frontRoot) frontRoot.gameObject.SetActive(false);
+    }
+
+    /// <summary>
+    /// 연출이 끝난 케이스(받침 · 덮개)를 카드와 같이 옮길 때 쓴다(보관 연출의 낙하). 최종 위치에서 _pixelsDown만큼 내린다(음수면 위로).
+    /// 연출이 진행 중이면 값만 기억하고 적용하지 않는다. ResetCase가 0으로 되돌린다.
+    /// </summary>
+    public void SetCarryOffset(int _pixelsDown)
+    {
+        carryOffset = _pixelsDown;
+        if (true == bPlaying || null == backRoot || null == frontRoot || false == backRoot.gameObject.activeSelf) return;
+
+        Vector2 casePosition = new Vector2(finalPosition.x - CaseMargin, finalPosition.y - CaseMargin - carryOffset);
+        backRoot.anchoredPosition = casePosition;
+        frontRoot.anchoredPosition = casePosition;
     }
 
     // // 진행

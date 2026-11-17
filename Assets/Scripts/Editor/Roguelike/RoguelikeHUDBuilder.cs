@@ -259,6 +259,7 @@ public static class RoguelikeHUDBuilder
             plateSpriteProperty.arraySize = trayPlates.Length;
             for (int i = 0; i < trayPlates.Length; i++) plateSpriteProperty.GetArrayElementAtIndex(i).objectReferenceValue = trayPlates[i];
             traySo.FindProperty("keyIcon").objectReferenceValue = ownedKeyImage.transform;
+            traySo.FindProperty("frontCardIcon").objectReferenceValue = trayParts.frontIcon.rectTransform;
             traySo.ApplyModifiedPropertiesWithoutUndo();
 
             SerializedObject viewSo = new SerializedObject(view);
@@ -424,17 +425,18 @@ public static class RoguelikeHUDBuilder
     {
         public Image plate;
         public UI_RoguelikeIconNumber number;
+        public Image frontIcon;
     }
 
     /// <summary>
-    /// 트레이의 숫자판: 판 + 카드 아이콘(뒤 카드 · 앞 카드. 연출 없이 고정이다. 자체 색, 색 곱 없음) + 오른쪽 숫자(판 오른쪽 끝에 붙는 오른쪽 정렬이라 자릿수가 늘면 왼쪽으로 자란다).
+    /// 트레이의 숫자판: 판 + 카드 아이콘(뒤 카드 · 앞 카드. 평소에는 고정이고 앞 카드만 보관 도착 반응에서 위로 튄다. 자체 색, 색 곱 없음) + 오른쪽 숫자(판 오른쪽 끝에 붙는 오른쪽 정렬이라 자릿수가 늘면 왼쪽으로 자란다).
     /// 아이콘 11x11 칸 안에서 뒤 카드는 오른쪽 위(왼쪽 4 · 위 0), 앞 카드는 왼쪽 아래(왼쪽 0 · 위 2)다. 아이콘 · 숫자는 판 세로 가운데.
     /// </summary>
     private static TrayParts NewTrayPlate(string _name, RectTransform _parent, Sprite[] _plates, Sprite _cardBack, Sprite _cardFront, Sprite[] _digits)
     {
         Image plate = RoguelikeCardBuilder.CreateImage(_name, _parent, _plates[0], Vector2Int.zero, _plates[0].rect.size);
         NewIcon("IconBack", plate.rectTransform, _cardBack, TrayIconX + TrayBackOffsetX, TrayIconY + TrayIconSize - TrayCardHeight, Color.white);
-        NewIcon("IconFront", plate.rectTransform, _cardFront, TrayIconX, TrayIconY, Color.white);
+        Image frontIcon = NewIcon("IconFront", plate.rectTransform, _cardFront, TrayIconX, TrayIconY, Color.white);
 
         UI_RoguelikeIconNumber number = NewNumber(plate.rectTransform, TrayNumberRight, TrayContentY, _digits);
 
@@ -442,7 +444,7 @@ public static class RoguelikeHUDBuilder
         so.FindProperty("bRightAlign").boolValue = true;
         so.ApplyModifiedPropertiesWithoutUndo();
 
-        return new TrayParts { plate = plate, number = number };
+        return new TrayParts { plate = plate, number = number, frontIcon = frontIcon };
     }
 
     /// <summary>버프 HUD와 같은 숫자 시트. 시트 순서가 1~9,0이라 _0~_8이 1~9, _9가 0이다.</summary>

@@ -40,6 +40,8 @@ public class UIView_MainMenu : UIView
     private UIView_RoguelikeRecords roguelikeRecordsPrefab;
     [SerializeField, Tooltip("기록의 카드 ID를 아이콘으로 바꿀 카드 데이터베이스(RoguelikeSystem 프리팹과 같은 에셋).")]
     private CardDatabaseSO roguelikeCardDatabase;
+    [SerializeField, Tooltip("도전과제 창 프리팹(UIView_RoguelikeChallenges). 처음 열 때 이 화면 위에 만든다.")]
+    private UIView_RoguelikeChallenges roguelikeChallengesPrefab;
     [SerializeField] private UI_Credit creditUI; // 크레딧 UI
     [SerializeField] private UI_InitialSetupPopup initialSetupPopup; // 초기 언어 및 약관 동의 팝업
 
@@ -85,6 +87,10 @@ public class UIView_MainMenu : UIView
     private UIView_RoguelikeRecords roguelikeRecordsView;
     private Action roguelikeRecordsClosedCallback;
     private Action cachedOnRoguelikeRecordsViewClosed;
+    private UIView_RoguelikeChallenges roguelikeChallengesView;
+    private Action roguelikeChallengesClosedCallback;
+    private Action cachedOnRoguelikeChallengesViewClosed;
+    private readonly List<RoguelikeChallengeViewData> roguelikeChallengeBuffer = new List<RoguelikeChallengeViewData>(8);
     private bool bOpenRoguelikeMenuOnShow;
     private readonly List<RoguelikeRecordViewData> roguelikeClearRankingBuffer = new List<RoguelikeRecordViewData>(5);
     private readonly List<RoguelikeRecordViewData> roguelikeUnlimitRankingBuffer = new List<RoguelikeRecordViewData>(5);
@@ -903,6 +909,53 @@ public class UIView_MainMenu : UIView
         callback?.Invoke();
     }
 
+    /// <summary>
+    /// 로그라이크 하위 메뉴의 도전과제에서 부른다. 도전과제 창을 이 화면 위에 열고, 창이 닫히면 _onClosed를 부른다. 열지 못하면 false.
+    /// 도전과제 데이터(정의 · 달성 판정 · 저장)는 Application Layer 몫이라 아직 없다: 지금은 빈 목록을 넘겨 빈 목록 문구가 나온다.
+    /// 데이터가 생기면 roguelikeChallengeBuffer를 채우는 지점은 아래 표시한 곳이다(기획서 부록 C-3 "도전과제 데이터 연결").
+    /// </summary>
+    public bool OpenRoguelikeChallenges(Action _onClosed)
+    {
+        if (true == bRoguelikeEntryPlaying || null == roguelikeChallengesPrefab) return false;
+
+        if (null == roguelikeChallengesView)
+        {
+            roguelikeChallengesView = Instantiate(roguelikeChallengesPrefab, transform);
+            RectTransform rect = roguelikeChallengesView.transform as RectTransform;
+            if (null != rect)
+            {
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = Vector2.one;
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+            }
+
+            roguelikeChallengesView.Initialize(viewCtx);
+            roguelikeChallengesView.SetStandaloneClose(true);
+            if (null == cachedOnRoguelikeChallengesViewClosed) cachedOnRoguelikeChallengesViewClosed = OnRoguelikeChallengesViewClosed;
+            roguelikeChallengesView.ClosedEvent += cachedOnRoguelikeChallengesViewClosed;
+            roguelikeChallengesView.gameObject.SetActive(false);
+        }
+
+        roguelikeChallengesView.transform.SetAsLastSibling();
+        roguelikeChallengesClosedCallback = _onClosed;
+
+        // [도전과제 데이터 연결 지점] Application Layer가 만든 도전과제 목록을 RoguelikeChallengeViewData로 바꿔 여기서 버퍼에 채운다.
+        roguelikeChallengeBuffer.Clear();
+        roguelikeChallengesView.OpenChallenges(roguelikeChallengeBuffer);
+        return true;
+    }
+
+    private void OnRoguelikeChallengesViewClosed()
+    {
+        // 도전과제 창도 로그라이크 모달 공통 입력(RoguelikeModalInput)을 쓰므로 기록 창과 같이 메인메뉴 기본 상태(이동 잠금 해제)로 되돌린다.
+        if (null != viewCtx && null != viewCtx.inputManager) viewCtx.inputManager.PauseMove(false);
+
+        Action callback = roguelikeChallengesClosedCallback;
+        roguelikeChallengesClosedCallback = null;
+        callback?.Invoke();
+    }
+
     private void SetOffscreenCanvas(Canvas _canvas)
     {
         if (offscreenCanvas != _canvas) RestoreOffscreenCanvas();
@@ -995,6 +1048,8 @@ public class UIView_MainMenu : UIView
         NewGameButtonClickedEvent = null;
         if (null != roguelikeRecordsView && null != cachedOnRoguelikeRecordsViewClosed) roguelikeRecordsView.ClosedEvent -= cachedOnRoguelikeRecordsViewClosed;
         roguelikeRecordsClosedCallback = null;
+        if (null != roguelikeChallengesView && null != cachedOnRoguelikeChallengesViewClosed) roguelikeChallengesView.ClosedEvent -= cachedOnRoguelikeChallengesViewClosed;
+        roguelikeChallengesClosedCallback = null;
         LoadGameButtonClickedEvent = null;
         ExitButtonClickedEvent = null;
         RoguelikeButtonClickedEvent = null;

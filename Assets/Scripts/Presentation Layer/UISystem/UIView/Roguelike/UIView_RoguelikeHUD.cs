@@ -35,6 +35,7 @@ public class UIView_RoguelikeHUD : UIView
     [SerializeField] private UI_RoguelikeDashCells dashCells;
     [SerializeField] private UI_RoguelikeOwnedCardTray ownedTray;
     [SerializeField] private UI_KeyboardImage ownedKeyImage;
+    [SerializeField, Tooltip("도전과제 달성 팝업(우상단). LumberBoy/UI/Build Roguelike Challenge Toast 로 만든다. 전투 HUD 퇴장 모션 대상이 아니다.")] private UI_RoguelikeChallengeToast challengeToast;
 
     // 퇴장 모션: 화면 밖으로 빠지는 거리(px)와 시간(unscaled).
     private const float ExitDistance = 120f;
@@ -59,6 +60,9 @@ public class UIView_RoguelikeHUD : UIView
         // 보유 카드 창을 여는 키(인벤토리 키) 아이콘. 리바인딩과 입력 장치 전환을 따라간다(인벤토리 UI와 같은 방식).
         if (null != ownedKeyImage) ownedKeyImage.Initialize(_ctx?.inputManager);
 
+        // 도전과제 달성 팝업: 머리말 문구와 언어 변경 구독.
+        if (null != challengeToast) challengeToast.Initialize(_ctx?.localizationManager);
+
         finishExitCallback = FinishExit;
         SetExitTarget(0, null != waveLabel ? waveLabel.transform as RectTransform : null, Vector2.left);
         SetExitTarget(1, null != thresholdBar ? thresholdBar.transform as RectTransform : null, Vector2.left);
@@ -71,6 +75,8 @@ public class UIView_RoguelikeHUD : UIView
         // 본편 HUD(UIView_HUD)가 스태미너 · 대쉬 값을 이 두 컴포넌트에도 전달하도록 정적 연결점에 등록한다.
         RoguelikeHUDLink.StaminaBar = staminaBar;
         RoguelikeHUDLink.DashCells = dashCells;
+        // 카드 선택 화면이 보관 연출이 끝나는 순간 트레이 도착 반응을 걸 수 있게 등록한다.
+        RoguelikeHUDLink.OwnedTray = ownedTray;
     }
 
     protected override void OnShow()
@@ -92,7 +98,7 @@ public class UIView_RoguelikeHUD : UIView
     /// <param name="_regionStartWaves">지역(티어)이 바뀌는 시작 웨이브(1웨이브 제외, 오름차순). 웨이브 진행 점 간격 계산용(WavePips_AppLayer_Request.md). null일 수 있다.</param>
     public virtual void SetWave(int _waveNumber, bool _bUnlimit, int _unlimitIndex, IReadOnlyList<int> _regionStartWaves = null)
     {
-        if (null != waveLabel) waveLabel.SetWave(_waveNumber, _bUnlimit, _unlimitIndex);
+        if (null != waveLabel) waveLabel.SetWave(_waveNumber, _bUnlimit, _unlimitIndex, _regionStartWaves);
         if (null != pressureStrip) pressureStrip.SnapNext();
     }
 
@@ -123,6 +129,15 @@ public class UIView_RoguelikeHUD : UIView
     public virtual void SetOwnedCardCounts(int _rareCount, int _normalCount)
     {
         if (null != ownedTray) ownedTray.SetCounts(_rareCount, _normalCount);
+    }
+
+    /// <summary>
+    /// 도전과제 달성 팝업(우상단, 284x48). 달성 신호를 받은 쪽이 번역된 제목(_data.title)을 넣어 부른다. 연달아 부르면 대기열(13)에서 하나씩 보여 준다.
+    /// 카드 선택 · 일시정지 중에도 재생된다(unscaled). tip · bCleared는 쓰지 않는다. 이 HUD가 숨겨지면(런 종료) 대기열과 재생이 지워진다.
+    /// </summary>
+    public virtual void ShowChallengeToast(in RoguelikeChallengeViewData _data)
+    {
+        if (null != challengeToast) challengeToast.Show(in _data);
     }
 
     /// <summary>보유 골드. _bAnimated면 코인이 흡수되어 오르는 연출(기획서 3-3 골드 획득 5단계).</summary>
@@ -224,6 +239,7 @@ public class UIView_RoguelikeHUD : UIView
     {
         if (RoguelikeHUDLink.StaminaBar == staminaBar) RoguelikeHUDLink.StaminaBar = null;
         if (RoguelikeHUDLink.DashCells == dashCells) RoguelikeHUDLink.DashCells = null;
+        if (RoguelikeHUDLink.OwnedTray == ownedTray) RoguelikeHUDLink.OwnedTray = null;
 
         DOTween.Kill(this);
         for (int i = 0; exitRects.Length > i; i++)

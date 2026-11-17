@@ -379,6 +379,17 @@ public partial class RoguelikeSystem
             if (spec.bUnlimit) lastClearedUnlimitWave = spec.unlimitIndex;
             else lastClearedWave = spec.waveNumber;
 
+            // 언리밋 최대 웨이브를 클리어하면 런을 끝내고 결과 화면으로 간다(종료 사유 UnlimitCompleted).
+            // 이 루틴은 EnterRunRoutine 안에서 중첩 실행 중이고 결과 뒤 "다시 도전"이 EnterRunRoutine을 다시 부르므로,
+            // 게임오버·포기와 같이 StartFlow로 흐름을 갈아 끼워 코루틴 중첩이 쌓이지 않게 한다.
+            if (spec.bUnlimit && 0 < balance.unlimitMaxWave && spec.unlimitIndex >= balance.unlimitMaxWave)
+            {
+                bRunEnding = true;
+                DisableControl();
+                StartFlow(FinishRunRoutine(ERunEndReason.UnlimitCompleted));
+                yield break;
+            }
+
             runWaveNumber++;
         }
     }

@@ -77,7 +77,7 @@
 
 | 멤버 | 설명 |
 |---|---|
-| `Begin(Vector3 from, Vector3 to, float halfWidthUnits = 0)` | **위치가 정해지는 시점(발동 주기 시작)** 에 풀에서 꺼낸 직후 호출. `from`/`to`는 차량의 출발점/도착점(`OffroadLanes.TryGetLane`의 entry/exit). `halfWidthUnits`는 돌진 폭의 반폭(0 이하이면 `laneHalfWidth` 0.4) |
+| `Begin(Vector3 from, Vector3 to, float halfWidthUnits = 0, ITilemapDataProvider tiles = null)` | **위치가 정해지는 시점(발동 주기 시작)** 에 풀에서 꺼낸 직후 호출. `from`/`to`는 차량의 출발점/도착점(`OffroadLanes.TryGetLane`의 entry/exit). `halfWidthUnits`는 돌진 폭의 반폭(0 이하이면 `laneHalfWidth` 0.4). **`tiles`(v3.1, 선택)**: 필드 타일 제공자를 넘기면 `IsWaterTile`인 칸은 켜지 않는다(섬 가장자리 줄의 옆 줄이 물 위에 켜지는 것을 막음). null이면 이전처럼 물을 가리지 않는다 |
 | `SetRemaining(float seconds)` | (선택) 발동까지 남은 시간. 알리면 마지막 0.8초에 꺾쇠가 빨라짐. 한 번도 안 부르면 그대로 유지 |
 | `Fire(float dashSeconds = 0)` | **발동(차량 소환) 순간** 호출. 소환 섬광 + 걷힘 시작. `dashSeconds`는 차량이 경로를 지나는 시간이며 0 이하이면 `clearSeconds`(0.8). 끝나면 스스로 풀 반환 |
 | `Cancel()` | 웨이브/런 종료 등 발동 없이 지울 때. 연출 없이 즉시 풀 반환 |
@@ -88,16 +88,16 @@
 | 인스펙터 `groundSortingLayerName` / `groundSortingOrder` | 빛 알갱이 메쉬 소팅(`ShockWave`/0) |
 | 인스펙터 `bMotes` | 빛 알갱이 켜기/끄기 |
 | 인스펙터 `clearSeconds` / `groundOffset` / `laneHalfWidth` | 기존과 같음 (`groundOffset`은 차량 pivot이 바닥보다 높을 때 조절) |
-| 인스펙터 `startExtendUnits` | 출발점(`Begin`의 `from`)보다 뒤쪽으로 칸을 켜는 길이(기본 0.8). 차량 출발점이 섬 가장자리에서 `RoguelikeSkillTuningSO.offroadEdgeInset`(0.8)만큼 안쪽이라 가장자리 줄까지 켜기 위한 값. **`offroadEdgeInset`을 바꾸면 이 값도 같이 바꿔야 함** |
+| 인스펙터 `startExtendUnits` | 출발점(`Begin`의 `from`)보다 뒤쪽으로 칸을 켜는 길이(월드 유닛, 기본 **0**, 프리팹 값도 0). 출발점이 이미 섬 가장 바깥 육지 타일 중심이라(기획서 v3.0 11-13) 0으로 두며, 0보다 크면 출발점 뒤 물 위 칸까지 켜진다. 예전에 있던 `offroadEdgeInset`(출발점을 가장자리에서 안쪽으로 들이던 값)은 코드에서 삭제되어 더는 같이 바꿀 값이 없다 |
 
 - **합집합 렌더링:** 활성 차선은 정적 고정 배열(최대 16개)에 `Begin` 순서로 등록되고, 정적 `UpdateAllLanes`가 프레임당 한 번 모든 차선의 칸 밝기를 최댓값으로 합쳐 맨 앞 차선(호스트) 메쉬 하나로 그립니다. 켜진 칸 하나가 쿼드 하나(32x16px)이고, 이웃 칸 여부로 가장자리 계단을 1px로 그립니다. 셰이더는 `Assets/Shaders/VFX/OffroadLaneTile.shader`, 머티리얼은 `Assets/Graphics/VFX/Materials/M_OffroadLaneTile.mat`입니다.
-- **칸 판정:** 차선(`from`->`to`)과 나무 위치는 칸 중심(타일 그림 피벗) 기준이라, 직선을 `tileTopOffsetY`만큼 올린 뒤 칸 윗면 중심에서 **무한 직선까지의 화면 거리**가 반폭 이하이면 차선에 속합니다(선분 끝을 둥글게 자르지 않음). 길이는 칸 진행 번호(격자 축 기준)로 자릅니다: 출발 쪽은 `startExtendUnits`를 칸 수(진행 방향 한 칸 = 화면 (0.5, 0.25) 유닛 약 0.559)로 바꾼 값 + 0.25칸 뒤까지, 도착 쪽은 `to`에서 0.25칸 뒤까지입니다. 그래서 양 끝이 타일 줄에 맞춰 반듯하게 잘리고 출발 쪽은 섬 가장자리 줄까지 켜집니다. 반폭의 절반 이하(직선 거리)이면 안쪽 칸이고, 안쪽 칸이 먼저, 바깥 칸은 1칸 늦게 꺾쇠가 지나갑니다. 진행 번호가 음수인 칸은 0번으로 취급해 등장 · 꺾쇠 · 발동 연출은 그대로입니다.
-- **빛과 실제 판정이 다른 칸:** 양 끝 모서리 칸과 출발점 뒤 1~2줄은 **빛은 켜지지만 차량이 치지 않는 칸**입니다(차량은 출발점에서 시작하고 도착 쪽도 `offroadEdgeInset`만큼 안쪽에서 멈추며, 피해 판정은 선분 거리 기준). 표시와 판정을 완전히 맞추려면 Application Layer의 판정을 바꿔야 합니다.
+- **칸 판정:** 차선(`from`->`to`)과 나무 위치는 칸 중심(타일 그림 피벗) 기준이라, 직선을 `tileTopOffsetY`만큼 올린 뒤 칸 윗면 중심에서 **무한 직선까지의 화면 거리**가 반폭 이하이면 차선에 속합니다(선분 끝을 둥글게 자르지 않음). 길이는 칸 진행 번호(격자 축 기준)로 자릅니다: 출발 쪽은 `startExtendUnits`를 칸 수(진행 방향 한 칸 = 화면 (0.5, 0.25) 유닛 약 0.559)로 바꾼 값 + 0.25칸 뒤까지(기본 0이므로 출발점 칸 + 0.25칸), 도착 쪽은 `to`에서 0.25칸 뒤까지입니다. 그래서 양 끝이 타일 줄에 맞춰 반듯하게 잘립니다(출발점이 섬 가장자리 육지 타일 중심이라 가장자리 줄까지 켜집니다). 반폭 안이어도 `tiles`가 물 타일이라고 답하는 칸은 이 판정 뒤에 제외됩니다. 반폭의 절반 이하(직선 거리)이면 안쪽 칸이고, 안쪽 칸이 먼저, 바깥 칸은 1칸 늦게 꺾쇠가 지나갑니다. 진행 번호가 음수인 칸은 0번으로 취급해 등장 · 꺾쇠 · 발동 연출은 그대로입니다.
+- **빛과 실제 판정이 다른 칸:** 양 끝 모서리 칸은 **빛은 켜지지만 차량이 치지 않을 수 있는 칸**입니다(빛은 칸 중심이 직선 반폭 안이면 켜고, 피해 판정은 선분 거리 기준). `startExtendUnits`가 0이라 출발점 뒤 줄은 켜지지 않고 차량도 출발점에서 시작합니다. 표시와 판정을 완전히 맞추려면 Application Layer의 판정을 바꿔야 합니다.
 - 위치는 미리 정해 둔 `from`/`to`로 계산하므로 **경로 위 나무가 파괴돼도 표시와 소환은 그대로**입니다(이펙트는 나무를 보지 않음).
 - 같은 시점에 여러 대면 대마다 인스턴스 하나를 모두 `Begin`하면 동시에 표시됩니다(풀 최대 8). 방구차 조합도 같은 호출을 씁니다.
 - 프리팹 루트 ParticleSystem 수명은 60초입니다. 발동을 영영 안 불러도 55초에 스스로 끝납니다.
 - 메쉬 업로드는 해시와 정점 수로 변화가 없으면 건너뛰고, 화면 밖이면(`PixelVfxCulling`) 그리지 않습니다. 재생 중 힙 할당은 없습니다.
-- **알려진 한계:** 이펙트는 섬 타일 존재 여부를 보지 않고 위 규칙으로만 켭니다. 게임이 고르는 차선 위치 범위(반폭 x `offroadLaneSpread` 0.75) 안에서는 섬 크기 n = 14~17 모두 물 위 칸이 0이었지만(배치 모드 측정), 그 범위를 넘는 위치를 고르면 섬 모서리 쪽에서 물 위 칸이 켜질 수 있습니다. 이웃 칸과 겹치는 2px 띠는 셰이더가 항상 화면 앞쪽(아래) 칸만 그리게 해(켜진 SW/SE 이웃의 마름모 안에 들어가는 텍셀은 버림) 두 번 덮이지 않고, 칸 경계는 가로 2px씩 내려가는 2:1 계단 한 가지입니다. 바깥 테두리 선은 켜진 칸 마름모 합집합의 위/아래 가장자리 픽셀이며(셰이더가 이웃 8칸의 켜짐을 비트 0~7로 받아 계산), 볼록 좌우 꼭짓점은 윗면 가운데 두 줄 폭이 같아 2x2로 뭉치므로 가장 바깥 세로 한 줄(2텍셀)을 그리지 않아 세로 1x2가 되고, 세로로 쌓인 칸 사이 오목 옆 모서리는 옆만 바깥인 픽셀을 선에 더해 잇습니다. 그래서 켜진 영역이 타일 그림 윗면보다 볼록 좌우 꼭짓점마다 2px 작습니다(의도). 위아래 꼭짓점(4px)은 그대로입니다.
+- **알려진 한계:** `Begin`에 `tiles`를 넘기지 않으면 이펙트는 섬 타일 존재 여부를 보지 않고 위 규칙으로만 켭니다. 게임이 고르는 차선(`OffroadLanes.TryGetRowLandTile`)은 가운데 줄 한 칸만 육지로 확인하고 `offroadLaneSpread`는 1.0이라, 섬 가장자리 줄에서는 반폭이 걸친 옆 줄이 물 위에 켜질 수 있었습니다. v3.1부터 호출부 3곳(`RoguelikeSkillController.PickPendingOffroadLanes` -> `RoguelikeSkillVfxPlayer.BeginOffroadLane` -> `InDungeonVFXManager.PlayOffroadLaneVFX`)이 필드 타일 제공자를 `Begin`까지 넘겨 물 칸을 제외합니다. 이 호출부 밖에서 `Begin`을 부를 때는 직접 `tiles`를 넘기세요(안 넘기면 이전 동작). `tiles`는 섬에 구멍이 없다고 보지 않고 칸마다 `IsWaterTile`로만 판단하므로, 타일이 아예 없는 칸(섬 밖 빈 칸)이 물 타일로 취급되는지는 `ITilemapDataProvider` 구현에 달려 있습니다(코드 확인 필요). 이웃 칸과 겹치는 2px 띠는 셰이더가 항상 화면 앞쪽(아래) 칸만 그리게 해(켜진 SW/SE 이웃의 마름모 안에 들어가는 텍셀은 버림) 두 번 덮이지 않고, 칸 경계는 가로 2px씩 내려가는 2:1 계단 한 가지입니다. 바깥 테두리 선은 켜진 칸 마름모 합집합의 위/아래 가장자리 픽셀이며(셰이더가 이웃 8칸의 켜짐을 비트 0~7로 받아 계산), 볼록 좌우 꼭짓점은 윗면 가운데 두 줄 폭이 같아 2x2로 뭉치므로 가장 바깥 세로 한 줄(2텍셀)을 그리지 않아 세로 1x2가 되고, 세로로 쌓인 칸 사이 오목 옆 모서리는 옆만 바깥인 픽셀을 선에 더해 잇습니다. 그래서 켜진 영역이 타일 그림 윗면보다 볼록 좌우 꼭짓점마다 2px 작습니다(의도). 위아래 꼭짓점(4px)은 그대로입니다.
 
 ---
 
@@ -151,7 +151,7 @@ public ParticleSystem PlayStellaRangeVFX(Vector3 _groundPosition, float _radius)
 }
 
 // v2.8: 위치가 정해지는 시점에 부르고, 반환된 컴포넌트를 들고 있다가 발동 때 Fire, 웨이브 종료 때 Cancel
-public PresentationLayer.VFX.VFX_OffroadLane PlayOffroadLaneVFX(Vector3 _from, Vector3 _to, float _halfWidth)
+public PresentationLayer.VFX.VFX_OffroadLane PlayOffroadLaneVFX(Vector3 _from, Vector3 _to, float _halfWidth, ITilemapDataProvider _tiles = null)
 {
     if (vfxComponent == null) return null;
 
@@ -160,7 +160,7 @@ public PresentationLayer.VFX.VFX_OffroadLane PlayOffroadLaneVFX(Vector3 _from, V
     if (effect == null) return null;
 
     PresentationLayer.VFX.VFX_OffroadLane lane = effect.GetComponentInChildren<PresentationLayer.VFX.VFX_OffroadLane>(true);
-    if (lane != null) lane.Begin(_from, _to, _halfWidth);
+    if (lane != null) lane.Begin(_from, _to, _halfWidth, _tiles);   // _tiles: ITilemapDataProvider(선택, 물 칸 제외)
     return lane;
 }
 ```
@@ -188,7 +188,7 @@ public PresentationLayer.VFX.VFX_OffroadLane PlayOffroadLaneVFX(Vector3 _from, V
 이펙트 쪽 API는 준비되어 있습니다. 게임 코드에서 바꿔야 할 것은 **소환 위치를 발동 시점이 아니라 주기 시작 시점에 정하는 것**입니다(기획서 부록 C-1 · C-3 4-5). 현재 `RoguelikeSkillController.StartOffroadVolley`는 발동 때 차선을 고르고 `StartOffroad`로 바로 차량을 만듭니다.
 
 1. 주기가 시작될 때(웨이브 시작, 직전 발동 직후) 이번 주기의 차선들(`OffroadLane`: entry, exit, 폭)을 미리 고른다. 겹치는 위치 제외, 나무가 있는 경로만 후보 등 기존 규칙은 그대로.
-2. 고른 차선마다 `PlayOffroadLaneVFX(entry, exit, radius)`를 부르고 반환된 `VFX_OffroadLane`을 차선과 같이 보관한다.
+2. 고른 차선마다 `PlayOffroadLaneVFX(entry, exit, radius, fieldTiles)`(마지막 인자는 v3.1의 선택 인자, 필드 타일 제공자)를 부르고 반환된 `VFX_OffroadLane`을 차선과 같이 보관한다.
 3. 주기 타이머가 바뀔 때(레벨, 공격속도, 첫 주기) 보관한 모든 컴포넌트에 `SetRemaining(남은 초)`를 불러 마지막 깜빡임을 맞춘다(생략 가능).
 4. 발동 시점에 보관한 차선으로 `StartOffroad`를 호출해 차량을 만들고, 같은 순간 컴포넌트마다 `Fire(돌진 시간)`을 부른다. 돌진 시간은 `StartOffroad`가 쓰는 `car.length / car.maxSpeed` 근사값이면 된다(`OffroadDash` 신호의 `duration`과 같은 값).
 5. 위치는 미리 정해 둔 값이므로 경로 위 나무가 파괴돼도 그대로 소환한다.

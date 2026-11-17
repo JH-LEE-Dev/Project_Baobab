@@ -8,7 +8,8 @@ using UnityEngine.UI;
 /// 카드 선택 화면 프리팹 구성기. 여러 번 실행해도 같은 결과로 덮어쓴다. 카드 프리팹(RoguelikeCardBuilder)을 먼저 다시 만든다.
 ///
 ///   UI_RoguelikeCardSlot.prefab  카드 1칸: 카드 + 판정 박스(Button + 포커스 중계)
-///   UIView_RoguelikeCardSelect.prefab  화면: 딤 → Content(제목 명판 · 슬롯 4칸 · 리롤 버튼 · 설명 패널 · 레어 아크릴 케이스 받침/앞면) · WAVE 배지(왼쪽 위) · 패드 키 안내(왼쪽 아래)
+///   UIView_RoguelikeCardSelect.prefab  화면: 딤 → Content(제목 명판 · 슬롯 4칸 · 리롤 버튼 · 설명 패널 · 레어 아크릴 케이스 받침/앞면 · 보관 연출 슬리브) · WAVE 배지(왼쪽 위) · 패드 키 안내(왼쪽 아래)
+///   Card_Sleeve.png  보관 연출의 슬리브 54x86(파일이 없을 때만 만든다)
 ///
 /// 폴리싱 시안 v4 - 화면 배치(Content 중심 기준, 정수 픽셀)는 제목 명판 → 카드 줄 → 바로 아래 가운데 리롤 글자 버튼 → 설명 패널.
 ///   바탕 그림은 보관함 구성기가 만든 Title_Plate · Panel_Info와 HUD 기본 버튼(BasicButton)을 9-슬라이스로 쓴다.
@@ -24,6 +25,7 @@ public static class RoguelikeCardSelectBuilder
     private const string AcrylicBasePath = "Assets/Graphics/Roguelike/card/Card_AcrylicBase.png";
     private const string AcrylicLidPath = "Assets/Graphics/Roguelike/card/Card_AcrylicLid.png";
     private const string AcrylicShinePath = "Assets/Graphics/Roguelike/card/Card_AcrylicShine.png";
+    private const string SleevePath = "Assets/Graphics/Roguelike/card/Card_Sleeve.png";
     private const string AcrylicShaderName = "UI/AcrylicAdditive";
     private const string AcrylicFlashMaterialPath = "Assets/Materials/UI/Roguelike/UI_AcrylicFlash.mat";
     private const string AcrylicShineMaterialPath = "Assets/Materials/UI/Roguelike/UI_AcrylicShine.mat";
@@ -264,6 +266,9 @@ public static class RoguelikeCardSelectBuilder
         // 레어 카드 아크릴 케이스: 받침은 Content 맨 뒤, 덮개 · 번쩍 · 광택 · 입자는 Content 맨 앞(고른 카드 슬롯을 사이에 끼운다). 연출 전에는 꺼 둔다.
         UI_RoguelikeAcrylicCase acrylicCase = BuildAcrylicCase(content);
 
+        // 보관 연출(일반 카드 슬리브 + 아래로 뚝): 슬리브는 Content 맨 앞 형제(고른 카드 슬롯 위에 씌워진다). 연출 전에는 꺼 둔다.
+        UI_RoguelikeCardStoreDrop storeDrop = BuildStoreDrop(content);
+
         // 키 안내: 화면 왼쪽 아래. 패드 모드에서만 스크립트가 켠다(키보드 · 마우스 모드는 마우스 GUI 조작).
         RectTransform guide = AnchoredRect("PadGuide", rootRect, Vector2.zero, new Vector2(EdgeMargin, EdgeMargin + 5f), new Vector2(0f, GuideHeight));
         HorizontalLayoutGroup layout = guide.gameObject.AddComponent<HorizontalLayoutGroup>();
@@ -297,6 +302,8 @@ public static class RoguelikeCardSelectBuilder
         viewSo.FindProperty("slotGap").floatValue = 14f;
         viewSo.FindProperty("descPanel").objectReferenceValue = descPanel;
         viewSo.FindProperty("acrylicCase").objectReferenceValue = acrylicCase;
+        viewSo.FindProperty("storeDrop").objectReferenceValue = storeDrop;
+        viewSo.FindProperty("dimImage").objectReferenceValue = dim;
         viewSo.FindProperty("rerollButton").objectReferenceValue = rerollButton;
         viewSo.FindProperty("rerollGroup").objectReferenceValue = rerollGroup;
         viewSo.FindProperty("rerollRelay").objectReferenceValue = rerollRelay;
@@ -388,6 +395,103 @@ public static class RoguelikeCardSelectBuilder
         so.FindProperty("sparkle").objectReferenceValue = sparkle;
         so.ApplyModifiedPropertiesWithoutUndo();
         return acrylicCase;
+    }
+
+    // // 보관 연출 슬리브
+
+    /// <summary>
+    /// 보관 연출 오브젝트를 만든다(Content 아래, 맨 앞 형제).
+    ///   StoreDrop  컴포넌트(UI_RoguelikeCardStoreDrop) 호스트 - 항상 켜 둔다(Update). 크기 0, 앵커 가운데 = Content 좌표계 원점.
+    ///   Sleeve     슬리브 Image 54x86, 앵커 가운데 · 피벗 왼쪽 아래(슬롯과 같은 좌표계). raycastTarget 끔. 연출 전에는 꺼 둔다.
+    /// </summary>
+    private static UI_RoguelikeCardStoreDrop BuildStoreDrop(RectTransform _content)
+    {
+        Sprite sleeveSprite = RoguelikeCardBuilder.EnsureSpriteFromPixels(SleevePath, BuildSleevePixels(), UI_RoguelikeCardStoreDrop.SleeveWidth, UI_RoguelikeCardStoreDrop.SleeveHeight);
+        if (null == sleeveSprite)
+        {
+            Debug.LogError("[RoguelikeCardSelectBuilder] 슬리브 그림(Card_Sleeve)을 만들지 못했습니다. 보관 연출을 만들지 못했습니다.");
+            return null;
+        }
+
+        RectTransform host = RoguelikeCardBuilder.CreateRect("StoreDrop", _content, Vector2Int.zero, Vector2.zero);
+        CenterAnchor(host);
+        host.SetAsLastSibling();
+
+        Image sleeveImage = RoguelikeCardBuilder.CreateImage("Sleeve", host, sleeveSprite, Vector2Int.zero, sleeveSprite.rect.size);
+        CenterAnchor(sleeveImage.rectTransform);
+        sleeveImage.raycastTarget = false;
+        sleeveImage.gameObject.SetActive(false);
+
+        UI_RoguelikeCardStoreDrop storeDrop = host.gameObject.AddComponent<UI_RoguelikeCardStoreDrop>();
+        SerializedObject so = new SerializedObject(storeDrop);
+        so.FindProperty("sleeveRoot").objectReferenceValue = sleeveImage.rectTransform;
+        so.FindProperty("sleeveImage").objectReferenceValue = sleeveImage;
+        so.ApplyModifiedPropertiesWithoutUndo();
+        return storeDrop;
+    }
+
+    /// <summary>
+    /// 슬리브 54x86 픽셀(아래에서 위 순서). 시안(template4.html drawSleeve)의 층을 같은 순서로 알파 합성(source-over)해 쌓는다 - 위가 y = 0인 좌표로 적고 저장할 때 뒤집는다.
+    ///   채움 (205, 232, 255, 51) x 0~53, y 0~84 / 왼쪽 · 오른쪽 1열 (255, 255, 255, 191) y 0~84 / 맨 아래 1행 y 85 (255, 255, 255, 191) x 1~52 / 맨 위 1행 y 0 (255, 255, 255, 89) x 1~52 /
+    ///   대각 광택 1: i = 0~25, (6 + i, 31 - i)부터 세로 3px (255, 255, 255, 71) / 대각 광택 2: i = 0~13, (14 + i, 35 - i)부터 세로 2px (255, 255, 255, 41).
+    /// </summary>
+    private static Color32[] BuildSleevePixels()
+    {
+        int w = UI_RoguelikeCardStoreDrop.SleeveWidth;
+        int h = UI_RoguelikeCardStoreDrop.SleeveHeight;
+        Color32[] pixels = new Color32[w * h];
+
+        Color32 fill = new Color32(205, 232, 255, 51);
+        Color32 edge = new Color32(255, 255, 255, 191);
+        Color32 topEdge = new Color32(255, 255, 255, 89);
+        Color32 shineStrong = new Color32(255, 255, 255, 71);
+        Color32 shineSoft = new Color32(255, 255, 255, 41);
+
+        for (int y = 0; y <= 84; y++)
+        {
+            for (int x = 0; x < w; x++) BlendSleevePixel(pixels, w, h, x, y, fill);
+        }
+
+        for (int y = 0; y <= 84; y++)
+        {
+            BlendSleevePixel(pixels, w, h, 0, y, edge);
+            BlendSleevePixel(pixels, w, h, w - 1, y, edge);
+        }
+
+        for (int x = 1; x <= w - 2; x++)
+        {
+            BlendSleevePixel(pixels, w, h, x, 85, edge);
+            BlendSleevePixel(pixels, w, h, x, 0, topEdge);
+        }
+
+        for (int i = 0; i <= 25; i++)
+        {
+            for (int k = 0; k < 3; k++) BlendSleevePixel(pixels, w, h, 6 + i, 31 - i + k, shineStrong);
+        }
+
+        for (int i = 0; i <= 13; i++)
+        {
+            for (int k = 0; k < 2; k++) BlendSleevePixel(pixels, w, h, 14 + i, 35 - i + k, shineSoft);
+        }
+
+        return pixels;
+    }
+
+    /// <summary>(_x, _yTop)(위가 0인 좌표)에 _source를 알파 합성(source-over)해 놓는다. 배열은 아래에서 위 순서다.</summary>
+    private static void BlendSleevePixel(Color32[] _pixels, int _w, int _h, int _x, int _yTop, Color32 _source)
+    {
+        int index = (_h - 1 - _yTop) * _w + _x;
+        Color32 destination = _pixels[index];
+
+        float sourceAlpha = _source.a / 255f;
+        float destinationAlpha = destination.a / 255f;
+        float alpha = sourceAlpha + destinationAlpha * (1f - sourceAlpha);
+        if (0f >= alpha) return;
+
+        float r = (_source.r * sourceAlpha + destination.r * destinationAlpha * (1f - sourceAlpha)) / alpha;
+        float g = (_source.g * sourceAlpha + destination.g * destinationAlpha * (1f - sourceAlpha)) / alpha;
+        float b = (_source.b * sourceAlpha + destination.b * destinationAlpha * (1f - sourceAlpha)) / alpha;
+        _pixels[index] = new Color32((byte)Mathf.RoundToInt(r), (byte)Mathf.RoundToInt(g), (byte)Mathf.RoundToInt(b), (byte)Mathf.RoundToInt(alpha * 255f));
     }
 
     /// <summary>앵커를 가운데로(피벗은 그대로 왼쪽 아래). 슬롯과 같은 Content 기준 좌표계가 된다.</summary>

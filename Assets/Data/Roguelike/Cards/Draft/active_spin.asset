@@ -23,11 +23,11 @@ MonoBehaviour:
   - effects:
     - effect: 3
       skill: 2
-      value: 17.5
+      value: 10
   - effects:
     - effect: 3
       skill: 2
-      value: 14.58333
+      value: 5
     - effect: 1
       skill: 2
       value: 90
@@ -37,14 +37,14 @@ MonoBehaviour:
       value: -1
     - effect: 3
       skill: 2
-      value: 14.58333
+      value: 5
     - effect: 1
       skill: 2
       value: 80
   - effects:
     - effect: 3
       skill: 2
-      value: 14.58333
+      value: 5
     - effect: 1
       skill: 2
       value: 30
@@ -54,14 +54,14 @@ MonoBehaviour:
       value: -1
     - effect: 3
       skill: 2
-      value: 14.58333
+      value: 5
     - effect: 1
       skill: 2
       value: 50
   - effects:
     - effect: 3
       skill: 2
-      value: 14.58333
+      value: 5
     - effect: 1
       skill: 2
       value: 30
@@ -71,7 +71,7 @@ MonoBehaviour:
       value: -1
     - effect: 3
       skill: 2
-      value: 14.58333
+      value: 5
     - effect: 1
       skill: 2
       value: 20

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -5,7 +6,7 @@ using UnityEngine.UI;
 /// 로그라이크 전투 HUD의 웨이브 줄. 좌측 하단 막대 묶음의 맨 위 줄이다(RoguelikeHUD_Polish_Plan.md 2장).
 /// 깃발 아이콘(Flag, 16x16) + 작은 숫자(UI_RoguelikeIconNumber, 4px 격자)로 "12/30"을 그리고, 그 오른쪽에 30칸 진행 점(2x2, 3px 간격, 지역 전환 웨이브마다 +3)을 둔다.
 ///   진행 점  모든 칸이 이웃 칸과 열을 공유하는 1px 윤곽 띠 안에 있다. 지난 칸은 금색 2행(위 밝음 / 아래 어두움), 현재 칸은 흰색 2x3에 윤곽이 위로 1px 솟고(4x5), 남은 칸은 어두운 갈색.
-///   지역 간격  RegionStartWaves(8, 16, 23웨이브)의 칸 앞에서 +3px를 더 띄운다(앞 묶음 오른쪽 윤곽 / 투명 2px / 다음 묶음 왼쪽 윤곽). 언리밋(10칸)은 간격이 없다.
+///   지역 간격  시스템이 넘기는 지역 시작 웨이브(없으면 기본값 8, 16, 23)의 칸 앞에서 +3px를 더 띄운다(앞 묶음 오른쪽 윤곽 / 투명 2px / 다음 묶음 왼쪽 윤곽). 언리밋(10칸)은 간격이 없다.
 ///   언리밋   깃발이 금색, 무한대 아이콘(Infinity) + 단계 번호(금색)로 바뀌고 진행 점은 10칸이다. 칸 = (언리밋 번호 - 1) % 10 + 1 (10웨이브마다 처음부터).
 /// 글자 라벨은 쓰지 않는다. 아이콘 · 숫자는 프리팹에 있고 이 컴포넌트는 숫자와 진행 점, 깃발 모양, 튐 연출만 맡는다.
 ///
@@ -32,7 +33,9 @@ public class UI_RoguelikeWaveLabel : MonoBehaviour
     private const int NumberXUnlimit = 25;
     private const int FlashTicks = 6;
     private static readonly int[] HopPattern = { 2, 3, 1, 0 };
-    // 지역(티어) 시작 웨이브(1웨이브 제외). Assets/Data/Roguelike/RoguelikeBalance.asset tiers[].startWave와 맞춰야 한다.
+    // 진행 점 텍스처(100px)에 들어가는 지역 간격 상한. 4개째부터는 무시한다.
+    private const int MaxRegionGaps = 3;
+    // 시스템 값이 오지 않았을 때의 기본값(지역 시작 웨이브, 1웨이브 제외). Assets/Data/Roguelike/RoguelikeBalance.asset tiers[].startWave와 맞춰야 한다.
     private static readonly int[] RegionStartWaves = { 8, 16, 23 };
 
     //내부 의존성 (프리팹에서 연결)
@@ -57,6 +60,10 @@ public class UI_RoguelikeWaveLabel : MonoBehaviour
     private bool bUnlimit;
     private int unlimitIndex;
     private bool bHasWave;
+    // 시스템이 넘긴 지역 시작 웨이브의 복사본(시스템 소유 목록은 참조하지 않는다).
+    private readonly int[] regionStarts = new int[MaxRegionGaps];
+    private int regionStartCount;
+    private bool bRegionFromSystem;
     private float clock;
     private float hopStartClock = -1f;
     // 지금 라벨에 얹혀 있는 튐 오프셋(px). 위치를 통째로 덮어쓰지 않고 차이만 더해 퇴장 이동과 겹쳐도 어긋나지 않는다.
@@ -66,11 +73,12 @@ public class UI_RoguelikeWaveLabel : MonoBehaviour
     private bool bHiding;
     private float hideClock;
 
-    /// <summary>웨이브 표기. 언리밋이면 _unlimitIndex를 무한대 아이콘 옆에 그린다. 같은 웨이브가 다시 오면 아무것도 하지 않는다.</summary>
-    public void SetWave(int _waveNumber, bool _bUnlimit, int _unlimitIndex)
+    /// <summary>웨이브 표기. 언리밋이면 _unlimitIndex를 무한대 아이콘 옆에 그린다. 같은 웨이브 · 같은 지역 값이 다시 오면 아무것도 하지 않는다. _regionStartWaves는 값만 복사한다(null이거나 비면 이전 값 유지, 한 번도 안 왔으면 기본값).</summary>
+    public void SetWave(int _waveNumber, bool _bUnlimit, int _unlimitIndex, IReadOnlyList<int> _regionStartWaves = null)
     {
-        bool bChanged = false == bHasWave || wave != _waveNumber || bUnlimit != _bUnlimit || unlimitIndex != _unlimitIndex;
-        if (false == bChanged) return;
+        bool bRegionChanged = CopyRegionStarts(_regionStartWaves);
+        bool bWaveChanged = false == bHasWave || wave != _waveNumber || bUnlimit != _bUnlimit || unlimitIndex != _unlimitIndex;
+        if (false == bWaveChanged && false == bRegionChanged) return;
 
         bool bFirst = false == bHasWave;
         wave = _waveNumber;
@@ -79,7 +87,7 @@ public class UI_RoguelikeWaveLabel : MonoBehaviour
         bHasWave = true;
 
         Refresh();
-        if (false == bFirst) PlayChanged();
+        if (true == bWaveChanged && false == bFirst) PlayChanged();
     }
 
     /// <summary>켜면 숫자가 등장 연출로 다시 나타난다. 끄면 숫자가 퇴장 연출을 재생한 뒤 오브젝트가 꺼진다.</summary>
@@ -216,14 +224,45 @@ public class UI_RoguelikeWaveLabel : MonoBehaviour
         return PipStep;
     }
 
-    private static bool IsRegionStart(int _waveNumber)
+    private bool IsRegionStart(int _waveNumber)
     {
+        if (true == bRegionFromSystem)
+        {
+            for (int i = 0; i < regionStartCount; i++)
+            {
+                if (regionStarts[i] == _waveNumber) return true;
+            }
+
+            return false;
+        }
+
         for (int i = 0; i < RegionStartWaves.Length; i++)
         {
             if (RegionStartWaves[i] == _waveNumber) return true;
         }
 
         return false;
+    }
+
+    /// <summary>시스템 목록을 앞에서 최대 MaxRegionGaps개 복사한다. 이전 복사본과 달라졌으면 true. null이거나 비어 있으면 아무것도 바꾸지 않는다. 인덱스 접근만 쓴다(열거자 할당 없음).</summary>
+    private bool CopyRegionStarts(IReadOnlyList<int> _regionStartWaves)
+    {
+        if (null == _regionStartWaves) return false;
+
+        int count = Mathf.Min(_regionStartWaves.Count, MaxRegionGaps);
+        if (count <= 0) return false;
+
+        bool bChanged = false == bRegionFromSystem || regionStartCount != count;
+        for (int i = 0; i < count; i++)
+        {
+            int value = _regionStartWaves[i];
+            if (regionStarts[i] != value) bChanged = true;
+            regionStarts[i] = value;
+        }
+
+        regionStartCount = count;
+        bRegionFromSystem = true;
+        return bChanged;
     }
 
     private void EnsurePipPainter()
