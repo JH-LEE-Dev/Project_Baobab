@@ -3365,6 +3365,9 @@ MonoBehaviour:
   emberItemPrefab: {fileID: 6885275396082023371, guid: 4020514d49da95d4ea739865a7e3dbfe, type: 3}
   enabledMapTypes: 05000000
   overheatPerEmber: 1
+  gainFalloffStart: 20
+  gainFloorStart: 75
+  gainMinEfficiency: 0.005
   initialEmbersPerTree: 0.1
   naturalSpawnInterval: 10
   naturalSpawnHalfExtents: {x: 16, y: 8}
@@ -3553,7 +3556,7 @@ MonoBehaviour:
   - forestType: 10
     decAmount: 400
   - forestType: 11
-    decAmount: 800
+    decAmount: 600
   - forestType: 12
     decAmount: 1600
   - forestType: 13
@@ -4099,6 +4102,7 @@ MonoBehaviour:
   quakeMaxStack: 100
   quakeStackPerEmberMin: 2
   quakeStackPerEmberMax: 3
+  quakeTier1Radius: 8
   quakeTier1Damage: 5000
   quakeTier3Damage: 70000
   goldTreePityMinKills: 3
