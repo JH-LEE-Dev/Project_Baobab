@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "challenge-ui-sim",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8765", "--bind", "127.0.0.1", "--directory", "Docs/Roguelike/_Work/ChallengeUI_Mockup"],
+      "port": 8765
+    }
+  ]
+}

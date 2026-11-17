@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using DG.Tweening;
 using PresentationLayer.VFX;
 using TMPro;
@@ -11,8 +12,9 @@ using UnityEngine.EventSystems;
 /// 도전과제 창. 메인메뉴의 로그라이크 하위 메뉴 "도전과제"에서 연다. 기록 창(UIView_RoguelikeRecords)과 같은 판 디자인이다.
 /// 창은 RoguelikeChallengeViewData 목록을 받아 그리기만 한다(정의 · 달성 판정 · 저장은 Application Layer 몫). 목록이 비면 안내 문구를 보인다.
 ///
-/// [구성] 어두운 딤 위 가운데 한 장(Panel_Book 360x282): 위쪽 가장자리의 명판(폭 272, "도전과제") + 본문 340x250(세로 ScrollRect) + 오른쪽 여백의 세로 스크롤바.
-///   탭이 하나뿐이라 화살표 · LB/RB · 점 · 카드 띠는 없다. 한 칸은 UI_RoguelikeChallengeRow(높이 62, 간격 4 - 한 화면 약 4칸)이다.
+/// [구성] 어두운 딤 위 가운데 한 장(Panel_Book 360x282): 위쪽 가장자리의 명판(폭 272, "도전과제") + 본문 340x250 + 오른쪽 여백의 세로 스크롤바.
+///   본문은 위쪽 머리줄(높이 30: "달성" 라벨 · "n / 총수" · 백분율 · 달성 게이지) + 칸 목록 뷰포트 340x220(세로 ScrollRect)이다(시안 B 리본, Docs/Roguelike/_Work/ChallengeUI_B_Ribbon_Plan.md).
+///   탭이 하나뿐이라 화살표 · LB/RB · 점 · 카드 띠는 없다. 한 칸은 UI_RoguelikeChallengeRow(최소 높이 42, 간격 0 - 칸 아래 구분선으로 나눔)이다.
 ///   뒤로 버튼(BTN_Back)은 옵션 창 BTN_Close와 같은 모양(UI_OptionButton)으로 판 아래 테두리 바깥, 판 왼쪽 끝에 놓는다. 패드 모드에서만 버튼 오른쪽에 B 아이콘이 뜬다.
 ///
 /// [조작 - ControllerSupport_UI가이드.md 3-7 · 3-8] 닫기 = 딤 클릭 · 뒤로 버튼 · 패드 B(UICancelEvent) · Esc(SetStandaloneClose(true)로 직접 받는다 - 메인메뉴는 깊이 관리가 없다).
@@ -22,9 +24,9 @@ using UnityEngine.EventSystems;
 /// </summary>
 public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
 {
-    // 판 크기는 기록 창과 같다. 칸 높이는 최소 62(빌더의 ChallengeRowHeight와 같은 값)이고, 제목 높이 · 팁 줄 수에 맞춰 칸마다 늘어난다(UI_RoguelikeChallengeRow.FitHeight).
-    private const float RowHeight = 62f;
-    private const float RowGap = 4f;
+    // 판 크기는 기록 창과 같다. 칸 높이는 최소 42(빌더의 ChallengeRowHeight와 같은 값)이고, 언어별 리본 높이 · 팁 줄 수에 맞춰 칸마다 늘어난다(UI_RoguelikeChallengeRow.FitHeight).
+    private const float RowHeight = 42f;
+    private const float RowGap = 0f;
     // 18개 언어 규격 명판 최소 폭(기록 창 탭 명판과 같은 272). 글자가 더 넓으면 글자 폭 + 양쪽 여백 만큼 넓힌다.
     private const float SpecPlateWidth = 272f;
     private const float PlatePadding = 24f;
@@ -42,9 +44,37 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
     private const float PanelEnterOffset = 6f;
     private const int InitialRowCapacity = 8;
 
-    // 달성 칸 파티클 연출: 첫 달성 칸은 0.25초 뒤, 이후 달성 칸마다 0.14초씩 늦게 시작한다.
-    private const float ClearGlowFirstDelay = 0.25f;
-    private const float ClearGlowStagger = 0.14f;
+    // 리본 펼침: 첫 달성 칸은 0.30초 뒤, 이후 (보이는) 달성 칸마다 0.06초씩 늦게 시작한다.
+    private const float ClearGlowFirstDelay = 0.30f;
+    private const float ClearGlowStagger = 0.06f;
+    // 칸 등장: 0.10초 + (보이는) 칸 순번 x 0.04초 뒤 5px 아래에서 올라오며 나타난다.
+    private const float RowEntranceFirstDelay = 0.10f;
+    private const float RowEntranceStagger = 0.04f;
+
+    // 머리줄(높이 30, 본문 340 안 위쪽): 글자 영역은 게이지 위 18px, 게이지는 y 18에 높이 7.
+    private const int HeaderGaugeY = 18;
+    private const int HeaderGaugeHeight = 7;
+    private const float HeaderLabelX = 2f;
+    private const float HeaderCountGap = 6f;
+    private const float HeaderPercentRight = 2f;
+    private const float HeaderTextSlack = 2f;
+    private const float HeaderGaugeFillDelay = 0.15f;
+    private const float HeaderGaugeFillSeconds = 0.5f;
+    private const float HeaderGaugeShineSpeed = 90f;
+    private const int HeaderGaugeShineMargin = 40;
+    private const int HeaderGaugeShineWidth = 3;
+    private const float HeaderTickRate = 30f;
+    // 칸 안 리본 위아래 여백(윗선 1 + 여백 2 / 여백 2 + 아랫선 1)
+    private const int RibbonInkPadding = 3;
+    private const int DefaultRibbonHeight = 15;
+    private const float MeasureWidth = 10000f;
+    private static readonly Color32 GaugeBackColor = new Color32(0x16, 0x0D, 0x09, 255);
+    private static readonly Color32 GaugeTopLineColor = new Color32(0x4A, 0x32, 0x26, 255);
+    private static readonly Color32 GaugeFillColor = new Color32(0xE8, 0xA8, 0x38, 255);
+    private static readonly Color32 GaugeFillTopColor = new Color32(0xFF, 0xF2, 0xB8, 255);
+    private static readonly Color32 GaugeFillBottomColor = new Color32(0xA8, 0x61, 0x1C, 255);
+    private static readonly Color32 GaugeTickColor = new Color32(0x2A, 0x1A, 0x12, 255);
+    private static readonly Color32 GaugeShineColor = new Color32(255, 255, 255, 115);
     private const int ClearShardSeedStep = 977;
     private const int ClearShardSeedBase = 13;
 
@@ -88,6 +118,7 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
     // 문구 키(RoguelikeUI.json)
     private const string TitleKey = "Roguelike_Menu_Challenges";
     private const string EmptyKey = "Roguelike_Challenges_Empty";
+    private const string ClearedLabelKey = "Roguelike_Challenges_ClearedLabel";
 
     public event Action ClosedEvent;
 
@@ -106,8 +137,15 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
     [SerializeField] private UI_RoguelikeChallengeRow rowTemplate;
     [SerializeField] private TMP_Text emptyText;
 
+    [Header("머리줄")]
+    [SerializeField, Tooltip("본문 위쪽 머리줄(340x30). 달성 칸이 없는 빈 목록이면 끈다.")] private RectTransform headerRoot;
+    [SerializeField, Tooltip("\"달성\" 라벨.")] private TMP_Text headerLabel;
+    [SerializeField, Tooltip("\"달성 수 / 총수\".")] private TMP_Text headerCount;
+    [SerializeField, Tooltip("달성 비율(백분율). 오른쪽 끝 정렬.")] private TMP_Text headerPercent;
+    [SerializeField, Tooltip("달성 게이지(바탕 · 채움 · 눈금 · 광택)를 그리는 그래픽(기본 UI 머티리얼, 원점 = 머리줄 왼쪽 아래).")] private UI_LootGlowParticles headerGauge;
+
     [Header("본문 세로 스크롤")]
-    [SerializeField, Tooltip("본문(340x250 마스크)의 세로 ScrollRect. rowRoot(칸 묶음)가 content다.")] private ScrollRect bodyScroll;
+    [SerializeField, Tooltip("본문 칸 목록(340x220 마스크)의 세로 ScrollRect. rowRoot(칸 묶음)가 content다.")] private ScrollRect bodyScroll;
     [SerializeField] private RectTransform bodyViewport;
     [SerializeField, Tooltip("본문 오른쪽 여백의 세로 스크롤바(보유 카드 창과 같은 그림). 내용이 넘칠 때만 보인다.")] private UI_RoguelikeScrollbar bodyBar;
     [SerializeField, Tooltip("달성 칸에서 튀는 조각 공용 층(판 아래, 본문 마스크 밖).")] private UI_ChallengeClearShards clearShards;
@@ -131,6 +169,11 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
     private Vector2 panelBasePosition;
     private bool bPanelBaseCaptured;
     private float bodyContentHeight;
+    private int ribbonHeight = DefaultRibbonHeight;
+    private int titleBaseline = RibbonInkPadding;
+    private float headerRatio;
+    private float openElapsed;
+    private int lastGaugeTick = int.MinValue;
     private ScrollSlide bodySlide;
     private UI_RoguelikeChallengeRow focusedRow;
     private UI_RoguelikeChallengeRow hoveredRow;
@@ -220,6 +263,7 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
         ResetHover();
         ApplyStaticTexts();
         RefreshPadGuide();
+        ApplyHeaderValues();
         RefreshRows();
         ResetBodyScroll();
         PlayClearGlows();
@@ -262,33 +306,60 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
         ClosedEvent?.Invoke();
     }
 
-    // // 달성 칸 파티클 연출
+    // // 칸 등장 · 달성 칸 리본 연출
 
     /// <summary>
-    /// 창이 열릴 때 1회: 켜진 칸을 위에서부터 훑어 달성 칸마다 순번(order)대로 지연을 주어 연출을 켜고,
-    /// 그 칸이 본문 뷰포트에 일부라도 보이면 튀는 조각을 예약한다(조각 층은 판 아래라 본문 마스크에 잘리지 않는다).
+    /// 창이 열릴 때 1회: 켜진 칸을 위에서부터 훑어 본문 뷰포트에 일부라도 보이는 칸은 순번(보이는 칸 순서)대로 등장 연출을 켜고,
+    /// 보이는 달성 칸은 순번(보이는 달성 칸 순서)대로 지연을 주어 리본 펼침을 켠 뒤 튀는 조각을 리본 위로 예약한다(조각 층은 판 아래라 본문 마스크에 잘리지 않는다).
+    /// 보이지 않는 칸은 등장 연출 없이 바로 보이고, 보이지 않는 달성 칸은 리본이 이미 펼쳐진 채 반복 연출(광택 · 반짝임)만 돈다. 광택 위상(order)은 달성 칸 전체 순번이다.
     /// </summary>
     private void PlayClearGlows()
     {
         if (null != clearShards) clearShards.Clear();
 
         int order = 0;
+        int visibleOrder = 0;
+        int visibleClearedOrder = 0;
         for (int i = 0; rows.Count > i; i++)
         {
             UI_RoguelikeChallengeRow row = rows[i];
-            if (false == row.gameObject.activeSelf || false == row.IsCleared)
+            if (false == row.gameObject.activeSelf)
+            {
+                row.StopEntrance();
+                row.StopClearGlow();
+                continue;
+            }
+
+            bool bVisible = IsRowOverlappingBody(row.Rect);
+            if (true == bVisible)
+            {
+                row.PlayEntrance(RowEntranceFirstDelay + visibleOrder * RowEntranceStagger);
+                visibleOrder++;
+            }
+            else
+            {
+                row.StopEntrance();
+            }
+
+            if (false == row.IsCleared)
             {
                 row.StopClearGlow();
                 continue;
             }
 
-            float delay = ClearGlowFirstDelay + order * ClearGlowStagger;
-            row.PlayClearGlow(delay, order, true);
+            float delay = ClearGlowFirstDelay + visibleClearedOrder * ClearGlowStagger;
+            row.PlayClearGlow(delay, order, bVisible);
 
-            if (null != clearShards && true == IsRowOverlappingBody(row.Rect))
+            if (true == bVisible)
             {
-                Vector3 local = clearShards.transform.InverseTransformPoint(row.Rect.position);
-                clearShards.Burst(new Vector2(Mathf.Round(local.x), Mathf.Round(local.y)), Mathf.Round(row.Rect.rect.width), Mathf.Round(row.Rect.rect.height), delay, ClearShardSeedBase + order * ClearShardSeedStep);
+                visibleClearedOrder++;
+                if (null != clearShards)
+                {
+                    // 튀는 조각은 펼침이 끝난 리본 위에서 터진다(시작점 = 리본 몸통 사각형).
+                    row.GetRibbonRect(out int ribbonX, out int ribbonY, out int ribbonWidth, out int ribbonRectHeight);
+                    Vector3 local = clearShards.transform.InverseTransformPoint(row.Rect.TransformPoint(new Vector3(ribbonX, -ribbonY, 0f)));
+                    clearShards.Burst(new Vector2(Mathf.Round(local.x), Mathf.Round(local.y)), ribbonWidth, ribbonRectHeight, delay + UI_ChallengeClearGlow.RevealSeconds, ClearShardSeedBase + order * ClearShardSeedStep);
+                }
             }
 
             order++;
@@ -297,11 +368,15 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
 
     private void StopClearGlows()
     {
-        for (int i = 0; rows.Count > i; i++) rows[i].StopClearGlow();
+        for (int i = 0; rows.Count > i; i++)
+        {
+            rows[i].StopClearGlow();
+            rows[i].StopEntrance();
+        }
         if (null != clearShards) clearShards.Clear();
     }
 
-    /// <summary>매 프레임(unscaled): 조각 층과, 본문 뷰포트와 세로로 겹치는 달성 칸만 30fps로 진행한다. 가려진 칸은 멈췄다가 다시 보이면 이어서 돈다.</summary>
+    /// <summary>매 프레임(unscaled): 조각 층과, 본문 뷰포트와 세로로 겹치는 칸의 등장 연출 · 달성 칸 리본 연출만 30fps로 진행한다. 가려진 칸은 멈췄다가 다시 보이면 이어서 돈다.</summary>
     private void TickClearGlows()
     {
         float deltaTime = Time.unscaledDeltaTime;
@@ -310,10 +385,11 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
         for (int i = 0; rows.Count > i; i++)
         {
             UI_RoguelikeChallengeRow row = rows[i];
-            if (false == row.gameObject.activeSelf || false == row.IsCleared) continue;
+            if (false == row.gameObject.activeSelf) continue;
             if (false == IsRowOverlappingBody(row.Rect)) continue;
 
-            row.TickClearGlow(deltaTime);
+            row.TickEntrance(deltaTime);
+            if (true == row.IsCleared) row.TickClearGlow(deltaTime);
         }
     }
 
@@ -364,6 +440,9 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
     {
         if (null == rowRoot) return;
 
+        RefreshInkMetrics();
+        LayoutHeader();
+
         float width = Mathf.Round(rowRoot.rect.width);
         float y = 0f;
         UI_RoguelikeChallengeRow previous = null;
@@ -375,8 +454,10 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
             rect.anchorMin = new Vector2(0f, 1f);
             rect.anchorMax = new Vector2(0f, 1f);
             rect.pivot = new Vector2(0f, 1f);
+            rows[i].SetRibbonMetrics(ribbonHeight, titleBaseline);
             float height = rows[i].FitHeight(RowHeight);
             rect.sizeDelta = new Vector2(width, height);
+            rows[i].ApplyLayout(width, height);
             rect.anchoredPosition = new Vector2(0f, -y);
             y += height + RowGap;
 
@@ -418,6 +499,139 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
         }
     }
 
+    // // 머리줄
+
+    /// <summary>머리줄 값: 달성 수 / 총수 · 백분율 문자열과 게이지 목표 비율. 목록이 비면 머리줄을 끈다.</summary>
+    private void ApplyHeaderValues()
+    {
+        int total = challenges.Count;
+        int cleared = 0;
+        for (int i = 0; total > i; i++)
+        {
+            if (true == challenges[i].bCleared) cleared++;
+        }
+
+        headerRatio = 0 < total ? cleared / (float)total : 0f;
+        int percent = Mathf.FloorToInt(headerRatio * 100f + 0.5f);
+        if (null != headerCount) headerCount.text = string.Concat(cleared.ToString(CultureInfo.InvariantCulture), " / ", total.ToString(CultureInfo.InvariantCulture));
+        if (null != headerPercent) headerPercent.text = string.Concat(percent.ToString(CultureInfo.InvariantCulture), "%");
+        if (null != headerRoot) headerRoot.gameObject.SetActive(0 < total);
+    }
+
+    /// <summary>
+    /// 이 언어의 리본 높이와 제목 기준선을 실제 폰트로 잰다(1-4 공식): 도전과제 제목 전부 + 머리줄 문구의 잉크 범위(기준선 위 + 아래)를 합쳐
+    /// ribbonHeight = 1 + 2 + 잉크 높이 + 2 + 1, titleBaseline = 3 + 잉크 위쪽. 모든 칸이 같은 값을 쓰므로 칸마다 글자 높이가 달라지지 않는다. 폰트 교체 이후에 불러야 한다.
+    /// </summary>
+    private void RefreshInkMetrics()
+    {
+        ribbonHeight = DefaultRibbonHeight;
+        titleBaseline = RibbonInkPadding;
+        if (null == headerLabel || null == headerLabel.font) return;
+
+        TMP_FontAsset font = headerLabel.font;
+        float fontSize = headerLabel.fontSize;
+        float top = float.MinValue;
+        float bottom = float.MaxValue;
+        for (int i = 0; challenges.Count > i; i++) UI_RoguelikeChallengeRow.MeasureInk(font, fontSize, challenges[i].title, ref top, ref bottom);
+        UI_RoguelikeChallengeRow.MeasureInk(font, fontSize, headerLabel.text, ref top, ref bottom);
+        if (null != headerCount) UI_RoguelikeChallengeRow.MeasureInk(font, fontSize, headerCount.text, ref top, ref bottom);
+        if (null != headerPercent) UI_RoguelikeChallengeRow.MeasureInk(font, fontSize, headerPercent.text, ref top, ref bottom);
+        if (top < bottom) return;
+
+        int above = Mathf.Max(0, Mathf.CeilToInt(top));
+        int below = Mathf.Max(0, Mathf.CeilToInt(-bottom));
+        ribbonHeight = RibbonInkPadding * 2 + above + below;
+        titleBaseline = RibbonInkPadding + above;
+    }
+
+    /// <summary>머리줄 글자 배치: 라벨 x 2, 수치는 라벨 오른쪽 6px, 백분율은 오른쪽 끝(x 338) 오른쪽 정렬. 세로는 머리줄 문구의 잉크 높이로 게이지 위 18px 안에서 가운데 맞춘다.</summary>
+    private void LayoutHeader()
+    {
+        if (null == headerLabel || null == headerLabel.font) return;
+
+        float top = float.MinValue;
+        float bottom = float.MaxValue;
+        float fontSize = headerLabel.fontSize;
+        UI_RoguelikeChallengeRow.MeasureInk(headerLabel.font, fontSize, headerLabel.text, ref top, ref bottom);
+        if (null != headerCount) UI_RoguelikeChallengeRow.MeasureInk(headerLabel.font, fontSize, headerCount.text, ref top, ref bottom);
+        if (null != headerPercent) UI_RoguelikeChallengeRow.MeasureInk(headerLabel.font, fontSize, headerPercent.text, ref top, ref bottom);
+
+        int above = top < bottom ? 0 : Mathf.Max(0, Mathf.CeilToInt(top));
+        int below = top < bottom ? 0 : Mathf.Max(0, Mathf.CeilToInt(-bottom));
+        int margin = Mathf.Max(0, (HeaderGaugeY - (above + below)) / 2);
+        float rectTop = margin + above - Mathf.Round(UI_RoguelikeChallengeRow.MeasureAscent(headerLabel));
+        float lineHeight = Mathf.Ceil(UI_RoguelikeChallengeRow.MeasureLineHeight(headerLabel));
+
+        float labelWidth = Mathf.Ceil(headerLabel.GetPreferredValues(headerLabel.text, MeasureWidth, MeasureWidth).x);
+        headerLabel.rectTransform.sizeDelta = new Vector2(labelWidth + HeaderTextSlack, lineHeight);
+        headerLabel.rectTransform.anchoredPosition = new Vector2(HeaderLabelX, -rectTop);
+
+        if (null != headerCount)
+        {
+            float countWidth = Mathf.Ceil(headerCount.GetPreferredValues(headerCount.text, MeasureWidth, MeasureWidth).x);
+            headerCount.rectTransform.sizeDelta = new Vector2(countWidth + HeaderTextSlack, lineHeight);
+            headerCount.rectTransform.anchoredPosition = new Vector2(HeaderLabelX + labelWidth + HeaderCountGap, -rectTop);
+        }
+
+        if (null != headerPercent)
+        {
+            float percentWidth = Mathf.Ceil(headerPercent.GetPreferredValues(headerPercent.text, MeasureWidth, MeasureWidth).x);
+            headerPercent.rectTransform.sizeDelta = new Vector2(percentWidth + HeaderTextSlack, lineHeight);
+            headerPercent.rectTransform.anchoredPosition = new Vector2(-HeaderPercentRight, -rectTop);
+        }
+    }
+
+    /// <summary>
+    /// 매 프레임(unscaled): 30fps 틱이 바뀔 때만 게이지를 다시 그린다. 채움은 0.15 ~ 0.65초에 0 -> 달성 비율(OutCubic),
+    /// 채운 구간 안에서만 3x4 흰색 45% 광택이 초당 90px로 왼 -> 오른쪽으로 지나가고, 25 · 50 · 75% 눈금이 위에 겹친다.
+    /// </summary>
+    private void TickHeaderGauge(float _deltaTime)
+    {
+        if (null == headerGauge || null == headerRoot || false == headerRoot.gameObject.activeInHierarchy) return;
+
+        openElapsed += _deltaTime;
+        int tick = Mathf.FloorToInt(openElapsed * HeaderTickRate);
+        if (tick == lastGaugeTick) return;
+
+        lastGaugeTick = tick;
+
+        int width = Mathf.RoundToInt(headerRoot.rect.width);
+        int height = Mathf.RoundToInt(headerRoot.rect.height);
+        float t = Mathf.Clamp01((tick / HeaderTickRate - HeaderGaugeFillDelay) / HeaderGaugeFillSeconds);
+        float inverse = 1f - t;
+        int fillWidth = Mathf.FloorToInt((width - 2) * headerRatio * (1f - inverse * inverse * inverse) + 0.5f);
+
+        // 머리줄 위 기준 y(아래로 증가)를 그래픽 좌표(왼쪽 아래 원점, 위로 증가)로 뒤집어 쌓는다. 게이지 7줄 = [gaugeBottom, gaugeBottom + 7).
+        headerGauge.BeginQuads();
+        int gaugeBottom = height - HeaderGaugeY - HeaderGaugeHeight;
+        int gaugeTop = gaugeBottom + HeaderGaugeHeight;
+        headerGauge.Rect(0, gaugeBottom, width, gaugeTop, GaugeBackColor);
+        headerGauge.Rect(0, gaugeTop - 1, width, gaugeTop, GaugeTopLineColor);
+        if (0 < fillWidth)
+        {
+            // 채움 5줄: 위 1px 밝은 줄, 아래 1px 어두운 줄
+            headerGauge.Rect(1, gaugeBottom + 1, 1 + fillWidth, gaugeTop - 1, GaugeFillColor);
+            headerGauge.Rect(1, gaugeTop - 2, 1 + fillWidth, gaugeTop - 1, GaugeFillTopColor);
+            headerGauge.Rect(1, gaugeBottom + 1, 1 + fillWidth, gaugeBottom + 2, GaugeFillBottomColor);
+
+            int shine = Mathf.FloorToInt(tick / HeaderTickRate * HeaderGaugeShineSpeed % (width + HeaderGaugeShineMargin) - HeaderGaugeShineMargin * 0.5f + 0.5f);
+            if (0 < shine && shine < fillWidth)
+            {
+                int x0 = 1 + shine;
+                int x1 = Mathf.Min(x0 + HeaderGaugeShineWidth, 1 + fillWidth);
+                headerGauge.Rect(x0, gaugeBottom + 2, x1, gaugeBottom + 6, GaugeShineColor);
+            }
+        }
+
+        for (int q = 1; 4 > q; q++)
+        {
+            int x = Mathf.FloorToInt(width * q / 4f + 0.5f);
+            headerGauge.Rect(x, gaugeBottom, x + 1, gaugeTop, GaugeTickColor);
+        }
+
+        headerGauge.Commit();
+    }
+
     private void LayoutTitlePlate()
     {
         if (null == titlePlate || null == titleText) return;
@@ -439,6 +653,10 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
 
     private void PlayEnter()
     {
+        openElapsed = 0f;
+        lastGaugeTick = int.MinValue;
+        TickHeaderGauge(0f);
+
         if (null != dimGroup)
         {
             dimGroup.DOKill();
@@ -476,6 +694,7 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
     {
         if (null != titleText) titleText.text = Localize(TitleKey);
         if (null != emptyText) emptyText.text = Localize(EmptyKey);
+        if (null != headerLabel) headerLabel.text = Localize(ClearedLabelKey);
         LayoutTitlePlate();
     }
 
@@ -842,6 +1061,7 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
         if (false == IsGamepadMode) UpdateMouseHover();
         RefreshCursorClip();
         TickClearGlows();
+        TickHeaderGauge(Time.unscaledDeltaTime);
 
         // 키보드/마우스 모드는 마우스 전용이다. 칸을 눌러도 UGUI가 그 대상을 선택하므로 선택이 생기면 풀어 방향키가 먹지 않게 한다.
         if (false == IsGamepadMode)
