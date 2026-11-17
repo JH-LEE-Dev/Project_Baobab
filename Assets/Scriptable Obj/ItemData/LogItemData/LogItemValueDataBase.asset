@@ -32,11 +32,11 @@ MonoBehaviour:
   - treeType: 9
     value: 75000
   - treeType: 10
-    value: 500000
+    value: 1000000
   - treeType: 11
-    value: 2000000
+    value: 5000000
   - treeType: 12
-    value: 10000000
+    value: 50000000
   stateValueDatas:
   - logState: 2
     valueMultiplier: 1
