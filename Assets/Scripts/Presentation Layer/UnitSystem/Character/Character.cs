@@ -84,6 +84,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     // 불씨를 주워 과열 수치를 올린다. 이미 최대면 효과가 없고 false.
     public bool AddOverheat(float _amount) => overheatComponent != null && overheatComponent.AddOverheat(_amount);
     public bool IsOverheatMax => overheatComponent != null && overheatComponent.IsMax;
+    // 내림하지 않은 과열 수치(0.01 단위). 불씨 효율 계산에 쓴다.
+    public float OverheatValue => overheatComponent != null ? overheatComponent.OverheatValue : 0f;
     // 불씨·과열 특성 값(InDungeonObjectManager가 불씨 생성·획득·예열에 쓴다). 특성이 없으면 본편 기본값이다.
     public float OverheatGainMultiplier => statComponent.overheatGainMultiplier;
     public float EmberDropMultiplier => statComponent.emberDropMultiplier;

@@ -111,6 +111,9 @@ public class GameplayUIInstaller : MonoBehaviour
         return uiManager.GetView<T>();
     }
 
+    /// <summary>[로그라이크 전용] 뷰들이 쓰는 것과 같은 현지화 매니저. 로그라이크 도전과제 달성 팝업 제목을 번역하는 데 쓴다.</summary>
+    public LocalizationManager LocalizationManager => localizationManager;
+
     public void SetupUIElement()
     {
         SetupCanvas();

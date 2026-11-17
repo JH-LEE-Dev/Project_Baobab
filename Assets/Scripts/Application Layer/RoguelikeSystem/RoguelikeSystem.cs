@@ -169,6 +169,8 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     private Coroutine ambienceCrossfadeCoroutine;
     private RoguelikeWaveTreeStrategySO waveStrategy;
     private RoguelikeRecordData records;
+    // 도전과제 달성 판정(기획서 v3.1 8-3). 진행은 records에 바로 쌓인다.
+    private readonly RoguelikeChallengeTracker challengeTracker = new RoguelikeChallengeTracker();
 
     // 카메라가 따라갈 섬 중앙의 고정 지점(캐릭터 대신).
     private Transform cameraAnchor;
@@ -317,6 +319,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         }
 
         records = RoguelikeRecordRepository.Load();
+        challengeTracker.Initialize(records, cardDatabase, null != balance ? balance.TierCount : 0);
 
         // 정적 상태라 이전 세션(에디터 재생 포함)의 값이 남아 있을 수 있다. 뷰를 열기(OpenViews) 전에 비운다.
         RoguelikeModalInput.Reset();
@@ -513,6 +516,10 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         effectApplier.Apply(modifiers);
         signalHub.Publish(new RoguelikeModifiersChangedSignal());
         signalHub.Publish(new RoguelikeCardPurchasedSignal(purchase));
+
+        // 도전과제: 프리즘 해제 · MAX 도달 · 루비 선택은 카드를 고른 순간 판정한다(기획서 v3.1 8-3).
+        challengeTracker.OnCardPurchased(in purchase);
+        SaveAndAnnounceClearedChallenges();
     }
 
     private void CardRerollRequested(RoguelikeCardRerollRequestedSignal _signal)
@@ -538,7 +545,14 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         treesFelled++;
 
         // 스텔라 별 생성·포자 폭발 연쇄는 처치마다 판정한다(_tree는 디버그 클리어에서 null일 수 있다).
-        if (null != _tree) skillController?.OnTreeKilled(_tree, _position);
+        if (null != _tree)
+        {
+            skillController?.OnTreeKilled(_tree, _position);
+
+            // 도전과제 누적 벌목 수. 디버그 웨이브 클리어(null 나무)는 세지 않는다.
+            challengeTracker.OnTreeFelled();
+            SaveAndAnnounceClearedChallenges();
+        }
 
         waveKills++;
         signalHub.Publish(new RoguelikeWaveProgressSignal(waveKills, currentWave.killTarget));
@@ -649,6 +663,24 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         }
     }
 
+    // // 도전과제
+
+    /// <summary>
+    /// 직전 판정에서 새로 달성한 도전과제가 있으면 바로 저장하고(달성 순간 한 번) 칸마다 달성 신호를 낸다. 없으면 아무 일도 없다.
+    /// 달성 전의 진행(벌목 수 등)은 런 종료 · 클리어 저장에 함께 남는다.
+    /// </summary>
+    private void SaveAndAnnounceClearedChallenges()
+    {
+        IReadOnlyList<int> cleared = challengeTracker.NewlyCleared;
+        if (0 == cleared.Count) return;
+
+        RoguelikeRecordRepository.Save(records);
+        for (int i = 0; i < cleared.Count; i++)
+        {
+            signalHub.Publish(new RoguelikeChallengeClearedSignal(cleared[i]));
+        }
+    }
+
     // // UI
 
     private void OpenViews()
@@ -667,7 +699,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
 
         // 기록 창은 메인메뉴가 연다(로그라이크 하위 메뉴의 기록). 로그라이크 씬에는 기록 창을 여는 곳이 없다.
         uiCoordinator.Initialize(signalHub, this, hudUI, cardSelectUI, ownedCardsUI, resultUI, gameplayUIInstaller.GetOpenedView<UIView_ESC>(),
-            gameplayUIInstaller.GetOpenedView<UIView_Popup>(), gameplayUIInstaller.GetOpenedView<UIView_HUD>());
+            gameplayUIInstaller.GetOpenedView<UIView_Popup>(), gameplayUIInstaller.GetOpenedView<UIView_HUD>(), gameplayUIInstaller.LocalizationManager);
     }
 
     // // 공통

@@ -24,6 +24,10 @@ public sealed class AbilityLineGraphic : MaskableGraphic
 
     public void SetQuads(IReadOnlyList<AbilityLineMeshQuad> _quads)
     {
+        // 받은 사각형이 지금 메시를 만든 사각형과 비트 단위로 모두 같으면 메시도 똑같으므로 다시 만들지 않는다.
+        if (AreSameQuads(_quads))
+            return;
+
         quads.Clear();
 
         if (_quads != null)
@@ -33,6 +37,49 @@ public sealed class AbilityLineGraphic : MaskableGraphic
         }
 
         SetVerticesDirty();
+    }
+
+    private bool AreSameQuads(IReadOnlyList<AbilityLineMeshQuad> _quads)
+    {
+        int count = _quads != null ? _quads.Count : 0;
+        if (count != quads.Count)
+            return false;
+
+        for (int i = 0; i < count; i++)
+        {
+            if (IsSameQuad(quads[i], _quads[i]) == false)
+                return false;
+        }
+
+        return true;
+    }
+
+    private static bool IsSameQuad(AbilityLineMeshQuad _a, AbilityLineMeshQuad _b)
+    {
+        Rect rectA = _a.Rect;
+        Rect rectB = _b.Rect;
+        Color32 colorA = _a.Color;
+        Color32 colorB = _b.Color;
+        Vector4 shineA = _a.ShineProgress;
+        Vector4 shineB = _b.ShineProgress;
+        return IsSameBits(rectA.x, rectB.x) &&
+               IsSameBits(rectA.y, rectB.y) &&
+               IsSameBits(rectA.width, rectB.width) &&
+               IsSameBits(rectA.height, rectB.height) &&
+               colorA.r == colorB.r &&
+               colorA.g == colorB.g &&
+               colorA.b == colorB.b &&
+               colorA.a == colorB.a &&
+               IsSameBits(shineA.x, shineB.x) &&
+               IsSameBits(shineA.y, shineB.y) &&
+               IsSameBits(shineA.z, shineB.z) &&
+               IsSameBits(shineA.w, shineB.w) &&
+               IsSameBits(_a.ShineColorIndex, _b.ShineColorIndex);
+    }
+
+    private static bool IsSameBits(float _a, float _b)
+    {
+        return System.BitConverter.SingleToInt32Bits(_a) == System.BitConverter.SingleToInt32Bits(_b);
     }
 
     protected override void OnPopulateMesh(VertexHelper _vertexHelper)

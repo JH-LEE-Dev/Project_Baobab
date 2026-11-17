@@ -48,6 +48,18 @@ public class AbilityToolTip : MonoBehaviour
     private int clickMotionVersion;
     private int hideMotionVersion;
 
+    // 레이아웃 강제 재계산 생략용 기록. 마지막 재계산 직후의 레이아웃 입력(글자·폰트·글자 크기·켜짐·비용 아이콘)과 결과 크기를 둔다.
+    // 입력이 그대로면 다시 계산해도 같은 결과(재계산은 멱등)라 건너뛴다. 툴팁이 꺼지거나 켜지면(폰트 교체 포함) 기록을 버린다.
+    private const int LayoutTextCount = 5;
+    private RectTransform layoutSnapshotTarget;
+    private readonly string[] layoutSnapshotTexts = new string[LayoutTextCount];
+    private readonly TMP_FontAsset[] layoutSnapshotFonts = new TMP_FontAsset[LayoutTextCount];
+    private readonly float[] layoutSnapshotFontSizes = new float[LayoutTextCount];
+    private readonly bool[] layoutSnapshotTextActive = new bool[LayoutTextCount];
+    private bool layoutSnapshotIconActive;
+    private Sprite layoutSnapshotIconSprite;
+    private Vector2 layoutSnapshotSize;
+
     public RectTransform RootRectTransform => rootRectTransform;
     public TMP_Text TitleText => titleText;
     public TMP_Text LevelText => levelText;
@@ -165,8 +177,88 @@ public class AbilityToolTip : MonoBehaviour
         if (target == null)
             return Vector2.zero;
 
-        LayoutRebuilder.ForceRebuildLayoutImmediate(target);
+        RebuildLayoutIfNeeded(target);
         return target.rect.size;
+    }
+
+    private void RebuildLayoutIfNeeded(RectTransform _target)
+    {
+        if (_target == layoutSnapshotTarget && IsLayoutSnapshotCurrent(_target))
+        {
+            return;
+        }
+
+        LayoutRebuilder.ForceRebuildLayoutImmediate(_target);
+        CaptureLayoutSnapshot(_target);
+    }
+
+    private TMP_Text GetLayoutText(int _index)
+    {
+        switch (_index)
+        {
+            case 0: return titleText;
+            case 1: return levelText;
+            case 2: return descriptionText;
+            case 3: return valueText;
+            default: return costText;
+        }
+    }
+
+    private bool IsLayoutSnapshotCurrent(RectTransform _target)
+    {
+        for (int i = 0; i < LayoutTextCount; i++)
+        {
+            TMP_Text text = GetLayoutText(i);
+            if (text == null)
+                continue;
+
+            if (false == string.Equals(text.text, layoutSnapshotTexts[i], System.StringComparison.Ordinal) ||
+                false == ReferenceEquals(text.font, layoutSnapshotFonts[i]) ||
+                text.fontSize != layoutSnapshotFontSizes[i] ||
+                text.gameObject.activeSelf != layoutSnapshotTextActive[i])
+                return false;
+        }
+
+        if (costIcon != null &&
+            (costIcon.gameObject.activeSelf != layoutSnapshotIconActive || false == ReferenceEquals(costIcon.sprite, layoutSnapshotIconSprite)))
+            return false;
+
+        Vector2 size = _target.rect.size;
+        return size.x == layoutSnapshotSize.x && size.y == layoutSnapshotSize.y;
+    }
+
+    private void CaptureLayoutSnapshot(RectTransform _target)
+    {
+        for (int i = 0; i < LayoutTextCount; i++)
+        {
+            TMP_Text text = GetLayoutText(i);
+            if (text == null)
+                continue;
+
+            layoutSnapshotTexts[i] = text.text;
+            layoutSnapshotFonts[i] = text.font;
+            layoutSnapshotFontSizes[i] = text.fontSize;
+            layoutSnapshotTextActive[i] = text.gameObject.activeSelf;
+        }
+
+        if (costIcon != null)
+        {
+            layoutSnapshotIconActive = costIcon.gameObject.activeSelf;
+            layoutSnapshotIconSprite = costIcon.sprite;
+        }
+
+        layoutSnapshotSize = _target.rect.size;
+        layoutSnapshotTarget = _target;
+    }
+
+    private void OnEnable()
+    {
+        layoutSnapshotTarget = null;
+    }
+
+    private void OnDisable()
+    {
+        layoutSnapshotTarget = null;
     }
 
     public void SetAnchoredPosition(Vector2 _anchoredPosition)
@@ -186,7 +278,7 @@ public class AbilityToolTip : MonoBehaviour
         CacheMotionPlayer();
 
         if (backgroundRectTransform != null)
-            LayoutRebuilder.ForceRebuildLayoutImmediate(backgroundRectTransform);
+            RebuildLayoutIfNeeded(backgroundRectTransform);
     }
 
     public void PlayShowMotion()
