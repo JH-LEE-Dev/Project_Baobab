@@ -13,9 +13,8 @@ using UnityEngine.Rendering;
 ///    끝은 체커 도트로 흩어진다. 머리 끝에는 반짝이는 십자 광채가 붙는다. 돌기가 끝나면 꼬리가 머리를 따라잡으며 가늘어져 사라진다.
 ///    조금 늦게 조금 안쪽에서 도트 잔상 칼날이 한 겹 더 따라온다.
 /// 2. 바람 먼지(바닥): 칼날이 지나간 테두리에서 먼지가 도는 방향으로 휘날린다.
-/// 3. 발동 연출(바닥): 중심에서 빛줄기가 사방으로 뻗는다.
-/// 4. 마무리(바닥): 한 바퀴를 다 돈 순간 테두리를 따라 별빛이 차례로 반짝인다.
-/// 5. 나무 타격(공중): AttackComponent가 칼날이 지나간 나무마다 AddHit을 부르면 그 자리에서 베인 자국과 섬광이 번쩍이고
+/// 3. 마무리(바닥): 한 바퀴를 다 돈 순간 테두리를 따라 별빛이 차례로 반짝인다.
+/// 4. 나무 타격(공중): AttackComponent가 칼날이 지나간 나무마다 AddHit을 부르면 그 자리에서 베인 자국과 섬광이 번쩍이고
 ///    밑동에 충격 고리가 퍼지며 불꽃이 칼날이 도는 방향으로 튀어 떨어진다. 한 번에 많이 벨수록 뒤에 베인 나무의 섬광이 커진다.
 ///
 /// 칼날 각도(GetBladeAngle)와 타격 시각(GetSweepTime)이 같은 표(BladeAngles)를 쓰므로 칼날 머리가 나무를 지나는 순간 나무가 맞는다.
@@ -101,10 +100,6 @@ public class WhirlwindVFX : MonoBehaviour
 
     // 테두리 별빛의 기준 반지름
     private const float ScarRho = 1.02f;
-
-    // 발동 빛줄기
-    private const int BurstRayCount = 12;
-    private const float BurstRaySeconds = 0.12f;
 
     // 마무리 별빛
     private const int FinaleTwinkleCount = 12;
@@ -271,7 +266,7 @@ public class WhirlwindVFX : MonoBehaviour
     // 따라다니며 반복하는 재생(SpawnAttached). 대상 위치를 매 프레임 따라가고, 칼날이 한 바퀴를 다 덮으면 처음으로 되감는다.
     private Transform attachTarget;
     private bool bLooping;
-    // 되감은 횟수. 0보다 크면 등장 팝 · 발동 빛줄기는 다시 내지 않고, 꼬리는 지난 바퀴의 칼날 각도에서 이어 그린다.
+    // 되감은 횟수. 0보다 크면 등장 팝은 다시 내지 않고, 꼬리는 지난 바퀴의 칼날 각도에서 이어 그린다.
     private int loopCount;
     // 반복 재생 중 대상이 멈췄다(부메랑 WarningUI 정지). 멈춘 동안은 그 모습 그대로 따라만 간다.
     private bool bLoopPaused;
@@ -620,7 +615,6 @@ public class WhirlwindVFX : MonoBehaviour
         painter.Begin(groundBuffer, groundTransform.worldToLocalMatrix, 0f);
         DrawBladeGlints();
         DrawWindMotes();
-        DrawBurstRays();
         DrawFinale();
         painter.Commit(groundMesh, groundRenderer, ref groundHash, ref groundVertexCount);
 
@@ -746,31 +740,6 @@ public class WhirlwindVFX : MonoBehaviour
     }
 
 
-
-    /// <summary>발동 순간 중심에서 사방으로 뻗어 나가는 빛줄기.</summary>
-    private void DrawBurstRays()
-    {
-        if (loopCount > 0 || elapsed >= BurstRaySeconds) return;
-
-        float p = elapsed / BurstRaySeconds;
-        float eased = 1f - (1f - p) * (1f - p);
-        float near = Mathf.Lerp(0.18f, 1.05f, eased);
-        float far = near + Mathf.Lerp(0.38f, 0.06f, p);
-        Color32 color = p < 0.35f ? SlashWhite : (p < 0.7f ? SlashLight : SlashMid);
-
-        for (int k = 0; k < BurstRayCount; k++)
-        {
-            // 화면에서 고르게 보이도록 등각 각도로 나눈다(살짝 비틀어 칼날 방향과 겹치지 않게).
-            float a = (k * (360f / BurstRayCount) + 11f) * Mathf.Deg2Rad;
-            float cos = Mathf.Cos(a);
-            float sin = Mathf.Sin(a) * 0.5f;
-            int x0 = centerX + Mathf.RoundToInt(cos * radiusPx * near);
-            int y0 = centerY + Mathf.RoundToInt(sin * radiusPx * near);
-            int x1 = centerX + Mathf.RoundToInt(cos * radiusPx * far);
-            int y1 = centerY + Mathf.RoundToInt(sin * radiusPx * far);
-            painter.Line(x0, y0, x1, y1, 0, 0, 0, color);
-        }
-    }
 
     /// <summary>
     /// 한 바퀴를 다 돈 순간 테두리를 따라 별빛이 차례로 반짝인다.

@@ -85,11 +85,8 @@ public struct TreeShieldBrokenSignal { }
 // 별자리가 실제로 발현(레이저 시작)된 순간
 public struct ConstellationManifestedSignal { }
 
-// 플레이어가 불씨를 획득한 순간
-public struct EmberAcquiredSignal { }
-
-// 플레이어가 던전 차량(오프로드)에 상호작용한 순간. 귀환 경고창이 뜨는 경로/생략되는 경로 모두 포함한다.
-public struct OffroadVehicleInteractedSignal { }
+// 용암숲 안내 중 첫 나무에서 나온 불씨를 플레이어가 모두 주운 순간
+public struct MagmaGuideEmbersCollectedSignal { }
 
 public struct GoToHomeSignal { }
 

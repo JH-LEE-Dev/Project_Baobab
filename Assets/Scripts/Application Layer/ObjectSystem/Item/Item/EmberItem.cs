@@ -43,6 +43,11 @@ public class EmberItem : Item, IStaticCollidable
     public Vector3Int GroundCell { get; set; }
     public bool bHasGroundCell { get; set; }
 
+    // 용암숲 기믹 안내(Quest UI) - 안내 중 첫 나무에서 나온 불씨인지(다 주우면 안내 클리어), 바닥에 있는 동안 위에 띄운 화살표.
+    // 둘 다 컨트롤러가 붙이고 뗀다. bGuideTracked는 ResetItem에서 내린다.
+    public bool bGuideTracked { get; set; }
+    public QuestIndicator GuideIndicator { get; set; }
+
     private bool bNeedsUpdate;
 
     [SerializeField] private SpriteRenderer spriteRenderer;
@@ -178,6 +183,7 @@ public class EmberItem : Item, IStaticCollidable
         suckTarget = null;
         elapsed = 0f;
         suckSpeed = 0f;
+        bGuideTracked = false;
         bExpires = false;
         remainingLifetime = 0f;
         landingDampTime = LandingDampDuration;
