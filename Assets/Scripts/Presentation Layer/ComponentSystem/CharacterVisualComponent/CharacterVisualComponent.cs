@@ -87,6 +87,17 @@ public class CharacterVisualComponent : MonoBehaviour
     private Coroutine flashCoroutine;
     private SpriteRenderer currentExtraRenderer;
 
+    // 무적 깜빡임(나무 열기에 맞은 뒤 무적 시간 동안). 몸통·얼굴·수면 반사·무기를 이 간격(초)마다 반투명(InvulnerableBlinkAlpha)과
+    // 원래 모습으로 번갈아 바꾼다. 셰이더 _Color 알파를 MaterialPropertyBlock으로 내린다 - 렌더러 enabled(수면 전환·눈 깜빡임이 씀),
+    // SpriteRenderer.color(그늘 색), forceRenderingOff(화면을 덮는 UI가 씀)와 겹치지 않는다. 그림자는 그대로 둔다.
+    private const float InvulnerableBlinkInterval = 0.1f;
+    private const float InvulnerableBlinkAlpha = 0.35f;
+    private static readonly int ColorID = Shader.PropertyToID("_Color");
+    private bool bInvulnerableBlinking;
+    private bool bInvulnerableHidden;
+    private float invulnerableBlinkElapsed;
+    private SpriteRenderer invulnerableBlinkExtraRenderer;
+
     // Character.cs 컴파일 호환성 유지용 (혹시 외부에서 사용되는 경우 대비)
     public Animator Anim => null;
 
@@ -464,6 +475,60 @@ public class CharacterVisualComponent : MonoBehaviour
     private void Update()
     {
         UpdateItemAcquireBounce(Time.deltaTime);
+        UpdateInvulnerableBlink(Time.deltaTime);
+    }
+
+    /// <summary>무적 깜빡임을 처음부터 시작한다. 맞은 순간은 원래 모습으로 시작해 간격마다 반투명/원래 모습을 바꾼다.</summary>
+    public void StartInvulnerableBlink(SpriteRenderer _extraRenderer = null)
+    {
+        StopInvulnerableBlink();
+
+        bInvulnerableBlinking = true;
+        invulnerableBlinkElapsed = 0f;
+        invulnerableBlinkExtraRenderer = _extraRenderer;
+    }
+
+    /// <summary>무적 깜빡임을 끝내고 원래 모습(불투명)으로 되돌린다. 깜빡이는 중이 아니면 아무것도 하지 않는다.</summary>
+    public void StopInvulnerableBlink()
+    {
+        if (false == bInvulnerableBlinking) return;
+
+        bInvulnerableBlinking = false;
+        SetInvulnerableHidden(false);
+        invulnerableBlinkExtraRenderer = null;
+    }
+
+    private void UpdateInvulnerableBlink(float _deltaTime)
+    {
+        if (false == bInvulnerableBlinking) return;
+
+        invulnerableBlinkElapsed += _deltaTime;
+        bool bHidden = 1 == ((int)(invulnerableBlinkElapsed / InvulnerableBlinkInterval) & 1);
+        if (bHidden != bInvulnerableHidden) SetInvulnerableHidden(bHidden);
+    }
+
+    private void SetInvulnerableHidden(bool _bHidden)
+    {
+        bInvulnerableHidden = _bHidden;
+        if (flashMPB == null) flashMPB = new MaterialPropertyBlock();
+
+        Color color = _bHidden ? new Color(1f, 1f, 1f, InvulnerableBlinkAlpha) : Color.white;
+        ApplyColorToRenderer(sr, color);
+        ApplyColorToRenderer(faceSR, color);
+        ApplyColorToRenderer(faceBlinkSR, color);
+        ApplyColorToRenderer(onWaterSR, color);
+        ApplyColorToRenderer(onWaterFaceSR, color);
+        ApplyColorToRenderer(onWaterFaceBlinkSR, color);
+        ApplyColorToRenderer(invulnerableBlinkExtraRenderer, color);
+    }
+
+    private void ApplyColorToRenderer(SpriteRenderer _renderer, Color _color)
+    {
+        if (_renderer == null) return;
+
+        _renderer.GetPropertyBlock(flashMPB);
+        flashMPB.SetColor(ColorID, _color);
+        _renderer.SetPropertyBlock(flashMPB);
     }
 
     private void LateUpdate()
@@ -646,6 +711,7 @@ public class CharacterVisualComponent : MonoBehaviour
     private void OnDisable()
     {
         ResetFlash();
+        StopInvulnerableBlink();
         bDashAfterimageEmitting = false;
         bDashAfterimageFirstPending = false;
     }

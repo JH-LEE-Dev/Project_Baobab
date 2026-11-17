@@ -221,9 +221,10 @@ public class InDungeonVFXManager : MonoBehaviour
 
     [Header("Tree Heat Indicator (열기 방출 예고)")]
     [SerializeField] private Material treeHeatIndicatorMaterial;
-    // 열기 판정은 나무를 둘러싼 인접 8타일(3x3)이다. 등각 타일(1 x 0.5) 기준으로 그 마름모의 꼭짓점을
-    // 지나는 타원(가로 반지름 1.5, 세로 0.75)이면 판정 범위 전체를 덮는다.
+    // 열기 범위 타원의 가로 반지름(세로는 절반). 나무 밑동을 중심으로 이 타원을 바닥에 그리고,
+    // 열기 판정(InDungeonObjectManager.OnTreeHeatEmit)도 캐릭터 발밑이 이 타원 안인지로 한다.
     [SerializeField] private float treeHeatIndicatorRadius = 1.5f;
+    public float TreeHeatRadiusX => treeHeatIndicatorRadius;
     // 방출 몇 초 전부터 보여줄지. 카운트다운(3~5초)보다 길게 잡으면 카운트다운 내내 보인다.
     [SerializeField] private float treeHeatIndicatorLeadTime = 1.5f;
     // 캐릭터 도끼 인디케이터(Indicators 레이어, order 0)가 위에 그려지도록 한 칸 아래에 둔다.

@@ -2574,7 +2574,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         TreeGetHitEvent?.Invoke(_treeObj);
     }
 
-    // 상하좌우+대각선 8방향 오프셋. 매번 새로 할당하지 않도록 static readonly로 한 번만 생성한다.
+    // 상하좌우+대각선 8방향 오프셋(열기 넉백 방향). 매번 새로 할당하지 않도록 static readonly로 한 번만 생성한다.
     private static readonly Vector3Int[] TreeHeatOffsets = new Vector3Int[]
     {
         new Vector3Int(-1, -1, 0), new Vector3Int(0, -1, 0), new Vector3Int(1, -1, 0),
@@ -2582,7 +2582,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         new Vector3Int(-1, 1, 0), new Vector3Int(0, 1, 0), new Vector3Int(1, 1, 0),
     };
 
-    // 나무가 열기 카운트다운을 시작한 순간 호출된다. 방출 범위(인접 8타일)를 바닥에 미리 보여준다.
+    // 나무가 열기 카운트다운을 시작한 순간 호출된다. 방출 범위(나무 밑동 중심 타원, OnTreeHeatEmit 판정과 같은 범위)를 바닥에 미리 보여준다.
     private void OnTreeHeatCountdownStarted(TreeObj _tree, float _delay)
     {
         if (inDungeonVFXManager == null || _tree == null) return;
@@ -2590,8 +2590,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         inDungeonVFXManager.PlayTreeHeatIndicator(_tree, _delay);
     }
 
-    // 나무의 열기 타이머가 만료된 순간 호출된다. 나무 자신의 타일은 제외하고 8방향 인접 타일에
-    // 캐릭터가 있을 때만 스태미나 피해를 준다.
+    // 열기 범위 타원의 가로 반지름(인디케이터를 못 찾았을 때만 쓰는 기본값, InDungeonVFXManager.treeHeatIndicatorRadius와 같은 값).
+    private const float DefaultTreeHeatRadiusX = 1.5f;
+
+    // 나무의 열기 타이머가 만료된 순간 호출된다. 바닥에 그린 예고 타원(TreeHeatIndicator)과 같은 범위,
+    // 즉 나무 밑동을 중심으로 한 등각 타원(가로 반지름 R, 세로 R/2) 안에 캐릭터 발밑이 있을 때만 맞는다.
+    // 넉백/기절 중이거나 맞은 뒤 무적 시간(3초) 동안은 맞지 않는다(Character.bTreeHeatImmune).
+    //
+    // 예전에는 캐릭터가 선 칸이 나무 칸의 인접 8칸인지로 판정했는데, 그 3x3 마름모는 예고 타원 안에 들어가는
+    // 더 작은 범위라 타원 안쪽(특히 나무 옆 대각선 방향 바깥쪽)에 서 있어도 맞지 않는 구역이 있었다.
     private void OnTreeHeatEmit(TreeObj _tree)
     {
         if (character == null || _tree == null) return;
@@ -2604,26 +2611,54 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 피치 랜덤 범위와 볼륨은 TreeFireExplosion 큐/DB에서 조절한다
         Sound.Play(SoundID.TreeFireExplosion, _tree.transform.position);
 
-        if (character.bTreeHeatImmune) return; // 넉백/경직 중엔 열기 영향 없음
+        if (character.bTreeHeatImmune) return; // 넉백/기절·무적 중엔 열기 영향 없음
 
         // 귀환 경고창이 떠 있는 동안이나 귀환/사망으로 원정이 끝나는 중에는 열기 영향(데미지+넉백)을 주지 않는다.
         // 이 구간은 캐릭터 조작과 피로도 감소가 멈춘 상태인데, 예전엔 여기 걸리는 조건이 없어서 원목을 떨구며
         // 기다리는 캐릭터가 한 칸 밀리고 기절 연출이 재생됐다. (발산 VFX/사운드는 위에서 그대로 나온다)
         if (RunEndState != ERunEndState.None || bWarningPending) return;
 
-        Vector3Int treeCell = _tree.CellPos;
-        Vector3Int characterCell = character.CurrentCell;
+        // 캐릭터 루트가 발밑이다(스프라이트 피벗이 발 픽셀). 인디케이터도 나무 transform 위치(밑동)를 중심으로 그린다.
+        Vector2 delta = (Vector2)(character.transform.position - _tree.transform.position);
+        float radiusX = null != inDungeonVFXManager ? Mathf.Max(0.01f, inDungeonVFXManager.TreeHeatRadiusX) : DefaultTreeHeatRadiusX;
+        float radiusY = radiusX * 0.5f;
+        float ellipse = (delta.x * delta.x) / (radiusX * radiusX) + (delta.y * delta.y) / (radiusY * radiusY);
+        if (ellipse > 1f) return;
 
+        // 피해(최대 피로도의 15%)·넉백·기절·무적은 캐릭터가 건다("열기 내성 강화" 반영). 나무의 HeatDamageAmount는
+        // 이제 피해량이 아니라 이 맵에 나무 열기가 있는지(0보다 큰지)만 정한다(TreeObj가 카운트다운을 시작하는 조건).
+        // 면역 100%("열기 내성 강화")면 맞는 연출을 하나도 내지 않는다. 나무가 열기를 뿜는 VFX·폭발음은 위에서 그대로 나온다.
+        if (character.ApplyTreeHeatHit(GetTreeHeatKnockbackOffset(_tree, delta)))
+        {
+            PlayTreeHeatHitFeedback(_tree);
+        }
+    }
+
+    // 넉백 방향(8방향 셀 오프셋). 나무 칸 → 캐릭터 칸 차이를 한 칸으로 줄여 쓰고(인접 칸이면 예전과 같은 방향),
+    // 같은 칸으로 잡히면 화면상 나무 → 발밑 방향에 가장 가까운 8방향을 고른다.
+    private Vector3Int GetTreeHeatKnockbackOffset(TreeObj _tree, Vector2 _worldDelta)
+    {
+        Vector3Int cellDelta = character.CurrentCell - _tree.CellPos;
+        Vector3Int offset = new Vector3Int(Mathf.Clamp(cellDelta.x, -1, 1), Mathf.Clamp(cellDelta.y, -1, 1), 0);
+        if (Vector3Int.zero != offset) return offset;
+
+        ITilemapDataProvider tilemap = environmentProvider.tilemapDataProvider;
+        Vector2 origin = tilemap.CellToWorld(Vector3Int.zero);
+        Vector2 dir = 0.0001f < _worldDelta.sqrMagnitude ? _worldDelta.normalized : Vector2.down;
+
+        Vector3Int best = TreeHeatOffsets[1];
+        float bestDot = float.MinValue;
         for (int i = 0; i < TreeHeatOffsets.Length; i++)
         {
-            if (treeCell + TreeHeatOffsets[i] == characterCell)
+            Vector2 offsetWorld = (Vector2)tilemap.CellToWorld(TreeHeatOffsets[i]) - origin;
+            float dot = Vector2.Dot(dir, offsetWorld.normalized);
+            if (dot > bestDot)
             {
-                character.TakeEnvironmentalStaminaDamage(_tree.HeatDamageAmount * character.TreeHeatMultiplier); // "열기 내성 강화"
-                character.ApplyTreeHeatKnockback(TreeHeatOffsets[i]);
-                PlayTreeHeatHitFeedback(_tree);
-                return;
+                bestDot = dot;
+                best = TreeHeatOffsets[i];
             }
         }
+        return best;
     }
 
     // 열기에 맞아 밀려날 때의 손맛(본편만). 피해·넉백은 위에서 이미 끝났고 여기서는 느낌만 더한다.
