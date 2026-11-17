@@ -516,8 +516,8 @@ public static class RoguelikeLobbyUIBuilder
         }
     }
 
-    // 도전과제 칸 안쪽 배치(칸 높이 62): 위 제목 1줄, 그 아래 팁 2줄, 오른쪽 끝 세로 중앙에 달성 깃발(달성한 칸만 켠다).
-    // Galmuri11 12pt는 한 줄 14px, 2줄은 30px다. Panel_Info 테두리 안쪽에 제목 14 + 팁 2줄(31)을 넣으려면 46(기록 줄 높이)으로는 모자라 62로 잡는다(테두리 그림에서 위 8 · 아래 9px 띄움, 한 화면 약 4칸).
+    // 도전과제 칸 안쪽 배치(기본 62, 런타임에 폰트 · 줄 수에 맞춰 늘어난다 - UI_RoguelikeChallengeRow.FitHeight): 위 제목 1줄, 그 아래 팁, 오른쪽 끝 세로 중앙에 달성 깃발(달성한 칸만 켠다).
+    // Galmuri11 12pt는 한 줄 14px, 2줄은 30px다. Panel_Info 테두리 안쪽에 제목 14 + 팁 2줄(31)을 넣으려면 46(기록 줄 높이)으로는 모자라 62로 잡는다(테두리 그림에서 위 8 · 아래 9px 띄움, 한 화면 약 4칸). 여기 수치는 프리팹의 기본값이다.
     // 글자 오른쪽 여백은 깃발 자리를 늘 비워 두도록 달성 여부와 무관하게 30으로 고정한다(달성 전후로 팁 줄바꿈이 달라지지 않게 한다).
     private const float ChallengeTextX = 10f;
     private const float ChallengeTextRight = 30f;

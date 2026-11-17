@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: combo_spore_offroad
   nameKey: Roguelike_Card_combo_spore_offroad
   descriptionKey: Roguelike_Card_combo_spore_offroad_Desc
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 495bacbf0bc4eb340861f99aed64f35a, type: 3}
   kind: 3
   skillTag: 0
   exclusiveGroup: 3

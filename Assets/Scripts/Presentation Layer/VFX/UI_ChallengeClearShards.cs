@@ -5,7 +5,7 @@ namespace PresentationLayer.VFX
     /// <summary>
     /// 도전과제 창 달성 칸의 "튀는 조각" 공용 층(승인된 시뮬레이션 https://claude.ai/artifact/VCZpYTh7sskVdJgvELxkVv).
     /// 조각은 칸 밖으로 튀어야 하므로 본문 마스크 밖(판 아래 공용 그래픽)에 그린다. 칸마다 Burst를 부르면 지연 뒤 12개가 한꺼번에 생긴다
-    /// (앞 4개는 깃발 자리, 나머지 8개는 윗변). 모양 k%3 = ◆ / + / ●, 색 k%3 = 흰 / 금 / 호박. 중력 낙하, 수명 35% 뒤 한 단계 작게(◆ -> +, 나머지 -> ●), 70% 뒤 `.`, 85% 뒤 알파 0.5.
+    /// (앞 4개는 깃발 자리 = 칸 세로 중앙보다 1px 위, 나머지 8개는 윗변). 모양 k%3 = ◆ / + / ●, 색 k%3 = 흰 / 금 / 호박. 중력 낙하, 수명 35% 뒤 한 단계 작게(◆ -> +, 나머지 -> ●), 70% 뒤 `.`, 85% 뒤 알파 0.5.
     ///
     /// 좌표는 그래픽 로컬 좌표(1 캔버스 단위 = 게임 1px, y 위로 증가)다. 30fps 틱이 바뀔 때만 다시 그리고 Commit한다.
     /// 틱당 최대 쿼드 수: 갓 생긴 조각이 가장 크다(◆ 5쿼드, + 3쿼드, ● 1쿼드, 칸당 4 x (5 + 3 + 1) = 36). 본문에 보이는 칸은 최대 5칸이라 5 x 36 = 180, 배열이 전부 찬 64개여도 192(256 이하).
@@ -23,9 +23,9 @@ namespace PresentationLayer.VFX
         private const int MaxCatchUpTicks = 6;
         private const float Gravity = 260.0f;
 
-        // 칸 안 깃발 자리(칸 왼쪽 위 기준, 시뮬레이션 수치): 오른쪽에서 21px + 5, 위에서 30px
+        // 칸 안 깃발 자리(칸 왼쪽 위 기준, 시뮬레이션 수치): 오른쪽에서 21px + 5, 세로는 칸 중앙(깃발 앵커)에서 위로 1px
         private const float FlagSpotRight = 21.0f - 5.0f;
-        private const float FlagSpotDown = 30.0f;
+        private const float FlagSpotUp = 1.0f;
         private const float TopSpotMargin = 14.0f;
         private const float TopSpotDown = 2.0f;
 
@@ -46,6 +46,7 @@ namespace PresentationLayer.VFX
             public bool bActive;
             public Vector2 topLeft;
             public float width;
+            public float height;
             public float delay;
             public int seed;
         }
@@ -71,9 +72,9 @@ namespace PresentationLayer.VFX
 
         /// <summary>
         /// 칸 하나의 조각 12개를 _delay초 뒤에 터뜨린다.
-        /// _rowTopLeft = 칸 왼쪽 위 모서리(그래픽 로컬 좌표, 정수), _rowWidth = 칸 폭, _seed = 이 칸의 난수 시드.
+        /// _rowTopLeft = 칸 왼쪽 위 모서리(그래픽 로컬 좌표, 정수), _rowWidth = 칸 폭, _rowHeight = 칸 높이(깃발이 세로 중앙에 붙으므로 깃발 자리 계산에 쓴다), _seed = 이 칸의 난수 시드.
         /// </summary>
-        public void Burst(Vector2 _rowTopLeft, float _rowWidth, float _delay, int _seed)
+        public void Burst(Vector2 _rowTopLeft, float _rowWidth, float _rowHeight, float _delay, int _seed)
         {
             for (int i = 0; PendingCapacity > i; i++)
             {
@@ -82,6 +83,7 @@ namespace PresentationLayer.VFX
                 pendings[i].bActive = true;
                 pendings[i].topLeft = _rowTopLeft;
                 pendings[i].width = _rowWidth;
+                pendings[i].height = _rowHeight;
                 pendings[i].delay = _delay;
                 pendings[i].seed = _seed;
                 pendingCount++;
@@ -173,7 +175,7 @@ namespace PresentationLayer.VFX
                 float x = bFromFlag
                     ? _pending.topLeft.x + _pending.width - FlagSpotRight + (NextFloat() - 0.5f) * 6.0f
                     : _pending.topLeft.x + TopSpotMargin + NextFloat() * (_pending.width - TopSpotMargin * 2.0f);
-                float y = bFromFlag ? _pending.topLeft.y - FlagSpotDown : _pending.topLeft.y - TopSpotDown;
+                float y = bFromFlag ? _pending.topLeft.y - (Mathf.Floor(_pending.height * 0.5f) - FlagSpotUp) : _pending.topLeft.y - TopSpotDown;
                 float vx = (NextFloat() - 0.5f) * 60.0f;
                 float vy = 40.0f + NextFloat() * 70.0f;
                 float max = 0.45f + NextFloat() * 0.4f;

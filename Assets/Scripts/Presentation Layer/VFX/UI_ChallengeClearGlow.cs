@@ -20,6 +20,7 @@ namespace PresentationLayer.VFX
     public class UI_ChallengeClearGlow : MonoBehaviour
     {
         public const int RowWidth = 340;
+        // 기본(최소) 칸 높이. 실제 높이는 언어 · 팁 줄 수에 따라 늘어나므로 그릴 때 칸의 rect 높이를 읽어 rowHeight에 담는다.
         public const int RowHeight = 62;
 
         // 시뮬레이션 색: 흰 #FFF6D8, 금 #FFD45A, 호박 #FF9D2E (감마 rgb, 알파는 그릴 때 가산 세기로 넣는다)
@@ -36,8 +37,6 @@ namespace PresentationLayer.VFX
         // 테두리 둘레: 칸 가장자리에서 1px 안쪽 사각형, 왼쪽 위에서 시계 방향
         private const int PerimeterOffset = 1;
         private const int PerimeterWidth = RowWidth - 3;
-        private const int PerimeterHeight = RowHeight - 3;
-        private const float PerimeterLength = 2.0f * (PerimeterWidth + PerimeterHeight);
 
         private const float FlashEnd = 0.45f;
         private const float RunnerStart = 0.05f;
@@ -103,6 +102,9 @@ namespace PresentationLayer.VFX
         private bool bFlagCached;
         private Vector2 flagBasePosition;
         private int flagOffset;
+        private int rowHeight = RowHeight;
+        private int perimeterHeight = RowHeight - 3;
+        private float perimeterLength = 2.0f * (PerimeterWidth + RowHeight - 3);
 
         // 퍼블릭 초기화 및 제어 메서드
 
@@ -174,6 +176,17 @@ namespace PresentationLayer.VFX
 
         // 일반 비즈니스 로직 및 내부 메서드
 
+        // 칸(이 컴포넌트가 붙은 RectTransform)의 실제 높이를 읽어 높이 의존 값을 맞춘다. 같으면 바로 돌아간다(할당 없음).
+        private void RefreshRowHeight()
+        {
+            int height = Mathf.RoundToInt(((RectTransform)transform).rect.height);
+            if (0 >= height || height == rowHeight) return;
+
+            rowHeight = height;
+            perimeterHeight = height - 3;
+            perimeterLength = 2.0f * (PerimeterWidth + perimeterHeight);
+        }
+
         private void RestoreFlag()
         {
             if (false == bFlagCached || null == flag) return;
@@ -205,19 +218,19 @@ namespace PresentationLayer.VFX
         // 시뮬레이션 좌표(칸 왼쪽 위 기준, y 아래로 증가) -> 그래픽 좌표(칸 왼쪽 아래 기준, y 위로 증가)
         private void PutRect(int _x, int _y, int _width, int _height, in Color32 _color)
         {
-            graphic.Rect(_x, RowHeight - _y - _height, _x + _width, RowHeight - _y, _color);
+            graphic.Rect(_x, rowHeight - _y - _height, _x + _width, rowHeight - _y, _color);
         }
 
         // 입자 모양: 기준 칸(_x, _y)은 시뮬레이션과 같은 칸이다(● 는 오른쪽 · 아래로 2x2).
         private void PutShape(int _shape, int _x, int _y, in Color32 _color)
         {
-            graphic.Shape(_shape, _x, RowHeight - 1 - _y, _color);
+            graphic.Shape(_shape, _x, rowHeight - 1 - _y, _color);
         }
 
         // 테두리 둘레 위의 점(시뮬레이션 좌표). 시계 방향, 왼쪽 위에서 시작.
-        private static void Perimeter(float _distance, out float _x, out float _y)
+        private void Perimeter(float _distance, out float _x, out float _y)
         {
-            float d = ((_distance % PerimeterLength) + PerimeterLength) % PerimeterLength;
+            float d = ((_distance % perimeterLength) + perimeterLength) % perimeterLength;
             if (PerimeterWidth > d)
             {
                 _x = PerimeterOffset + d;
@@ -226,24 +239,24 @@ namespace PresentationLayer.VFX
             }
 
             d -= PerimeterWidth;
-            if (PerimeterHeight > d)
+            if (perimeterHeight > d)
             {
                 _x = PerimeterOffset + PerimeterWidth;
                 _y = PerimeterOffset + d;
                 return;
             }
 
-            d -= PerimeterHeight;
+            d -= perimeterHeight;
             if (PerimeterWidth > d)
             {
                 _x = PerimeterOffset + PerimeterWidth - d;
-                _y = PerimeterOffset + PerimeterHeight;
+                _y = PerimeterOffset + perimeterHeight;
                 return;
             }
 
             d -= PerimeterWidth;
             _x = PerimeterOffset;
-            _y = PerimeterOffset + PerimeterHeight - d;
+            _y = PerimeterOffset + perimeterHeight - d;
         }
 
         // 틱 하나: 금가루 생성(칸당 확률 0.10) 뒤 이동 · 소멸
@@ -277,7 +290,7 @@ namespace PresentationLayer.VFX
                 motes[i].bPlus = bPlus;
                 motes[i].bGold = bGold;
                 motes[i].x = x;
-                motes[i].y = RowHeight - MoteSpawnBottom;
+                motes[i].y = rowHeight - MoteSpawnBottom;
                 motes[i].life = 0.0f;
                 motes[i].max = max;
                 motes[i].speed = speed;
@@ -289,6 +302,7 @@ namespace PresentationLayer.VFX
         {
             float rt = _tick / TickRate - delay;
 
+            RefreshRowHeight();
             graphic.BeginQuads();
             ApplyFlag(rt);
             if (SheenStart < rt) DrawSheen(rt);
@@ -320,7 +334,7 @@ namespace PresentationLayer.VFX
             float hx = -40.0f + ph * (RowWidth + 80.0f);
             Color32 band = WithAlpha(ColorWhite, 0.10f);
             Color32 seam = WithAlpha(ColorWhite, 0.16f);
-            for (int yy = 3; RowHeight - 3 > yy; yy++)
+            for (int yy = 3; rowHeight - 3 > yy; yy++)
             {
                 int sx = RoundHalfUp(hx - (yy >> 1));
                 PutRect(sx, yy, SheenBandWidth, 1, band);
@@ -333,20 +347,20 @@ namespace PresentationLayer.VFX
         {
             float a = 0.1f > _rt ? 0.85f : (0.2f > _rt ? 0.5f : (0.32f > _rt ? 0.25f : 0.1f));
             Color32 c = WithAlpha(0.2f > _rt ? ColorWhite : ColorGold, a);
-            PutRect(2, 2, RowWidth - 4, RowHeight - 4, c);
+            PutRect(2, 2, RowWidth - 4, rowHeight - 4, c);
         }
 
         // 테두리를 도는 빛: 머리가 0.7초에 둘레 한 바퀴, 뒤로 46px(0~5 흰 1.0, 6~19 금 0.7, 20~45 호박 0.35), 점마다 2x2
         private void DrawRunner(float _rt)
         {
-            int head = RoundHalfUp((_rt - RunnerStart) / RunnerDuration * PerimeterLength);
+            int head = RoundHalfUp((_rt - RunnerStart) / RunnerDuration * perimeterLength);
             Color32 white = WithAlpha(ColorWhite, 1.0f);
             Color32 gold = WithAlpha(ColorGold, 0.7f);
             Color32 amber = WithAlpha(ColorAmber, 0.35f);
             for (int k = 0; RunnerLength > k; k++)
             {
                 int d = head - k;
-                if (0 > d || PerimeterLength < d) continue;
+                if (0 > d || perimeterLength < d) continue;
 
                 Perimeter(d, out float px, out float py);
                 PutRect(RoundHalfUp(px), RoundHalfUp(py), 2, 2, 6 > k ? white : (20 > k ? gold : amber));
@@ -361,7 +375,7 @@ namespace PresentationLayer.VFX
                 float ph = ((_rt - GlintStart + k * GlintSpotPhase + order * GlintOrderPhase) % GlintPeriod) / GlintDuration;
                 if (1.0f <= ph) continue;
 
-                Perimeter(GlintSpots[k] * PerimeterLength, out float fx, out float fy);
+                Perimeter(GlintSpots[k] * perimeterLength, out float fx, out float fy);
                 int px = RoundHalfUp(fx);
                 int py = RoundHalfUp(fy);
                 int frame = Mathf.FloorToInt(ph * 4.0f);

@@ -25,7 +25,7 @@ using UnityEngine.UI;
 ///
 /// [카드 띠 - 계획표 7장 · 10장] 줄(UI_RoguelikeRecordRow)을 클릭하거나 패드 A로 고르면 그 줄 바로 아래에 그 판의 카드 전부가 든 띠 한 줄(폭 302, 높이 36, 8칸 보임)이 열린다.
 ///   한 번에 한 줄만 열리고, 아래 줄들이 띠 높이 + 간격(40, 카드가 8장을 넘으면 가로 스크롤바 자리 6 추가)만큼 내려간다. 판 크기와 위치는 늘 그대로다(360x282).
-///   카드가 0장인 줄은 열리지 않는다. 클리어 · 언리밋 랭킹 탭은 들어오면 1위 줄의 띠가 열려 있고(고정 아님, 본문 스크롤 맨 위, 패드 커서는 1위 줄) 다시 누르면 닫힌다. 최근 기록 탭(1줄)은 탭에 들어오면 띠가 항상 열려 있고(bStripPinned) 닫을 수 없다: 줄을 눌러도 닫히지 않고, 패드 A는 커서를 띠로 보내며 띠에서 B는 커서만 줄로 돌려준다(줄에서 B는 창 닫기).
+///   카드가 0장인 줄은 열리지 않는다. 클리어 · 언리밋 랭킹 탭은 들어오면 1위 줄의 띠가 열려 있고(고정 아님, 본문 스크롤 맨 위, 패드 커서는 1위 줄) 다시 누르면 닫힌다. 최근 기록 탭(1줄)은 탭에 들어오면 띠가 항상 열려 있고(bStripPinned) 닫을 수 없다: 줄을 눌러도 닫히지 않고, 패드 A는 커서를 띠로 보낸다.
 ///   띠가 어느 줄의 것인지는 열린 줄의 바탕을 금색 테두리(Panel_Info_Gold)로 바꾸고, 줄 왼쪽 아래에서 띠 왼쪽으로 꺾이는 주황(#FF9D2E) 2px ㄴ자 연결선(단색 Image 2개)을 그려 보인다.
 ///   띠는 줄보다 14px 들여 놓는다(폭 302로 8칸이 딱 보이고 칸이 더 있으면 가로로 스크롤된다). 카드 순서는 표시할 때만 액티브 -> 패시브 -> 계약 -> 프리즘(ECardKind 값 순, 같은 종류 안에서는 저장 순서)으로 나눈다. 저장 데이터는 건드리지 않는다.
 ///   본문(340x250 마스크)은 세로 ScrollRect다: 내용이 250을 넘을 때만(5줄 탭에서 띠를 열었을 때) 오른쪽 여백에 세로 스크롤바가 뜨고 스크롤된다.
@@ -33,11 +33,11 @@ using UnityEngine.UI;
 ///   띠는 가로 ScrollRect(UI_RoguelikeStripScroll)다: 마우스 왼쪽 버튼으로 잡고 끌어 스크롤하고(세로로 끌면 본문으로 넘어간다), 관성이 있고 끝에서 더 밀리지 않는다(Clamped).
 ///   손을 떼거나 관성이 느려지면 가장 가까운 칸 경계(38px 단위, 끝은 끝)로 0.12초 미끄러져 맞는다. 휠 · 패드 좌우는 한 칸씩 같은 방식으로 미끄러진다.
 ///   두 스크롤바(UI_RoguelikeScrollbar)는 보유 카드 창과 같은 그림이며 막대를 끌어 스크롤할 수 있다.
-///   패드: 위 / 아래로 줄 이동(Explicit), A로 띠를 열면 커서가 띠의 첫 칸으로 넘어가 좌 / 우로 칸을 옮기고(보이도록 띠가 한 칸씩 미끄러져 스크롤), B는 띠를 닫고 커서를 그 줄로 돌려준다.
-///   줄에 커서가 있을 때(띠가 닫혀 있을 때)의 B는 창 닫기다. LB / RB 탭 전환은 띠를 닫고 새 탭의 첫 줄을 고른다.
-///   포커스 표시는 로그라이크의 다른 화면과 같은 커서 상자(viewCtx.cursorBoxUI)다. 마우스 모드의 호버는 두 단계다: 포인터가 올라간 줄은 hoveredRow에 기록만 하고, 그 줄이 본문 뷰포트 안에 온전히 보이며 본문이 멈춰 있을 때만 "인정"해 효과음 · 포커스 · 커서를 낸다(걸쳐 보이는 줄 · 스크롤 중에는 반응 없음, 클릭은 그대로 받는다). 패드의 커서는 대상이 일부라도 잘려 있으면 숨었다가 온전해지면 뜬다.
-///   B 한 번이 "띠 닫기"와 "창 닫기"를 함께 하지 않게 한다: UICancelEvent(이 창)와 깊이 관리(UIDepthController.TryCloseTopView가 부르는 Hide) 두 경로가 같은 프레임에 오므로,
-///   Hide()는 띠가 열려 있으면 띠만 닫고, 띠를 방금(같은 프레임) 닫았으면 무시한다. 딤 클릭 · 뒤로 버튼은 띠와 상관없이 창을 닫는다(RequestClose).
+///   패드: 위 / 아래로 줄 이동(Explicit), A로 띠를 열면 커서가 띠의 첫 칸으로 넘어가 좌 / 우로 칸을 옮긴다(보이도록 띠가 한 칸씩 미끄러져 스크롤).
+///   띠 칸에서 위 / 아래를 누르면 옆 기록의 카드 띠가 열리고 커서는 카드 칸에 남는다(같은 칸 번호, 넘치면 마지막 칸. 카드가 0장인 기록이면 띠를 닫고 그 줄로 커서만 옮긴다. 맨 위 / 맨 아래에서는 아무 일도 없다).
+///   B는 띠가 열려 있든 아니든 항상 창 닫기다. LB / RB 탭 전환은 띠를 닫고 새 탭의 첫 줄을 고른다.
+///   포커스 표시는 로그라이크의 다른 화면과 같은 커서 상자(viewCtx.cursorBoxUI)다. 마우스 모드의 호버는 두 단계다: 포인터가 올라간 줄은 hoveredRow에 기록만 하고, 그 줄이 본문 뷰포트 안에 온전히 보이며 본문이 멈춰 있을 때만 "인정"해 효과음 · 포커스 · 커서를 낸다(걸쳐 보이는 줄 · 스크롤 중에는 반응 없음, 클릭은 그대로 받는다). 패드의 커서는 대상이 일부라도 잘려 있으면 숨었다가 온전해지면 뜬다. 패드 모드에서는 마우스가 올라온 것을 기록만 하고 커서를 옮기지 않는다(본문이 미끄러지며 줄이 멈춘 포인터 아래를 지나가도 커서를 빼앗지 않는다).
+///   B · Esc · 딤 클릭 · 뒤로 버튼은 띠 상태와 상관없이 창을 바로 닫는다: UICancelEvent(이 창)와 깊이 관리(UIDepthController.TryCloseTopView가 부르는 Hide) 두 경로가 같은 프레임에 와도 두 번째는 이미 닫힌 뒤(IsVisible == false)라 한 번만 닫힌다.
 ///   패드 포커스는 ControllerSupport_UI가이드.md 3-8을 따른다: 패드 모드로 열릴 때 · 패드로 바뀔 때만 첫 줄 선택, Explicit 탐색, 선택이 null이 되면 복구, 마우스 모드로 바뀌면 선택 해제, 닫을 때 선택 비움.
 /// </summary>
 public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
@@ -216,8 +216,6 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     private bool bArrowBaseCaptured;
     private int stripRowIndex = -1;
     private int stripCount;
-    private int stripClosedFrame = -1;
-    private bool bWindowCloseForced;
     private bool bStripBar;
     private bool bStripPinned;
     private float bodyContentHeight;
@@ -244,6 +242,7 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     private Action<UI_RoguelikeRecordRow, bool> rowFocusedHandler;
     private Action<UI_RoguelikeRecordRow> rowExitedHandler;
     private Action<UI_RoguelikeCardIconSlot> slotSelectedHandler;
+    private Action<UI_RoguelikeCardIconSlot, MoveDirection> slotMovedHandler;
     private UnityAction<Vector2> stripScrolledHandler;
     private UnityAction<Vector2> bodyScrolledHandler;
     private Action<float> bodyBarHandler;
@@ -272,12 +271,13 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
         rowFocusedHandler = OnRowFocused;
         rowExitedHandler = OnRowExited;
         slotSelectedHandler = OnSlotSelected;
+        slotMovedHandler = OnSlotMoved;
         stripScrolledHandler = OnStripScrolled;
         bodyScrolledHandler = OnBodyScrolled;
         bodyBarHandler = OnBodyBarRequested;
         stripBarHandler = OnStripBarRequested;
         stripWheelHandler = OnStripWheelStep;
-        rowCursorMotion = CursorMotionSettings.RowSubtle;
+        rowCursorMotion = CursorMotionSettings.Still;
         slotCursorMotion = CursorMotionSettings.Card;
         languageChangedHandler = OnLanguageChanged;
         deviceChangedHandler = OnDeviceChanged;
@@ -759,58 +759,26 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     {
         if (false == IsVisible) return;
 
-        bWindowCloseForced = true;
         Hide();
-        bWindowCloseForced = false;
     }
 
-    /// <summary>패드 B(UICancelEvent) · 메인메뉴의 Esc. 띠가 열려 있으면 띠만 닫고, 아니면 창을 닫는다. 같은 프레임에 띠를 이미 닫았으면(깊이 관리 경로) 무시한다.</summary>
+    /// <summary>
+    /// 패드 B(UICancelEvent) · 메인메뉴의 Esc. 띠가 열려 있든 아니든 창을 바로 닫는다.
+    /// 깊이 관리(UIDepthController.TryCloseTopView)의 Hide()가 같은 프레임에 와도 두 번째는 IsVisible이 이미 꺼져 있어 한 번만 닫힌다.
+    /// </summary>
     private void OnCancelPressed()
     {
         if (false == IsVisible) return;
-        if (stripClosedFrame == Time.frameCount) return;
-        if (true == TryStepBackFromStrip()) return;
 
         RequestClose();
     }
 
     /// <summary>
-    /// 패드 B의 "한 단계 뒤로". 일반 띠는 닫고 커서를 그 줄로 돌려준다. 항상 열린 띠(최근 기록 탭)는 닫지 않고 커서가 띠 칸에 있을 때만 줄로 돌려준다.
-    /// 처리했으면 같은 프레임의 중복 처리를 막는 표시를 남기고 참을 돌려준다. 거짓이면 호출한 쪽이 창을 닫는다.
-    /// </summary>
-    private bool TryStepBackFromStrip()
-    {
-        if (0 > stripRowIndex) return false;
-
-        if (true == bStripPinned)
-        {
-            if (null == focusedSlot) return false;
-
-            stripClosedFrame = Time.frameCount;
-            FocusRow(rows[stripRowIndex]);
-            Sound.PlayUI(SoundID.OptionClick);
-            return true;
-        }
-
-        CloseStrip(true);
-        Sound.PlayUI(SoundID.OptionClick);
-        return true;
-    }
-
-    /// <summary>
     /// 깊이 관리(bCloseableByESC)의 ESC · 패드 B 경로는 UIDepthController.TryCloseTopView가 이 Hide()를 바로 부른다.
-    /// 그 경로로 왔을 때: 띠가 열려 있으면 띠만 닫고(항상 열린 띠는 커서만 줄로), 이번 프레임에 이미 한 단계 뒤로 갔으면 창을 닫지 않는다(B 한 번에 두 단계가 처리되지 않게).
-    /// RequestClose(딤 · 뒤로 버튼)는 bWindowCloseForced로 이 검사를 건너뛴다.
-    /// 닫힘 효과음은 여기서 낸다(깊이 관리 경로가 RequestClose를 거치지 않기 때문).
+    /// 닫힘 효과음은 여기서 낸다(깊이 관리 경로가 RequestClose를 거치지 않기 때문). 이미 닫혀 있으면 소리 없이 base.Hide()가 무시한다.
     /// </summary>
     public override void Hide()
     {
-        if (true == IsVisible && false == bWindowCloseForced)
-        {
-            if (stripClosedFrame == Time.frameCount) return;
-            if (true == TryStepBackFromStrip()) return;
-        }
-
         if (true == IsVisible) Sound.PlayUI(SoundID.MainClick);
         base.Hide();
     }
@@ -926,7 +894,7 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     }
 
     /// <summary>
-    /// 카드 띠를 닫는다. _bRestoreRow가 참이면(사용자가 닫은 경우) 같은 프레임의 중복 닫기를 막는 표시를 남기고, 패드 모드면 커서를 열었던 줄로 돌려준다.
+    /// 카드 띠를 닫는다. _bRestoreRow가 참이면(사용자가 닫은 경우) 패드 모드에서 커서를 열었던 줄로 돌려준다.
     /// 거짓이면(탭 전환 · 다른 줄을 열기 직전) 조용히 닫는다. 내용이 줄어 본문 스크롤은 맨 위로 돌아온다.
     /// </summary>
     private void CloseStrip(bool _bRestoreRow)
@@ -946,7 +914,6 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
 
         if (false == _bRestoreRow) return;
 
-        stripClosedFrame = Time.frameCount;
         if (true == IsGamepadMode && rows.Count > closedIndex && true == rows[closedIndex].gameObject.activeSelf) FocusRow(rows[closedIndex]);
     }
 
@@ -954,7 +921,6 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     private void ResetStripState()
     {
         stripRowIndex = -1;
-        stripClosedFrame = -1;
         bStripPinned = false;
         focusedRow = null;
         focusedSlot = null;
@@ -999,6 +965,7 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
             UI_RoguelikeCardIconSlot slot = Instantiate(stripSlotTemplate, stripContent);
             slot.name = "StripSlot" + stripSlots.Count;
             slot.SelectedEvent += slotSelectedHandler;
+            slot.MovedEvent += slotMovedHandler;
             stripSlots.Add(slot);
         }
 
@@ -1277,12 +1244,18 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
 
     /// <summary>
     /// 줄에 마우스가 올라왔거나(_bPointer) 패드 선택이 옮겨 왔다.
-    /// 마우스가 올라온 것은 hoveredRow로만 기록하고 반응(효과음 · 포커스 · 커서)은 하지 않는다: 마우스 모드의 반응은 UpdateMouseHover가 줄이 온전히 보이고 본문이 멈췄을 때 한다.
+    /// 마우스가 올라온 것은 장치 모드와 상관없이 hoveredRow로만 기록하고 반응(효과음 · 포커스 · 커서)은 하지 않는다: 마우스 모드의 반응은 UpdateMouseHover가 줄이 온전히 보이고 본문이 멈췄을 때 한다.
+    /// 패드 모드에서는 본문이 미끄러지며 줄이 멈춰 있는 포인터 아래를 지나가도 PointerEnter가 오는데, 이때 커서를 옮기면 EventSystem 선택과 어긋나므로 커서를 빼앗지 않는다.
     /// 마우스 모드에서 클릭으로 생긴 선택은 커서를 띄우지 않는다.
     /// </summary>
     private void OnRowFocused(UI_RoguelikeRecordRow _row, bool _bPointer)
     {
-        if (true == _bPointer) hoveredRow = _row;
+        if (true == _bPointer)
+        {
+            hoveredRow = _row;
+            return;
+        }
+
         if (false == IsGamepadMode) return;
 
         ApplyRowFocus(_row);
@@ -1347,6 +1320,38 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
         if (false == IsGamepadMode) return;
 
         ApplyStripFocus(_slot);
+    }
+
+    /// <summary>
+    /// 띠 칸에서 위 / 아래를 눌렀다(좌 / 우는 Explicit 탐색이 처리하므로 오지 않는다). 옆 기록(위 = 윗줄, 아래 = 아랫줄)의 카드 띠를 열고 커서는 같은 칸 번호(넘치면 마지막 칸)에 남긴다.
+    /// 옮겨 갈 기록에 카드가 0장이면 띠를 닫고 그 줄로 커서만 옮긴다. 맨 위 / 맨 아래에서는 아무 일도 없다.
+    /// FocusSlot · FocusRow는 포커스 상태를 먼저 갱신해 ApplyStripFocus · ApplyRowFocus가 효과음을 내지 않으므로, 옮겼을 때의 호버음은 여기서 한 번 낸다.
+    /// </summary>
+    private void OnSlotMoved(UI_RoguelikeCardIconSlot _slot, MoveDirection _direction)
+    {
+        if (false == IsGamepadMode || 0 > stripRowIndex) return;
+
+        int slotIndex = stripSlots.IndexOf(_slot);
+        if (0 > slotIndex) return;
+
+        int step = MoveDirection.Up == _direction ? -1 : 1;
+        int nextIndex = stripRowIndex + step;
+        while (0 <= nextIndex && rows.Count > nextIndex && false == rows[nextIndex].gameObject.activeSelf) nextIndex += step;
+
+        if (0 > nextIndex || rows.Count <= nextIndex) return;
+
+        UI_RoguelikeRecordRow nextRow = rows[nextIndex];
+        Sound.PlayUI(SoundID.ResultUIHover);
+
+        if (0 < nextRow.CardCount)
+        {
+            OpenStrip(nextIndex, false);
+            if (0 < stripCount) FocusSlot(stripSlots[Mathf.Min(slotIndex, stripCount - 1)]);
+            return;
+        }
+
+        CloseStrip(false);
+        FocusRow(nextRow);
     }
 
     private void ApplyRowFocus(UI_RoguelikeRecordRow _row)

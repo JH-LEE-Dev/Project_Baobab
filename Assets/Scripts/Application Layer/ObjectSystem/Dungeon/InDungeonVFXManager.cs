@@ -2082,9 +2082,9 @@ public class InDungeonVFXManager : MonoBehaviour
     /// <summary>
     /// [로그라이크] 오프로드 소환 위치 · 이동 경로 표시(VFX_OffroadLane, 기획서 v2.8). 위치가 정해지는 시점(발동 주기 시작)에 부르고,
     /// 돌려받은 컴포넌트에 발동 때 Fire, 웨이브 종료 때 Cancel을 부른다. _from/_to는 출발점/도착점, _halfWidth는 돌진 폭의 반폭
-    /// (0 이하이면 프리팹의 laneHalfWidth)이다. Fire 뒤 경로가 걷히면 스스로 풀로 돌아온다.
+    /// (0 이하이면 프리팹의 laneHalfWidth)이다. _tiles(필드 타일맵)를 주면 물 타일 칸은 켜지 않는다(null이면 가리지 않는다). Fire 뒤 경로가 걷히면 스스로 풀로 돌아온다.
     /// </summary>
-    public PresentationLayer.VFX.VFX_OffroadLane PlayOffroadLaneVFX(Vector3 _from, Vector3 _to, float _halfWidth)
+    public PresentationLayer.VFX.VFX_OffroadLane PlayOffroadLaneVFX(Vector3 _from, Vector3 _to, float _halfWidth, ITilemapDataProvider _tiles = null)
     {
         if (vfxComponent == null) return null;
 
@@ -2100,7 +2100,7 @@ public class InDungeonVFXManager : MonoBehaviour
         if (effect == null) return null;
 
         PresentationLayer.VFX.VFX_OffroadLane lane = effect.GetComponentInChildren<PresentationLayer.VFX.VFX_OffroadLane>(true);
-        if (lane != null) lane.Begin(_from, _to, _halfWidth);
+        if (lane != null) lane.Begin(_from, _to, _halfWidth, _tiles);
         return lane;
     }
 

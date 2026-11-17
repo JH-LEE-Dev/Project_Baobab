@@ -10,15 +10,17 @@ using UnityEngine.UI;
 ///   액티브 I~VI · 공통 패시브 I~IV, 마지막 레벨은 MAX, 계약(루비)은 ±, 프리즘은 레벨을 숨긴다(카드 화면과 같다).
 /// 칸 테두리 색은 카드 종류로 정한다: 일반(프리팹의 기본 그림) · 프리즘(보라) · 계약(빨강).
 /// 크기는 바꾸지 않는다(픽셀 UI 규칙).
-/// 기록 창의 카드 띠 칸만 선택 대상(selectable)이 있다 - 패드로 고르면 SelectedEvent를 올린다. 결과 화면 · 기록 줄의 칸은 selectable이 없어 선택되지 않는다.
+/// 기록 창의 카드 띠 칸만 선택 대상(selectable)이 있다 - 패드로 고르면 SelectedEvent를 올리고, 위 / 아래를 누르면 MovedEvent를 올린다(좌 / 우는 올리지 않고 Selectable의 Explicit 탐색이 처리한다).
+/// 결과 화면 · 기록 줄의 칸은 selectable이 없어 선택되지 않으므로 두 이벤트가 오지 않는다.
 /// </summary>
-public class UI_RoguelikeCardIconSlot : MonoBehaviour, ISelectHandler
+public class UI_RoguelikeCardIconSlot : MonoBehaviour, ISelectHandler, IMoveHandler
 {
     public const float SlotSize = 36f;
     // 레벨 배지: 칸 오른쪽 아래에서 안쪽으로 3px.
     private const float BadgeInset = 3f;
 
     public event Action<UI_RoguelikeCardIconSlot> SelectedEvent;
+    public event Action<UI_RoguelikeCardIconSlot, MoveDirection> MovedEvent;
 
     //외부 의존성 (프리팹에서 연결)
     [SerializeField] private Image frameImage;
@@ -115,8 +117,20 @@ public class UI_RoguelikeCardIconSlot : MonoBehaviour, ISelectHandler
         SelectedEvent?.Invoke(this);
     }
 
+    /// <summary>
+    /// 선택된 칸에서 방향 입력이 왔다. 위 / 아래만 알린다(Explicit 탐색의 위 / 아래 링크는 비어 있어 선택은 움직이지 않는다).
+    /// 같은 오브젝트의 Selectable.OnMove도 함께 불리므로 좌 / 우는 여기서 처리하지 않고 기존 탐색에 맡긴다.
+    /// </summary>
+    public void OnMove(AxisEventData _eventData)
+    {
+        if (MoveDirection.Up != _eventData.moveDir && MoveDirection.Down != _eventData.moveDir) return;
+
+        MovedEvent?.Invoke(this, _eventData.moveDir);
+    }
+
     private void OnDestroy()
     {
         SelectedEvent = null;
+        MovedEvent = null;
     }
 }

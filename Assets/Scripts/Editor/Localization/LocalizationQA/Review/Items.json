@@ -3959,6 +3959,94 @@
             "source": "코드분석",
             "template": "",
             "samples": ""
+        },
+        {
+            "slotGuid": "6024b23e059b2e143b0587117c676d30",
+            "slotPath": "Body/Header",
+            "contextGuid": "6024b23e059b2e143b0587117c676d30",
+            "contextPath": "Body/Header",
+            "contextDepth": 1000,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_ClearedToast",
+            "source": "수동",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6024b23e059b2e143b0587117c676d30",
+            "slotPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextGuid": "6024b23e059b2e143b0587117c676d30",
+            "contextPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextDepth": 1000,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_PrismAll_Title",
+            "source": "수동",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6024b23e059b2e143b0587117c676d30",
+            "slotPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextGuid": "6024b23e059b2e143b0587117c676d30",
+            "contextPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextDepth": 1000,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_CardMaxAll_Title",
+            "source": "수동",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6024b23e059b2e143b0587117c676d30",
+            "slotPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextGuid": "6024b23e059b2e143b0587117c676d30",
+            "contextPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextDepth": 1000,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_RubyAll_Title",
+            "source": "수동",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6024b23e059b2e143b0587117c676d30",
+            "slotPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextGuid": "6024b23e059b2e143b0587117c676d30",
+            "contextPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextDepth": 1000,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_TreeN_Title",
+            "source": "수동",
+            "template": "",
+            "samples": "10,000"
+        },
+        {
+            "slotGuid": "6024b23e059b2e143b0587117c676d30",
+            "slotPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextGuid": "6024b23e059b2e143b0587117c676d30",
+            "contextPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextDepth": 1000,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_UnlimitN_Title",
+            "source": "수동",
+            "template": "",
+            "samples": "25"
+        },
+        {
+            "slotGuid": "6024b23e059b2e143b0587117c676d30",
+            "slotPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextGuid": "6024b23e059b2e143b0587117c676d30",
+            "contextPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextDepth": 1000,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_TierAll_Title",
+            "source": "수동",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6024b23e059b2e143b0587117c676d30",
+            "slotPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextGuid": "6024b23e059b2e143b0587117c676d30",
+            "contextPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextDepth": 1000,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_Wave30_Title",
+            "source": "수동",
+            "template": "",
+            "samples": ""
         }
     ],
     "slots": [

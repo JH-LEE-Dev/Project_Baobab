@@ -6,7 +6,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
-/// 도전과제 창의 한 칸: Panel_Info 9-슬라이스 바탕 위에 제목 1줄 + 아래 팁 최대 2줄.
+/// 도전과제 창의 한 칸: Panel_Info 9-슬라이스 바탕 위에 제목 1줄 + 아래 팁(줄 수만큼 칸 높이가 늘어난다, FitHeight).
 /// 달성한 칸은 금색 테두리(goldSprite, Panel_Info_Gold) + 제목 금색 + 오른쪽 금색 깃발, 미달성 칸은 기본 바탕이다.
 ///
 /// 칸 전체가 패드 선택용 대상(Button, 탐색은 Explicit - 화면이 위아래로 잇는다)이다. 눌러도 하는 일은 없다.
@@ -14,6 +14,12 @@ using UnityEngine.UI;
 /// </summary>
 public class UI_RoguelikeChallengeRow : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, ISelectHandler
 {
+    // 칸 안쪽 배치(칸 높이 = 위 8 + 제목 높이 + 팁 높이 + 아래 9, 최소는 화면이 정한다).
+    private const float TitleY = 8f;
+    private const float BottomPadding = 9f;
+    private const float MinTitleHeight = 14f;
+    private const float TipMeasureHeight = 10000f;
+
     public event Action<UI_RoguelikeChallengeRow, bool> FocusedEvent;
     public event Action<UI_RoguelikeChallengeRow> ExitedEvent;
 
@@ -66,6 +72,41 @@ public class UI_RoguelikeChallengeRow : MonoBehaviour, IPointerEnterHandler, IPo
 
         bCleared = true == _challenge.bCleared;
         if (false == bCleared) StopClearGlow();
+    }
+
+    /// <summary>
+    /// 현재 폰트 · 문구에 맞춰 제목 · 팁 상자의 높이와 팁 Y를 다시 잡고 칸 높이를 돌려준다(최소 _minHeight).
+    /// 제목 높이 = 그 폰트 12pt 줄 높이 올림(최소 14), 팁 높이 = 줄바꿈한 팁의 선호 높이 올림. 칸 자신의 sizeDelta는 건드리지 않는다(배치는 화면이 한다).
+    /// 폰트 교체 이후에 불러야 한다. 할당 없음.
+    /// </summary>
+    public float FitHeight(float _minHeight)
+    {
+        float titleHeight = MinTitleHeight;
+        if (null != titleText)
+        {
+            TMP_FontAsset font = titleText.font;
+            if (null != font && 0f < font.faceInfo.pointSize)
+            {
+                // 글자 한 줄이 차지하는 높이(올림 전) = (ascentLine - descentLine). faceInfo.lineHeight(줄 간격)는 이보다 커서 쓰지 않는다.
+                float lineHeight = (font.faceInfo.ascentLine - font.faceInfo.descentLine) * titleText.fontSize / font.faceInfo.pointSize * font.faceInfo.scale;
+                titleHeight = Mathf.Max(MinTitleHeight, Mathf.Ceil(lineHeight));
+            }
+
+            RectTransform titleRect = titleText.rectTransform;
+            titleRect.sizeDelta = new Vector2(titleRect.sizeDelta.x, titleHeight);
+            titleRect.anchoredPosition = new Vector2(titleRect.anchoredPosition.x, -TitleY);
+        }
+
+        float tipHeight = 0f;
+        if (null != tipText)
+        {
+            RectTransform tipRect = tipText.rectTransform;
+            tipHeight = Mathf.Ceil(tipText.GetPreferredValues(tipText.text, tipRect.rect.width, TipMeasureHeight).y);
+            tipRect.sizeDelta = new Vector2(tipRect.sizeDelta.x, tipHeight);
+            tipRect.anchoredPosition = new Vector2(tipRect.anchoredPosition.x, -(TitleY + titleHeight));
+        }
+
+        return Mathf.Max(_minHeight, TitleY + titleHeight + tipHeight + BottomPadding);
     }
 
     public void PlayClearGlow(float _delay, int _order, bool _bEntrance)

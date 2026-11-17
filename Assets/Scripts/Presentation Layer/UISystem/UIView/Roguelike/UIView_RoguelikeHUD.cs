@@ -35,6 +35,7 @@ public class UIView_RoguelikeHUD : UIView
     [SerializeField] private UI_RoguelikeDashCells dashCells;
     [SerializeField] private UI_RoguelikeOwnedCardTray ownedTray;
     [SerializeField] private UI_KeyboardImage ownedKeyImage;
+    [SerializeField, Tooltip("도전과제 달성 팝업(우상단). LumberBoy/UI/Build Roguelike Challenge Toast 로 만든다. 전투 HUD 퇴장 모션 대상이 아니다.")] private UI_RoguelikeChallengeToast challengeToast;
 
     // 퇴장 모션: 화면 밖으로 빠지는 거리(px)와 시간(unscaled).
     private const float ExitDistance = 120f;
@@ -58,6 +59,9 @@ public class UIView_RoguelikeHUD : UIView
 
         // 보유 카드 창을 여는 키(인벤토리 키) 아이콘. 리바인딩과 입력 장치 전환을 따라간다(인벤토리 UI와 같은 방식).
         if (null != ownedKeyImage) ownedKeyImage.Initialize(_ctx?.inputManager);
+
+        // 도전과제 달성 팝업: 머리말 문구와 언어 변경 구독.
+        if (null != challengeToast) challengeToast.Initialize(_ctx?.localizationManager);
 
         finishExitCallback = FinishExit;
         SetExitTarget(0, null != waveLabel ? waveLabel.transform as RectTransform : null, Vector2.left);
@@ -125,6 +129,15 @@ public class UIView_RoguelikeHUD : UIView
     public virtual void SetOwnedCardCounts(int _rareCount, int _normalCount)
     {
         if (null != ownedTray) ownedTray.SetCounts(_rareCount, _normalCount);
+    }
+
+    /// <summary>
+    /// 도전과제 달성 팝업(우상단, 284x48). 달성 신호를 받은 쪽이 번역된 제목(_data.title)을 넣어 부른다. 연달아 부르면 대기열(13)에서 하나씩 보여 준다.
+    /// 카드 선택 · 일시정지 중에도 재생된다(unscaled). tip · bCleared는 쓰지 않는다. 이 HUD가 숨겨지면(런 종료) 대기열과 재생이 지워진다.
+    /// </summary>
+    public virtual void ShowChallengeToast(in RoguelikeChallengeViewData _data)
+    {
+        if (null != challengeToast) challengeToast.Show(in _data);
     }
 
     /// <summary>보유 골드. _bAnimated면 코인이 흡수되어 오르는 연출(기획서 3-3 골드 획득 5단계).</summary>

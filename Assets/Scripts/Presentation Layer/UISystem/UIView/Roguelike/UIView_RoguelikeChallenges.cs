@@ -22,7 +22,7 @@ using UnityEngine.EventSystems;
 /// </summary>
 public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
 {
-    // 판 크기는 기록 창과 같다. 칸은 제목 1줄 + 팁 2줄이 들어가도록 기록 줄(46)보다 높다(빌더의 ChallengeRowHeight와 같은 값).
+    // 판 크기는 기록 창과 같다. 칸 높이는 최소 62(빌더의 ChallengeRowHeight와 같은 값)이고, 제목 높이 · 팁 줄 수에 맞춰 칸마다 늘어난다(UI_RoguelikeChallengeRow.FitHeight).
     private const float RowHeight = 62f;
     private const float RowGap = 4f;
     // 18개 언어 규격 명판 최소 폭(기록 창 탭 명판과 같은 272). 글자가 더 넓으면 글자 폭 + 양쪽 여백 만큼 넓힌다.
@@ -287,7 +287,7 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
             if (null != clearShards && true == IsRowOverlappingBody(row.Rect))
             {
                 Vector3 local = clearShards.transform.InverseTransformPoint(row.Rect.position);
-                clearShards.Burst(new Vector2(Mathf.Round(local.x), Mathf.Round(local.y)), Mathf.Round(row.Rect.rect.width), delay, ClearShardSeedBase + order * ClearShardSeedStep);
+                clearShards.Burst(new Vector2(Mathf.Round(local.x), Mathf.Round(local.y)), Mathf.Round(row.Rect.rect.width), Mathf.Round(row.Rect.rect.height), delay, ClearShardSeedBase + order * ClearShardSeedStep);
             }
 
             order++;
@@ -322,7 +322,7 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
         if (null == rowRoot || null == bodyViewport) return true;
 
         float top = rowRoot.anchoredPosition.y + _row.anchoredPosition.y;
-        return top > -bodyViewport.rect.height && top - RowHeight < 0f;
+        return top > -bodyViewport.rect.height && top - _row.rect.height < 0f;
     }
 
     // // 칸 · 배치 (정수 픽셀)
@@ -374,9 +374,10 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
             rect.anchorMin = new Vector2(0f, 1f);
             rect.anchorMax = new Vector2(0f, 1f);
             rect.pivot = new Vector2(0f, 1f);
-            rect.sizeDelta = new Vector2(width, RowHeight);
+            float height = rows[i].FitHeight(RowHeight);
+            rect.sizeDelta = new Vector2(width, height);
             rect.anchoredPosition = new Vector2(0f, -y);
-            y += RowHeight + RowGap;
+            y += height + RowGap;
 
             SetVerticalNavigation(previous, rows[i]);
             previous = rows[i];
@@ -503,11 +504,20 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
         HideCursor();
     }
 
-    /// <summary>제목 · 팁은 호출한 쪽이 번역해 넘긴 문자열이라 여기서는 명판과 안내 문구만 새 언어로 바꾼다.</summary>
+    /// <summary>
+    /// 제목 · 팁은 호출한 쪽이 번역해 넘긴 문자열이라 여기서는 명판과 안내 문구만 새 언어로 바꾸고, 칸 높이를 다시 맞춘다.
+    /// LocalizationManager.SetLanguage가 폰트 교체(FontLocalizer.SetLanguage)를 마친 뒤 이 이벤트를 부르므로 새 폰트 기준으로 잴 수 있다.
+    /// </summary>
     private void OnLanguageChanged()
     {
         if (false == IsVisible) return;
         ApplyStaticTexts();
+
+        // 칸 높이가 바뀌면 커서 상자 크기도 달라지므로 숨긴 뒤 다시 띄운다(마우스는 UpdateMouseHover가 다시 인정한다).
+        LayoutRows();
+        acceptedRow = null;
+        HideCursor();
+        if (true == IsGamepadMode) RestoreSelection();
     }
 
     private string Localize(string _key)
@@ -683,7 +693,7 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
     {
         if (_row != focusedRow) Sound.PlayUI(SoundID.ResultUIHover);
         focusedRow = _row;
-        if (true == IsGamepadMode) ScrollBodyTo(-_row.Rect.anchoredPosition.y, -_row.Rect.anchoredPosition.y + RowHeight);
+        if (true == IsGamepadMode) ScrollBodyTo(-_row.Rect.anchoredPosition.y, -_row.Rect.anchoredPosition.y + _row.Rect.rect.height);
         ShowCursor(_row.Rect, rowCursorMotion);
     }
 
