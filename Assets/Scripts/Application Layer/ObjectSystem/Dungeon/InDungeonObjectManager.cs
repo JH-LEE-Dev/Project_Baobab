@@ -2691,10 +2691,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     {
         if (character == null) return;
 
-        // "불씨 획득량 증가" 특성 배율을 곱한다(특성이 없으면 1).
-        float overheatPerEmber = itemManager.emberItemController != null ? itemManager.emberItemController.OverheatPerEmber : 1f;
+        // "불씨 획득량 증가" 특성 배율과, 지금 과열이 높을수록 줄어드는 불씨 효율을 곱한다(특성이 없으면 배율 1).
+        EmberItemController emberController = itemManager.emberItemController;
+        float overheatPerEmber = emberController != null ? emberController.OverheatPerEmber : 1f;
+        float gainEfficiency = emberController != null ? emberController.GetGainEfficiency(character.OverheatValue) : 1f;
         bool bWasOverheatMax = character.IsOverheatMax;
-        character.AddOverheat(overheatPerEmber * character.OverheatGainMultiplier);
+        character.AddOverheat(overheatPerEmber * character.OverheatGainMultiplier * gainEfficiency);
 
         // 이 불씨로 과열이 가득 찬 순간 - 열기 물결이 퍼지는 연출만 더한다(수치·규칙은 그대로).
         if (false == bWasOverheatMax && character.IsOverheatMax)
