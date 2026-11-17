@@ -2541,10 +2541,10 @@ MonoBehaviour:
   containerForJump: {fileID: 5112186850189715724}
   containerForOpen: {fileID: 3726317326145381529}
   carriedContainer: {fileID: 1738384527356191891}
-  picnicBasketAnimator: {fileID: 0}
-  picnicBasketJumpSprite: {fileID: 0}
-  picnicBasketOpenSprite: {fileID: 0}
-  picnicBasketCarriedSprite: {fileID: 0}
+  picnicBasketAnimator: {fileID: 22100000, guid: 29b746da316d2da49a8262b28deb1227, type: 2}
+  picnicBasketJumpSprite: {fileID: -2396275157495183554, guid: 820a704c75524a5418cd46191454268b, type: 3}
+  picnicBasketOpenSprite: {fileID: -2396275157495183554, guid: 5bbe48e6170277a45ace26b5bd752ca9, type: 3}
+  picnicBasketCarriedSprite: {fileID: 21300000, guid: 6d4a0deb8014adb49b0d1ce75b060078, type: 3}
 --- !u!114 &7996946345681589065
 MonoBehaviour:
   m_ObjectHideFlags: 0

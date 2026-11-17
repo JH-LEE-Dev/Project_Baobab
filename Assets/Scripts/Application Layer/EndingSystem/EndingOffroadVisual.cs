@@ -27,7 +27,7 @@ public class EndingOffroadVisual : MonoBehaviour
     [Tooltip("오솔길을 달리는 동안(퇴장 가속 전)만 바퀴 회전에 곱하는 값. 퇴장 가속 때는 곱하지 않는다.")]
     [SerializeField] private float pathWheelSpeedMultiplier = 1.4f;
 
-    [Header("소풍 바구니 (리소스가 생기면 넣는다. 비어 있으면 본편 상자 그림)")]
+    [Header("소풍 바구니 (비어 있으면 본편 상자 그림)")]
     [SerializeField] private SpriteRenderer carriedContainerRenderer;
     [SerializeField] private Sprite picnicBasketCarriedSprite;
     [Tooltip("바구니를 내려놓은 뒤 보이는 빈 짐칸(본편 BoxUnCarry). 없으면 짐칸 그림만 숨긴다.")]

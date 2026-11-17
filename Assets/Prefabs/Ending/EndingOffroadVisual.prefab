@@ -203,7 +203,7 @@ MonoBehaviour:
   wheelSpeedPerUnit: 0.2
   pathWheelSpeedMultiplier: 1.4
   carriedContainerRenderer: {fileID: 6794672388498561890}
-  picnicBasketCarriedSprite: {fileID: 0}
+  picnicBasketCarriedSprite: {fileID: 21300000, guid: 6d4a0deb8014adb49b0d1ce75b060078, type: 3}
   emptyRackRenderer: {fileID: 0}
   driveShake: 0.008
   dustTag: Dust
@@ -214,8 +214,12 @@ MonoBehaviour:
   dustIntervalMax: 0.42
   startUpEffectPoint: {fileID: 6800441286798350191}
   goEffectPoint: {fileID: 9160399639496624404}
+  goEffectInterval: 0.2
   launchStretch: 0.22
   launchStretchSeconds: 0.2
+  launchEnginePitch: 1.4
+  launchEngineRampSeconds: 1
+  launchEngineVolume: 1.5
 --- !u!114 &1417986738477030871
 MonoBehaviour:
   m_ObjectHideFlags: 0
