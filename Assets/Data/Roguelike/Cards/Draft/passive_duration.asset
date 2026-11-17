@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: passive_duration
   nameKey: Roguelike_Card_passive_duration
   descriptionKey: Roguelike_Card_passive_duration_Desc
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 9065c473895fc4649a5737a0cf275a2a, type: 3}
   kind: 1
   skillTag: 0
   exclusiveGroup: 0
