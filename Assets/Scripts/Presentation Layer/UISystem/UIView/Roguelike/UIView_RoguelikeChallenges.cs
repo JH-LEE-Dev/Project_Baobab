@@ -18,7 +18,7 @@ using UnityEngine.EventSystems;
 /// [조작 - ControllerSupport_UI가이드.md 3-7 · 3-8] 닫기 = 딤 클릭 · 뒤로 버튼 · 패드 B(UICancelEvent) · Esc(SetStandaloneClose(true)로 직접 받는다 - 메인메뉴는 깊이 관리가 없다).
 ///   입력 모드 UI는 모달 공통(RoguelikeModalInput)이 건다. 패드: 패드 모드로 열릴 때 · 패드로 바뀔 때만 첫 칸 선택, 위 / 아래 Explicit 탐색, 선택된 칸이 보이도록 스크롤,
 ///   선택이 null이 되면 복구, 마우스 모드로 바뀌면 선택 해제, 닫을 때 선택 비움. 포커스 표시는 커서 상자(viewCtx.cursorBoxUI)이고 칸을 눌러도 하는 일은 없다.
-///   마우스 모드의 호버는 기록 창과 같다: 포인터가 올라간 칸은 hoveredRow에 기록만 하고, 그 칸이 본문 뷰포트 안에 온전히 보이며 본문이 멈춰 있을 때만 "인정"해 효과음 · 커서를 낸다.
+///   마우스 모드의 호버는 기록 창과 같다: 포인터가 올라간 칸은 hoveredRow에 기록만 하고, 그 칸이 본문 뷰포트 안에 온전히 보이며 본문이 멈춰 있을 때만 "인정"해 효과음 · 커서를 낸다(이미 인정된 칸은 온전히 보이는 동안 스크롤 중에도 유지하고, 효과음은 마우스가 그 칸에 들어온 뒤 1번만 낸다).
 /// </summary>
 public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
 {
@@ -135,6 +135,7 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
     private UI_RoguelikeChallengeRow focusedRow;
     private UI_RoguelikeChallengeRow hoveredRow;
     private UI_RoguelikeChallengeRow acceptedRow;
+    private UI_RoguelikeChallengeRow soundedRow;
     private float lastBodyScroll;
     private RectTransform cursorTarget;
     private CursorMotionSettings cursorMotion;
@@ -646,14 +647,17 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
         ApplyRowFocus(_row);
     }
 
+    /// <summary>마우스가 칸에서 나갔다: 호버 기록과 효과음을 낸 칸 기록을 비운다(다시 들어오면 효과음이 난다).</summary>
     private void OnRowExited(UI_RoguelikeChallengeRow _row)
     {
         if (_row == hoveredRow) hoveredRow = null;
+        if (_row == soundedRow) soundedRow = null;
     }
 
     /// <summary>
-    /// 마우스 모드의 호버 인정. 마우스가 올라간 칸이 본문 뷰포트 안에 온전히 보이고, 본문이 미끄러지거나 끌리거나 관성으로 움직이는 중이 아니며, 칸이 켜져 있을 때만 그 칸을 인정한다.
-    /// 인정된 칸이 바뀔 때만 반응한다: 새로 인정되면 효과음 1번 + 커서 상자, 인정이 풀리면 커서 상자만 숨긴다(효과음 없음).
+    /// 마우스 모드의 호버 인정. 마우스가 올라간 칸이 본문 뷰포트 안에 온전히 보이고 칸이 켜져 있을 때만 그 칸을 인정한다.
+    /// 새 칸은 본문이 미끄러지거나 끌리거나 관성으로 움직이는 중에는 인정하지 않지만, 이미 인정된 칸은 온전히 보이는 동안 스크롤 중에도 유지한다.
+    /// 인정된 칸이 바뀔 때만 반응한다: 새로 인정되면 커서 상자, 효과음은 마우스가 그 칸에 들어온 뒤 1번만(soundedRow), 인정이 풀리면 커서 상자만 숨긴다(효과음 없음).
     /// </summary>
     private void UpdateMouseHover()
     {
@@ -663,10 +667,14 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
         lastBodyScroll = scroll;
 
         // 꺼진 칸은 PointerExit을 받지 못하므로 기록을 여기서 지운다.
-        if (null != hoveredRow && false == hoveredRow.gameObject.activeInHierarchy) hoveredRow = null;
+        if (null != hoveredRow && false == hoveredRow.gameObject.activeInHierarchy)
+        {
+            if (hoveredRow == soundedRow) soundedRow = null;
+            hoveredRow = null;
+        }
 
         UI_RoguelikeChallengeRow candidate = null;
-        if (null != hoveredRow && false == bBodyMoving && true == IsFullyInView(hoveredRow.Rect)) candidate = hoveredRow;
+        if (null != hoveredRow && (false == bBodyMoving || hoveredRow == acceptedRow) && true == IsFullyInView(hoveredRow.Rect)) candidate = hoveredRow;
 
         if (candidate == acceptedRow) return;
 
@@ -677,16 +685,22 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
             return;
         }
 
-        Sound.PlayUI(SoundID.ResultUIHover);
+        if (candidate != soundedRow)
+        {
+            Sound.PlayUI(SoundID.ResultUIHover);
+            soundedRow = candidate;
+        }
+
         focusedRow = candidate;
         ShowCursor(candidate.Rect, rowCursorMotion);
     }
 
-    /// <summary>마우스 호버 기록과 인정 상태를 비운다(창 열기 · 창 닫기 · 패드로 바뀔 때). 남은 참조로 엉뚱한 칸이 반응하지 않게 한다.</summary>
+    /// <summary>마우스 호버 기록 · 인정 상태 · 효과음을 낸 칸 기록을 비운다(창 열기 · 창 닫기 · 패드로 바뀔 때). 남은 참조로 엉뚱한 칸이 반응하지 않게 한다.</summary>
     private void ResetHover()
     {
         hoveredRow = null;
         acceptedRow = null;
+        soundedRow = null;
     }
 
     private void ApplyRowFocus(UI_RoguelikeChallengeRow _row)
