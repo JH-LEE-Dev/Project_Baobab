@@ -70,6 +70,10 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private bool isPointerHovering;
     private bool consumedRapidClick;
     private Vector2 interactionShakeCompensation;
+    private bool hasAppliedInteractionShakeCompensation;
+
+    // 자식 그래픽 목록을 배열 할당 없이 받는 재사용 버퍼(모든 노드가 같이 쓴다. 메인 스레드에서만 쓰고 바로 비운다)
+    private static readonly System.Collections.Generic.List<Graphic> visualRaycastGraphicBuffer = new System.Collections.Generic.List<Graphic>(16);
     private Color currentNodeFrameColor = Color.white;
     private MotionEntry hoverMotionEntry;
     private MotionEntry unHoverMotionEntry;
@@ -344,12 +348,22 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     public void SetInteractionShakeCompensation(Vector2 _compensation)
     {
+        // 보정값이 직전과 같으면 터치 영역 이동량이 0이다. 참조 캐시와 레이캐스트 정리도 첫 호출과 Awake·OnEnable·SetVisualVisible에서
+        // 이미 끝나 있으므로 건너뛴다(흔들림이 없는 동안 줌·패드 화면 이동 때마다 모든 노드가 자식 그래픽을 다시 훑던 비용을 없앤다).
+        if (hasAppliedInteractionShakeCompensation &&
+            _compensation.x == interactionShakeCompensation.x &&
+            _compensation.y == interactionShakeCompensation.y)
+        {
+            return;
+        }
+
         CacheInteractionReferences();
         if (abilityNodeTouchArea == null)
             return;
 
         abilityNodeTouchArea.anchoredPosition += _compensation - interactionShakeCompensation;
         interactionShakeCompensation = _compensation;
+        hasAppliedInteractionShakeCompensation = true;
     }
 
     // JSON에서 읽은 노드 정의를 현재 프리팹 인스턴스에 반영한다.
@@ -1141,9 +1155,11 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         if (abilityVisualRoot == null)
             return;
 
-        Graphic[] graphics = abilityVisualRoot.GetComponentsInChildren<Graphic>(true);
-        for (int i = 0; i < graphics.Length; i++)
-            graphics[i].raycastTarget = false;
+        // 배열 할당 없이 같은 목록(같은 순서)을 받는다.
+        abilityVisualRoot.GetComponentsInChildren(true, visualRaycastGraphicBuffer);
+        for (int i = 0; i < visualRaycastGraphicBuffer.Count; i++)
+            visualRaycastGraphicBuffer[i].raycastTarget = false;
+        visualRaycastGraphicBuffer.Clear();
     }
 
     private Transform FindChildRecursive(Transform root, string childName)
