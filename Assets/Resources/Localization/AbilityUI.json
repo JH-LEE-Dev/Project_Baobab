@@ -5788,7 +5788,7 @@
         {
             "id": 9165,
             "key": "AbilityDescription_MagmaForestOverGrowth",
-            "kr": "",
+            "kr": "용암숲의 <COLOR=8bbeff>나무 밀도</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",
