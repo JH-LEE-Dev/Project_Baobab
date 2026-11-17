@@ -200,6 +200,14 @@ public class TreeVisualComponent : MonoBehaviour
     private MaterialPropertyBlock _mpb;
     private MaterialPropertyBlock Mpb => _mpb ??= new MaterialPropertyBlock();
 
+    // 실드(Top/Bottom Shield) 그림은 수관·밑동과 같은 재질을 쓰고 HDR 세기만 블록으로 올려서(기본 1.05), 블록 때문에 SRP Batcher를 못 타고
+    // 하나씩 그려졌다. HDR 세기만 다른 재질 사본을 (원본 재질, 세기)마다 하나씩 만들어 실드에 끼우고, 블록 값이 모두 끼운 재질 값과 같으면
+    // 블록을 비운다(CommitBodyBlock). 사본은 원본의 셰이더·프로퍼티·키워드를 그대로 베끼고 HDR만 바꾸므로 셰이더가 받는 값은 예전과 같다.
+    private static readonly Dictionary<Material, Dictionary<float, Material>> shieldHDRMaterialCache = new Dictionary<Material, Dictionary<float, Material>>();
+    // 실드에 처음 끼워져 있던 원본 재질(사본을 만들 기준).
+    private Material topShieldBaseMaterial;
+    private Material bottomShieldBaseMaterial;
+
     // Hit Flash
     private static readonly int FlashAmountID = Shader.PropertyToID("_FlashAmount");
     private static readonly int FlashColorID = Shader.PropertyToID("_FlashColor");
@@ -1347,7 +1355,7 @@ public class TreeVisualComponent : MonoBehaviour
     /// 렌더러에 프로퍼티 블록을 넣는다. 수관·밑동은 블록 값(BodyBlockFloatIDs·_FlashColor)이 모두 기본 값과 같으면 블록을 비운다.
     /// 셰이더가 받는 값은 같아 그림은 그대로이고, 블록이 없는 렌더러는 SRP Batcher로 그려져 나무마다 드는 그리기 비용이 준다.
     /// 다음에 값을 쓸 때 GetPropertyBlock이 빈 블록을 주므로 비운 값들은 블록에 다시 들어가지 않지만, 모두 재질 값과 같아 결과가 같다.
-    /// 그 밖의 렌더러는 예전처럼 블록을 그대로 넣는다.
+    /// 실드는 블록 값이 모두 지금 끼워진 재질(HDR 사본) 값과 같으면 비운다. 그 밖의 렌더러는 예전처럼 블록을 그대로 넣는다.
     /// </summary>
     private void CommitBodyBlock(SpriteRenderer _sr, MaterialPropertyBlock _block)
     {
@@ -1359,6 +1367,8 @@ public class TreeVisualComponent : MonoBehaviour
 
     private bool IsBodyBlockAtDefaults(SpriteRenderer _sr, MaterialPropertyBlock _block)
     {
+        if (_sr == topShieldRenderer || _sr == bottomShieldRenderer) return IsShieldBlockAtMaterial(_sr, _block);
+
         bool bTop = _sr == topRenderer;
         if (false == bTop && _sr != bottomRenderer) return false;
 
@@ -1373,6 +1383,27 @@ public class TreeVisualComponent : MonoBehaviour
         }
 
         if (_block.HasColor(FlashColorID) && false == _block.GetColor(FlashColorID).Equals(bTop ? topFlashColorDefault : bottomFlashColorDefault)) return false;
+
+        return true;
+    }
+
+    // 실드 블록에 들어가는 값들(HDR·번쩍임 양·흔들림, 번쩍임 색, 포자막)이 모두 지금 끼워진 재질 값과 정확히 같은지 본다.
+    // 실드 블록에는 이 다섯 값만 들어간다(ApplyHDRToRenderer·SetFlash*ToRenderer·ApplyWindSwayToRenderer·SetSporeShieldFxToRenderer).
+    private static readonly int[] ShieldBlockFloatIDs = { HDRIntensityID, FlashAmountID, EnableWindSwayID };
+
+    private static bool IsShieldBlockAtMaterial(SpriteRenderer _sr, MaterialPropertyBlock _block)
+    {
+        Material material = _sr.sharedMaterial;
+        if (null == material) return false;
+
+        for (int i = 0; i < ShieldBlockFloatIDs.Length; i++)
+        {
+            int id = ShieldBlockFloatIDs[i];
+            if (_block.HasFloat(id) && (false == material.HasFloat(id) || material.GetFloat(id) != _block.GetFloat(id))) return false;
+        }
+
+        if (_block.HasColor(FlashColorID) && (false == material.HasColor(FlashColorID) || false == material.GetColor(FlashColorID).Equals(_block.GetColor(FlashColorID)))) return false;
+        if (_block.HasVector(SporeShieldFxID) && (false == material.HasVector(SporeShieldFxID) || false == material.GetVector(SporeShieldFxID).Equals(_block.GetVector(SporeShieldFxID)))) return false;
 
         return true;
     }
@@ -1808,9 +1839,42 @@ public class TreeVisualComponent : MonoBehaviour
     private void ApplyHDRToRenderer(SpriteRenderer _renderer, bool _active, float _intensity)
     {
         if (_renderer == null) return;
+        float hdr = _active ? _intensity : 1f;
+
+        // 실드는 블록에 넣는 HDR과 같은 값을 가진 재질로 함께 바꿔 끼운다(블록을 비워도 HDR이 그대로 남게).
+        if (_renderer == topShieldRenderer) ApplyShieldHDRMaterial(_renderer, ref topShieldBaseMaterial, hdr);
+        else if (_renderer == bottomShieldRenderer) ApplyShieldHDRMaterial(_renderer, ref bottomShieldBaseMaterial, hdr);
+
         _renderer.GetPropertyBlock(Mpb);
-        Mpb.SetFloat(HDRIntensityID, _active ? _intensity : 1f);
+        Mpb.SetFloat(HDRIntensityID, hdr);
         CommitBodyBlock(_renderer, Mpb);
+    }
+
+    private static void ApplyShieldHDRMaterial(SpriteRenderer _renderer, ref Material _baseMaterial, float _hdr)
+    {
+        if (null == _baseMaterial) _baseMaterial = _renderer.sharedMaterial;
+        if (null == _baseMaterial || false == _baseMaterial.HasFloat(HDRIntensityID)) return;
+
+        Material target = _baseMaterial.GetFloat(HDRIntensityID) == _hdr ? _baseMaterial : GetShieldHDRMaterial(_baseMaterial, _hdr);
+        if (_renderer.sharedMaterial != target) _renderer.sharedMaterial = target;
+    }
+
+    private static Material GetShieldHDRMaterial(Material _baseMaterial, float _hdr)
+    {
+        if (false == shieldHDRMaterialCache.TryGetValue(_baseMaterial, out Dictionary<float, Material> byHdr))
+        {
+            byHdr = new Dictionary<float, Material>();
+            shieldHDRMaterialCache.Add(_baseMaterial, byHdr);
+        }
+
+        if (false == byHdr.TryGetValue(_hdr, out Material material) || null == material)
+        {
+            material = new Material(_baseMaterial) { name = _baseMaterial.name + " (Shield HDR)", hideFlags = HideFlags.DontSave };
+            material.SetFloat(HDRIntensityID, _hdr);
+            byHdr[_hdr] = material;
+        }
+
+        return material;
     }
 
     private void UpdateHDRStates()
