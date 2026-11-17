@@ -1788,10 +1788,22 @@ public class LogItem : Item, IStaticCollidable
 
         if (spriteRenderer != null)
         {
-            if (mpb == null) mpb = new MaterialPropertyBlock();
-            spriteRenderer.GetPropertyBlock(mpb);
-            mpb.SetFloat(ShinyEnabledPropertyID, shinyEnabled ? 1f : 0f);
-            spriteRenderer.SetPropertyBlock(mpb);
+            float shinyValue = shinyEnabled ? 1f : 0f;
+            // 본체 블록에 들어가는 값은 _ShinyEnabled 하나뿐이다(그 밖에는 ResetItem이 블록을 비울 뿐). 그 값이 재질 값과 같으면
+            // 블록을 비운다. 셰이더가 받는 값은 같아 그림은 그대로이고, 블록이 없는 렌더러는 SRP Batcher로 그려져 원목마다 드는
+            // 그리기 비용이 준다. 원목 렌더러는 재질을 바꾸지 않고 이 재질의 _ShinyEnabled를 고치는 코드도 없다.
+            Material bodyMaterial = spriteRenderer.sharedMaterial;
+            if (bodyMaterial != null && bodyMaterial.HasFloat(ShinyEnabledPropertyID) && bodyMaterial.GetFloat(ShinyEnabledPropertyID) == shinyValue)
+            {
+                spriteRenderer.SetPropertyBlock(null);
+            }
+            else
+            {
+                if (mpb == null) mpb = new MaterialPropertyBlock();
+                spriteRenderer.GetPropertyBlock(mpb);
+                mpb.SetFloat(ShinyEnabledPropertyID, shinyValue);
+                spriteRenderer.SetPropertyBlock(mpb);
+            }
         }
         if (outlineStencilSR != null) outlineStencilSR.SetPropertyBlock(null);
     }
@@ -1799,6 +1811,14 @@ public class LogItem : Item, IStaticCollidable
     private void ApplyOutlineColor()
     {
         if (outlineSR == null) return;
+
+        // 외곽선 블록에 들어가는 값은 _OutlineColor 하나뿐이다. 재질 색과 정확히 같으면 블록을 비운다(본체와 같은 이유, SetShaderFloating 참고).
+        Material outlineMaterial = outlineSR.sharedMaterial;
+        if (outlineMaterial != null && outlineMaterial.HasColor(OutlineColorPropertyID) && outlineMaterial.GetColor(OutlineColorPropertyID).Equals(normalOutlineColor))
+        {
+            outlineSR.SetPropertyBlock(null);
+            return;
+        }
 
         if (mpb == null) mpb = new MaterialPropertyBlock();
         outlineSR.GetPropertyBlock(mpb);

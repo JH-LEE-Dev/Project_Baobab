@@ -3,12 +3,13 @@ using UnityEngine;
 public class KnockBackState : CharacterState
 {
     private const float TravelDuration = 0.15f;
-    private const float TotalLockDuration = 1.0f;
+    // 나무 열기에 맞았을 때의 기절 시간(초). "열기 내성 강화"가 이 값에 배율을 곱해 줄인다.
+    private const float TotalLockDuration = 2.0f;
 
     private Vector2 startPos;
     private Vector2 targetPos;
     private float timer;
-    // 이번 넉백의 경직 시간. "열기 내성 강화"가 줄이며, 밀려나는 시간(TravelDuration)보다 짧아지지는 않는다.
+    // 이번 넉백의 기절 시간. "열기 내성 강화"가 줄이며, 밀려나는 시간(TravelDuration)보다 짧아지지는 않는다.
     private float lockDuration = TotalLockDuration;
 
     // 넉백 중에도 캐릭터가 선 칸을 계속 점유한다.
@@ -30,7 +31,8 @@ public class KnockBackState : CharacterState
 
     // 나무→캐릭터 8방향 셀 오프셋을 그대로 넉백 방향으로 사용한다. 등각(2:1) 그리드에 맞춰
     // 방향별 최대 거리가 1타일을 넘지 않도록 타원 공식(CameraBoundsUtil과 동일한 공식)을 적용한다.
-    public void SetKnockbackDirection(Vector3Int _cellOffset)
+    // _distanceScale: 밀려나는 거리 배율(1이면 1타일). "열기 내성 강화"가 줄인다. 밀려나는 시간은 그대로다.
+    public void SetKnockbackDirection(Vector3Int _cellOffset, float _distanceScale = 1f)
     {
         var tilemap = ctx.tilemapDataProvider;
         Vector2 origin = tilemap.CellToWorld(Vector3Int.zero);
@@ -42,6 +44,7 @@ public class KnockBackState : CharacterState
 
         float denom = (dir.x * dir.x) / (semiMajor * semiMajor) + (dir.y * dir.y) / (semiMinor * semiMinor);
         float distance = denom > 0f ? 1f / Mathf.Sqrt(denom) : 0f;
+        distance *= Mathf.Clamp01(_distanceScale);
 
         // transform.position은 보간된 화면 위치라 물리 위치보다 최대 한 틱 늦다. 대시처럼 한 틱에 크게 움직이는
         // 중에 넉백되면 그만큼 뒤로 끌려가므로 물리 위치에서 시작한다.
@@ -49,7 +52,7 @@ public class KnockBackState : CharacterState
         targetPos = startPos + dir * distance;
     }
 
-    // 경직 시간 배율(1이면 기본 TotalLockDuration). SetKnockbackDirection과 함께 넉백에 들어가기 직전에 부른다.
+    // 기절 시간 배율(1이면 기본 TotalLockDuration). SetKnockbackDirection과 함께 넉백에 들어가기 직전에 부른다.
     public void SetLockDurationScale(float _scale)
     {
         lockDuration = Mathf.Max(TravelDuration, TotalLockDuration * _scale);
@@ -76,6 +79,7 @@ public class KnockBackState : CharacterState
         character.CancelWhirlwindSpin();
         character.SetArmRotationLocked(true);
         character.SetAttackIndicatorLocked(true);
+        character.SetSwingBlockedByStun(true);
         character.SetFacingLocked(true);
         character.SetTreeHeatImmune(true);
         character.PlayStunVisual();
@@ -94,6 +98,7 @@ public class KnockBackState : CharacterState
         character.inputManager.PauseMove(bMovePausedBeforeKnockBack);
         character.SetArmRotationLocked(false);
         character.SetAttackIndicatorLocked(false);
+        character.SetSwingBlockedByStun(false);
         character.SetFacingLocked(false);
         character.SetTreeHeatImmune(false);
         character.StopStunVisual();

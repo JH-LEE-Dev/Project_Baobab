@@ -77,6 +77,7 @@ namespace Diagnostics.TownGolden
         private struct PaceHook { }
         private struct ProbeHook { }
         private struct MouseHook { }
+        private struct DashHook { }
         private struct RandWords { public int a, b, c, d; }
 
         // PlayerLoop 단계마다 난수 상태를 찍어 어느 단계에서 소비가 갈리는지 본다(RP:단계 묶음, 바뀐 단계만).
@@ -109,6 +110,19 @@ namespace Diagnostics.TownGolden
         private int bootFrame = -1, goFrame = -1, loadedFrame = -1, controlFrame = -1;
         private bool bTownLoaded;
         private string error;
+
+        // 던전 시나리오("d_<ForestType>" 또는 "d_<ForestType>_heavy"): 마을에서 실제 출발 경로(차량 탑승 → 숲 선택 UI 이벤트 → 주행·하늘 연출)로 던전에 들어가 대본을 돈다.
+        private bool bDungeon, bDungeonHeavy;
+        private MapType dungeonMap;
+        private ForestType dungeonForest;
+        private bool bDungeonLoaded;
+        private int rideFrame = -1, menuFrame = -1, departFrame = -1, dungeonLoadedFrame = -1, dungeonUnlockFrame = -1, dungeonControlFrame = -1;
+        private bool bTreeBudgetFixed;
+        // 대시 키는 다음 물리 틱에서 실제 시간 0.1초 안에만 받아들여진다(Character.DashRequestLifetime). 골든은 프레임 간격을 실제 시간 0.237초로
+        // 맞추므로 Update에서 누르면 다음 프레임 물리 틱 전에 만료된다. 그래서 같은 프레임의 FixedUpdate 맨 앞에서 누른다.
+        private static bool bDashQueued;
+        // 마우스 고정 위치(화면 중심 기준 픽셀 오프셋). 던전 대본이 조준 방향을 바꿀 때 쓴다.
+        private static Vector2 mousePinOffset;
 
         private readonly StringBuilder frames = new StringBuilder(1 << 20);
         private readonly StringBuilder groupFrames = new StringBuilder(1 << 22);
@@ -320,10 +334,12 @@ namespace Diagnostics.TownGolden
                 var list = new List<PlayerLoopSystem>();
                 // 마우스 고정: 입력 갱신(PreUpdate) 뒤, 스크립트 Update 앞. 실제 마우스 위치를 읽는 연출(메인 메뉴 배경 패럴랙스 등)을 고정한다.
                 if (typeof(Update) == sub.type) list.Add(new PlayerLoopSystem { type = typeof(MouseHook), updateDelegate = MouseTick });
+                // 대시 키: 물리 틱(FixedUpdate) 맨 앞에서 눌러 같은 틱에 처리되게 한다(bDashQueued 주석 참고).
+                if (typeof(FixedUpdate) == sub.type) list.Add(new PlayerLoopSystem { type = typeof(DashHook), updateDelegate = DashTick });
                 foreach (PlayerLoopSystem child in sub.subSystemList)
                 {
                     list.Add(child);
-                    if (typeof(ParticleHook) == child.type || typeof(MouseHook) == child.type) continue;
+                    if (typeof(ParticleHook) == child.type || typeof(MouseHook) == child.type || typeof(DashHook) == child.type) continue;
                     string phase = sub.type.Name + "." + (null != child.type ? child.type.Name : "?");
                     list.Add(new PlayerLoopSystem { type = typeof(ProbeHook), updateDelegate = () => Probe(phase) });
                 }
@@ -341,7 +357,7 @@ namespace Diagnostics.TownGolden
                 PlayerLoopSystem sub = _loop.subSystemList[i];
                 if (null == sub.subSystemList) continue;
                 var list = new List<PlayerLoopSystem>(sub.subSystemList);
-                int removed = list.RemoveAll(s => typeof(EarlyHook) == s.type || typeof(ParticleHook) == s.type || typeof(PaceHook) == s.type || typeof(ProbeHook) == s.type || typeof(MouseHook) == s.type);
+                int removed = list.RemoveAll(s => typeof(EarlyHook) == s.type || typeof(ParticleHook) == s.type || typeof(PaceHook) == s.type || typeof(ProbeHook) == s.type || typeof(MouseHook) == s.type || typeof(DashHook) == s.type);
                 if (0 < removed) { sub.subSystemList = list.ToArray(); _loop.subSystemList[i] = sub; }
             }
         }
@@ -422,8 +438,16 @@ namespace Diagnostics.TownGolden
             if (null == instance) return;
             UnityEngine.InputSystem.Mouse mouse = UnityEngine.InputSystem.Mouse.current;
             if (null == mouse) return;
-            Vector2 pin = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+            Vector2 pin = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f) + mousePinOffset;
             if (mouse.position.ReadValue() != pin) UnityEngine.InputSystem.LowLevel.InputState.Change(mouse.position, pin);
+        }
+
+        private static void DashTick()
+        {
+            if (null == instance || false == bDashQueued) return;
+            bDashQueued = false;
+            InputReader r = instance.Reader();
+            if (null != r) RaiseEvent(r, "DashKeyPressedEvent");
         }
 
         // 프레임 맨 앞: 난수 고정.
@@ -468,6 +492,14 @@ namespace Diagnostics.TownGolden
             scenario = SessionState.GetString(KeyScenario, "save");
             bSaveImages = SessionState.GetBool(KeySaveImages, false);
             endFrames = SessionState.GetInt(KeyEndFrames, 1260);
+            if (scenario.StartsWith("d_", StringComparison.Ordinal))
+            {
+                bDungeon = true;
+                string forest = scenario.Substring(2);
+                if (forest.EndsWith("_heavy", StringComparison.Ordinal)) { bDungeonHeavy = true; forest = forest.Substring(0, forest.Length - 6); }
+                dungeonForest = (ForestType)Enum.Parse(typeof(ForestType), forest);
+                dungeonMap = (MapType)Enum.Parse(typeof(MapType), forest.Substring(0, forest.LastIndexOf('_')));
+            }
             outputFolder = Path.Combine(GetRootFolder(), label);
             Directory.CreateDirectory(outputFolder);
             Directory.CreateDirectory(Path.Combine(outputFolder, "dump"));
@@ -500,6 +532,32 @@ namespace Diagnostics.TownGolden
                 bTownLoaded = true;
                 loadedFrame = Time.frameCount;
             }
+            if ("DungeonScene" == _scene.name && bDungeon && false == bDungeonLoaded)
+            {
+                bDungeonLoaded = true;
+                dungeonLoadedFrame = Time.frameCount;
+                FixDungeonVariance();
+            }
+        }
+
+        // 던전에서 실행마다 갈리는 것을 고정한다(기준·비교 모두 같은 하네스라 같은 값으로 돈다).
+        // - 나무 생성은 실제 시간 예산(treeSpawnFrameTimeBudgetMs)으로 프레임을 나눠 실행마다 나무가 생기는 프레임이 달랐다. 예산을 아주 크게 해 한 번에 만든다.
+        // - 지진 연출용 System.Random은 시드 없이 만들어져 실행마다 다르다. 고정 시드로 바꾼다.
+        private void FixDungeonVariance()
+        {
+            InDungeonObjectManager idom = FindAnyObjectByType<InDungeonObjectManager>();
+            if (null != idom && false == bTreeBudgetFixed)
+            {
+                FieldInfo bf = typeof(InDungeonObjectManager).GetField("treeSpawnFrameTimeBudgetMs", FL);
+                if (null != bf) { setupLog.Append("tree spawn budget ").Append(bf.GetValue(idom)).Append(" -> 1e9\n"); bf.SetValue(idom, 1e9f); bTreeBudgetFixed = true; }
+            }
+            FieldInfo qf = typeof(InDungeonObjectManager).GetField("quakeVisualRandom", BindingFlags.Static | BindingFlags.NonPublic);
+            if (null != qf)
+            {
+                try { qf.SetValue(null, new System.Random(unchecked((int)(BaseSeed ^ 0x0BADF00Du)))); setupLog.Append("quake random seeded\n"); }
+                catch (Exception ex) { setupLog.Append("quake random seed failed ").Append(ex.GetType().Name).Append('\n'); }
+            }
+            setupLog.Append("dungeon loaded frame ").Append(Time.frameCount).Append('\n');
         }
 
         // //대본
@@ -544,7 +602,13 @@ namespace Diagnostics.TownGolden
                         SaveManager realSm = RealSaveManager();
                         if (null == realSm || true != (bool)typeof(SaveManager).GetField("bSaveBlockedByUnreadableSave", FL).GetValue(realSm)) { Fail("마을 진입 뒤 세이브 차단이 풀려 있음"); return; }
                         setupLog.Append("save blocked ok, SaveManager count ").Append(FindObjectsByType<SaveManager>(FindObjectsInactive.Include).Length).Append('\n');
-                        if ("heavy" == scenario) SetupHeavy();
+                        if ("heavy" == scenario || bDungeonHeavy) SetupHeavy();
+                        if (bDungeon)
+                        {
+                            FixDungeonVariance();
+                            state = 10;
+                            break;
+                        }
                         state = 2;
                         RunScript(0);
                         break;
@@ -552,6 +616,64 @@ namespace Diagnostics.TownGolden
                     case 2:
                     {
                         RunScript(Time.frameCount - controlFrame);
+                        break;
+                    }
+                    case 10:
+                    {
+                        // 차량 탑승(실제로 차에 다가가 상호작용할 때 TownSystem이 부르는 PortalActivated).
+                        if (Time.frameCount - controlFrame < 30) return;
+                        rideFrame = Time.frameCount;
+                        typeof(TownSystem).GetMethod("PortalActivated", FL).Invoke(FindAnyObjectByType<TownSystem>(), null);
+                        state = 11;
+                        break;
+                    }
+                    case 11:
+                    {
+                        // 탑승이 끝나 숲 선택 창(UIView_MenuPopup)이 뜨면 60프레임 뒤에 그 창이 내는 숲 선택 이벤트를 그대로 낸다.
+                        UIView_MenuPopup popup = FindAnyObjectByType<UIView_MenuPopup>(FindObjectsInactive.Include);
+                        if (menuFrame < 0)
+                        {
+                            if (null != popup && popup.IsVisible) menuFrame = Time.frameCount;
+                            else if (Time.frameCount - rideFrame > 3000) Fail("숲 선택 창 대기 시간 초과");
+                            return;
+                        }
+                        if (Time.frameCount - menuFrame < 60) return;
+                        departFrame = Time.frameCount;
+                        RaiseEvent(popup, "DungeonSelectedEvent", dungeonMap, dungeonForest);
+                        setupLog.Append("depart frame ").Append(departFrame).Append(' ').Append(dungeonMap).Append(' ').Append(dungeonForest).Append('\n');
+                        state = 12;
+                        break;
+                    }
+                    case 12:
+                    {
+                        // 던전 로드 → 하강 연출 → 캐릭터 활성화(HUD 상승, 0.7초 뒤)까지 기다린다.
+                        if (false == bDungeonLoaded) { if (Time.frameCount - departFrame > 6000) Fail("던전 로드 시간 초과"); return; }
+                        InputManager im = FindAnyObjectByType<InputManager>();
+                        InDungeonSystem ids = FindAnyObjectByType<InDungeonSystem>();
+                        bool bInDungeon = null != ids && true == (bool)typeof(InDungeonSystem).GetField("bCurrentlyDungeonScene", FL).GetValue(ids);
+                        if (dungeonUnlockFrame < 0)
+                        {
+                            if (null == im || null == im.inputReader || im.inputReader.IsMovePaused || false == bInDungeon)
+                            {
+                                if (Time.frameCount - dungeonLoadedFrame > 6000) Fail("던전 조작 해제 시간 초과");
+                                return;
+                            }
+                            dungeonUnlockFrame = Time.frameCount;
+                        }
+                        // 조작이 풀린 뒤 0.7초(PopupUIGoUPCoroutine) 지나 캐릭터 활성화·HUD 상승·스태미나 감소가 시작된다. 넉넉히 60프레임 뒤부터 대본.
+                        if (Time.frameCount - dungeonUnlockFrame < 60) return;
+                        dungeonControlFrame = Time.frameCount;
+                        paceForceHeavy = true;
+                        SaveManager dsm = RealSaveManager();
+                        if (null == dsm || true != (bool)typeof(SaveManager).GetField("bSaveBlockedByUnreadableSave", FL).GetValue(dsm)) { Fail("던전 진입 뒤 세이브 차단이 풀려 있음"); return; }
+                        setupLog.Append("dungeon control frame ").Append(dungeonControlFrame).Append('\n');
+                        state = 13;
+                        RunDungeonScript(0);
+                        break;
+                    }
+                    case 13:
+                    {
+                        RunDungeonScript(Time.frameCount - dungeonControlFrame);
                         break;
                     }
                 }
@@ -588,6 +710,38 @@ namespace Diagnostics.TownGolden
                 case 1060: Move(0, 0); break;
             }
             if ("heavy" == scenario && 0 < _t && 0 == _t % 300) FillOffroad();
+            if (_t >= endFrames) state = 3;
+        }
+
+        // 던전 대본(t=0은 캐릭터 활성화 뒤). 도끼는 누른 채로 두면 쿨타임마다 다시 휘두르므로 처음에 눌러 끝까지 둔다.
+        // 120프레임마다 8방향을 돌며 걷고, 조준(마우스 고정 위치)은 걷는 방향으로, 240프레임마다 대시.
+        private static readonly Vector2Int[] DungeonDirs =
+        {
+            new Vector2Int(1, 0), new Vector2Int(1, 1), new Vector2Int(0, 1), new Vector2Int(-1, 1),
+            new Vector2Int(-1, 0), new Vector2Int(-1, -1), new Vector2Int(0, -1), new Vector2Int(1, -1),
+        };
+
+        private void RunDungeonScript(int _t)
+        {
+            InputReader r = Reader();
+            int stopAt = endFrames - 90;
+            if (0 == _t)
+            {
+                mousePinOffset = new Vector2(220f, 0f);
+                if (null != r) RaiseEvent(r, "MouseClickEvent");
+            }
+            if (30 <= _t && _t < stopAt && 0 == (_t - 30) % 120)
+            {
+                Vector2Int d = DungeonDirs[((_t - 30) / 120 * 3) % DungeonDirs.Length];
+                Move(d.x, d.y);
+                mousePinOffset = new Vector2(d.x, d.y).normalized * 220f;
+            }
+            if (100 <= _t && _t < stopAt && 0 == (_t - 100) % 240) bDashQueued = true;
+            if (stopAt == _t)
+            {
+                Move(0, 0);
+                if (null != r) RaiseEvent(r, "MouseReleaseEvent");
+            }
             if (_t >= endFrames) state = 3;
         }
 
@@ -1104,6 +1258,7 @@ namespace Diagnostics.TownGolden
         {
             return "scenario " + scenario + "\nmode " + mode + "\nscreen " + Screen.width + "x" + Screen.height
                 + "\nframes boot " + bootFrame + " go " + goFrame + " loaded " + loadedFrame + " control " + controlFrame
+                + (bDungeon ? " ride " + rideFrame + " menu " + menuFrame + " depart " + departFrame + " dloaded " + dungeonLoadedFrame + " dunlock " + dungeonUnlockFrame + " dcontrol " + dungeonControlFrame : string.Empty)
                 + "\npace period " + FramePeriodSec.ToString("F3") + "s heavy " + HeavyPeriodSec.ToString("F1") + "s frames " + paceFrames + " overruns " + paceOverruns + " worst " + (paceWorstSec * 1000.0).ToString("F1") + "ms maxNormal " + (paceMaxNormalSec * 1000.0).ToString("F1") + "ms tight " + paceTight + "\noverrun frames " + paceOverrunFrames.ToString() + (0 < debugFlags.Length ? "\ndebug " + debugFlags : string.Empty)
                 + "\n" + setupLog + (null != error ? "error " + error.Replace('\n', ' ') + "\n" : string.Empty) + "--\n";
         }

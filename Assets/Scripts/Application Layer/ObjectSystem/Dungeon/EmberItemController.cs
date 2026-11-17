@@ -36,13 +36,16 @@ public class EmberItemController : MonoBehaviour
     [Tooltip("불씨 1개를 주울 때 오르는 과열 수치")]
     [SerializeField] private float overheatPerEmber = 1f;
     // 과열이 오를수록 불씨 1개가 올리는 양이 줄어든다(GetGainEfficiency).
-    //   x = max(0, 과열 - gainFalloffStart) / gainFalloffScale,  효율 = gainMinEfficiency + (1 - gainMinEfficiency) * exp(-(x * x))
+    //   과열 ≤ gainFalloffStart: 효율 1
+    //   그 위: 효율 = gainMinEfficiency ^ ((과열 - gainFalloffStart) / (gainFloorStart - gainFalloffStart))  (지수 감소)
+    //   과열 ≥ gainFloorStart: 효율 gainMinEfficiency 유지
+    // 기본값(20 / 75 / 0.005)이면 50 부근에서 약 0.056.
     [Tooltip("과열 수치가 이 값까지는 불씨 효율 100%")]
     [SerializeField, Min(0f)] private float gainFalloffStart = 20f;
-    [Tooltip("효율이 줄어드는 폭(클수록 천천히 줄어든다)")]
-    [SerializeField, Min(0.01f)] private float gainFalloffScale = 30f;
+    [Tooltip("과열 수치가 이 값 이상이면 최소 효율 유지(그 사이는 지수적으로 감소)")]
+    [SerializeField, Min(0f)] private float gainFloorStart = 75f;
     [Tooltip("과열이 아무리 높아도 남는 최소 효율")]
-    [SerializeField, Range(0f, 1f)] private float gainMinEfficiency = 0.1f;
+    [SerializeField, Range(0.0001f, 1f)] private float gainMinEfficiency = 0.005f;
 
     [Header("입장 배치")]
     [Tooltip("나무 1그루당 평균 불씨 수. 1보다 작으면 그 확률로 1개, 크면 정수부만큼 + 소수부 확률로 1개 더")]
@@ -504,14 +507,18 @@ public class EmberItemController : MonoBehaviour
 
     /// <summary>
     /// 지금 과열 수치(내부 소수 값)에서 불씨 1개의 효율(gainMinEfficiency~1). 불씨를 줍기 직전 값으로 계산한다.
-    /// 기본값: x = max(0, 과열 - 20) / 30, 효율 = 0.1 + 0.9 * exp(-(x * x)).
+    /// 기본값: 0~20 효율 1, 20~75 효율 = 0.005 ^ ((과열 - 20) / 55)(50 부근 약 0.056), 75 이상 0.005.
     /// </summary>
     public float GetGainEfficiency(float _overheatValue)
     {
-        float scale = Mathf.Max(0.01f, gainFalloffScale);
-        float x = Mathf.Max(0f, _overheatValue - gainFalloffStart) / scale;
-        float minEfficiency = Mathf.Clamp01(gainMinEfficiency);
-        return minEfficiency + (1f - minEfficiency) * Mathf.Exp(-(x * x));
+        if (_overheatValue <= gainFalloffStart) return 1f;
+
+        float minEfficiency = Mathf.Clamp(gainMinEfficiency, 0.0001f, 1f);
+        float range = gainFloorStart - gainFalloffStart;
+        if (range <= 0f || _overheatValue >= gainFloorStart) return minEfficiency;
+
+        float t = (_overheatValue - gainFalloffStart) / range;
+        return Mathf.Max(minEfficiency, Mathf.Pow(minEfficiency, t));
     }
 
     private void OnEmberGroundedChanged(EmberItem _ember, bool _bGrounded)

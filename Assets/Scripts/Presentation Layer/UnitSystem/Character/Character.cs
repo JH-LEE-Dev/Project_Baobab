@@ -91,18 +91,29 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public float EmberDropMultiplier => statComponent.emberDropMultiplier;
     public bool bEmberEverywhere => statComponent.bEmberEverywhere;
     public float PreheatAmount => statComponent.preheatAmount;
-    // 나무 열기의 피해량·기절 시간 배율("열기 내성 강화", 특성이 없으면 1).
+    // 나무 열기의 피해량·넉백 거리·기절 시간 배율("열기 내성 강화", 특성이 없으면 1). 무적 시간에는 곱하지 않는다.
     public float TreeHeatMultiplier => statComponent.TreeHeatMultiplier;
     // 화상을 뺀 모든 공격의 피해 마지막에 곱하는 과열 배율(TreeObj가 InDungeonObjectManager를 통해 읽는다).
     public float OverheatDamageMultiplier => overheatComponent != null ? overheatComponent.DamageMultiplier : 1f;
     private int OverheatLevel => overheatComponent != null ? overheatComponent.OverheatLevel : 0;
 
-    // 넉백/경직 중에는 나무 열기 발산의 영향(데미지+넉백)을 받지 않는다.
-    public bool bTreeHeatImmune { get; private set; }
-    public void SetTreeHeatImmune(bool _immune) => bTreeHeatImmune = _immune;
+    // 넉백/기절 중이거나 무적 시간 동안에는 나무 열기 발산의 영향(피해+넉백)을 받지 않는다.
+    public bool bTreeHeatImmune => bTreeHeatKnockbackImmune || 0f < treeHeatInvulnerableTimer;
+    // 넉백/기절 구간의 면역(KnockBackState가 켜고 끈다).
+    private bool bTreeHeatKnockbackImmune;
+    public void SetTreeHeatImmune(bool _immune) => bTreeHeatKnockbackImmune = _immune;
+
+    // 나무 열기 피로도 피해 = 최대 피로도 x 이 비율 x "열기 내성 강화" 배율.
+    private const float TreeHeatDamageMaxStaminaRatio = 0.15f;
+    // 나무 열기에 맞은 순간부터의 무적 시간(초). 이 동안 다른 나무의 열기에 맞지 않고 캐릭터가 깜빡인다.
+    // "열기 내성 강화"로 줄어들지 않는다(넉백·기절만 줄어든다).
+    private const float TreeHeatInvulnerableDuration = 3f;
+    private float treeHeatInvulnerableTimer;
 
     public void SetArmRotationLocked(bool _locked) => armComponent.SetRotationLocked(_locked);
     public void SetAttackIndicatorLocked(bool _locked) => attackComponent.SetRotationLocked(_locked);
+    // 스턴(넉백 경직) 중에는 도끼를 휘두르지 못한다(AxeComponent.SetBlockedByStun 참고).
+    public void SetSwingBlockedByStun(bool _blocked) => armComponent.axeComponent.SetBlockedByStun(_blocked);
 
     // 넉백 중에는 캐릭터 스프라이트가 조준 방향을 따라 좌우로 도는 것도 막아야 한다.
     private bool bFacingLocked = false;
@@ -131,14 +142,55 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public void PlayStunVisual() => stunVisualComponent?.Play();
     public void StopStunVisual() => stunVisualComponent?.Stop();
 
-    public void ApplyTreeHeatKnockback(Vector3Int _cellOffset)
+    /// <summary>
+    /// 나무 열기에 맞았다. 피로도 피해(최대 피로도의 15%) → 넉백·기절(2초) → 무적(3초, 깜빡임) 순으로 건다.
+    /// "열기 내성 강화" 배율은 피해·넉백 거리·기절 시간에 곱하고 무적 시간에는 곱하지 않는다.
+    /// 배율이 0(면역 100%)이면 피해·넉백·기절이 모두 0이라 넉백 상태에 들어가지 않고, 무적 깜빡임도 내지 않는다.
+    /// 반환값: 맞는 연출(화면 흔들림·효과음·진동·그을림·HUD 붉은 화면)을 낼지. 면역 100%이거나 이 피해로 쓰러졌으면 false.
+    /// </summary>
+    public bool ApplyTreeHeatHit(Vector3Int _cellOffset)
     {
-        if (bDead) return;
+        if (bDead) return false;
+
+        float multiplier = statComponent.TreeHeatMultiplier;
+        healthComponent.DecreaseStaminaFlat(healthComponent.GetMaxStamina() * TreeHeatDamageMaxStaminaRatio * multiplier);
+
+        // 이 피해로 쓰러졌으면 사망 연출에 맡긴다.
+        if (bDead) return false;
+
+        bool bShowFeedback = 0f < multiplier;
+        StartTreeHeatInvulnerable(bShowFeedback);
+
+        if (false == bShowFeedback) return false;
 
         KnockBackState knockBackState = stateMachine.GetState<KnockBackState>();
-        knockBackState.SetKnockbackDirection(_cellOffset);
-        knockBackState.SetLockDurationScale(statComponent.TreeHeatMultiplier);
+        knockBackState.SetKnockbackDirection(_cellOffset, multiplier);
+        knockBackState.SetLockDurationScale(multiplier);
         stateMachine.ChangeState<KnockBackState>();
+        return true;
+    }
+
+    private void StartTreeHeatInvulnerable(bool _bBlink)
+    {
+        treeHeatInvulnerableTimer = TreeHeatInvulnerableDuration;
+
+        if (_bBlink) characterVisualComponent.StartInvulnerableBlink(GetArmFlashRenderer());
+        else characterVisualComponent.StopInvulnerableBlink();
+    }
+
+    private void UpdateTreeHeatInvulnerable(float _deltaTime)
+    {
+        if (0f >= treeHeatInvulnerableTimer) return;
+
+        treeHeatInvulnerableTimer -= _deltaTime;
+        if (0f >= treeHeatInvulnerableTimer) ClearTreeHeatInvulnerable();
+    }
+
+    // 무적을 끝내고 깜빡임을 원래 모습으로 되돌린다(시간 만료, 사망, 리셋, 씬 전환, 캐릭터가 꺼질 때).
+    private void ClearTreeHeatInvulnerable()
+    {
+        treeHeatInvulnerableTimer = 0f;
+        characterVisualComponent?.StopInvulnerableBlink();
     }
 
     IStatComponent ICharacter.statComponent => statComponent;
@@ -576,6 +628,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         bDead = false;
         bLowStaminaWarningSuppressed = false;
+        ClearTreeHeatInvulnerable();
 
         bInDungeon = _bInDungeon;
         characterVisualComponent.SetHubState(!bInDungeon);
@@ -911,6 +964,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         // 사망 애니메이션은 방향이 바뀌면 처음 프레임부터 다시 재생되므로(CharacterAnimator), 회전 베기 도중
         // 쓰러지면 회전이 방향을 계속 바꿔 쓰러지는 연출이 여러 번 재시작된다. 여기서 회전을 끊는다.
         StopWhirlwindSpin();
+        ClearTreeHeatInvulnerable(); // 쓰러진 캐릭터가 깜빡이지 않게
         characterVisualComponent.CharacterIsDead(true);
         // 이동속도 버프 타이머는 계속 돌지만 쓰러진 캐릭터 주변에 바람 연출이 남지 않게 바로 끈다.
         characterVisualComponent.StopHaste(true);
@@ -2211,6 +2265,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private void Update()
     {
         stateMachine?.Update();
+        UpdateTreeHeatInvulnerable(Time.deltaTime);
 
         if (!bDronesPaused)
         {
@@ -2306,6 +2361,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     {
         // 차량 탑승 등으로 캐릭터가 숨겨지면 드론도 함께 숨긴다. 캐릭터 없이 차량 옆에 드론만 떠 있지 않게 한다.
         SetDronesVisible(false);
+
+        // 꺼진 동안은 Update가 돌지 않아 무적 시간이 멈추므로, 깜빡이는 채로 남지 않게 여기서 끝낸다.
+        ClearTreeHeatInvulnerable();
 
         // 저피로도 경고 연출(오디오 먹먹함·색수차)은 Update에서 매 프레임 갱신되는 값이라, 이 오브젝트가
         // 꺼지면(차량 탑승 등) 그 순간의 세기로 얼어붙는다. 색수차는 완충(MoveTowards) 때문에 1f를 한 번
@@ -2484,6 +2542,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         bCanRotate = true;
         attackComponent.ResetAttackComponent();
         characterVisualComponent?.ResetFlash();
+        ClearTreeHeatInvulnerable();
         stateMachine.ChangeState<IdleState>();
         attackComponent.SetEnable(false);
         attackComponent.SetCursorEnable(false);
