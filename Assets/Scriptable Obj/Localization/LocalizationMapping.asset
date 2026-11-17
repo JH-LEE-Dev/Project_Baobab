@@ -537,3 +537,11 @@ MonoBehaviour:
     enumValueName: ObsidianTree
     enumIntValue: 12
     compositeKey: 14680076
+  - enumTypeName: SkillCommandType
+    enumValueName: EmberDropBonus
+    enumIntValue: 124
+    compositeKey: 4203489
+  - enumTypeName: SkillCommandType
+    enumValueName: OverheatGainBonus
+    enumIntValue: 111
+    compositeKey: 4203490

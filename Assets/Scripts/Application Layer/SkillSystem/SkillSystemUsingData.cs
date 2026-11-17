@@ -290,6 +290,20 @@ public enum SkillType
     LogCapacityIncrease3,
     WoodenTransportBoxExpansion3,
     SawmillLogStorageExpansion3,
+    AxeDamage6,
+    AttackRythm2,
+    AxeCriticalChance3,
+    AxeCriticalDamage3,
+    AxeRange2,
+    DroneAttackRange2,
+    DroneDamage3,
+    DroneAttackSpeed3,
+    LogValue5,
+    MagmaForestOverGrowth,
+    FatigueMaxIncrease6,
+    SourceOfSpeed3,
+    EmberDropBonus1,
+    OverheatGainBonus1,
     MAX
 }
 

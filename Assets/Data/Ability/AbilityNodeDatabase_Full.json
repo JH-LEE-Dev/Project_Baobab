@@ -1,6 +1,296 @@
 ﻿{
     "nodes": [
         {
+            "skillType": "AxeDamage6",
+            "nameLocId": 291,
+            "levelBadge": "VI",
+            "requiredPrestigeLevel": 0,
+            "gridX": 0,
+            "gridY": 15,
+            "parents": [
+                {
+                    "skillType": "WhirlWind",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "AttackRythm2",
+            "nameLocId": 292,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": 10,
+            "gridY": 9,
+            "parents": [
+                {
+                    "skillType": "AxeRange2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "AxeCriticalChance3",
+            "nameLocId": 293,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": 2,
+            "gridY": 15,
+            "parents": [
+                {
+                    "skillType": "AxeDamage6",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "AxeCriticalDamage3",
+            "nameLocId": 294,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": 2,
+            "gridY": 17,
+            "parents": [
+                {
+                    "skillType": "AxeCriticalChance3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "AxeRange2",
+            "nameLocId": 295,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": 8,
+            "gridY": 9,
+            "parents": [
+                {
+                    "skillType": "Hello",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "AttackRythm1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "BoomerangDamage3",
+            "nameLocId": 229,
+            "levelBadge": "III",
+            "requiredPrestigeLevel": 0,
+            "gridX": -10,
+            "gridY": 15,
+            "parents": [
+                {
+                    "skillType": "BoomerangDamage2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "BoomerangRange3",
+            "nameLocId": 230,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": -10,
+            "gridY": 13,
+            "parents": [
+                {
+                    "skillType": "Boomerang2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "DroneAttackRange2",
+            "nameLocId": 296,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": 10,
+            "gridY": 17,
+            "parents": [
+                {
+                    "skillType": "Drone2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "DroneDamage2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "DroneDamage3",
+            "nameLocId": 297,
+            "levelBadge": "III",
+            "requiredPrestigeLevel": 0,
+            "gridX": 10,
+            "gridY": 15,
+            "parents": [
+                {
+                    "skillType": "DroneDamage2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "DroneAttackSpeed3",
+            "nameLocId": 298,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": 4,
+            "gridY": 19,
+            "parents": [
+                {
+                    "skillType": "DroneAttackSpeed2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "LogValue5",
+            "nameLocId": 299,
+            "levelBadge": "V",
+            "requiredPrestigeLevel": 0,
+            "gridX": 11,
+            "gridY": 0,
+            "parents": [
+                {
+                    "skillType": "LogValue4",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "BountifulTree4",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "MagmaForestOverGrowth",
+            "nameLocId": 300,
+            "levelBadge": "None",
+            "requiredPrestigeLevel": 0,
+            "gridX": 13,
+            "gridY": -2,
+            "parents": [
+                {
+                    "skillType": "LogValue5",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "FatigueMaxIncrease6",
+            "nameLocId": 301,
+            "levelBadge": "VI",
+            "requiredPrestigeLevel": 0,
+            "gridX": -13,
+            "gridY": 0,
+            "parents": [
+                {
+                    "skillType": "FatigueMaxIncrease5",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "LogInsurance3",
+            "nameLocId": 302,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": -13,
+            "gridY": 6,
+            "parents": [
+                {
+                    "skillType": "LogInsurance2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "SourceOfSpeed3",
+            "nameLocId": 303,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": -15,
+            "gridY": 6,
+            "parents": [
+                {
+                    "skillType": "LogInsurance3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "EmberDropBonus1",
+            "nameLocId": 304,
+            "levelBadge": "I",
+            "requiredPrestigeLevel": 9,
+            "gridX": 4,
+            "gridY": -9,
+            "parents": [
+                {
+                    "skillType": "ShieldExplosionDamage1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "OverheatGainBonus1",
+            "nameLocId": 305,
+            "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
+            "gridX": 6,
+            "gridY": -11,
+            "parents": [
+                {
+                    "skillType": "EmberDropBonus1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
             "skillType": "LogCapacityIncrease3",
             "nameLocId": 288,
             "levelBadge": "III",
@@ -363,11 +653,11 @@
             "nameLocId": 223,
             "levelBadge": "II",
             "requiredPrestigeLevel": 0,
-            "gridX": -10,
+            "gridX": -8,
             "gridY": 13,
             "parents": [
                 {
-                    "skillType": "BoomerangDamage2",
+                    "skillType": "BoomerangDamage1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -481,8 +771,8 @@
             "nameLocId": 225,
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
-            "gridX": -8,
-            "gridY": 13,
+            "gridX": -6,
+            "gridY": 17,
             "parents": [
                 {
                     "skillType": "BoomerangDamage1",
