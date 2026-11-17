@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: passive_dot_speed
   nameKey: Roguelike_Card_passive_dot_speed
   descriptionKey: Roguelike_Card_passive_dot_speed_Desc
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 34e1f7f32e4116d48a1c8a3cf958391a, type: 3}
   kind: 1
   skillTag: 0
   exclusiveGroup: 0
@@ -47,4 +47,8 @@ MonoBehaviour:
   comboMaterialB: {fileID: 0}
   comboType: 0
   suppressedSkills: 
-  designerNote: "\uAE30\uD68D\uC11C v2.5 6-3 \u00B7 A-5 \uC9C0\uC18D \uD53C\uD574 \uC18D\uB3C4 \uC99D\uAC00. \uC9C0\uC18D \uD53C\uD574 \uD2F1 \uC8FC\uAE30 \uB204\uC801 -5 / -11 / -18 / -28 / -40% (\uD558\uD55C 0.2\uCD08\uB294 \uD29C\uB2DD), MAX \uC870\uAC74\uBD80: \uC624\uC5FC \uC911\uCCA9\uC774 \uCD5C\uB300\uC778 \uB098\uBB34\uB294 \uD2F1 \uC8FC\uAE30 \uCD94\uAC00 -10%."
+  designerNote: "\uAE30\uD68D\uC11C v2.5 6-3 \xB7 A-5 \uC9C0\uC18D \uD53C\uD574 \uC18D\uB3C4
+    \uC99D\uAC00. \uC9C0\uC18D \uD53C\uD574 \uD2F1 \uC8FC\uAE30 \uB204\uC801 -5 /
+    -11 / -18 / -28 / -40% (\uD558\uD55C 0.2\uCD08\uB294 \uD29C\uB2DD), MAX \uC870\uAC74\uBD80:
+    \uC624\uC5FC \uC911\uCCA9\uC774 \uCD5C\uB300\uC778 \uB098\uBB34\uB294 \uD2F1
+    \uC8FC\uAE30 \uCD94\uAC00 -10%."

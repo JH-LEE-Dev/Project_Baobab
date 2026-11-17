@@ -11,7 +11,7 @@ using UnityEngine.UI;
 ///
 /// 시간표(30fps 틱, 정수 픽셀, unscaled): 0~0.20 띠가 가운데에서 펼쳐짐(흰 -> 크림 -> 금), 0.12~0.34 판이 내려옴(OutBack),
 ///   0.20 깃발 통통 · 머리말 안착 · 조각 14개 터짐 · 띠 양 끝 + 반짝임, 0.30~0.48 제목이 왼쪽부터 드러남, 0.30~0.75 · 2.20~2.65 광택,
-///   3.20~3.32 판이 띠 속으로 접힘, 3.30~3.50 띠가 오른쪽 화면 밖으로 빠짐. 앞 팝업이 끝나고 0.15초 뒤 다음 팝업이 나온다(대기열 13).
+///   3.20~3.32 판이 띠 속으로 접힘, 3.30~3.50 띠가 오른쪽 화면 밖으로 빠짐. 앞 팝업이 끝나고 0.15초 뒤 다음 팝업이 나온다(대기열 20).
 /// DOTween 시퀀스를 만들지 않고 Update에서 틱 번호가 바뀔 때만 값을 직접 계산해 넣는다. 재생 중 힙 할당이 없다(조각 · 대기열은 고정 배열, 난수는 정수 xorshift).
 /// 그리는 그래픽(광택 · 반짝임 · 조각)은 UI_LootGlowParticles 하나(기본 UI 머티리얼, 불투명 색)다. 모든 그래픽은 Raycast Target을 받지 않는다.
 /// 호출: UIView_RoguelikeHUD.ShowChallengeToast(in RoguelikeChallengeViewData). 제목 이외의 필드(tip, bCleared)는 쓰지 않는다.
@@ -19,7 +19,7 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public class UI_RoguelikeChallengeToast : MonoBehaviour
 {
-    public const int QueueCapacity = 13;
+    public const int QueueCapacity = 20;
     public const int Width = 284;
     public const int BandHeight = 22;
     public const int PanelVisibleHeight = 26;
@@ -161,7 +161,7 @@ public class UI_RoguelikeChallengeToast : MonoBehaviour
     }
 
     /// <summary>
-    /// 달성 팝업을 띄운다. 재생 중이면 대기열(13)에 넣어 앞 팝업이 끝난 뒤 하나씩 보여 준다. 제목은 이미 번역된 문자열(_data.title)을 그대로 쓴다.
+    /// 달성 팝업을 띄운다. 재생 중이면 대기열(20)에 넣어 앞 팝업이 끝난 뒤 하나씩 보여 준다. 제목은 이미 번역된 문자열(_data.title)을 그대로 쓴다.
     /// </summary>
     public void Show(in RoguelikeChallengeViewData _data)
     {

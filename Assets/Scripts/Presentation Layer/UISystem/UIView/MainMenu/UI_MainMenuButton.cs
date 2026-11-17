@@ -112,6 +112,7 @@ public class UI_MainMenuButton : Selectable,
     private bool isAppearing = false;
     private bool isHovered = false;
     private bool isPointerHovered = false;
+    private bool isRaycastFitPending;
 
     public bool IsPointerHovered => isPointerHovered;
 
@@ -189,6 +190,7 @@ public class UI_MainMenuButton : Selectable,
     {
         base.OnDisable();
         if (null != cachedOnTextChanged) TMPro_EventManager.TEXT_CHANGED_EVENT.Remove(cachedOnTextChanged);
+        isRaycastFitPending = false;
         if (false == Application.isPlaying) return;
         isHovered = false;
         isPointerHovered = false;
@@ -297,15 +299,27 @@ public class UI_MainMenuButton : Selectable,
         float _right = textOriginalPos.x + targetTextComponent.preferredWidth + textHoverMoveX + raycastPaddingRight;
 
         RectTransform _box = buttonImage.rectTransform;
-        _box.anchoredPosition = new Vector2((_left + _right) * 0.5f, _box.anchoredPosition.y);
-        _box.sizeDelta = new Vector2(_right - _left, _box.sizeDelta.y);
+        float _newPosX = (_left + _right) * 0.5f;
+        float _newWidth = _right - _left;
+
+        if (false == Mathf.Approximately(_newPosX, _box.anchoredPosition.x))
+        {
+            _box.anchoredPosition = new Vector2(_newPosX, _box.anchoredPosition.y);
+        }
+
+        if (false == Mathf.Approximately(_newWidth, _box.sizeDelta.x))
+        {
+            _box.sizeDelta = new Vector2(_newWidth, _box.sizeDelta.y);
+        }
     }
 
+    // TMP가 캔버스 다시 그리기 루프 안에서 TEXT_CHANGED를 내므로 여기서 RectTransform을 바꾸면 rebuild loop 경고가 난다.
+    // 표시만 해 두고 다음 LateUpdate에서 맞춘다.
     private void HandleTextChanged(UnityEngine.Object _changedObject)
     {
         if (null == targetTextComponent || _changedObject != targetTextComponent) return;
 
-        FitRaycastToText();
+        isRaycastFitPending = true;
     }
 
     /// <summary>
@@ -962,6 +976,14 @@ public class UI_MainMenuButton : Selectable,
 
     private Color GetTextShadowColor() => null != textUIEffect ? textUIEffect.shadowColor : Color.white;
     private void SetTextShadowColor(Color _c) { if (null != textUIEffect) textUIEffect.shadowColor = _c; }
+
+    private void LateUpdate()
+    {
+        if (false == isRaycastFitPending) return;
+
+        isRaycastFitPending = false;
+        FitRaycastToText();
+    }
 
     protected override void OnDestroy()
     {

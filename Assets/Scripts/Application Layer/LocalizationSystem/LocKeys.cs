@@ -659,6 +659,8 @@ public static class LocKeys
         public const int roguelikeChallengeWave30Title = 37749315;
         public const int roguelikeChallengeWave30Tip = 37749316;
         public const int roguelikeChallengeClearedToast = 37749317;
+        public const int roguelikeChallengePrismCardTitle = 37749318;
+        public const int roguelikeChallengePrismCardTip = 37749319;
     }
 
     public static class SaveCheckUI

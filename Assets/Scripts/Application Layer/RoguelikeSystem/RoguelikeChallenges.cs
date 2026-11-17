@@ -11,6 +11,7 @@ public enum ERoguelikeChallengeKind
     UnlimitN = 4,
     TierAll = 5,
     Wave30 = 6,
+    PrismCard = 7,
 }
 
 /// <summary>도전과제 한 칸의 정의. id는 기록 파일에 저장되므로 한 번 정하면 바꾸지 않는다.</summary>
@@ -22,6 +23,10 @@ public readonly struct RoguelikeChallengeDefinition
     public readonly int target;
     public readonly int titleKey;
     public readonly int tipKey;
+    /// <summary>PrismCard 칸의 프리즘 카드 ID. 나머지 종류는 null.</summary>
+    public readonly string cardId;
+    /// <summary>PrismCard 칸의 카드 이름 현지화 키 문자열("Roguelike_Card_" + cardId). 정의를 만들 때 한 번만 조립한다. 나머지 종류는 null.</summary>
+    public readonly string cardNameKey;
 
     public RoguelikeChallengeDefinition(string _id, ERoguelikeChallengeKind _kind, int _target, int _titleKey, int _tipKey)
     {
@@ -30,11 +35,24 @@ public readonly struct RoguelikeChallengeDefinition
         target = _target;
         titleKey = _titleKey;
         tipKey = _tipKey;
+        cardId = null;
+        cardNameKey = null;
+    }
+
+    public RoguelikeChallengeDefinition(string _id, ERoguelikeChallengeKind _kind, int _target, int _titleKey, int _tipKey, string _cardId)
+    {
+        id = _id;
+        kind = _kind;
+        target = _target;
+        titleKey = _titleKey;
+        tipKey = _tipKey;
+        cardId = _cardId;
+        cardNameKey = "Roguelike_Card_" + _cardId;
     }
 }
 
 /// <summary>
-/// 로그라이크 도전과제 13칸의 정의와 표시용 문구 조립. 기획서 v3.1 8-3 목록 순서 그대로이며, 목록 창도 이 순서로 그린다.
+/// 로그라이크 도전과제 20칸의 정의와 표시용 문구 조립. 기획서 v3.1 8-3 목록 순서 그대로이며, 목록 창도 이 순서로 그린다.
 /// 달성 판정 · 누적은 RoguelikeChallengeTracker가, 저장은 RoguelikeRecordData(RoguelikeRecords.json)가 맡는다.
 /// </summary>
 public static class RoguelikeChallenges
@@ -42,6 +60,13 @@ public static class RoguelikeChallenges
     private static readonly RoguelikeChallengeDefinition[] definitions =
     {
         new RoguelikeChallengeDefinition("PrismAll", ERoguelikeChallengeKind.PrismAll, 0, LocKeys.RoguelikeUI.roguelikeChallengePrismAllTitle, LocKeys.RoguelikeUI.roguelikeChallengePrismAllTip),
+        new RoguelikeChallengeDefinition("Prism_combo_spin_shockwave", ERoguelikeChallengeKind.PrismCard, 0, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTitle, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTip, "combo_spin_shockwave"),
+        new RoguelikeChallengeDefinition("Prism_combo_boomerang_shockwave", ERoguelikeChallengeKind.PrismCard, 0, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTitle, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTip, "combo_boomerang_shockwave"),
+        new RoguelikeChallengeDefinition("Prism_combo_spin_boomerang", ERoguelikeChallengeKind.PrismCard, 0, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTitle, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTip, "combo_spin_boomerang"),
+        new RoguelikeChallengeDefinition("Prism_combo_spore_drone", ERoguelikeChallengeKind.PrismCard, 0, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTitle, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTip, "combo_spore_drone"),
+        new RoguelikeChallengeDefinition("Prism_combo_spore_offroad", ERoguelikeChallengeKind.PrismCard, 0, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTitle, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTip, "combo_spore_offroad"),
+        new RoguelikeChallengeDefinition("Prism_combo_spore_shockwave", ERoguelikeChallengeKind.PrismCard, 0, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTitle, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTip, "combo_spore_shockwave"),
+        new RoguelikeChallengeDefinition("Prism_combo_stella_drone", ERoguelikeChallengeKind.PrismCard, 0, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTitle, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTip, "combo_stella_drone"),
         new RoguelikeChallengeDefinition("CardMaxAll", ERoguelikeChallengeKind.CardMaxAll, 0, LocKeys.RoguelikeUI.roguelikeChallengeCardMaxAllTitle, LocKeys.RoguelikeUI.roguelikeChallengeCardMaxAllTip),
         new RoguelikeChallengeDefinition("RubyAll", ERoguelikeChallengeKind.RubyAll, 0, LocKeys.RoguelikeUI.roguelikeChallengeRubyAllTitle, LocKeys.RoguelikeUI.roguelikeChallengeRubyAllTip),
         new RoguelikeChallengeDefinition("Tree1000", ERoguelikeChallengeKind.TreeN, 1000, LocKeys.RoguelikeUI.roguelikeChallengeTreeNTitle, LocKeys.RoguelikeUI.roguelikeChallengeTreeNTip),
@@ -60,7 +85,7 @@ public static class RoguelikeChallenges
 
     public static RoguelikeChallengeDefinition Get(int _index) => definitions[_index];
 
-    /// <summary>현재 언어로 번역한 제목. 나무 · 언리밋은 {0}에 목표값을 넣는다(나무는 천 단위 콤마, 검수 메뉴의 견본 값 "10,000"과 같은 표기).</summary>
+    /// <summary>현재 언어로 번역한 제목. 나무 · 언리밋은 {0}에 목표값을 넣는다(나무는 천 단위 콤마, 검수 메뉴의 견본 값 "10,000"과 같은 표기). 언리밋 목표값도 문자열로 넘긴다 - int로 넘기면 GetFormatText(jsonId, entryId) 오버로드로 해석되어 빈 문자열이 나온다.</summary>
     public static string BuildTitle(int _index, LocalizationManager _localization)
     {
         if (null == _localization || _index < 0 || _index >= definitions.Length) return string.Empty;
@@ -71,7 +96,9 @@ public static class RoguelikeChallenges
             case ERoguelikeChallengeKind.TreeN:
                 return _localization.GetFormatText(def.titleKey, def.target.ToString("N0", CultureInfo.InvariantCulture));
             case ERoguelikeChallengeKind.UnlimitN:
-                return _localization.GetFormatText(def.titleKey, def.target);
+                return _localization.GetFormatText(def.titleKey, def.target.ToString(CultureInfo.InvariantCulture));
+            case ERoguelikeChallengeKind.PrismCard:
+                return _localization.GetFormatText(def.titleKey, _localization.GetText(def.cardNameKey));
             default:
                 return _localization.GetText(def.titleKey);
         }
@@ -92,13 +119,21 @@ public static class RoguelikeChallenges
         if (null == _results) return;
 
         List<string> cleared = null != _records ? _records.challengeClearedIds : null;
+        List<string> prismCardIds = null != _records ? _records.challengePrismCardIds : null;
         for (int i = 0; i < definitions.Length; i++)
         {
+            bool bCleared = null != cleared && cleared.Contains(definitions[i].id);
+            if (false == bCleared && ERoguelikeChallengeKind.PrismCard == definitions[i].kind)
+            {
+                //소급: 업데이트 전에 해제한 카드는 달성 기록이 없어도 고른 카드 목록으로 달성 처리한다
+                bCleared = null != prismCardIds && prismCardIds.Contains(definitions[i].cardId);
+            }
+
             _results.Add(new RoguelikeChallengeViewData
             {
                 title = BuildTitle(i, _localization),
                 tip = BuildTip(i, _localization),
-                bCleared = null != cleared && cleared.Contains(definitions[i].id),
+                bCleared = bCleared,
             });
         }
     }
@@ -110,6 +145,7 @@ public static class RoguelikeChallenges
 /// 게임오버 · 포기로 끝난 판도 런 종료 저장(FinishRunRoutine)에 함께 남는다.
 ///
 /// 전체 수(프리즘 · 레벨 있는 카드 · 루비)는 카드 DB에서, 마지막 티어는 밸런스의 티어 수에서 센다(하드코딩하지 않는다).
+/// 프리즘 카드별 칸(PrismCard)은 프리즘 카드를 고른 순간 PrismAll과 함께 판정하고, 예전에 해제한 카드는 Initialize에서 조용히 소급한다.
 /// 판정 지점에서 매번 할당하지 않는다(달성 플래그 배열 · 결과 리스트를 재사용, 문자열 추가는 진행이 처음 생길 때만).
 /// </summary>
 public sealed class RoguelikeChallengeTracker
@@ -156,6 +192,21 @@ public sealed class RoguelikeChallengeTracker
             clearedFlags[i] = null != records && records.challengeClearedIds.Contains(RoguelikeChallenges.Get(i).id);
         }
 
+        if (null != records)
+        {
+            //소급: 프리즘 카드별 칸이 생기기 전에 해제한 카드는 challengePrismCardIds에만 남아 있으므로, 이미 조건을 채운 칸은 팝업 없이 조용히 달성 처리한다(저장은 다음 기존 저장 시점에 함께 남는다)
+            for (int i = 0; i < clearedFlags.Length; i++)
+            {
+                if (clearedFlags[i]) continue;
+
+                RoguelikeChallengeDefinition def = RoguelikeChallenges.Get(i);
+                if (ERoguelikeChallengeKind.PrismCard != def.kind || false == IsMet(in def)) continue;
+
+                clearedFlags[i] = true;
+                AddUnique(records.challengeClearedIds, def.id);
+            }
+        }
+
         newlyCleared.Clear();
     }
 
@@ -179,7 +230,11 @@ public sealed class RoguelikeChallengeTracker
                 if (AddUnique(records.challengeRubyCardIds, card.cardId)) Evaluate(ERoguelikeChallengeKind.RubyAll);
                 break;
             case ECardKind.Prism:
-                if (AddUnique(records.challengePrismCardIds, card.cardId)) Evaluate(ERoguelikeChallengeKind.PrismAll);
+                if (AddUnique(records.challengePrismCardIds, card.cardId))
+                {
+                    Evaluate(ERoguelikeChallengeKind.PrismAll);
+                    Evaluate(ERoguelikeChallengeKind.PrismCard);
+                }
                 break;
         }
     }
@@ -250,6 +305,7 @@ public sealed class RoguelikeChallengeTracker
             case ERoguelikeChallengeKind.UnlimitN: return records.challengeBestUnlimit >= _def.target;
             case ERoguelikeChallengeKind.TierAll: return tierTotal > 0 && records.challengeBestTier >= tierTotal;
             case ERoguelikeChallengeKind.Wave30: return true;
+            case ERoguelikeChallengeKind.PrismCard: return records.challengePrismCardIds.Contains(_def.cardId);
             default: return false;
         }
     }
