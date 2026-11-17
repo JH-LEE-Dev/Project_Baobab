@@ -104,6 +104,54 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         bResumeSwingAfterDash = false == _bBlocked;
     }
 
+    // 스턴(넉백 경직) 중에는 도끼를 휘두르지 못한다. 대시와 같이 버튼이 눌린 상태는 기억해 두었다가 스턴이 풀리면 이어서 휘두른다.
+    private bool bBlockedByStun = false;
+
+    // 스윙을 시작했고 아직 타격 순간(OnAttackImpact)이 오지 않았는지. 스턴이 걸리는 순간 이 구간이면 스윙을 끊는다.
+    private bool bSwingBeforeImpact = false;
+
+    public void SetBlockedByStun(bool _bBlocked)
+    {
+        if (bBlockedByStun == _bBlocked) return;
+
+        bBlockedByStun = _bBlocked;
+
+        if (_bBlocked)
+        {
+            // 타격 전에 스턴이 걸리면 그 스윙은 판정 없이 끊는다(경직 중에 도끼가 나무를 치지 않게).
+            // 타격이 이미 끝난 뒤(복귀·쿨타임 구간)라면 그대로 둔다 - 끊으면 쿨타임을 건너뛰게 된다.
+            if (bSwingBeforeImpact) CancelSwingBeforeImpact();
+            bResumeSwingAfterDash = false;
+        }
+        else
+        {
+            // 대시 종료와 같은 이유로 한 박자 미뤄 이어 휘두른다(스턴 도중 사망하면 그 사이 무기가 꺼져 걸러진다).
+            bResumeSwingAfterDash = true;
+        }
+    }
+
+    // 타격 전의 스윙만 정리한다. 콤보와 버튼 눌림은 유지한다(ResetAttackState와 달리 무기가 꺼지는 게 아니므로).
+    private void CancelSwingBeforeImpact()
+    {
+        bSwingBeforeImpact = false;
+
+        if (null != axeAnimation)
+        {
+            axeAnimation.ResetPose();
+        }
+
+        bAttacked = false;
+
+        if (bIsSpeedReduced)
+        {
+            bIsSpeedReduced = false;
+            ctx.characterStat.RemoveActionState();
+        }
+
+        DeclareCanSwapEvent?.Invoke(true);
+        DeclareAttackStateEvent?.Invoke(false);
+    }
+
     // 대시 동안 눌러 두었거나 연속 공격 중이었다면 대시가 끝난 뒤 이어 휘두른다(LeftButtonClicked와 같은 조건).
     private void ResumeSwingAfterDash()
     {
@@ -118,7 +166,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     private bool CanStartSwing()
     {
         return false == bAttacked && null != axeAnimation && bCanAction && durability != 0f && bCanAttack
-            && false == ctx.bWhileChangingWeapon && false == bBlockedByDash;
+            && false == ctx.bWhileChangingWeapon && false == bBlockedByDash && false == bBlockedByStun;
     }
 
     public override void LeftButtonClicked()
@@ -140,6 +188,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     private void OnAttackStart()
     {
         bAttacked = true;
+        bSwingBeforeImpact = true;
         Sound.Play(SoundID.Swing, transform.position);
         if (null == cachedOnAttackImpact) cachedOnAttackImpact = OnAttackImpact;
         axeAnimation.PlaySwing(cachedOnAttackImpact);
@@ -156,6 +205,8 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
     private void OnAttackImpact()
     {
+        bSwingBeforeImpact = false;
+
         // 스윙 트윈(DOTween)은 GameObject가 꺼져도 계속 돌기 때문에, 차량 탑승/씬 전환 연출로
         // 캐릭터가 SetActive(false) 된 뒤에 이 콜백이 도착할 수 있다. 그 상태에서는 코루틴을 시작할 수
         // 없어(비활성 오브젝트) bAttacked가 true로 굳어버리고, 이후 좌클릭 공격이 영구히 막힌다.
@@ -203,7 +254,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
         DeclareAttackStateEvent?.Invoke(false);
 
-        if (bLeftButtonClicked && durability > 0f && bCanAttack == true && false == bBlockedByDash)
+        if (bLeftButtonClicked && durability > 0f && bCanAttack == true && false == bBlockedByDash && false == bBlockedByStun)
         {
             OnAttackStart();
         }
@@ -393,6 +444,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         }
 
         bAttacked = false;
+        bSwingBeforeImpact = false;
         bLeftButtonClicked = false;
         bResumeSwingAfterDash = false;
         comboResetTimer = 0f;

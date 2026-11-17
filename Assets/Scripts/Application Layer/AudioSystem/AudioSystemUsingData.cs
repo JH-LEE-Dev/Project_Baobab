@@ -130,6 +130,8 @@ public enum SoundID
     ResultUIClose = -2002228350,
     ResultUIHover = -1516908900,
     ResultUIOpen = -1959115002,
+    SFXCardSelectNormal = 2034326690,
+    SFXInCardSleeve = -1496185187,
     AxeBreakingEx = 1393049894,
     AxeBreaking = -197311369,
     AxeBreakingFinal = -43994528,

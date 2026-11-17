@@ -74,7 +74,12 @@ public class UI_RoguelikeCardStoreDrop : MonoBehaviour
         bPlaying = true;
         time = 0f;
 
-        if (true == bSleeve) sleeveRoot.gameObject.SetActive(true);
+        if (true == bSleeve)
+        {
+            sleeveRoot.gameObject.SetActive(true);
+            // 슬리브가 씌워지기 시작하는 순간의 효과음(기획서 v3.1 10-2). 슬리브가 없는 레어 카드는 내지 않는다.
+            Sound.PlayUI(SoundID.SFXInCardSleeve);
+        }
         Evaluate(0f);
     }
 

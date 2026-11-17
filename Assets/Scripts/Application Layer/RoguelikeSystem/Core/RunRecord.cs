@@ -77,11 +77,34 @@ public class RoguelikeRecordData
     /// <summary>언리밋 랭킹 1~5위. 언리밋에 도달한 판만.</summary>
     public List<RunRecordEntry> unlimitRanking = new List<RunRecordEntry>();
 
+    // // 도전과제 누적 진행(기획서 v3.1 8-3). 여러 판에 걸쳐 쌓이고, 한 번 달성한 도전과제는 취소되지 않는다.
+    // JsonUtility는 HashSet · Dictionary를 저장하지 못해 List와 int로 둔다. 이전 기록 파일에는 없는 필드라 EnsureValid가 채운다.
+
+    /// <summary>달성한 도전과제 ID(RoguelikeChallenges 정의의 id).</summary>
+    public List<string> challengeClearedIds = new List<string>();
+    /// <summary>한 번이라도 MAX를 찍은 레벨 있는 카드(액티브 · 공통 패시브)의 cardId.</summary>
+    public List<string> challengeMaxedCardIds = new List<string>();
+    /// <summary>한 번이라도 고른 루비(계약) 카드의 cardId.</summary>
+    public List<string> challengeRubyCardIds = new List<string>();
+    /// <summary>한 번이라도 얻은 프리즘(조합) 카드의 cardId.</summary>
+    public List<string> challengePrismCardIds = new List<string>();
+    /// <summary>여러 판에 걸쳐 쓰러뜨린 나무 수.</summary>
+    public int challengeTreesFelled;
+    /// <summary>도달한 가장 높은 티어 번호(1부터, 0은 기록 없음).</summary>
+    public int challengeBestTier;
+    /// <summary>도달한 가장 높은 언리밋 번호(Unlimit-N의 N, 0은 기록 없음).</summary>
+    public int challengeBestUnlimit;
+
     /// <summary>JsonUtility 역직렬화 직후 비어 있을 수 있는 리스트를 채운다.</summary>
     public void EnsureValid()
     {
         if (null == clearRanking) clearRanking = new List<RunRecordEntry>();
         if (null == unlimitRanking) unlimitRanking = new List<RunRecordEntry>();
         if (null == recent) bHasRecent = false;
+        if (null == challengeClearedIds) challengeClearedIds = new List<string>();
+        if (null == challengeMaxedCardIds) challengeMaxedCardIds = new List<string>();
+        if (null == challengeRubyCardIds) challengeRubyCardIds = new List<string>();
+        if (null == challengePrismCardIds) challengePrismCardIds = new List<string>();
+        if (challengeTreesFelled < 0) challengeTreesFelled = 0;
     }
 }

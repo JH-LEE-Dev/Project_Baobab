@@ -90,7 +90,7 @@ public class UIView_MainMenu : UIView
     private UIView_RoguelikeChallenges roguelikeChallengesView;
     private Action roguelikeChallengesClosedCallback;
     private Action cachedOnRoguelikeChallengesViewClosed;
-    private readonly List<RoguelikeChallengeViewData> roguelikeChallengeBuffer = new List<RoguelikeChallengeViewData>(8);
+    private readonly List<RoguelikeChallengeViewData> roguelikeChallengeBuffer = new List<RoguelikeChallengeViewData>(16);
     private bool bOpenRoguelikeMenuOnShow;
     private readonly List<RoguelikeRecordViewData> roguelikeClearRankingBuffer = new List<RoguelikeRecordViewData>(5);
     private readonly List<RoguelikeRecordViewData> roguelikeUnlimitRankingBuffer = new List<RoguelikeRecordViewData>(5);
@@ -911,8 +911,7 @@ public class UIView_MainMenu : UIView
 
     /// <summary>
     /// 로그라이크 하위 메뉴의 도전과제에서 부른다. 도전과제 창을 이 화면 위에 열고, 창이 닫히면 _onClosed를 부른다. 열지 못하면 false.
-    /// 도전과제 데이터(정의 · 달성 판정 · 저장)는 Application Layer 몫이라 아직 없다: 지금은 빈 목록을 넘겨 빈 목록 문구가 나온다.
-    /// 데이터가 생기면 roguelikeChallengeBuffer를 채우는 지점은 아래 표시한 곳이다(기획서 부록 C-3 "도전과제 데이터 연결").
+    /// 목록은 열 때마다 기록 파일(RoguelikeRecordRepository)을 읽어 RoguelikeChallenges 정의 순서대로 채운다(기획서 v3.1 8-3, 부록 C-3 4-20).
     /// </summary>
     public bool OpenRoguelikeChallenges(Action _onClosed)
     {
@@ -940,8 +939,9 @@ public class UIView_MainMenu : UIView
         roguelikeChallengesView.transform.SetAsLastSibling();
         roguelikeChallengesClosedCallback = _onClosed;
 
-        // [도전과제 데이터 연결 지점] Application Layer가 만든 도전과제 목록을 RoguelikeChallengeViewData로 바꿔 여기서 버퍼에 채운다.
+        // [도전과제 데이터 연결 지점] 기록 파일의 달성 상태와 도전과제 정의(13칸)를 정의 순서대로 번역된 뷰 데이터로 채운다.
         roguelikeChallengeBuffer.Clear();
+        RoguelikeChallenges.FillViewData(RoguelikeRecordRepository.Load(), viewCtx?.localizationManager, roguelikeChallengeBuffer);
         roguelikeChallengesView.OpenChallenges(roguelikeChallengeBuffer);
         return true;
     }

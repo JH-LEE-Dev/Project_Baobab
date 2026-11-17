@@ -671,7 +671,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
         treeHeatResistance = treeHeatResistanceAccum.Add(treeHeatResistance, _amount);
     }
 
-    /// <summary>나무 열기의 피해량·기절 시간에 곱하는 배율("열기 내성 강화"가 없으면 1).</summary>
+    /// <summary>나무 열기의 피해량·넉백 거리·기절 시간에 곱하는 배율("열기 내성 강화"가 없으면 1). 무적 시간에는 곱하지 않는다.</summary>
     public float TreeHeatMultiplier => 1f - Mathf.Clamp01(treeHeatResistance);
 
     public void IncreaseHeatRecoveryAmount(float _amount)

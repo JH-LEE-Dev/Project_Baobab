@@ -1498,6 +1498,28 @@ MonoBehaviour:
     maxConcurrentVoices: 0
     polyphonyAttenuationStrength: 0
     priority: 128
+  - id: 2034326690
+    mixerId: -1090805748
+    clip: {fileID: 8300000, guid: a277d6dc068acce4dbf8088ff8fe6dc3, type: 3}
+    cueData: {fileID: 0}
+    mixerGroup: {fileID: 24300300, guid: 865ed13951834138be11bea38be7fea0, type: 2}
+    defaultVolume: 1
+    is3D: 0
+    loop: 0
+    maxConcurrentVoices: 0
+    polyphonyAttenuationStrength: 0
+    priority: 32
+  - id: -1496185187
+    mixerId: -1090805748
+    clip: {fileID: 8300000, guid: a475259d6b37eb443ae1874ab2d54c24, type: 3}
+    cueData: {fileID: 0}
+    mixerGroup: {fileID: 24300300, guid: 865ed13951834138be11bea38be7fea0, type: 2}
+    defaultVolume: 1
+    is3D: 0
+    loop: 0
+    maxConcurrentVoices: 0
+    polyphonyAttenuationStrength: 0
+    priority: 32
   mixers:
   - id: -235980376
     group: {fileID: 24300002, guid: 865ed13951834138be11bea38be7fea0, type: 2}

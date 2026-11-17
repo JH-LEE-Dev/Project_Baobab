@@ -47,7 +47,8 @@ public class OffroadContainerVComponent : MonoBehaviour
     private Sprite currentSprite;
 
     // 엔딩 특성(소풍 바구니)을 찍으면 상자 대신 바구니로 보인다. 기능은 상자와 같다.
-    // 아직 바구니 리소스가 없으므로 비워 두면 상자 모습이 그대로 유지된다.
+    // 특성 레벨은 세이브에 남아 이어하기 때 다시 적용되고, 새로하기면 특성이 비어 상자로 시작한다.
+    // 비어 있는 슬롯은 상자 모습을 그대로 쓴다.
     [Header("Picnic Basket")]
     [SerializeField] private RuntimeAnimatorController picnicBasketAnimator; // 열고 닫는 애니메이션 (bOpen 파라미터 동일)
     [SerializeField] private Sprite picnicBasketJumpSprite;    // 차로 뛰어오를 때

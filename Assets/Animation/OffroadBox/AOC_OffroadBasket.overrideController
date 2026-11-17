@@ -1,0 +1,15 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!221 &22100000
+AnimatorOverrideController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: AOC_OffroadBasket
+  m_Controller: {fileID: 9100000, guid: 0731906133bda7043976985d5c89432e, type: 2}
+  m_Clips:
+  - m_OriginalClip: {fileID: 7400000, guid: 5c0d14f1dccc9934bbc6516c2304e291, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: f98a7b736a05f3640a6222ca2a2c15a6, type: 2}
+  - m_OriginalClip: {fileID: 7400000, guid: 2611d8c990a54554cbe3cf7a861361a0, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 57fc3e101e10e3743a4d7f843da59bdb, type: 2}

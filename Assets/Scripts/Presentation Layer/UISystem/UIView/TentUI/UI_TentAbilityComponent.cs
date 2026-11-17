@@ -113,6 +113,16 @@ public class UI_TentAbilityComponent : MonoBehaviour
 #endif
     private readonly AbilityLineRenderer lineRenderer = new AbilityLineRenderer();
 
+    // 노드 화면 밖 판정용 재사용 버퍼(RectTransformUtility.CalculateRelativeRectTransformBounds가 노드마다 만들던 배열 할당을 없앤다)
+    private static readonly List<RectTransform> nodeBoundsRectBuffer = new List<RectTransform>(32);
+    private static readonly Vector3[] nodeBoundsCornerBuffer = new Vector3[4];
+    // 노드 자기 사각형만으로 "안쪽" 판정을 내릴 때 두는 여유(UI 단위). 경계 계산의 부동소수 반올림 오차(수천 단위 좌표에서 0.01 미만)보다 훨씬 크다.
+    private const float NodeViewportFastInsideMargin = 1f;
+    // 툴팁 위치 계산용 꼭짓점 버퍼(매번 new Vector3[4] 하던 할당을 없앤다)
+    private static readonly Vector3[] toolTipCornerBuffer = new Vector3[4];
+    // 툴팁을 띄우는 중에 미리보기 응답(SkillAccumulatedValuePreviewProvided)이 같은 내용을 이미 적용했는지
+    private bool toolTipContentAppliedByPreview;
+
     // 튜토리얼 "도끼를 강화하세요" 스텝 동안 이 화면이 열렸는지. 그 스텝의 퀘스트 안내 UI와 이 화면의
     // 오픈 리빌 연출(원형 리빌 등)이 동시에 보이면 가시성이 나빠져서(겹침), 퀘스트 UI가 화면에서
     // 완전히 사라진 뒤에 특성HUD를 노출하는 데 이 값과 아래 플래그를 함께 사용할 예정이다.
@@ -1591,14 +1601,17 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         SkillInfo skillInfo = GetSkillInfo(_node.SkillType);
         AbilityLevelUpRejectReason applyReason = GetToolTipApplyReason(_node.SkillType);
+        toolTipContentAppliedByPreview = false;
         RequestToolTipPreviewData(_node.SkillType);
         toolTipPreviewDataMap.TryGetValue(_node.SkillType, out SkillAccumulatedValueChangeData previewData);
-        ApplyToolTipContent(_node, skillInfo, applyReason, previewData);
+        // 미리보기 응답이 방금 같은 노드·같은 값(같은 SkillInfo·사유·미리보기 데이터)으로 내용을 적용했다면 다시 적용해도 바뀌는 것이 없다.
+        if (false == toolTipContentAppliedByPreview)
+            ApplyToolTipContent(_node, skillInfo, applyReason, previewData);
 
         toolTipInstance.Show();
         Vector2 toolTipSize = toolTipInstance.GetSize();
 
-        Vector3[] worldCorners = new Vector3[4];
+        Vector3[] worldCorners = toolTipCornerBuffer;
         nodeRect.GetWorldCorners(worldCorners);
         Camera eventCamera = GetCanvasEventCamera();
 
@@ -1737,6 +1750,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         SkillInfo skillInfo = GetSkillInfo(skillType);
         AbilityLevelUpRejectReason applyReason = GetToolTipApplyReason(skillType);
         ApplyToolTipContent(currentToolTipNode, skillInfo, applyReason, _data);
+        toolTipContentAppliedByPreview = true;
 
         toolTipLayoutDirty = true;
     }
@@ -2135,11 +2149,36 @@ public class UI_TentAbilityComponent : MonoBehaviour
         UpdatePadCursorAlpha();
 
         // 툴팁이나 노드 이펙트가 런타임에 생성되어도 커서는 항상 TentUI 최상단에 둔다.
-        if (selectionCursorInstance != null)
-            selectionCursorInstance.transform.SetAsLastSibling();
-        padCursorRect.SetAsLastSibling();
+        // 선택 커서를 맨 뒤로 보낸 다음 패드 커서를 맨 뒤로 보낸 것과 같은 최종 순서가 이미 맞으면 건드리지 않는다
+        // (매 프레임 두 커서의 순서를 맞바꿨다가 되돌리며 캔버스 계층을 바꾸던 것을 없앤다. 최종 순서는 같다).
+        if (false == ArePadCursorsAlreadyOnTop())
+        {
+            if (selectionCursorInstance != null)
+                selectionCursorInstance.transform.SetAsLastSibling();
+            padCursorRect.SetAsLastSibling();
+        }
 
         return _viewChanged;
+    }
+
+    private bool ArePadCursorsAlreadyOnTop()
+    {
+        Transform _padParent = padCursorRect.parent;
+        if (_padParent == null || padCursorRect.GetSiblingIndex() != _padParent.childCount - 1)
+            return false;
+
+        if (selectionCursorInstance == null)
+            return true;
+
+        Transform _selection = selectionCursorInstance.transform;
+        Transform _selectionParent = _selection.parent;
+        if (_selectionParent == null)
+            return false;
+
+        int _expectedSelectionIndex = _selectionParent == _padParent
+            ? _padParent.childCount - 2
+            : _selectionParent.childCount - 1;
+        return _selection.GetSiblingIndex() == _expectedSelectionIndex;
     }
 
     private void MovePadCursorOnGrid(Vector2 _screenDelta)
@@ -4138,6 +4177,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
         viewportRect.yMin -= padding;
         viewportRect.yMax += padding;
 
+        // 노드를 켜고 끄는 것으로는 배경의 월드 변환이 바뀌지 않으므로 한 번만 읽는다(CalculateRelativeRectTransformBounds가 매번 읽던 값과 같다).
+        Matrix4x4 viewportFromWorld = abilityBackground.worldToLocalMatrix;
+
         for (int i = 0; i < spawnedNodes.Count; i++)
         {
             AbilityNode node = spawnedNodes[i];
@@ -4157,18 +4199,71 @@ public class UI_TentAbilityComponent : MonoBehaviour
                 continue;
             }
 
-            Bounds nodeBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(
-                abilityBackground,
-                nodeRect);
-
-            bool isInsideViewport =
-                nodeBounds.max.x >= viewportRect.xMin &&
-                nodeBounds.min.x <= viewportRect.xMax &&
-                nodeBounds.max.y >= viewportRect.yMin &&
-                nodeBounds.min.y <= viewportRect.yMax;
+            bool isInsideViewport = IsNodeInsideViewport(nodeRect, viewportFromWorld, viewportRect);
 
             node.SetViewportVisible(isInsideViewport);
         }
+    }
+
+    // 노드 경계(자기와 켜진 자식 사각형 전체를 배경 좌표로 옮긴 합집합)가 화면 영역과 겹치는지 본다.
+    // 켜진 노드는 경계 계산 대상에 자기 사각형이 반드시 들어가고 합집합 경계는 넓어지기만 하므로,
+    // 자기 사각형만으로 여유를 두고 네 조건을 모두 만족하면 전체 경계도 만족한다(결과가 같다). 아니면 전체 경계를 정확히 구한다.
+    private static bool IsNodeInsideViewport(RectTransform _nodeRect, Matrix4x4 _viewportFromWorld, Rect _viewportRect)
+    {
+        if (_nodeRect.gameObject.activeInHierarchy)
+        {
+            _nodeRect.GetWorldCorners(nodeBoundsCornerBuffer);
+            Vector3 ownMin = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+            Vector3 ownMax = new Vector3(float.MinValue, float.MinValue, float.MinValue);
+            for (int j = 0; j < 4; j++)
+            {
+                Vector3 v = _viewportFromWorld.MultiplyPoint3x4(nodeBoundsCornerBuffer[j]);
+                ownMin = Vector3.Min(v, ownMin);
+                ownMax = Vector3.Max(v, ownMax);
+            }
+
+            if (ownMax.x >= _viewportRect.xMin + NodeViewportFastInsideMargin &&
+                ownMin.x <= _viewportRect.xMax - NodeViewportFastInsideMargin &&
+                ownMax.y >= _viewportRect.yMin + NodeViewportFastInsideMargin &&
+                ownMin.y <= _viewportRect.yMax - NodeViewportFastInsideMargin)
+            {
+                return true;
+            }
+        }
+
+        Bounds nodeBounds = CalculateRelativeNodeBounds(_nodeRect, _viewportFromWorld);
+        return nodeBounds.max.x >= _viewportRect.xMin &&
+               nodeBounds.min.x <= _viewportRect.xMax &&
+               nodeBounds.max.y >= _viewportRect.yMin &&
+               nodeBounds.min.y <= _viewportRect.yMax;
+    }
+
+    // RectTransformUtility.CalculateRelativeRectTransformBounds와 같은 계산(같은 목록·같은 순서·같은 연산)을 배열 할당 없이 한다.
+    private static Bounds CalculateRelativeNodeBounds(RectTransform _child, Matrix4x4 _toLocal)
+    {
+        _child.GetComponentsInChildren(false, nodeBoundsRectBuffer);
+        if (nodeBoundsRectBuffer.Count > 0)
+        {
+            Vector3 vMin = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+            Vector3 vMax = new Vector3(float.MinValue, float.MinValue, float.MinValue);
+            for (int i = 0; i < nodeBoundsRectBuffer.Count; i++)
+            {
+                nodeBoundsRectBuffer[i].GetWorldCorners(nodeBoundsCornerBuffer);
+                for (int j = 0; j < 4; j++)
+                {
+                    Vector3 v = _toLocal.MultiplyPoint3x4(nodeBoundsCornerBuffer[j]);
+                    vMin = Vector3.Min(v, vMin);
+                    vMax = Vector3.Max(v, vMax);
+                }
+            }
+
+            nodeBoundsRectBuffer.Clear();
+            Bounds bounds = new Bounds(vMin, Vector3.zero);
+            bounds.Encapsulate(vMax);
+            return bounds;
+        }
+
+        return new Bounds(Vector3.zero, Vector3.zero);
     }
 
     private void StartUnlockReveal(AbilityNode _node, bool _playAppearSound)

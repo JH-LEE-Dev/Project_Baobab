@@ -35,6 +35,14 @@ public class EmberItemController : MonoBehaviour
     [Header("획득")]
     [Tooltip("불씨 1개를 주울 때 오르는 과열 수치")]
     [SerializeField] private float overheatPerEmber = 1f;
+    // 과열이 오를수록 불씨 1개가 올리는 양이 줄어든다(GetGainEfficiency).
+    //   x = max(0, 과열 - gainFalloffStart) / gainFalloffScale,  효율 = gainMinEfficiency + (1 - gainMinEfficiency) * exp(-(x * x))
+    [Tooltip("과열 수치가 이 값까지는 불씨 효율 100%")]
+    [SerializeField, Min(0f)] private float gainFalloffStart = 20f;
+    [Tooltip("효율이 줄어드는 폭(클수록 천천히 줄어든다)")]
+    [SerializeField, Min(0.01f)] private float gainFalloffScale = 30f;
+    [Tooltip("과열이 아무리 높아도 남는 최소 효율")]
+    [SerializeField, Range(0f, 1f)] private float gainMinEfficiency = 0.1f;
 
     [Header("입장 배치")]
     [Tooltip("나무 1그루당 평균 불씨 수. 1보다 작으면 그 확률로 1개, 크면 정수부만큼 + 소수부 확률로 1개 더")]
@@ -493,6 +501,18 @@ public class EmberItemController : MonoBehaviour
     }
 
     public float OverheatPerEmber => overheatPerEmber;
+
+    /// <summary>
+    /// 지금 과열 수치(내부 소수 값)에서 불씨 1개의 효율(gainMinEfficiency~1). 불씨를 줍기 직전 값으로 계산한다.
+    /// 기본값: x = max(0, 과열 - 20) / 30, 효율 = 0.1 + 0.9 * exp(-(x * x)).
+    /// </summary>
+    public float GetGainEfficiency(float _overheatValue)
+    {
+        float scale = Mathf.Max(0.01f, gainFalloffScale);
+        float x = Mathf.Max(0f, _overheatValue - gainFalloffStart) / scale;
+        float minEfficiency = Mathf.Clamp01(gainMinEfficiency);
+        return minEfficiency + (1f - minEfficiency) * Mathf.Exp(-(x * x));
+    }
 
     private void OnEmberGroundedChanged(EmberItem _ember, bool _bGrounded)
     {

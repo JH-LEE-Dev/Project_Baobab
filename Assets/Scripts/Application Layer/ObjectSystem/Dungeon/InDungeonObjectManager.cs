@@ -218,7 +218,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private int quakeStackPerEmberMin = 2;
     [SerializeField, Tooltip("불씨 하나를 주울 때 오르는 지진 스택 최대값(포함). 불씨 관련 특성 배율과 무관하다")]
     private int quakeStackPerEmberMax = 3;
-    // 범위는 단계와 상관없이 화면 전체다. 해상도·화면비마다 보이는 넓이가 달라도 똑같이 맞도록 기준 화면(1920×1080) 크기로 고정한다.
+    // III(나무) 범위는 화면 전체다. 해상도·화면비마다 보이는 넓이가 달라도 똑같이 맞도록 기준 화면(1920×1080) 크기로 고정한다.
+    // I(씨앗) 범위는 진원 둘레 등각 타원(quakeTier1Radius)이고, 바닥 물결·나무 떨림 연출도 그 타원 끝에서 멈춘다(연출 범위 = 피해 범위).
+    [SerializeField, Tooltip("흑요 부적 I(씨앗) 지진 범위(바닥 평면 거리 - 세로 차이를 두 배로 편 거리, 가로로 이만큼·세로로 절반). " +
+                             "이 안의 나무만 맞고, 바닥 물결·흙먼지·나무 떨림·충격파 연출도 여기까지만 퍼진다. III(나무)는 화면 전체 그대로다")]
+    private float quakeTier1Radius = 8f;
     [SerializeField] private float quakeTier1Damage = 1500000f;
     [SerializeField] private float quakeTier3Damage = 5000000f;
     // 이번 숲 방문에 적용되는 단계(0이면 효과 없음). 숲에 들어올 때 정하고 방문 도중에는 바꾸지 않는다.
@@ -2570,7 +2574,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         TreeGetHitEvent?.Invoke(_treeObj);
     }
 
-    // 상하좌우+대각선 8방향 오프셋. 매번 새로 할당하지 않도록 static readonly로 한 번만 생성한다.
+    // 상하좌우+대각선 8방향 오프셋(열기 넉백 방향). 매번 새로 할당하지 않도록 static readonly로 한 번만 생성한다.
     private static readonly Vector3Int[] TreeHeatOffsets = new Vector3Int[]
     {
         new Vector3Int(-1, -1, 0), new Vector3Int(0, -1, 0), new Vector3Int(1, -1, 0),
@@ -2578,7 +2582,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         new Vector3Int(-1, 1, 0), new Vector3Int(0, 1, 0), new Vector3Int(1, 1, 0),
     };
 
-    // 나무가 열기 카운트다운을 시작한 순간 호출된다. 방출 범위(인접 8타일)를 바닥에 미리 보여준다.
+    // 나무가 열기 카운트다운을 시작한 순간 호출된다. 방출 범위(나무 밑동 중심 타원, OnTreeHeatEmit 판정과 같은 범위)를 바닥에 미리 보여준다.
     private void OnTreeHeatCountdownStarted(TreeObj _tree, float _delay)
     {
         if (inDungeonVFXManager == null || _tree == null) return;
@@ -2586,8 +2590,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         inDungeonVFXManager.PlayTreeHeatIndicator(_tree, _delay);
     }
 
-    // 나무의 열기 타이머가 만료된 순간 호출된다. 나무 자신의 타일은 제외하고 8방향 인접 타일에
-    // 캐릭터가 있을 때만 스태미나 피해를 준다.
+    // 열기 범위 타원의 가로 반지름(인디케이터를 못 찾았을 때만 쓰는 기본값, InDungeonVFXManager.treeHeatIndicatorRadius와 같은 값).
+    private const float DefaultTreeHeatRadiusX = 1.5f;
+
+    // 나무의 열기 타이머가 만료된 순간 호출된다. 바닥에 그린 예고 타원(TreeHeatIndicator)과 같은 범위,
+    // 즉 나무 밑동을 중심으로 한 등각 타원(가로 반지름 R, 세로 R/2) 안에 캐릭터 발밑이 있을 때만 맞는다.
+    // 넉백/기절 중이거나 맞은 뒤 무적 시간(3초) 동안은 맞지 않는다(Character.bTreeHeatImmune).
+    //
+    // 예전에는 캐릭터가 선 칸이 나무 칸의 인접 8칸인지로 판정했는데, 그 3x3 마름모는 예고 타원 안에 들어가는
+    // 더 작은 범위라 타원 안쪽(특히 나무 옆 대각선 방향 바깥쪽)에 서 있어도 맞지 않는 구역이 있었다.
     private void OnTreeHeatEmit(TreeObj _tree)
     {
         if (character == null || _tree == null) return;
@@ -2600,26 +2611,54 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 피치 랜덤 범위와 볼륨은 TreeFireExplosion 큐/DB에서 조절한다
         Sound.Play(SoundID.TreeFireExplosion, _tree.transform.position);
 
-        if (character.bTreeHeatImmune) return; // 넉백/경직 중엔 열기 영향 없음
+        if (character.bTreeHeatImmune) return; // 넉백/기절·무적 중엔 열기 영향 없음
 
         // 귀환 경고창이 떠 있는 동안이나 귀환/사망으로 원정이 끝나는 중에는 열기 영향(데미지+넉백)을 주지 않는다.
         // 이 구간은 캐릭터 조작과 피로도 감소가 멈춘 상태인데, 예전엔 여기 걸리는 조건이 없어서 원목을 떨구며
         // 기다리는 캐릭터가 한 칸 밀리고 기절 연출이 재생됐다. (발산 VFX/사운드는 위에서 그대로 나온다)
         if (RunEndState != ERunEndState.None || bWarningPending) return;
 
-        Vector3Int treeCell = _tree.CellPos;
-        Vector3Int characterCell = character.CurrentCell;
+        // 캐릭터 루트가 발밑이다(스프라이트 피벗이 발 픽셀). 인디케이터도 나무 transform 위치(밑동)를 중심으로 그린다.
+        Vector2 delta = (Vector2)(character.transform.position - _tree.transform.position);
+        float radiusX = null != inDungeonVFXManager ? Mathf.Max(0.01f, inDungeonVFXManager.TreeHeatRadiusX) : DefaultTreeHeatRadiusX;
+        float radiusY = radiusX * 0.5f;
+        float ellipse = (delta.x * delta.x) / (radiusX * radiusX) + (delta.y * delta.y) / (radiusY * radiusY);
+        if (ellipse > 1f) return;
 
+        // 피해(최대 피로도의 15%)·넉백·기절·무적은 캐릭터가 건다("열기 내성 강화" 반영). 나무의 HeatDamageAmount는
+        // 이제 피해량이 아니라 이 맵에 나무 열기가 있는지(0보다 큰지)만 정한다(TreeObj가 카운트다운을 시작하는 조건).
+        // 면역 100%("열기 내성 강화")면 맞는 연출을 하나도 내지 않는다. 나무가 열기를 뿜는 VFX·폭발음은 위에서 그대로 나온다.
+        if (character.ApplyTreeHeatHit(GetTreeHeatKnockbackOffset(_tree, delta)))
+        {
+            PlayTreeHeatHitFeedback(_tree);
+        }
+    }
+
+    // 넉백 방향(8방향 셀 오프셋). 나무 칸 → 캐릭터 칸 차이를 한 칸으로 줄여 쓰고(인접 칸이면 예전과 같은 방향),
+    // 같은 칸으로 잡히면 화면상 나무 → 발밑 방향에 가장 가까운 8방향을 고른다.
+    private Vector3Int GetTreeHeatKnockbackOffset(TreeObj _tree, Vector2 _worldDelta)
+    {
+        Vector3Int cellDelta = character.CurrentCell - _tree.CellPos;
+        Vector3Int offset = new Vector3Int(Mathf.Clamp(cellDelta.x, -1, 1), Mathf.Clamp(cellDelta.y, -1, 1), 0);
+        if (Vector3Int.zero != offset) return offset;
+
+        ITilemapDataProvider tilemap = environmentProvider.tilemapDataProvider;
+        Vector2 origin = tilemap.CellToWorld(Vector3Int.zero);
+        Vector2 dir = 0.0001f < _worldDelta.sqrMagnitude ? _worldDelta.normalized : Vector2.down;
+
+        Vector3Int best = TreeHeatOffsets[1];
+        float bestDot = float.MinValue;
         for (int i = 0; i < TreeHeatOffsets.Length; i++)
         {
-            if (treeCell + TreeHeatOffsets[i] == characterCell)
+            Vector2 offsetWorld = (Vector2)tilemap.CellToWorld(TreeHeatOffsets[i]) - origin;
+            float dot = Vector2.Dot(dir, offsetWorld.normalized);
+            if (dot > bestDot)
             {
-                character.TakeEnvironmentalStaminaDamage(_tree.HeatDamageAmount * character.TreeHeatMultiplier); // "열기 내성 강화"
-                character.ApplyTreeHeatKnockback(TreeHeatOffsets[i]);
-                PlayTreeHeatHitFeedback(_tree);
-                return;
+                bestDot = dot;
+                best = TreeHeatOffsets[i];
             }
         }
+        return best;
     }
 
     // 열기에 맞아 밀려날 때의 손맛(본편만). 피해·넉백은 위에서 이미 끝났고 여기서는 느낌만 더한다.
@@ -2687,10 +2726,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     {
         if (character == null) return;
 
-        // "불씨 획득량 증가" 특성 배율을 곱한다(특성이 없으면 1).
-        float overheatPerEmber = itemManager.emberItemController != null ? itemManager.emberItemController.OverheatPerEmber : 1f;
+        // "불씨 획득량 증가" 특성 배율과, 지금 과열이 높을수록 줄어드는 불씨 효율을 곱한다(특성이 없으면 배율 1).
+        EmberItemController emberController = itemManager.emberItemController;
+        float overheatPerEmber = emberController != null ? emberController.OverheatPerEmber : 1f;
+        float gainEfficiency = emberController != null ? emberController.GetGainEfficiency(character.OverheatValue) : 1f;
         bool bWasOverheatMax = character.IsOverheatMax;
-        character.AddOverheat(overheatPerEmber * character.OverheatGainMultiplier);
+        character.AddOverheat(overheatPerEmber * character.OverheatGainMultiplier * gainEfficiency);
 
         // 이 불씨로 과열이 가득 찬 순간 - 열기 물결이 퍼지는 연출만 더한다(수치·규칙은 그대로).
         if (false == bWasOverheatMax && character.IsOverheatMax)
@@ -3530,8 +3571,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     /// "흑요 부적" 효과인 지진. 발동 순간의 캐릭터 발밑에서 바닥 물결 연출(IEnvironmentProvider.PlayQuakeRipple)을 시작하고,
     /// 물결 앞머리가 나무에 닿는 순간 그 나무에 피해를 준다. 앞머리는 바닥 평면 거리(세로 차이를 두 배로 편 거리)로 일정하게
     /// 퍼지므로 진원에서 가까운 나무부터 차례로 맞는다. 진원은 캐릭터를 따라가지 않는다.
-    /// 피해 범위는 화면 전체다. 발동 순간의 카메라 중심에 기준 화면(1920×1080) 크기의 직사각형을 고정하고(해상도·화면비가 달라도 같다),
+    /// III(나무) 피해 범위는 화면 전체다. 발동 순간의 카메라 중심에 기준 화면(1920×1080) 크기의 직사각형을 고정하고(해상도·화면비가 달라도 같다),
     /// 앞머리가 그 직사각형의 가장 먼 모서리에 닿으면 끝난다.
+    /// I(씨앗) 피해 범위는 진원 둘레 등각 타원(바닥 평면 거리 quakeTier1Radius)이고, 연출도 그 타원 끝에서 멈춘다.
     /// </summary>
     private IEnumerator QuakeRoutine(int _tier)
     {
@@ -3539,23 +3581,37 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         int version = quakeVersion;
 
-        float damage = (3 == _tier) ? quakeTier3Damage : quakeTier1Damage;
+        bool bScreenWide = 3 == _tier;
+        float damage = bScreenWide ? quakeTier3Damage : quakeTier1Damage;
         Vector3 origin = null != character ? character.transform.position : Vector3.zero;
         origin.z = 0f;
 
-        Camera viewCamera = Camera.main;
-        Vector2 viewCenter = null != viewCamera ? (Vector2)viewCamera.transform.position : (Vector2)origin;
-        Vector2 viewHalf = CameraBoundsUtil.GetReferenceViewHalfExtents();
-        Rect strikeRect = new Rect(viewCenter - viewHalf, viewHalf * 2f);
+        Rect strikeRect;
+        float range;
+        if (bScreenWide)
+        {
+            Camera viewCamera = Camera.main;
+            Vector2 viewCenter = null != viewCamera ? (Vector2)viewCamera.transform.position : (Vector2)origin;
+            Vector2 viewHalf = CameraBoundsUtil.GetReferenceViewHalfExtents();
+            strikeRect = new Rect(viewCenter - viewHalf, viewHalf * 2f);
 
-        // 앞머리가 직사각형 전체를 쓸고 지나가는 거리 = 진원에서 가장 먼 모서리까지의 바닥 평면 거리.
-        float farX = Mathf.Max(Mathf.Abs(strikeRect.xMin - origin.x), Mathf.Abs(strikeRect.xMax - origin.x));
-        float farY = Mathf.Max(Mathf.Abs(strikeRect.yMin - origin.y), Mathf.Abs(strikeRect.yMax - origin.y)) * 2f;
-        float range = Mathf.Sqrt(farX * farX + farY * farY);
+            // 앞머리가 직사각형 전체를 쓸고 지나가는 거리 = 진원에서 가장 먼 모서리까지의 바닥 평면 거리.
+            float farX = Mathf.Max(Mathf.Abs(strikeRect.xMin - origin.x), Mathf.Abs(strikeRect.xMax - origin.x));
+            float farY = Mathf.Max(Mathf.Abs(strikeRect.yMin - origin.y), Mathf.Abs(strikeRect.yMax - origin.y)) * 2f;
+            range = Mathf.Sqrt(farX * farX + farY * farY);
+        }
+        else
+        {
+            // 타원(가로 반지름 range, 세로 반지름 range/2)을 넉넉히 덮는 사각형. 판정은 타원(ApplyQuakeDamage의 바닥 평면 거리)으로만 갈린다.
+            range = Mathf.Max(0.1f, quakeTier1Radius);
+            const float rectMargin = 1f;
+            strikeRect = new Rect(origin.x - range - rectMargin, origin.y - range * 0.5f - rectMargin, (range + rectMargin) * 2f, (range * 0.5f + rectMargin) * 2f);
+        }
 
         // 연출(카메라 흔들림·진동 포함)을 못 내는 경우(화면에 바닥이 없는 등)에도 피해는 같은 속도로 준다.
-        // 피해 범위로 가장 먼 모서리 거리를 넘겨 화면 전체가 크게 출렁이고 나무가 크게 떨게 한다(물결 앞머리와 피해가 같은 거리 공식).
-        environmentProvider.PlayQuakeRipple(origin, range);
+        // 피해 범위를 넘겨 그 안이 크게 출렁이고 나무가 크게 떨게 한다(물결 앞머리와 피해가 같은 거리 공식).
+        // III: 가장 먼 모서리 거리를 넘겨 화면 전체가 출렁인다. I: 물결·나무 떨림이 피해 범위 끝에서 멈춘다(범위 밖은 출렁이지 않는다).
+        environmentProvider.PlayQuakeRipple(origin, range, false == bScreenWide);
         float frontSpeed = environmentProvider.QuakeRippleFrontSpeed;
 
         // 연출은 몇 프레임 준비(복제층 옮겨 쓰기)하고 전조(약 0.35초 땅 떨림)를 거친 뒤에 퍼지기 시작한다. 피해도 그때까지 기다려 앞머리와 함께 간다.
@@ -3574,7 +3630,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         // 용암 숲(4스테이지)이면 앞머리가 지나가는 바닥 몇 곳에서 용암이 터져 오른다(연출만, 피해 없음).
         List<Vector3> eruptions = MapType.MagmaForest == currentMapType && null != inDungeonVFXManager
-            ? PickQuakeEruptionPoints(origin, strikeRect)
+            ? PickQuakeEruptionPoints(origin, strikeRect, bScreenWide ? float.PositiveInfinity : range)
             : null;
         int nextEruption = 0;
 
@@ -3620,11 +3676,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private static readonly QuakeEruptionPointZComparer QuakeEruptionPointComparer = new QuakeEruptionPointZComparer();
 
-    // 피해 범위(_strikeRect) 안에서 분출 자리를 고른다. x·y = 바닥 자리, z = 진원에서의 바닥 평면 거리(앞머리가 닿는 순서로 정렬).
-    private static List<Vector3> PickQuakeEruptionPoints(Vector3 _origin, Rect _strikeRect)
+    // 피해 범위(_strikeRect 안, 진원에서 바닥 평면 거리 _maxDistance 이하) 안에서 분출 자리를 고른다.
+    // x·y = 바닥 자리, z = 진원에서의 바닥 평면 거리(앞머리가 닿는 순서로 정렬).
+    private static List<Vector3> PickQuakeEruptionPoints(Vector3 _origin, Rect _strikeRect, float _maxDistance)
     {
         List<Vector3> points = new List<Vector3>(QuakeEruptionCount);
         float minSq = QuakeEruptionMinDistance * QuakeEruptionMinDistance;
+        float maxSq = float.IsPositiveInfinity(_maxDistance) ? float.PositiveInfinity : _maxDistance * _maxDistance;
 
         for (int i = 0; i < QuakeEruptionCount; i++)
         {
@@ -3635,7 +3693,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 float dx = x - _origin.x;
                 float dy = (y - _origin.y) * 2f;
                 float distSq = dx * dx + dy * dy;
-                if (distSq < minSq) continue;
+                if (distSq < minSq || distSq > maxSq) continue;
 
                 points.Add(new Vector3(x, y, Mathf.Sqrt(distSq)));
                 break;

@@ -239,7 +239,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     /// 칸마다 윗면 테두리가 드러난다. 카메라 흔들림·진동이 함께 나간다. 실제 지형·판정은 바뀌지 않는다(QuakeTileRipple).
     /// 던전 맵이 깔려 있지 않거나 화면에 바닥이 없으면 아무것도 하지 않고 false. 이미 도는 물결은 끊고 새로 시작한다.
     /// </summary>
-    public bool PlayQuakeRipple(Vector3 _center, float _strikeRadius = 0f)
+    public bool PlayQuakeRipple(Vector3 _center, float _strikeRadius = 0f, bool _bReachIsStrike = false)
     {
         if (false == bDungeonMapActive) return false;
 
@@ -258,7 +258,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         _center.z = 0f;
         // 앞의 지진 연출(전조 어두워짐·여진·왜곡·흙먼지)이 남아 있으면 끊고 새로 시작한다.
         StopQuakeEffects();
-        if (false == quakeRipple.Begin(grid, quakeFloorLayers, quakeWaterLayers, quakeShoreLayers, _center, viewRect, _strikeRadius)) return false;
+        if (false == quakeRipple.Begin(grid, quakeFloorLayers, quakeWaterLayers, quakeShoreLayers, _center, viewRect, _strikeRadius, _bReachIsStrike)) return false;
 
         quakeCenter = _center;
         quakeStrikeRadius = _strikeRadius;

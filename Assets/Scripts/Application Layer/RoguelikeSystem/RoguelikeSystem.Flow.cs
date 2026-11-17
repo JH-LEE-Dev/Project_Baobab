@@ -505,6 +505,10 @@ public partial class RoguelikeSystem
         signalHub.Publish(new RoguelikeWaveStartedSignal(_spec));
         signalHub.Publish(new RoguelikeWaveProgressSignal(0, _spec.killTarget));
 
+        // 도전과제: 티어(마지막 티어 첫 웨이브) · 언리밋(Unlimit-N) 도달은 웨이브가 시작될 때 판정한다(기획서 v3.1 8-3).
+        challengeTracker.OnWaveStarted(in _spec);
+        SaveAndAnnounceClearedChallenges();
+
         // 입장(또는 다시 도전) 뒤 첫 전투: 암전 아래에서 내려 둔 본편 HUD(스태미너 바 · 대쉬 게이지)를 조작이 풀리는 순간 올린다.
         // 로그라이크 HUD는 코디네이터가 웨이브 시작(RoguelikeWaveStartedSignal)에 들여온다.
         RaiseMainHud();
@@ -638,6 +642,10 @@ public partial class RoguelikeSystem
         RoguelikeRecordRepository.Save(records);
 
         signalHub.Publish(new RoguelikeRunClearedSignal());
+
+        // 도전과제: WAVE 30 클리어는 클리어한 순간 판정한다(기획서 v3.1 8-3).
+        challengeTracker.OnRunCleared();
+        SaveAndAnnounceClearedChallenges();
 
         // 이펙트 담당의 RunClear 연출이 끝나면 언리밋으로 넘어간다.
         DisableControl();

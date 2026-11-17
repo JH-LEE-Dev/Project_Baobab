@@ -70,6 +70,29 @@ namespace PresentationLayer.UISystem
         // 등장 연출을 시작할 때의 언어. 연출 도중 언어가 바뀌었는지 판별하는 데 쓴다.
         private Language revealLanguage;
 
+        // 마지막으로 만든 메시의 입력 기록(같은 메시를 다시 만드는 ForceMeshUpdate를 건너뛰는 데 쓴다)
+        private bool hasGeneratedAnimatedMesh;
+        private TMP_TextInfo generatedTextInfo;
+        private int generatedCharacterCount;
+        private float generatedPixelStep;
+        private Vector3 generatedLossyScale;
+        private Vector3[] generatedOffsets = new Vector3[0];
+        private Color32[] generatedColors = new Color32[0];
+        // TMP가 레이아웃 더티(m_isLayoutDirty)를 세우면 메시를 다시 만들어야 하므로 그 사실을 콜백으로 받아 둔다.
+        private bool layoutDirtySinceGeneratedMesh;
+        private UnityEngine.Events.UnityAction dirtyLayoutCallback;
+        // 마지막으로 만든 기본 메시(오프셋·색을 입히기 전) 정점·색
+        private Vector3[] baseMeshVertices = new Vector3[0];
+        private Color32[] baseMeshColors = new Color32[0];
+        private bool isReapplyingFromBaseMesh;
+
+        private enum AnimatedMeshReuse
+        {
+            Regenerate,
+            Same,
+            Reapply,
+        }
+
         public string PreprocessText(string _text)
         {
             string source = previousTextPreprocessor != null ? previousTextPreprocessor.PreprocessText(_text) : _text;
@@ -133,6 +156,10 @@ namespace PresentationLayer.UISystem
             previousTextPreprocessor = ReferenceEquals(tmpText.textPreprocessor, this) ? null : tmpText.textPreprocessor;
             tmpText.textPreprocessor = this;
             tmpText.OnPreRenderText += HandlePreRenderText;
+            if (dirtyLayoutCallback == null)
+                dirtyLayoutCallback = HandleDirtyLayout;
+            hasGeneratedAnimatedMesh = false;
+            tmpText.RegisterDirtyLayoutCallback(dirtyLayoutCallback);
             tmpText.SetVerticesDirty();
         }
 
@@ -141,6 +168,8 @@ namespace PresentationLayer.UISystem
             if (tmpText != null)
             {
                 tmpText.OnPreRenderText -= HandlePreRenderText;
+                if (dirtyLayoutCallback != null)
+                    tmpText.UnregisterDirtyLayoutCallback(dirtyLayoutCallback);
 
                 if (ReferenceEquals(tmpText.textPreprocessor, this))
                     tmpText.textPreprocessor = previousTextPreprocessor;
@@ -149,6 +178,12 @@ namespace PresentationLayer.UISystem
             }
 
             previousTextPreprocessor = null;
+            hasGeneratedAnimatedMesh = false;
+        }
+
+        private void HandleDirtyLayout()
+        {
+            layoutDirtySinceGeneratedMesh = true;
         }
 
         private void OnValidate()
@@ -178,6 +213,19 @@ namespace PresentationLayer.UISystem
                     isRevealPlaying = false;
                     revealCharacterAppearedCallback = null;
                 }
+            }
+
+            // 글자 입력·배율·픽셀 단위가 마지막으로 메시를 만들 때와 그대로면 ForceMeshUpdate가 만들 기본 메시(오프셋·색을 입히기 전)도 같다.
+            // 그때는 글자 해석·배치를 다시 하지 않는다. 글자마다 적용할 오프셋·색까지 비트 단위로 같으면 메시가 그대로라 아무것도 안 하고,
+            // 다르면 기록해 둔 기본 메시에 같은 함수(HandlePreRenderText)로 오프셋·색을 다시 입혀 정점·색만 올린다.
+            AnimatedMeshReuse reuse = GetAnimatedMeshReuse();
+            if (AnimatedMeshReuse.Same == reuse)
+                return;
+
+            if (AnimatedMeshReuse.Reapply == reuse)
+            {
+                ReapplyAnimationToBaseMesh();
+                return;
             }
 
             tmpText.ForceMeshUpdate(false, false);
@@ -410,12 +458,14 @@ namespace PresentationLayer.UISystem
         private void HandlePreRenderText(TMP_TextInfo _textInfo)
         {
             EndRevealIfLanguageChanged(true);
+            hasGeneratedAnimatedMesh = false;
 
             if (hasAnyStyle == false && isRevealPlaying == false || _textInfo == null)
                 return;
 
             float time = Application.isPlaying ? Time.time : Time.realtimeSinceStartup;
             float pixelStep = true == snapToReferencePixel ? GetReferencePixelStep() : 0f;
+            BeginGeneratedMeshRecord(_textInfo, pixelStep);
 
             for (int i = 0; i < _textInfo.characterCount; i++)
             {
@@ -440,6 +490,8 @@ namespace PresentationLayer.UISystem
                 if (0f < pixelStep)
                     offset = SnapOffsetToStep(offset, pixelStep);
                 Color32 color = hasStyle ? GetCharacterColor(time, style) : Color.white;
+                generatedOffsets[i] = offset;
+                generatedColors[i] = color;
 
                 for (int j = 0; j < 4; j++)
                 {
@@ -452,6 +504,148 @@ namespace PresentationLayer.UISystem
                 if (true == isRevealPlaying)
                     ApplyRevealBounce(in characterInfo, in meshInfo, vertexIndex, i, time);
             }
+        }
+
+        // 마지막으로 만든 메시의 입력(글자 정보·배율·픽셀 단위·글자별 오프셋과 색)을 기록한다.
+        // 등장 연출이 도는 동안 만든 메시는 시간에 따라 알파·크기가 바뀌므로 생략 대상에서 뺀다.
+        private void BeginGeneratedMeshRecord(TMP_TextInfo _textInfo, float _pixelStep)
+        {
+            int characterCount = _textInfo.characterCount;
+            if (generatedOffsets.Length < characterCount)
+            {
+                int capacity = Mathf.Max(characterCount, generatedOffsets.Length * 2);
+                generatedOffsets = new Vector3[capacity];
+                generatedColors = new Color32[capacity];
+            }
+
+            generatedTextInfo = _textInfo;
+            generatedCharacterCount = characterCount;
+            generatedPixelStep = _pixelStep;
+            generatedLossyScale = tmpText.transform.lossyScale;
+            layoutDirtySinceGeneratedMesh = false;
+            // 보조 메시(대체 폰트 등)가 있으면 TMP가 메시를 만들 때마다 보조 메시 색·레이캐스트·마스크를 맞추고,
+            // 정점 정렬 순서가 기본이 아니면 오프셋을 입힌 뒤 정점을 다시 정렬하므로 둘 다 재사용 대상에서 뺀다.
+            hasGeneratedAnimatedMesh = Application.isPlaying &&
+                                       false == isRevealPlaying &&
+                                       _textInfo.materialCount <= 1 &&
+                                       tmpText.geometrySortingOrder == VertexSortingOrder.Normal &&
+                                       _textInfo.meshInfo != null &&
+                                       0 < _textInfo.meshInfo.Length &&
+                                       null != _textInfo.meshInfo[0].vertices &&
+                                       null != _textInfo.meshInfo[0].colors32;
+
+            // 다시 입히는 중이 아니면 막 만든 기본 메시(오프셋·색을 입히기 전)를 기록한다.
+            if (hasGeneratedAnimatedMesh && false == isReapplyingFromBaseMesh)
+            {
+                ref TMP_MeshInfo meshInfo = ref _textInfo.meshInfo[0];
+                int vertexLength = meshInfo.vertices.Length;
+                int colorLength = meshInfo.colors32.Length;
+                if (baseMeshVertices.Length != vertexLength)
+                    baseMeshVertices = new Vector3[vertexLength];
+                if (baseMeshColors.Length != colorLength)
+                    baseMeshColors = new Color32[colorLength];
+
+                Array.Copy(meshInfo.vertices, baseMeshVertices, vertexLength);
+                Array.Copy(meshInfo.colors32, baseMeshColors, colorLength);
+            }
+        }
+
+        private void ReapplyAnimationToBaseMesh()
+        {
+            TMP_TextInfo textInfo = tmpText.textInfo;
+            ref TMP_MeshInfo meshInfo = ref textInfo.meshInfo[0];
+            Array.Copy(baseMeshVertices, meshInfo.vertices, baseMeshVertices.Length);
+            Array.Copy(baseMeshColors, meshInfo.colors32, baseMeshColors.Length);
+
+            isReapplyingFromBaseMesh = true;
+            HandlePreRenderText(textInfo);
+            isReapplyingFromBaseMesh = false;
+
+            // 글자 메시 생성 끝에서 올리는 것과 같은 정점·색 배열을 올린다(UV는 그대로라 메시에 남아 있는 값과 같다).
+            tmpText.UpdateVertexData(TMP_VertexDataUpdateFlags.Vertices | TMP_VertexDataUpdateFlags.Colors32);
+        }
+
+        // 지금 ForceMeshUpdate를 하면 나올 메시를 기록으로 만들 수 있는지 본다.
+        // 글자·폰트·크기 등 메시 입력이 바뀌면 TMP가 havePropertiesChanged(또는 레이아웃 더티)를 세우므로 그때는 항상 다시 만든다.
+        // 그 밖에는 HandlePreRenderText와 같은 함수·같은 입력으로 글자별 오프셋·색을 구해 기록과 비트 단위로 비교한다.
+        private AnimatedMeshReuse GetAnimatedMeshReuse()
+        {
+            if (false == hasGeneratedAnimatedMesh || false == Application.isPlaying || isRevealPlaying)
+                return AnimatedMeshReuse.Regenerate;
+
+            if (tmpText.havePropertiesChanged || layoutDirtySinceGeneratedMesh)
+                return AnimatedMeshReuse.Regenerate;
+
+            if (tmpText.geometrySortingOrder != VertexSortingOrder.Normal)
+                return AnimatedMeshReuse.Regenerate;
+
+            TMP_TextInfo textInfo = tmpText.textInfo;
+            if (false == ReferenceEquals(textInfo, generatedTextInfo) ||
+                textInfo.characterCount != generatedCharacterCount ||
+                textInfo.materialCount > 1 ||
+                textInfo.meshInfo == null || 0 == textInfo.meshInfo.Length)
+                return AnimatedMeshReuse.Regenerate;
+
+            ref TMP_MeshInfo baseMeshInfo = ref textInfo.meshInfo[0];
+            if (null == baseMeshInfo.vertices || null == baseMeshInfo.colors32 ||
+                baseMeshInfo.vertices.Length != baseMeshVertices.Length ||
+                baseMeshInfo.colors32.Length != baseMeshColors.Length)
+                return AnimatedMeshReuse.Regenerate;
+
+            Vector3 lossyScale = tmpText.transform.lossyScale;
+            if (false == IsSameBits(lossyScale.x, generatedLossyScale.x) ||
+                false == IsSameBits(lossyScale.y, generatedLossyScale.y) ||
+                false == IsSameBits(lossyScale.z, generatedLossyScale.z))
+                return AnimatedMeshReuse.Regenerate;
+
+            float pixelStep = true == snapToReferencePixel ? GetReferencePixelStep() : 0f;
+            if (false == IsSameBits(pixelStep, generatedPixelStep))
+                return AnimatedMeshReuse.Regenerate;
+
+            float time = Time.time;
+            int styleCount = Mathf.Min(textInfo.characterCount, characterStyles.Count);
+            for (int i = 0; i < styleCount; i++)
+            {
+                ref TMP_CharacterInfo characterInfo = ref textInfo.characterInfo[i];
+                if (false == characterInfo.isVisible)
+                    continue;
+
+                int materialIndex = characterInfo.materialReferenceIndex;
+                int vertexIndex = characterInfo.vertexIndex;
+                if (0 > materialIndex || materialIndex >= textInfo.meshInfo.Length)
+                    continue;
+
+                ref TMP_MeshInfo meshInfo = ref textInfo.meshInfo[materialIndex];
+                if (null == meshInfo.vertices || null == meshInfo.colors32 || vertexIndex + 3 >= meshInfo.vertices.Length)
+                    continue;
+
+                CharacterStyle style = characterStyles[i];
+                Vector3 offset = GetCharacterOffset(i, time, style);
+                if (0f < pixelStep)
+                    offset = SnapOffsetToStep(offset, pixelStep);
+
+                Vector3 generatedOffset = generatedOffsets[i];
+                if (false == IsSameBits(offset.x, generatedOffset.x) ||
+                    false == IsSameBits(offset.y, generatedOffset.y) ||
+                    false == IsSameBits(offset.z, generatedOffset.z))
+                    return AnimatedMeshReuse.Reapply;
+
+                if (style.colorStyle.enabled)
+                {
+                    Color32 color = GetCharacterColor(time, style);
+                    Color32 generatedColor = generatedColors[i];
+                    if (color.r != generatedColor.r || color.g != generatedColor.g ||
+                        color.b != generatedColor.b || color.a != generatedColor.a)
+                        return AnimatedMeshReuse.Reapply;
+                }
+            }
+
+            return AnimatedMeshReuse.Same;
+        }
+
+        private static bool IsSameBits(float _a, float _b)
+        {
+            return BitConverter.SingleToInt32Bits(_a) == BitConverter.SingleToInt32Bits(_b);
         }
 
         private void ApplyRevealBounce(in TMP_CharacterInfo characterInfo, in TMP_MeshInfo meshInfo, int vertexIndex, int characterIndex, float time)

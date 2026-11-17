@@ -12,6 +12,19 @@ public sealed class AbilityLineRenderer
     private readonly Dictionary<SkillType, float> lineRevealProgressMap = new Dictionary<SkillType, float>();
     private readonly List<AbilityLineConnection> lineConnections = new List<AbilityLineConnection>();
 
+    // 한 번의 RefreshLines 안에서는 노드 위치·화면 영역·캔버스 배율·라인 스프라이트가 바뀌지 않는다.
+    // 그래서 같은 식으로 구한 값(노드 중심, 스프라이트 원본 크기)을 갱신마다 한 번씩만 구해 여러 연결이 나눠 쓴다(값이 같다).
+    // 연결마다 양 끝 노드가 쓰는 중심 캐시 칸 번호(lineConnections와 같은 순서)
+    private readonly List<int> connectionParentSlots = new List<int>();
+    private readonly List<int> connectionChildSlots = new List<int>();
+    private readonly Dictionary<AbilityNode, int> nodeCenterSlotMap = new Dictionary<AbilityNode, int>();
+    private Vector2[] nodeCenterValues = new Vector2[0];
+    private int[] nodeCenterStamps = new int[0];
+    private static readonly int LineSpriteTypeCount = Enum.GetValues(typeof(AbilityLineSegmentSpriteType)).Length;
+    private readonly Vector2[] spriteNativeSizeValues = new Vector2[LineSpriteTypeCount];
+    private readonly int[] spriteNativeSizeStamps = new int[LineSpriteTypeCount];
+    private int refreshStamp;
+
     private RectTransform abilityBackground;
     private RectTransform moveTarget;
     private RectTransform lineParent;
@@ -76,9 +89,15 @@ public sealed class AbilityLineRenderer
         Dictionary<SkillType, AbilityNodeDefinitionJson> _nodeDefinitionMap)
     {
         lineConnections.Clear();
+        connectionParentSlots.Clear();
+        connectionChildSlots.Clear();
+        nodeCenterSlotMap.Clear();
 
         if (_spawnedNodes == null)
+        {
+            ResetNodeCenterSlots();
             return;
+        }
 
         for (int i = 0; i < _spawnedNodes.Count; i++)
         {
@@ -100,8 +119,39 @@ public sealed class AbilityLineRenderer
                 lineConnections.Add(route != null && route.usePivot
                     ? new AbilityLineConnection(parentNode, childNode, true, new Vector2Int(route.pivotX, route.pivotY))
                     : new AbilityLineConnection(parentNode, childNode));
+                connectionParentSlots.Add(GetNodeCenterSlot(parentNode));
+                connectionChildSlots.Add(GetNodeCenterSlot(childNode));
             }
         }
+
+        ResetNodeCenterSlots();
+    }
+
+    private int GetNodeCenterSlot(AbilityNode _node)
+    {
+        if (nodeCenterSlotMap.TryGetValue(_node, out int slot))
+            return slot;
+
+        slot = nodeCenterSlotMap.Count;
+        nodeCenterSlotMap.Add(_node, slot);
+        return slot;
+    }
+
+    private void ResetNodeCenterSlots()
+    {
+        int count = nodeCenterSlotMap.Count;
+        if (nodeCenterValues.Length != count)
+        {
+            nodeCenterValues = new Vector2[count];
+            nodeCenterStamps = new int[count];
+        }
+        else
+        {
+            Array.Clear(nodeCenterStamps, 0, count);
+        }
+
+        Array.Clear(spriteNativeSizeStamps, 0, spriteNativeSizeStamps.Length);
+        refreshStamp = 0;
     }
 
     public void SetLineRevealProgress(SkillType _childSkillType, float _progress)
@@ -128,6 +178,8 @@ public sealed class AbilityLineRenderer
 
         ClearLineQuads();
         int segmentSize = GetActiveSegmentSize(_currentZoom);
+        Rect viewRect = abilityBackground.rect;
+        BeginRefreshCache();
 
         for (int i = 0; i < lineConnections.Count; i++)
         {
@@ -139,10 +191,45 @@ public sealed class AbilityLineRenderer
                 connection.ChildNode.IsProgressionVisible == false)
                 continue;
 
-            BuildLineSegments(connection, segmentSize);
+            BuildLineSegments(connection, connectionParentSlots[i], connectionChildSlots[i], segmentSize, viewRect);
         }
 
         ApplyLineQuads();
+    }
+
+    private void BeginRefreshCache()
+    {
+        if (refreshStamp == int.MaxValue)
+        {
+            Array.Clear(nodeCenterStamps, 0, nodeCenterStamps.Length);
+            Array.Clear(spriteNativeSizeStamps, 0, spriteNativeSizeStamps.Length);
+            refreshStamp = 0;
+        }
+
+        refreshStamp++;
+    }
+
+    private Vector2 GetCachedNodeCenter(int _slot, AbilityNode _node)
+    {
+        if (nodeCenterStamps[_slot] == refreshStamp)
+            return nodeCenterValues[_slot];
+
+        Vector2 center = GetNodeCenterInRectangle(_node.RectTransform);
+        nodeCenterValues[_slot] = center;
+        nodeCenterStamps[_slot] = refreshStamp;
+        return center;
+    }
+
+    private Vector2 GetCachedSpriteNativeSize(AbilityLineSegmentSpriteType _spriteType, Sprite _sprite)
+    {
+        int index = (int)_spriteType;
+        if (spriteNativeSizeStamps[index] == refreshStamp)
+            return spriteNativeSizeValues[index];
+
+        Vector2 size = GetSpriteNativeSize(_sprite);
+        spriteNativeSizeValues[index] = size;
+        spriteNativeSizeStamps[index] = refreshStamp;
+        return size;
     }
 
     private void EnsureLineLayer()
@@ -262,16 +349,21 @@ public sealed class AbilityLineRenderer
         return childDefinition.FindParentLineRoute(_parentSkillType);
     }
 
-    private void BuildLineSegments(AbilityLineConnection _connection, int _segmentSize)
+    private void BuildLineSegments(
+        AbilityLineConnection _connection,
+        int _parentSlot,
+        int _childSlot,
+        int _segmentSize,
+        Rect _viewRect)
     {
-        Vector2 startCenter = GetNodeCenterInRectangle(_connection.ParentNode.RectTransform);
-        Vector2 endCenter = GetNodeCenterInRectangle(_connection.ChildNode.RectTransform);
+        Vector2 startCenter = GetCachedNodeCenter(_parentSlot, _connection.ParentNode);
+        Vector2 endCenter = GetCachedNodeCenter(_childSlot, _connection.ChildNode);
         bool hasPivot = _connection.HasPivot;
         Vector2 pivotCenter = hasPivot
             ? GetGridPointCenterInRectangle(_connection.PivotGrid)
             : Vector2.zero;
 
-        if (ShouldCullLineConnection(startCenter, endCenter, pivotCenter, hasPivot, _segmentSize))
+        if (ShouldCullLineConnection(startCenter, endCenter, pivotCenter, hasPivot, _segmentSize, _viewRect))
             return;
 
         float connectionProgress = GetLineRevealProgress(_connection.ChildNode.SkillType);
@@ -393,7 +485,7 @@ public sealed class AbilityLineRenderer
         Vector2 segmentAxisStep = new Vector2(stepX * _segmentSize, stepY * _segmentSize);
         Vector2 firstSegmentCenter =
             _startCenter + new Vector2(stepX, stepY) * (leadingOffset + _segmentSize * 0.5f);
-        Vector2 nativeSize = GetSpriteNativeSize(sprite);
+        Vector2 nativeSize = GetCachedSpriteNativeSize(spriteType, sprite);
 
         int revealSegmentCount = Mathf.CeilToInt(segmentCount * Mathf.Clamp01(_progress));
         for (int segmentIndex = 0; segmentIndex < revealSegmentCount; segmentIndex++)
@@ -537,7 +629,7 @@ public sealed class AbilityLineRenderer
         float _shineProgressStart,
         float _shineProgressEnd)
     {
-        Vector2 nativeSize = GetSpriteNativeSize(_sprite);
+        Vector2 nativeSize = GetCachedSpriteNativeSize(_spriteType, _sprite);
         float length = Mathf.Max(_length, 1f);
         Rect rect;
 
@@ -694,7 +786,8 @@ public sealed class AbilityLineRenderer
         Vector2 _endCenter,
         Vector2 _pivotCenter,
         bool _hasPivot,
-        int _segmentSize)
+        int _segmentSize,
+        Rect _viewRect)
     {
         float minX = Mathf.Min(_startCenter.x, _endCenter.x);
         float maxX = Mathf.Max(_startCenter.x, _endCenter.x);
@@ -709,7 +802,7 @@ public sealed class AbilityLineRenderer
             maxY = Mathf.Max(maxY, _pivotCenter.y);
         }
 
-        Rect viewRect = abilityBackground.rect;
+        Rect viewRect = _viewRect;
         float margin = _segmentSize * 2f;
         return maxX < viewRect.xMin - margin ||
                minX > viewRect.xMax + margin ||
