@@ -413,6 +413,8 @@ public sealed class QuakeTileRipple
     private Vector3 center;
     // 지진이 넘겨준 피해 범위(바닥 평면 거리). 0이면 없음 - 물결 높이·나무 떨림이 범위를 가르지 않는다.
     private float strikeRadius;
+    // 켜면 물결이 닿는 거리를 피해 범위로 맞춘다(reachRadius를 무시 - 범위 밖 칸은 출렁이지 않고 나무도 떨지 않는다). 흑요 부적 I(씨앗) 지진.
+    private bool bReachIsStrike;
     private float elapsed;
     private int nextCell;   // 아직 물결이 닿지 않은 첫 칸
     private int doneCell;   // 물결이 다 지나가지 않은 첫 칸
@@ -504,8 +506,9 @@ public sealed class QuakeTileRipple
     /// _grid는 그 그리드, _viewRect는 지금 화면(월드). 이미 돌던 물결은 바로 끝내고 새로 시작한다.
     /// 물결이 닿을 바닥이 없으면 false. 물결은 복제층을 다 옮겨 쓴 Tick부터 퍼진다(IsPreparing, [시작 준비]).
     /// _strikeRadius(바닥 평면 거리)를 넘기면 그 안은 크게, 바깥은 낮게 출렁이고 안쪽 나무만 튄다. 0이면 범위를 가르지 않는다.
+    /// _bReachIsStrike면 바깥은 출렁이지 않는다 - 물결(앞머리 줄·흙먼지·물체 튐 포함)과 나무 떨림이 피해 범위 끝에서 멈춘다.
     /// </summary>
-    public bool Begin(Grid _grid, List<Tilemap> _floor, List<Tilemap> _water, List<Tilemap> _shore, Vector3 _center, Rect _viewRect, float _strikeRadius = 0f)
+    public bool Begin(Grid _grid, List<Tilemap> _floor, List<Tilemap> _water, List<Tilemap> _shore, Vector3 _center, Rect _viewRect, float _strikeRadius = 0f, bool _bReachIsStrike = false)
     {
         Stop();
         // 지난 영역을 마저 비운다. 새 영역이 달라 덮어쓰지 못한 칸이 남으면 안 된다.
@@ -518,6 +521,7 @@ public sealed class QuakeTileRipple
 
         center = _center;
         strikeRadius = Mathf.Max(0f, _strikeRadius);
+        bReachIsStrike = _bReachIsStrike && strikeRadius > 0f;
         rippleGrid = _grid;
         BuildRegion(_grid, _viewRect);
         ReadFloorBlocks();
@@ -746,7 +750,10 @@ public sealed class QuakeTileRipple
         if (false == settings.treeShake) return;
 
         Shader.SetGlobalVector(QuakeShakeAId, new Vector4(center.x, center.y, 0f, strikeRadius));
-        Shader.SetGlobalVector(QuakeShakeBId, new Vector4(1f, Mathf.Max(0.1f, settings.frontSpeed), Mathf.Max(0.1f, settings.reachRadius), Mathf.Max(0.01f, settings.strikeEdge)));
+        // 물결이 피해 범위 끝에서 멈추면(bReachIsStrike) 나무 떨림도 범위 경계에서 딱 끊는다(경계 폭을 최소로 - 맞는 나무만 떤다).
+        float shakeReach = bReachIsStrike ? strikeRadius : settings.reachRadius;
+        float shakeEdge = bReachIsStrike ? 0.01f : settings.strikeEdge;
+        Shader.SetGlobalVector(QuakeShakeBId, new Vector4(1f, Mathf.Max(0.1f, settings.frontSpeed), Mathf.Max(0.1f, shakeReach), Mathf.Max(0.01f, shakeEdge)));
         Shader.SetGlobalVector(QuakeShakeCId, new Vector4(settings.treeShiverDegrees, settings.treeShiverOutsideDegrees, settings.treeShiverSeconds, settings.treeShiverHz));
         Shader.SetGlobalVector(QuakeShakeEId, new Vector4(settings.treeLeanDegrees, 0f, 0f, 0f));
     }
@@ -1316,12 +1323,13 @@ public sealed class QuakeTileRipple
     /// <summary>
     /// 물결이 닿는 바닥 칸(바닥 블록이 있고 reachRadius 안)을 진원 거리 순으로 모은다.
     /// 피해 범위가 reachRadius보다 멀면(지진 피해 범위는 화면 전체) 물결도 피해 범위 끝까지 간다 - 물결 없이 나무만 맞는 곳이 없게 한다.
+    /// bReachIsStrike면 피해 범위 끝까지만 간다(범위 밖에서 물결만 출렁이는 곳도 없게 한다).
     /// </summary>
     private void BuildCells()
     {
         cells.Clear();
 
-        float reach = Mathf.Max(0.1f, settings.reachRadius, strikeRadius);
+        float reach = bReachIsStrike ? Mathf.Max(0.1f, strikeRadius) : Mathf.Max(0.1f, settings.reachRadius, strikeRadius);
         float calm = Mathf.Max(0f, settings.calmRadius);
         float maxAmplitude = MaxAmplitude();
         TileBase[] ground = floorBlocks[0];
