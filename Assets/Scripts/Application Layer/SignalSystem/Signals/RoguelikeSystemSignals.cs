@@ -140,6 +140,19 @@ public struct RoguelikeCharacterLandedSignal
 /// <summary>30웨이브 클리어. 곧바로 언리밋으로 이어진다.</summary>
 public struct RoguelikeRunClearedSignal { }
 
+/// <summary>
+/// 도전과제를 새로 달성했다(기획서 v3.1 8-3). 달성 순간 칸마다 한 번 발행되고, 이미 기록 파일에 저장된 뒤다.
+/// challengeIndex는 RoguelikeChallenges 정의 순서의 인덱스다. 달성 팝업은 RoguelikeUICoordinator가 띄운다.
+/// </summary>
+public struct RoguelikeChallengeClearedSignal
+{
+    public int challengeIndex;
+    public RoguelikeChallengeClearedSignal(int _challengeIndex)
+    {
+        challengeIndex = _challengeIndex;
+    }
+}
+
 /// <summary>임계치 판정 상태가 바뀌었다(안전/유예/지속 피해).</summary>
 public struct RoguelikePressureStateChangedSignal
 {

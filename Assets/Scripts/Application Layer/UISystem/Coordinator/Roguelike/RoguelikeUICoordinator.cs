@@ -24,6 +24,12 @@ public sealed class RoguelikeUICoordinator
     private UIView_Popup mainPopupUI;
     // 본편 HUD. 도끼 내구도 HUD(장비 HUD)를 숨기는 데만 쓴다(기획서 v2.2 10-1).
     private UIView_HUD mainHudUI;
+    // 도전과제 달성 팝업 제목 번역용(팝업은 이미 번역된 제목을 받는다, 기획서 v3.1 8-3).
+    private LocalizationManager localizationManager;
+    // 카드 선택 화면이 떠 있는 동안 달성한 도전과제(카드를 고른 순간 판정되는 프리즘 · MAX · 루비). 팝업은 HUD 캔버스에 있어
+    // 위에 그려지는 카드 선택 화면의 딤(0.85)에 등장 연출이 묻히므로, 화면이 닫힐 때까지 인덱스만 모아 두었다가 띄운다.
+    private readonly int[] pendingChallengeToasts = new int[RoguelikeChallenges.Count];
+    private int pendingChallengeToastCount;
 
     private readonly List<RoguelikeCardViewData> cardViewBuffer = new List<RoguelikeCardViewData>(8);
     private readonly List<RoguelikeOwnedCardViewData> ownedViewBuffer = new List<RoguelikeOwnedCardViewData>(32);
@@ -55,8 +61,10 @@ public sealed class RoguelikeUICoordinator
 
     public void Initialize(SignalHub _signalHub, IRoguelikeRunInfo _runInfo, UIView_RoguelikeHUD _hudUI, UIView_RoguelikeCardSelect _cardSelectUI,
         UIView_RoguelikeOwnedCards _ownedCardsUI, UIView_RoguelikeResult _resultUI, UIView_ESC _escUI,
-        UIView_Popup _mainPopupUI, UIView_HUD _mainHudUI)
+        UIView_Popup _mainPopupUI, UIView_HUD _mainHudUI, LocalizationManager _localizationManager)
     {
+        localizationManager = _localizationManager;
+
         // 로그라이크는 아이템 드롭·인벤토리(기획서 v2.2 3-1)도 골드(v2.4)도 쓰지 않는다. 가방 HUD와 코인 HUD를 모두 숨긴다.
         mainPopupUI = _mainPopupUI;
         mainPopupUI?.SetInventoryVisibleForRun(false);
@@ -114,6 +122,9 @@ public sealed class RoguelikeUICoordinator
     /// <summary>매 프레임. 바뀐 값만 HUD에 넣는다.</summary>
     public void Tick()
     {
+        // 카드 연출 완료 없이 강제로 닫힌 경우(ForceCloseCardSelection)에도 기다리던 달성 팝업이 남지 않게 한다.
+        if (0 < pendingChallengeToastCount) FlushPendingChallengeToasts();
+
         // 보유 카드 창이 열려 있는 동안은 계속 멈춰 있어야 한다. ESC 메뉴가 그 위에서 열렸다 닫히며 1로 돌려놓은 경우를 되잡는다.
         if (bOwnedCardsPaused && 0f != UnityEngine.Time.timeScale && (null == escUI || false == escUI.IsVisible))
         {
@@ -169,6 +180,7 @@ public sealed class RoguelikeUICoordinator
         signalHub.Subscribe<RoguelikeEntryScreenCoveredSignal>(EntryScreenCovered);
         signalHub.Subscribe<RoguelikeRunStartedSignal>(RunStarted);
         signalHub.Subscribe<RoguelikeModifiersChangedSignal>(ModifiersChanged);
+        signalHub.Subscribe<RoguelikeChallengeClearedSignal>(ChallengeCleared);
     }
 
     private void UnSubscribeSignals()
@@ -187,6 +199,7 @@ public sealed class RoguelikeUICoordinator
         signalHub.UnSubscribe<RoguelikeEntryScreenCoveredSignal>(EntryScreenCovered);
         signalHub.UnSubscribe<RoguelikeRunStartedSignal>(RunStarted);
         signalHub.UnSubscribe<RoguelikeModifiersChangedSignal>(ModifiersChanged);
+        signalHub.UnSubscribe<RoguelikeChallengeClearedSignal>(ChallengeCleared);
     }
 
     private void BindEvents()
@@ -277,6 +290,46 @@ public sealed class RoguelikeUICoordinator
             default:
                 return false;
         }
+    }
+
+    /// <summary>
+    /// 도전과제 달성 팝업(기획서 v3.1 8-3, B안). 팝업은 제목만 쓰고 머리말은 스스로 번역한다.
+    /// 여러 개가 한꺼번에 달성되어도 팝업이 대기열(용량 13)에 쌓아 하나씩 보여 주므로 여기서는 줄 세우지 않는다.
+    /// </summary>
+    private void ChallengeCleared(RoguelikeChallengeClearedSignal _signal)
+    {
+        if (null == hudUI) return;
+
+        // 카드 선택 화면이 떠 있으면 닫힌 뒤(OnCardPresentationDone, 강제로 닫힌 경우는 Tick)에 띄운다.
+        if (null != cardSelectUI && cardSelectUI.IsVisible)
+        {
+            if (pendingChallengeToastCount < pendingChallengeToasts.Length) pendingChallengeToasts[pendingChallengeToastCount++] = _signal.challengeIndex;
+            return;
+        }
+
+        ShowChallengeToast(_signal.challengeIndex);
+    }
+
+    private void ShowChallengeToast(int _challengeIndex)
+    {
+        RoguelikeChallengeViewData data = new RoguelikeChallengeViewData
+        {
+            title = RoguelikeChallenges.BuildTitle(_challengeIndex, localizationManager),
+            tip = string.Empty,
+            bCleared = true,
+        };
+        hudUI.ShowChallengeToast(in data);
+    }
+
+    /// <summary>카드 선택 화면이 닫혔으면 모아 둔 달성 팝업을 달성 순서대로 띄운다(팝업이 대기열로 하나씩 보여 준다).</summary>
+    private void FlushPendingChallengeToasts()
+    {
+        if (0 == pendingChallengeToastCount || null == hudUI) return;
+        if (null != cardSelectUI && cardSelectUI.IsVisible) return;
+
+        int count = pendingChallengeToastCount;
+        pendingChallengeToastCount = 0;
+        for (int i = 0; i < count; i++) ShowChallengeToast(pendingChallengeToasts[i]);
     }
 
     private void WaveStarted(RoguelikeWaveStartedSignal _signal)
@@ -385,6 +438,7 @@ public sealed class RoguelikeUICoordinator
     {
         lastRareCount = -1;
         lastNormalCount = -1;
+        pendingChallengeToastCount = 0;
 
         bRunHudShown = false;
     }
@@ -458,7 +512,12 @@ public sealed class RoguelikeUICoordinator
 
     private void BuyRequested(int _offerIndex) => signalHub.Publish(new RoguelikeCardBuyRequestedSignal(_offerIndex));
     private void RerollRequested() => signalHub.Publish(new RoguelikeCardRerollRequestedSignal());
-    private void OnCardPresentationDone() => signalHub.Publish(new RoguelikeCardSelectionPresentationDoneSignal());
+    private void OnCardPresentationDone()
+    {
+        // 카드 선택 화면은 닫힌 뒤(Hide) 이 콜백을 부른다. 화면 아래에서 기다리던 달성 팝업을 이때 띄운다.
+        FlushPendingChallengeToasts();
+        signalHub.Publish(new RoguelikeCardSelectionPresentationDoneSignal());
+    }
 
     // 다시 도전은 결과 화면을 여기서 닫지 않는다. 결과 화면 위에 디스토션이 걸리고(기획서 4-1 · 3-7) 암전으로 덮인 뒤 닫는다(EntryScreenCovered).
     private void ResultRetryRequested() => signalHub.Publish(new RoguelikeResultConfirmedSignal(ERoguelikeResultChoice.Retry));
@@ -509,8 +568,15 @@ public sealed class RoguelikeUICoordinator
 
     private void OnOwnedCardsHidden() => ResumeFromOwnedCards();
 
-    /// <summary>판이 끝났다(게임오버·포기). 결과 화면과 그 뒤 연출이 멈춘 시간 위에서 돌지 않게 보유 카드 창을 닫는다.</summary>
-    private void RunEnded(RoguelikeRunEndedSignal _signal) => CloseOwnedCards();
+    /// <summary>
+    /// 판이 끝났다(게임오버·포기). 결과 화면과 그 뒤 연출이 멈춘 시간 위에서 돌지 않게 보유 카드 창을 닫는다.
+    /// 카드 선택 중에 포기하면 화면이 닫히는 때가 결과 화면이므로, 기다리던 달성 팝업은 버린다(달성 기록은 이미 저장되어 있다, 결과 화면에는 띄우지 않는다).
+    /// </summary>
+    private void RunEnded(RoguelikeRunEndedSignal _signal)
+    {
+        pendingChallengeToastCount = 0;
+        CloseOwnedCards();
+    }
 
     /// <summary>입장 암전이 화면을 덮었다. 디스토션이 걸려 있던 결과 화면을 닫는다.</summary>
     private void EntryScreenCovered(RoguelikeEntryScreenCoveredSignal _signal)

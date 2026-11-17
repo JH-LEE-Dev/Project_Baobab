@@ -238,7 +238,8 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         HideCursor();
         phase = EPhase.PurchaseFade;
         phaseTime = 0f;
-        Sound.PlayUI(SoundID.GetItem);
+        // 일반 카드는 전용 선택음(기획서 v3.1 10-2), 레어 카드(MAX · 프리즘 · 계약)는 기존 공통 소리 그대로.
+        Sound.PlayUI(CardRarity.IsRare(_purchase.displayGrade) ? SoundID.GetItem : SoundID.SFXCardSelectNormal);
 
         UI_RoguelikeOwnedCardTray tray = GetActiveTray();
         if (null != tray) tray.HoldPreviousCount();
