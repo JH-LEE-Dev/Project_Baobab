@@ -41,6 +41,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     private readonly QuakeImpactFeedback quakeImpact = new QuakeImpactFeedback();
     private Vector3 quakeCenter;
     private float quakeStrikeRadius;
+    private bool bQuakeHitStop = true;
     // 흙먼지·파편·잔돌 낙하(QuakeDebrisEffect). 물결이 퍼지기 시작할 때 함께 시작한다.
     private readonly QuakeDebrisEffect quakeDebris = new QuakeDebrisEffect();
     // 전조(QuakeTileRipple.IsBuildingUp) 연출을 냈는지와, 카메라 잔떨림을 다시 건 뒤 지난 시간.
@@ -239,7 +240,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     /// 칸마다 윗면 테두리가 드러난다. 카메라 흔들림·진동이 함께 나간다. 실제 지형·판정은 바뀌지 않는다(QuakeTileRipple).
     /// 던전 맵이 깔려 있지 않거나 화면에 바닥이 없으면 아무것도 하지 않고 false. 이미 도는 물결은 끊고 새로 시작한다.
     /// </summary>
-    public bool PlayQuakeRipple(Vector3 _center, float _strikeRadius = 0f, bool _bReachIsStrike = false)
+    public bool PlayQuakeRipple(Vector3 _center, float _strikeRadius = 0f, bool _bReachIsStrike = false, bool _bHitStop = true)
     {
         if (false == bDungeonMapActive) return false;
 
@@ -262,6 +263,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 
         quakeCenter = _center;
         quakeStrikeRadius = _strikeRadius;
+        bQuakeHitStop = _bHitStop;
         bQuakeFeedbackPending = true;
         return true;
     }
@@ -280,7 +282,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         Rumble.Play(EHapticEvent.Earthquake);
 
         // 히트스톱·섬광을 걸고(섬광이 전조 어두워짐을 덮는다), 여진·충격파 왜곡을 이어 간다. 앞머리를 따라 흙먼지가 일고 위에서 잔돌이 떨어진다.
-        quakeImpact.Play(quakeCenter, quakeStrikeRadius);
+        quakeImpact.Play(quakeCenter, quakeStrikeRadius, bQuakeHitStop);
         PostProcessSettingsApplier.Instance?.StopQuakeDarken();
         quakeDebris.Play(quakeRipple);
 

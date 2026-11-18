@@ -65,8 +65,9 @@ public sealed class QuakeImpactFeedback
         return Mathf.Max(_settings.cameraShakeSeconds, _strikeRadius / Mathf.Max(0.1f, _settings.frontSpeed) + FollowFrontTailSeconds);
     }
 
-    /// <summary>물결이 퍼지기 시작하는 프레임에 부른다. _strikeRadius는 피해 범위(바닥 평면 거리, 0이면 물결이 닿는 거리).</summary>
-    public void Play(Vector3 _center, float _strikeRadius)
+    /// <summary>물결이 퍼지기 시작하는 프레임에 부른다. _strikeRadius는 피해 범위(바닥 평면 거리, 0이면 물결이 닿는 거리).
+    /// _bHitStop이 false면 히트스톱만 건너뛴다.</summary>
+    public void Play(Vector3 _center, float _strikeRadius, bool _bHitStop = true)
     {
         if (null == settings) return;
 
@@ -76,7 +77,7 @@ public sealed class QuakeImpactFeedback
         strikeRadius = _strikeRadius > 0f ? _strikeRadius : Mathf.Max(0.1f, settings.reachRadius);
         bAftershockDone = false;
 
-        BeginHitStop();
+        if (_bHitStop) BeginHitStop();
         PostProcessSettingsApplier.Instance?.PlayQuakeFlash(settings.flashExposure, settings.flashTint, settings.flashInSeconds, settings.flashOutSeconds);
     }
 

@@ -3618,7 +3618,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 연출(카메라 흔들림·진동 포함)을 못 내는 경우(화면에 바닥이 없는 등)에도 피해는 같은 속도로 준다.
         // 피해 범위를 넘겨 그 안이 크게 출렁이고 나무가 크게 떨게 한다(물결 앞머리와 피해가 같은 거리 공식).
         // III: 가장 먼 모서리 거리를 넘겨 화면 전체가 출렁인다. I: 물결·나무 떨림이 피해 범위 끝에서 멈춘다(범위 밖은 출렁이지 않는다).
-        environmentProvider.PlayQuakeRipple(origin, range, false == bScreenWide);
+        // 히트스톱은 III(나무)만 건다. I(씨앗)은 히트스톱 없이 나머지 연출만 낸다.
+        environmentProvider.PlayQuakeRipple(origin, range, false == bScreenWide, bScreenWide);
         float frontSpeed = environmentProvider.QuakeRippleFrontSpeed;
 
         // 연출은 몇 프레임 준비(복제층 옮겨 쓰기)하고 전조(약 0.35초 땅 떨림)를 거친 뒤에 퍼지기 시작한다. 피해도 그때까지 기다려 앞머리와 함께 간다.
