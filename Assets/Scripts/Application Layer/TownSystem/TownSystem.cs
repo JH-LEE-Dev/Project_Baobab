@@ -1097,10 +1097,13 @@ public class TownSystem : MonoBehaviour
         // 기둥이 세워진 직후인 여기서 강아지보다 우선하는 대상에 더한다. 지난 방문의 기둥은 EnterPuppyTown이 이미 비웠다.
         if (puppyManager != null && lootPillarManager != null)
         {
+            // 맨 끝 기둥은 오른쪽 아래 면 범위 콜라이더가 더 붙어 있으므로(LootDisplayObject.SetFrontRightInteractExtended) 루트의 콜라이더를 전부 더한다.
             for (int i = 0; i < lootPillarManager.SpawnedPillars.Count; i++)
             {
-                if (lootPillarManager.SpawnedPillars[i] != null)
-                    puppyManager.AddPriorityZone(lootPillarManager.SpawnedPillars[i].GetComponent<Collider2D>());
+                if (lootPillarManager.SpawnedPillars[i] == null) continue;
+
+                foreach (Collider2D _zone in lootPillarManager.SpawnedPillars[i].GetComponents<Collider2D>())
+                    puppyManager.AddPriorityZone(_zone);
             }
         }
     }
