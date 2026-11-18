@@ -66,8 +66,8 @@ public sealed class QuakeImpactFeedback
     }
 
     /// <summary>물결이 퍼지기 시작하는 프레임에 부른다. _strikeRadius는 피해 범위(바닥 평면 거리, 0이면 물결이 닿는 거리).
-    /// _bHitStop이 false면 히트스톱만 건너뛴다.</summary>
-    public void Play(Vector3 _center, float _strikeRadius, bool _bHitStop = true)
+    /// _bHitStop이 false면 히트스톱만 건너뛴다. _flashScale은 섬광 세기 배율(1이면 설정값 그대로, 노출과 주황빛을 함께 줄인다).</summary>
+    public void Play(Vector3 _center, float _strikeRadius, bool _bHitStop = true, float _flashScale = 1f)
     {
         if (null == settings) return;
 
@@ -78,7 +78,9 @@ public sealed class QuakeImpactFeedback
         bAftershockDone = false;
 
         if (_bHitStop) BeginHitStop();
-        PostProcessSettingsApplier.Instance?.PlayQuakeFlash(settings.flashExposure, settings.flashTint, settings.flashInSeconds, settings.flashOutSeconds);
+        float flashScale = Mathf.Max(0f, _flashScale);
+        Color flashTint = 1f == flashScale ? settings.flashTint : Color.LerpUnclamped(Color.white, settings.flashTint, flashScale);
+        PostProcessSettingsApplier.Instance?.PlayQuakeFlash(settings.flashExposure * flashScale, flashTint, settings.flashInSeconds, settings.flashOutSeconds);
     }
 
     /// <summary>매 프레임 부른다(일시정지 중에도). _deltaTime은 게임 시간, _unscaledDeltaTime은 실제 시간.</summary>
