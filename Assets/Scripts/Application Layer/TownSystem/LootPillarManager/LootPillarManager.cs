@@ -159,7 +159,24 @@ public class LootPillarManager : MonoBehaviour
             }
 
             spawnedPillars[i].SetSideInteractExtended(false == _bBlocked);
+
+            // 오른쪽 아래(남동) 칸은 왼쪽 위 칸의 반대쪽이다. 그 칸에 기둥이 없으면(획득한 것 중 맨 끝 기둥) 오른쪽 아래 면까지 범위를 넣는다.
+            // 기둥이 있으면 그 기둥의 기본 범위가 이 기둥의 아래 모서리를 덮고, 오른쪽 아래 면은 그 기둥에 막혀 설 수 없다.
+            // 빈 LootPoint 자리는 막혀 있지 않아 걸어 들어갈 수 있으므로, 비어 있으면 그 자리도 오른쪽 아래 면 앞으로 본다.
+            spawnedPillars[i].SetFrontRightInteractExtended(false == HasPillarAt(spawnedPivots[i] - sideNeighborOffset, i), -sideNeighborOffset);
         }
+    }
+
+    // 지면 접점이 _position인 다른 기둥(_self 제외)이 세워져 있는지.
+    private bool HasPillarAt(Vector2 _position, int _self)
+    {
+        for (int j = 0; j < spawnedPillars.Count; j++)
+        {
+            if (j == _self || null == spawnedPillars[j]) continue;
+            if ((spawnedPivots[j] - _position).sqrMagnitude <= SideNeighborTolerance * SideNeighborTolerance) return true;
+        }
+
+        return false;
     }
 
     // 단계 변경 이벤트(레벨이 올라 실제로 단계가 바뀐 전리품만 온다): 기둥은 건드리지 않고 최신 단계만 보류한다.

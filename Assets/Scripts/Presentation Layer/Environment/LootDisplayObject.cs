@@ -184,6 +184,19 @@ namespace PresentationLayer.Environment
         private Vector2 interactBaseSize;
         private bool bSideInteractExtended;
 
+        // 오른쪽 아래(남동) 면 상호작용 범위. 기본 범위는 왼쪽 면 쪽 원 하나라, 줄지어 선 기둥의 아래 모서리는 다음(오른쪽 아래) 기둥의
+        // 기본 범위가 대신 덮는다. 오른쪽 아래 칸에 기둥이 없는 맨 끝 기둥은 아래 모서리부터 오른쪽 아래 면까지 범위가 비어,
+        // 그쪽에 붙어 서도 상호작용이 안 됐다. 기본 범위와 같은 모양의 캡슐 두 개를 덧대 그 빈칸을 채운다.
+        //   - 아래 모서리: 오른쪽 아래 칸에 기둥이 있었다면 그 기둥의 기본 범위가 놓였을 자리
+        //   - 오른쪽 끝: 기본 범위를 좌우로 뒤집은 자리(기둥 Transform의 x가 지면 접점 x와 같다), 오른쪽 모서리 위쪽까지 위로 늘림
+        // 이렇게 하면 오른쪽 아래 면이 줄 중간 기둥의 왼쪽 아래 면과 같은 간격·크기로 덮인다.
+        private CapsuleCollider2D frontCornerCapsule;
+        private CapsuleCollider2D frontRightCapsule;
+        private bool bFrontRightInteractExtended;
+
+        // 캐릭터와 겹친 상호작용 범위 콜라이더 수. 범위 콜라이더가 여럿이면 하나를 벗어나도 다른 쪽에 남아 있을 수 있다.
+        private int characterOverlapCount;
+
         /// <summary>캐릭터가 범위 안에 있고 등장 연출 중이 아니라 상호작용 대상이 될 수 있는지.</summary>
         public bool CanFocus => bPhysicalOverlapped && false == IsRevealing && isActiveAndEnabled;
 
@@ -200,7 +213,16 @@ namespace PresentationLayer.Environment
             else if (null != interactCollider) _center = interactCollider.bounds.center;
             else _center = transform.position;
 
-            return Vector2.Distance(overlapCharacter.position, _center);
+            float _distance = Vector2.Distance(overlapCharacter.position, _center);
+
+            // 오른쪽 아래 면 범위는 맨 끝 기둥에만 있고 다른 기둥의 범위와 겹치지 않는다. 그 범위 안에 있을 때 거리를 가장 가까운 범위 중심으로 잰다.
+            if (true == bFrontRightInteractExtended)
+            {
+                _distance = Mathf.Min(_distance, Vector2.Distance(overlapCharacter.position, transform.TransformPoint(frontCornerCapsule.offset)));
+                _distance = Mathf.Min(_distance, Vector2.Distance(overlapCharacter.position, transform.TransformPoint(frontRightCapsule.offset)));
+            }
+
+            return _distance;
         }
 
         /// <summary>
@@ -217,6 +239,41 @@ namespace PresentationLayer.Environment
             float _extend = true == _bExtended ? Mathf.Max(0f, sideInteractExtendUp) : 0f;
             interactCapsule.size = new Vector2(interactBaseSize.x, interactBaseSize.y + _extend);
             interactCapsule.offset = new Vector2(interactBaseOffset.x, interactBaseOffset.y + _extend * 0.5f);
+        }
+
+        /// <summary>
+        /// 오른쪽 아래(남동) 면 쪽 상호작용 범위를 켜거나 끈다(frontCornerCapsule 주석 참고). LootPillarManager가 기둥을 다 세운 뒤,
+        /// 오른쪽 아래 칸에 다른 기둥이 없는 기둥에만 켠다. _frontRightStep은 그 칸까지의 월드 오프셋(아이소 격자 1칸)이다.
+        /// </summary>
+        public void SetFrontRightInteractExtended(bool _bExtended, Vector2 _frontRightStep)
+        {
+            if (null == interactCapsule || bFrontRightInteractExtended == _bExtended) return;
+
+            bFrontRightInteractExtended = _bExtended;
+
+            if (true == _bExtended && null == frontCornerCapsule)
+            {
+                Vector2 _localStep = transform.InverseTransformVector(_frontRightStep);
+                frontCornerCapsule = CreateExtraInteractCapsule(interactBaseOffset + _localStep, 0f);
+                // 오른쪽 끝은 오른쪽 위(북동) 면 쪽으로 왼쪽 위 면과 같은 길이만큼 위로 늘린다. 오른쪽 모서리 위쪽에 붙어 서는 자리까지 닿게 한다.
+                // 기둥은 왼쪽 위 ↔ 오른쪽 아래로만 줄지어 서므로 오른쪽 위 칸에는 기둥이 오지 않는다.
+                frontRightCapsule = CreateExtraInteractCapsule(new Vector2(-interactBaseOffset.x, interactBaseOffset.y), Mathf.Max(0f, sideInteractExtendUp));
+            }
+
+            if (null != frontCornerCapsule) frontCornerCapsule.enabled = _bExtended;
+            if (null != frontRightCapsule) frontRightCapsule.enabled = _bExtended;
+        }
+
+        // 기본 범위 캡슐과 같은 크기·방향의 트리거 캡슐을 같은 오브젝트에 덧붙인다. 같은 오브젝트라 트리거 신호도 이 컴포넌트가 받는다.
+        // _extendUp만큼 아래 끝을 고정한 채 위로 늘린다(SetSideInteractExtended와 같은 방식). 거리 비교는 늘린 뒤의 중심을 쓴다.
+        private CapsuleCollider2D CreateExtraInteractCapsule(Vector2 _offset, float _extendUp)
+        {
+            CapsuleCollider2D _capsule = gameObject.AddComponent<CapsuleCollider2D>();
+            _capsule.isTrigger = true;
+            _capsule.direction = interactCapsule.direction;
+            _capsule.size = new Vector2(interactBaseSize.x, interactBaseSize.y + _extendUp);
+            _capsule.offset = new Vector2(_offset.x, _offset.y + _extendUp * 0.5f);
+            return _capsule;
         }
 
         /// <summary>
@@ -329,6 +386,7 @@ namespace PresentationLayer.Environment
         {
             if (_other.gameObject.layer == characterLayer)
             {
+                characterOverlapCount++;
                 bPhysicalOverlapped = true;
                 overlapCharacter = _other.transform;
 
@@ -342,6 +400,10 @@ namespace PresentationLayer.Environment
         {
             if (_other.gameObject.layer == characterLayer)
             {
+                // 범위 콜라이더가 여럿이면(오른쪽 아래 면 범위) 콜라이더마다 들어오고 나가는 신호가 따로 온다. 전부 벗어났을 때만 범위 밖이다.
+                characterOverlapCount = Mathf.Max(0, characterOverlapCount - 1);
+                if (0 < characterOverlapCount) return;
+
                 bPhysicalOverlapped = false;
                 overlapCharacter = null;
 

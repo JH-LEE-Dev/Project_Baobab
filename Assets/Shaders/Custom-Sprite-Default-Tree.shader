@@ -34,6 +34,15 @@ Shader "Custom/Custom-Sprite-Default-Tree"
         _SwayMainSpeed("Sway Main Speed", Float) = 0.55
         _SwayDetailSpeed("Sway Detail Speed", Float) = 1.45
         _SwayDetailWeight("Sway Detail Weight", Float) = 0.35
+
+        // 반투명 나무의 밑동 가림(TreeVisualComponent 반투명 마스크). 스텐실 64번 비트를 쓴다.
+        // - 기본값(수관 등): 항상 그리고 32·64번 비트를 0으로 지운다(64번은 다른 곳에서 안 쓰여 그림은 예전과 같다).
+        // - 밑동 재질: Comp Equal(3) + ReadMask 64 → 반투명 마스크가 찍힌(64) 칸에는 밑동을 그리지 않는다.
+        // - 반투명 마스크 재질: Ref 64 + ColorMask 0 → 색은 안 쓰고 수관 모양으로 64를 찍는다.
+        [HideInInspector] _TreeStencilRef("Tree Stencil Ref", Float) = 0
+        [HideInInspector] _TreeStencilComp("Tree Stencil Comp", Float) = 8
+        [HideInInspector] _TreeStencilReadMask("Tree Stencil ReadMask", Float) = 255
+        [HideInInspector] _TreeColorMask("Tree Color Mask", Float) = 15
     }
 
     SubShader
@@ -43,12 +52,14 @@ Shader "Custom/Custom-Sprite-Default-Tree"
         Blend SrcAlpha OneMinusSrcAlpha, One OneMinusSrcAlpha
         Cull Off
         ZWrite [_ZWrite]
+        ColorMask [_TreeColorMask]
 
         Stencil
         {
-            Ref 0
-            WriteMask 32
-            Comp Always
+            Ref [_TreeStencilRef]
+            ReadMask [_TreeStencilReadMask]
+            WriteMask 96
+            Comp [_TreeStencilComp]
             Pass Replace
         }
 

@@ -148,6 +148,12 @@ public class ItemManager : MonoBehaviour
         emberItemController?.SetGuideActive(_bActive);
     }
 
+    public void CollectGuideEmbers(System.Collections.Generic.List<EmberItem> _results)
+    {
+        if (emberItemController != null) emberItemController.CollectGuideEmbers(_results);
+        else _results.Clear();
+    }
+
     public void SpawnCarrotItem(Vector3 _position, AnimalType _animalType)
     {
         carrrotItemController?.SpawnCarrotItem(_position, _animalType);

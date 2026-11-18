@@ -70,6 +70,10 @@ Shader "Custom/Custom-Sprite-Default-Tree-Gem"
         _SparkleSpeed("Sparkle Speed", Float) = 2.5
         _SparkleSize("Sparkle Size", Range(0,0.4)) = 0.06
         _SparkleBrightness("Sparkle Brightness", Range(0,3)) = 1.2
+
+        // 반투명 나무의 밑동 가림(Custom-Sprite-Default-Tree와 같은 규칙). 밑동 재질만 Comp Equal(3) + ReadMask 64.
+        [HideInInspector] _TreeStencilComp("Tree Stencil Comp", Float) = 8
+        [HideInInspector] _TreeStencilReadMask("Tree Stencil ReadMask", Float) = 255
     }
 
     SubShader
@@ -83,8 +87,9 @@ Shader "Custom/Custom-Sprite-Default-Tree-Gem"
         Stencil
         {
             Ref 0
-            WriteMask 32
-            Comp Always
+            ReadMask [_TreeStencilReadMask]
+            WriteMask 96
+            Comp [_TreeStencilComp]
             Pass Replace
         }
 
