@@ -115,6 +115,26 @@ Shader "Custom/VFX/OverheatShockWaveFx"
             #define EMBER_SPAWN_TAIL 0.04
             #define EMBER_LIFE 0.22
             #define EMBER_LIFE_JITTER 0.08
+            // 빨리 거르기(결과 동일): 각 효과가 이 픽셀에 닿을 수 없으면 계산을 건너뛴다. 아래 거리는 모두 등각 좌표(세로 2배) 기준 상한이다.
+            // 입자 위치와 그 입자가 칠하는 픽셀 중심의 어긋남 상한(게임 픽셀, 크기 3칸·바닥 내림 포함 7.9 → 넉넉히 10)
+            #define CULL_SLACK_PX 10.0
+            // 입자 수명 상한(+0.001)과, 출발점에서 날아갈 수 있는 거리 상한(+0.05)
+            // 흩날림 1.15: 퍼짐 √(1.4² + 0.7²) / 5 = 0.31, 떠오름 1.0 × 0.26 → (0.31 + 0.26) × 2
+            // 불꽃 혀 1.95: 높이 16 × 1.3 × 1.5 = 31.2픽셀 = 0.975 → × 2
+            // 모든 효과가 닿는 가장 먼 거리(앞 가장자리 바깥): 불티 출발점(앞 가장자리 - 0.1) + 1.38 × 2 + 0.78 = 3.44 → 3.52
+            #define MOTE_MAX_LIFE 0.381
+            #define MOTE_REACH 3.52
+            // 입자 하나를 볼 때는 출발점에서 바깥 방향(등각 좌표에서 출발 각도 방향, 바깥 거리 / 타원 보정)으로만 길게 가고
+            // 옆·뒤로는 떠오름만큼만 벗어나므로 띠로 좁힌다: 바깥 거리 상한 3.8 × 0.36 = 1.37(+0.01), 떠오름 0.36 × 2(+0.05)
+            #define MOTE_OUT_REACH 1.38
+            #define MOTE_SIDE_REACH 0.78
+            #define EMBER_MAX_LIFE 0.301
+            // 불씨 하나: 바깥 2.0 / 6 = 0.33(+0.01), 옆·뒤로는 좌우 0.05 · 위 0.62 × 2 → 1.25
+            #define EMBER_OUT_REACH 0.34
+            #define EMBER_SIDE_REACH 1.25
+            #define FINALE_MAX_LIFE 0.261
+            #define FINALE_REACH 1.2
+            #define TONGUE_REACH 2.0
 
             float Hash(float _n)
             {
@@ -186,6 +206,35 @@ Shader "Custom/VFX/OverheatShockWaveFx"
                 return abs(atan2(sin(delta), cos(delta)));
             }
 
+            // 두 각도의 차이(라디안, 0 ~ π)
+            float AngleGap(float _a, float _b)
+            {
+                float delta = _a - _b;
+                delta -= 6.2831853 * round(delta * 0.15915494);
+                return abs(delta);
+            }
+
+            // 출발 각도 쪽으로만 멀리 가고 옆으로는 _side까지만 벗어나는 입자가 원점 거리 _rho인 이 점에 닿으려면, 출발 각도와 이 점의 각도 차이가
+            // 이 값 이하여야 한다(옆 거리 = _rho × sin(각도 차이)). 점이 1.5 × _side 안쪽이면 어느 각도든 닿을 수 있어 거르지 않는다.
+            float AngleTolerance(float _rho, float _side)
+            {
+                return _rho > 1.5 * _side ? asin(saturate(_side / _rho)) + 0.002 : 10.0;
+            }
+
+            // 출발점이 부채꼴 띠(등각 좌표, 반지름 _rlo ~ _rhi, 진행 방향 ± _a)에 있는 입자가 바깥으로 _out, 안쪽으로 _in, 옆으로 _side보다
+            // 더 벗어날 수 없을 때, 이 점(원점 거리 _rho, 진행 방향에서 벌어진 각 _spread)이 그 입자들에 닿을 수 없으면 true.
+            // 띠 안의 점과의 거리는 반지름 차이와 쐐기(방향 ± _a)까지 거리보다 짧을 수 없다. 바깥 이동은 출발 각도 그대로라 쐐기 거리를 늘리지 않는다.
+            bool OutsideReach(float _rho, float _spread, float _a, float _rlo, float _rhi, float _in, float _out, float _side)
+            {
+                float wedge = 0.0;
+                if (_a < 3.14159)
+                {
+                    float excess = _spread - _a;
+                    if (excess > 0.0) wedge = excess >= 1.5707963 ? _rho : _rho * sin(excess);
+                }
+                return _rho - _rhi > _out || _rlo - _rho > _in || wedge > _side;
+            }
+
             // 마루 불꽃 혀의 높이 배율: 0.06초 만에 1.5배로 솟았다가 0.2초까지 1로 가라앉고, 본체가 식는 구간에 함께 0으로 낮아진다.
             float TongueLife(float _t, float _duration)
             {
@@ -223,21 +272,46 @@ Shader "Custom/VFX/OverheatShockWaveFx"
                 bool bFullCircle = halfAngle >= 3.1;
                 float step = floor(t * FLICKER_FPS);
 
+                // 빨리 거르기용: 이 픽셀 중심의 등각 좌표(세로 2배), 원점 거리, 진행 방향에서 벌어진 각도
+                float2 cullQ = (float2(rel) + 0.5) / ppu;
+                float2 cullP = float2(cullQ.x, cullQ.y * 2.0);
+                float cullRho = length(cullP);
+                float cullSlack = CULL_SLACK_PX / ppu;
+                // 모든 효과가 닿을 수 있는 가장 먼 반지름(흙먼지·불티 출발점 + 날아가는 거리) 밖이면 바로 버린다(발밑 충격 고리는 2.6 미만이라 이 안이다).
+                if (cullRho > FrontRadius(t) + MOTE_REACH + cullSlack) discard;
+                float cullPhi = atan2(cullP.y, cullP.x);
+                float cullSpread = AngleGap(cullPhi, dirAngle);
+                float particleAngle = halfAngle * 0.95;
+
                 // 5. 불씨(맨 위)
                 int emberCount = ScaledCount(EMBER_COUNT, rangeScale);
+                float emberSide = EMBER_SIDE_REACH + cullSlack;
+                float emberTolerance = AngleTolerance(cullRho, emberSide);
+                // 살아 있는 불씨의 출발 반지름: 마루(출발 시각) - 0.05 ~ 0.15, 출발 시각은 지금부터 수명 상한 전까지
+                if (false == OutsideReach(cullRho, cullSpread, particleAngle, FrontRadius(t - EMBER_MAX_LIFE) - 0.15, FrontRadius(t) - 0.05,
+                        emberSide, EMBER_OUT_REACH * 2.0 + emberSide, emberSide))
                 [loop] for (int e = 0; e < emberCount; e++)
                 {
+                    // 출발 각도가 이 픽셀 쪽이 아니면 건너뛴다.
                     float e1 = Hash(e * 3.1 + 101.0);
+                    float theta = dirAngle + (e1 * 2.0 - 1.0) * halfAngle * 0.95;
+                    if (AngleGap(cullPhi, theta) > emberTolerance) continue;
                     float e2 = Hash(e * 5.7 + 102.0);
+                    float spawn = e2 * (duration + EMBER_SPAWN_TAIL);
+                    float age = t - spawn;
+                    if (age < 0.0 || age > EMBER_MAX_LIFE) continue;
                     float e3 = Hash(e * 7.3 + 103.0);
+                    // 출발점에서 이 픽셀까지 날아갈 수 없으면 건너뛴다(출발 각도 방향 띠 밖).
+                    float2 emberDir = float2(cos(theta), sin(theta));
+                    float emberAlong = dot(cullP, emberDir) - (FrontRadius(spawn) - 0.05 - 0.1 * e3);
+                    if (abs(cullP.x * emberDir.y - cullP.y * emberDir.x) > emberSide || emberAlong < -emberSide
+                        || emberAlong > EMBER_OUT_REACH / sqrt(emberDir.x * emberDir.x + 0.25 * emberDir.y * emberDir.y) + emberSide) continue;
+
                     float e4 = Hash(e * 9.1 + 104.0);
                     float e5 = Hash(e * 2.3 + 105.0);
-                    float spawn = e2 * (duration + EMBER_SPAWN_TAIL);
                     float life = EMBER_LIFE + EMBER_LIFE_JITTER * e4;
-                    float age = t - spawn;
                     if (age < 0.0 || age > life) continue;
 
-                    float theta = dirAngle + (e1 * 2.0 - 1.0) * halfAngle * 0.95;
                     float2 start = origin + EllipsePoint(theta, FrontRadius(spawn) - 0.05 - 0.1 * e3);
                     float2 outward = normalize(float2(cos(theta), sin(theta) * 0.5));
                     float drag = (1.0 - exp(-6.0 * age)) / 6.0;
@@ -263,23 +337,32 @@ Shader "Custom/VFX/OverheatShockWaveFx"
                 }
 
                 // 3. 소멸 흩날림: 사라지는 파동에서 푸른 티끌이 제각각 떨어져 나와 바깥·옆·위로 감속하며 흩날리고, 색이 식으며 체커로 사라진다.
-                if (t > duration)
+                float finaleReach = FINALE_REACH + cullSlack;
+                if (t > duration && false == OutsideReach(cullRho, cullSpread, particleAngle, FrontRadius(duration) * 0.8, FrontRadius(duration), finaleReach, finaleReach, finaleReach))
                 {
                     float endRadius = FrontRadius(duration);
                     int finaleCount = ScaledCount(FINALE_COUNT, rangeScale);
+                    float finaleTolerance = AngleTolerance(cullRho, finaleReach);
                     [loop] for (int k = 0; k < finaleCount; k++)
                     {
-                        float f1 = Hash(k * 2.3 + 300.0);
-                        float f2 = Hash(k * 4.1 + 330.0);
-                        float f3 = Hash(k * 6.7 + 360.0);
                         float f4 = Hash(k * 8.9 + 390.0);
-                        float f5 = Hash(k * 3.7 + 420.0);
-                        float start = duration + f2 * FINALE_SPAWN;
-                        float life = FINALE_LIFE + FINALE_LIFE_JITTER * f3;
-                        float age = t - start;
-                        if (age < 0.0 || age > life) continue;
                         // 테두리 선을 따라 줄 서지 않게 각도·반경(파동 두께 안)을 제각각 뽑고, 방향도 바깥·옆·위로 흩는다.
                         float theta = dirAngle + (f4 * 2.0 - 1.0) * halfAngle * 0.95;
+                        // 출발 각도가 이 픽셀 쪽이 아니면 건너뛴다.
+                        if (AngleGap(cullPhi, theta) > finaleTolerance) continue;
+                        float f2 = Hash(k * 4.1 + 330.0);
+                        float start = duration + f2 * FINALE_SPAWN;
+                        float age = t - start;
+                        if (age < 0.0 || age > FINALE_MAX_LIFE) continue;
+                        float f1 = Hash(k * 2.3 + 300.0);
+                        // 출발점에서 이 픽셀까지 날아갈 수 없으면 건너뛴다.
+                        float2 finaleFar = cullP - endRadius * (0.8 + 0.2 * f1) * float2(cos(theta), sin(theta));
+                        if (dot(finaleFar, finaleFar) > finaleReach * finaleReach) continue;
+
+                        float f3 = Hash(k * 6.7 + 360.0);
+                        float f5 = Hash(k * 3.7 + 420.0);
+                        float life = FINALE_LIFE + FINALE_LIFE_JITTER * f3;
+                        if (age < 0.0 || age > life) continue;
                         float2 outward = normalize(float2(cos(theta), sin(theta) * 0.5));
                         float2 side = float2(-outward.y, outward.x);
                         float drag = 1.0 - exp(-5.0 * age);
@@ -297,7 +380,10 @@ Shader "Custom/VFX/OverheatShockWaveFx"
 
                 // 4. 마루 불꽃 혀: 이 픽셀 바로 아래(같은 열)에서 가장 가까운 마루 점을 뿌리로 삼는다.
                 float tongueLife = TongueLife(t, duration);
-                if (tongueLife > 0.0)
+                // 혀는 마루 띠(안쪽 타원 ~ 앞 가장자리, 진행 방향 ± 반각 × 0.97 안)의 뿌리에서 위로만 솟는다.
+                float tongueReach = TONGUE_REACH + cullSlack;
+                if (tongueLife > 0.0 && false == OutsideReach(cullRho, cullSpread, bFullCircle ? 4.0 : halfAngle * 0.97,
+                        max(0.0, FrontRadius(t) - CREST_PX / ppu), FrontRadius(t), tongueReach, tongueReach, tongueReach))
                 {
                     float2 q = (float2(rel) + 0.5) / ppu;
                     float front = FrontRadius(t);
@@ -349,19 +435,34 @@ Shader "Custom/VFX/OverheatShockWaveFx"
 
                 // 2. 불티·파편
                 int moteCount = ScaledCount(MOTE_COUNT, rangeScale);
+                float moteSide = MOTE_SIDE_REACH + cullSlack;
+                float moteTolerance = AngleTolerance(cullRho, moteSide);
+                // 살아 있는 불티의 출발 반지름: 마루(출발 시각) - 0.1, 출발 시각은 지금부터 수명 상한 전까지
+                // 바깥으로는 바깥 거리 / 타원 보정(0.5 이상) + 떠오름, 안쪽·옆으로는 떠오름만큼만 벗어난다.
+                if (false == OutsideReach(cullRho, cullSpread, particleAngle, FrontRadius(t - MOTE_MAX_LIFE) - 0.1, FrontRadius(t) - 0.1,
+                        moteSide, MOTE_OUT_REACH * 2.0 + moteSide, moteSide))
                 [loop] for (int i = 0; i < moteCount; i++)
                 {
+                    // 출발 각도가 이 픽셀 쪽이 아니면 건너뛴다.
                     float h1 = Hash(i * 3.1 + 1.0);
+                    float theta = dirAngle + (h1 * 2.0 - 1.0) * halfAngle * 0.95;
+                    if (AngleGap(cullPhi, theta) > moteTolerance) continue;
                     float h2 = Hash(i * 5.7 + 2.0);
-                    float h3 = Hash(i * 7.3 + 3.0);
-                    float h4 = Hash(i * 9.1 + 4.0);
                     float spawn = h2 * duration * 0.95;
                     float age = t - spawn;
+                    if (age < 0.0 || age > MOTE_MAX_LIFE) continue;
+                    // 출발점에서 이 픽셀까지 날아갈 수 없으면 건너뛴다(출발 각도 방향 띠 밖).
+                    float2 moteDir = float2(cos(theta), sin(theta));
+                    float moteAlong = dot(cullP, moteDir) - (FrontRadius(spawn) - 0.1);
+                    if (abs(cullP.x * moteDir.y - cullP.y * moteDir.x) > moteSide || moteAlong < -moteSide
+                        || moteAlong > MOTE_OUT_REACH / sqrt(moteDir.x * moteDir.x + 0.25 * moteDir.y * moteDir.y) + moteSide) continue;
+
+                    float h3 = Hash(i * 7.3 + 3.0);
+                    float h4 = Hash(i * 9.1 + 4.0);
                     bool bPebble = h3 > 0.62;
                     float life = bPebble ? 0.26 + 0.1 * h4 : 0.22 + 0.16 * h4;
                     if (age < 0.0 || age > life) continue;
 
-                    float theta = dirAngle + (h1 * 2.0 - 1.0) * halfAngle * 0.95;
                     float2 start = origin + EllipsePoint(theta, FrontRadius(spawn) - 0.1);
                     float2 outward = normalize(float2(cos(theta), sin(theta) * 0.5));
                     float u = age / life;

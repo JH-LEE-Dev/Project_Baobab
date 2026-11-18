@@ -146,6 +146,18 @@ Shader "Custom/ShockWaveArc"
                 if (tex.a <= 0.0) discard;
 
                 float radius = length(centered);
+                // 빨리 거르기(결과 동일): 본체·잔상·꼬리가 닿을 수 있는 반지름(물결 노이즈 최대·최소로 잡은 범위) 밖이면 노이즈 계산 전에 버린다.
+                {
+                    float popBound = _TrailTime < 0.04 ? 0.5 * _TrailTime / 0.04 : 0.5 * max(0.0, 1.0 - (_TrailTime - 0.04) / 0.1);
+                    float innerHi = max(0.0, _MaxRadius - (_MaxRadius - saturate(_MinRadius - _TrailOffset + _TrailNoise)) * (1.0 + popBound));
+                    float innerLo = max(0.0, _MaxRadius - (_MaxRadius - saturate(_MinRadius - _TrailOffset - _TrailNoise)) * (1.0 + popBound));
+                    bool bEchoBound = _Echo.z > 0.5;
+                    float outerBound = max(max(_MaxRadius, innerHi), bEchoBound ? _Echo.y : 0.0) + 0.001;
+                    // 꼬리는 안쪽 경계에서 _TrailThickness × 2.5 + 2픽셀(반지름 방향 1 = 그림 반지름 × PPU × 0.5 이상)까지
+                    float innerBound = innerLo - _TrailThickness * 2.5 - 4.0 / (visualRadius * ppu);
+                    if (bEchoBound) innerBound = min(innerBound, saturate(_Echo.x - _TrailNoise * 0.6));
+                    if (radius > outerBound || radius < innerBound - 0.001) discard;
+                }
                 float2 dir = radius > 0.0001 ? centered / radius : float2(1.0, 0.0);
                 float cosThreshold = cos(radians(_Angle * 0.5));
                 float angleDot = dot(dir, normalize(_AttackDir.xy));
