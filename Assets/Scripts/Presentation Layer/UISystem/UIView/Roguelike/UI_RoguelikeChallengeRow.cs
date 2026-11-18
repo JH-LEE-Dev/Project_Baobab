@@ -50,8 +50,8 @@ public class UI_RoguelikeChallengeRow : MonoBehaviour, IPointerEnterHandler, IPo
     private static readonly Color32 ClearedTintColor = new Color32(255, 196, 80, 15);
     private static readonly Color32 PanelBodyColor = new Color32(0x1E, 0x15, 0x0E, 255);
 
-    // 등장 연출(30fps 틱, unscaled): 5px 아래에서 올라오며 0.14초 동안 나타난다(OutCubic).
-    private const float EntranceTickRate = 30f;
+    // 등장 연출(60fps 틱, unscaled): 5px 아래에서 올라오며 0.14초 동안 나타난다(OutCubic).
+    private const float EntranceTickRate = 60f;
     private const float EntranceSeconds = 0.14f;
     private const float EntranceOffset = 5f;
 
@@ -343,7 +343,7 @@ public class UI_RoguelikeChallengeRow : MonoBehaviour, IPointerEnterHandler, IPo
         ApplyEntrance(0f);
     }
 
-    /// <summary>_deltaTime(unscaled)만큼 등장 연출을 진행한다(30fps 틱 단위, 위치는 정수 픽셀). 연출 중이 아니면 바로 돌아간다.</summary>
+    /// <summary>_deltaTime(unscaled)만큼 등장 연출을 진행한다(60fps 틱 단위, 위치는 정수 픽셀). 연출 중이 아니면 바로 돌아간다.</summary>
     public void TickEntrance(float _deltaTime)
     {
         if (false == bEntrancing) return;

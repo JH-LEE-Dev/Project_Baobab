@@ -484,7 +484,7 @@ public static class RoguelikeLobbyUIBuilder
             UI_OptionButton backButton = CreateBackButton(panel, a, out UI_KeyboardImage backKey);
             if (null == backButton) return;
 
-            // 튀는 조각 공용 층: 판 전체를 덮고 본문 RectMask2D 밖(Body보다 뒤 형제 = 위에 그려짐)이라 칸 밖으로 나가도 잘리지 않는다. 마우스를 받지 않는다.
+            // 튀는 조각 공용 층: 판 전체를 덮고 본문 RectMask2D 밖(Body보다 뒤 형제 = 위에 그려짐)이라 칸 밖으로는 튀되, 본문 뷰포트 밖은 UI_ChallengeClearShards가 코드로 잘라낸다. 마우스를 받지 않는다.
             UI_LootGlowParticles shardsGraphic = CreateGlowGraphic("ClearShards", panel, clearMaterial);
             UI_ChallengeClearShards clearShards = shardsGraphic.gameObject.AddComponent<UI_ChallengeClearShards>();
             SerializedObject shardsSo = new SerializedObject(clearShards);

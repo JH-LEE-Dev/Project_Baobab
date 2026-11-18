@@ -9,7 +9,7 @@ using UnityEngine.UI;
 /// 화면 오른쪽 위(여백 8px)에 284x48 한 줄 고정: 금색 머리띠(284x22, 밑줄 2px 포함) + 그 아래 4px 겹쳐 내려오는 어두운 판(278x30, 보이는 높이 26).
 /// 머리띠에 깃발 + 머리말(Roguelike_Challenge_ClearedToast), 판에 제목(호출 측이 번역해 넘긴 문자열)을 한 줄로 보인다.
 ///
-/// 시간표(30fps 틱, 정수 픽셀, unscaled): 0~0.20 띠가 가운데에서 펼쳐짐(흰 -> 크림 -> 금), 0.12~0.34 판이 내려옴(OutBack),
+/// 시간표(60fps 틱, 정수 픽셀, unscaled): 0~0.20 띠가 가운데에서 펼쳐짐(흰 -> 크림 -> 금), 0.12~0.34 판이 내려옴(OutBack),
 ///   0.20 깃발 통통 · 머리말 안착 · 조각 14개 터짐 · 띠 양 끝 + 반짝임, 0.30~0.48 제목이 왼쪽부터 드러남, 0.30~0.75 · 2.20~2.65 광택,
 ///   3.20~3.32 판이 띠 속으로 접힘, 3.30~3.50 띠가 오른쪽 화면 밖으로 빠짐. 앞 팝업이 끝나고 0.15초 뒤 다음 팝업이 나온다(대기열 20).
 /// DOTween 시퀀스를 만들지 않고 Update에서 틱 번호가 바뀔 때만 값을 직접 계산해 넣는다. 재생 중 힙 할당이 없다(조각 · 대기열은 고정 배열, 난수는 정수 xorshift).
@@ -28,9 +28,9 @@ public class UI_RoguelikeChallengeToast : MonoBehaviour
     // 문구 키(RoguelikeUI.json)
     private const string HeaderKey = "Roguelike_Challenge_ClearedToast";
 
-    private const float TickRate = 30.0f;
+    private const float TickRate = 60.0f;
     private const float TickInterval = 1.0f / TickRate;
-    private const int MaxCatchUpTicks = 6;
+    private const int MaxCatchUpTicks = 12;
     // 경계 시각(0.1 · 0.3초 등)이 부동소수 오차로 한 틱 어긋나지 않도록 틱 번호에 더하는 작은 값
     private const float TickBias = 0.001f;
 
@@ -64,7 +64,7 @@ public class UI_RoguelikeChallengeToast : MonoBehaviour
 
     private const int ShardCapacity = 14;
     private const float ShardGravity = 260.0f;
-    private const int ShardSpawnTick = 6;
+    private const int ShardSpawnTick = 12;
 
     private static readonly Color32 ColorWhite = new Color32(0xFF, 0xFF, 0xFF, 255);
     private static readonly Color32 ColorCream = new Color32(0xFF, 0xF6, 0xD8, 255);
@@ -321,7 +321,7 @@ public class UI_RoguelikeChallengeToast : MonoBehaviour
         Draw(_tick);
     }
 
-    // 틱 하나: 0.2초(6틱)에 조각 14개를 만들고, 만든 틱에도 한 번 진행한다(시뮬레이션과 같은 순서).
+    // 틱 하나: 0.2초(12틱)에 조각 14개를 만들고, 만든 틱에도 한 번 진행한다(시뮬레이션과 같은 순서).
     private void StepShards(int _tick)
     {
         if (false == bSpawned && ShardSpawnTick <= _tick)
