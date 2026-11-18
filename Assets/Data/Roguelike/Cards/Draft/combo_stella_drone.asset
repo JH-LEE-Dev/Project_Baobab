@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: combo_stella_drone
   nameKey: Roguelike_Card_combo_stella_drone
   descriptionKey: Roguelike_Card_combo_stella_drone_Desc
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 8a2ea2a878a1b8248a3dfa363b4ecd0b, type: 3}
   kind: 3
   skillTag: 0
   exclusiveGroup: 0

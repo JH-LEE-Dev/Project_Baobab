@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: combo_spore_drone
   nameKey: Roguelike_Card_combo_spore_drone
   descriptionKey: Roguelike_Card_combo_spore_drone_Desc
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: a01b2feea6b284048a0b32de5264b89c, type: 3}
   kind: 3
   skillTag: 0
   exclusiveGroup: 3
@@ -25,4 +25,9 @@ MonoBehaviour:
   comboMaterialB: {fileID: 11400000, guid: 39212f83e12920542958df6f676e9d0b, type: 2}
   comboType: 6
   suppressedSkills: 07000000
-  designerNote: "\uAE30\uD68D\uC11C v2.5 6-2 \uD3EC\uC790 \uC218\uB958\uD0C4 + \uB4DC\uB860(\uD3EC\uC790 \uB808\uC774\uC800). \uB4DC\uB860\uC774 \uACF5\uACA9\uD558\uB294 \uBAA8\uB4E0 \uB098\uBB34(\uB808\uC774\uC800 \uC8FC \uB300\uC0C1 + \uCCB4\uC778 \uB300\uC0C1)\uC5D0\uC11C \uD3EC\uC790 \uD3ED\uBC1C. \uB4DC\uB860 \uAE30\uBCF8 \uB2A5\uB825 \uC720\uC9C0, \uD3EC\uC790 \uC218\uB958\uD0C4 \uAE30\uBCF8 \uB2A5\uB825(\uD22C\uD558 \u00B7 \uB300\uD3ED\uBC1C \u00B7 \uC624\uC5FC) \uC81C\uAC70. \uBC30\uD0C0 \uADF8\uB8F9 \uD3EC\uC790 \uC870\uD569."
+  designerNote: "\uAE30\uD68D\uC11C v2.5 6-2 \uD3EC\uC790 \uC218\uB958\uD0C4 + \uB4DC\uB860(\uD3EC\uC790
+    \uB808\uC774\uC800). \uB4DC\uB860\uC774 \uACF5\uACA9\uD558\uB294 \uBAA8\uB4E0
+    \uB098\uBB34(\uB808\uC774\uC800 \uC8FC \uB300\uC0C1 + \uCCB4\uC778 \uB300\uC0C1)\uC5D0\uC11C
+    \uD3EC\uC790 \uD3ED\uBC1C. \uB4DC\uB860 \uAE30\uBCF8 \uB2A5\uB825 \uC720\uC9C0,
+    \uD3EC\uC790 \uC218\uB958\uD0C4 \uAE30\uBCF8 \uB2A5\uB825(\uD22C\uD558 \xB7 \uB300\uD3ED\uBC1C
+    \xB7 \uC624\uC5FC) \uC81C\uAC70. \uBC30\uD0C0 \uADF8\uB8F9 \uD3EC\uC790 \uC870\uD569."

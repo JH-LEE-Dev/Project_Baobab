@@ -90,7 +90,7 @@ public class UIView_MainMenu : UIView
     private UIView_RoguelikeChallenges roguelikeChallengesView;
     private Action roguelikeChallengesClosedCallback;
     private Action cachedOnRoguelikeChallengesViewClosed;
-    private readonly List<RoguelikeChallengeViewData> roguelikeChallengeBuffer = new List<RoguelikeChallengeViewData>(16);
+    private readonly List<RoguelikeChallengeViewData> roguelikeChallengeBuffer = new List<RoguelikeChallengeViewData>(24);
     private bool bOpenRoguelikeMenuOnShow;
     private readonly List<RoguelikeRecordViewData> roguelikeClearRankingBuffer = new List<RoguelikeRecordViewData>(5);
     private readonly List<RoguelikeRecordViewData> roguelikeUnlimitRankingBuffer = new List<RoguelikeRecordViewData>(5);

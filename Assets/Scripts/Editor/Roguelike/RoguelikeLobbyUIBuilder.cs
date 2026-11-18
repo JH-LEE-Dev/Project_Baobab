@@ -9,7 +9,7 @@ using UnityEngine.UI;
 /// 로비 폐지(시안 v3)에 따른 UI 프리팹 구성기. 여러 번 실행해도 같은 결과로 덮어쓴다.
 ///   LumberBoy/UI/Build Roguelike Result     UIView_RoguelikeResult.prefab  결과 화면(딤 · 판 · 제목 명판 · 웨이브 · 행 · 카드 칸 · 버튼 2개 · 키 안내)
 ///   LumberBoy/UI/Build Roguelike Records    UIView_RoguelikeRecords.prefab 기록 창(딤 · 판 · 화살표 · 탭 · 화살표 명판(옵션 화살표 그림 · 패드 LB/RB 아이콘) · 점 3개 · 행 템플릿 · 뒤로 버튼(옵션 BTN_Close 복제))
-///   LumberBoy/UI/Build Roguelike Challenges UIView_RoguelikeChallenges.prefab 도전과제 창(기록 창과 같은 판 · 명판 · 본문 스크롤 · 스크롤바 · 뒤로 버튼, 칸 템플릿 1개). 프리팹이 없으면 새로 만든다.
+///   LumberBoy/UI/Build Roguelike Challenges UIView_RoguelikeChallenges.prefab 도전과제 창(기록 창과 같은 판 · 명판 · 스크롤바 · 뒤로 버튼 + 본문 위쪽 머리줄 30 + 칸 목록 뷰포트 220, 칸 템플릿 1개 = 시안 B 리본). 프리팹이 없으면 새로 만든다.
 ///   LumberBoy/UI/Build Roguelike Main Menu  UI_MainMenu.prefab에 로그라이크 하위 메뉴(명판 + 버튼 4개 + 최고 기록판), UIView_MainMenu.prefab에 기록 창 · 도전과제 창 · 카드 DB 연결
 ///   LumberBoy/UI/Build Roguelike Lobby UI (All)  위 셋을 차례로
 ///
@@ -452,9 +452,13 @@ public static class RoguelikeLobbyUIBuilder
             AddShadow(plateText);
             StretchText(plateText);
 
-            const float bodyHeight = 5f * 50f;
+            // 본문 340 x 250 = 위쪽 머리줄 30(달성 라벨 · 수치 · 백분율 · 게이지) + 칸 목록 뷰포트 220. 스크롤바 홈은 뷰포트와 같은 세로 범위(y · 길이)로 맞춘다.
+            const float bodyTop = 12f;
+            float bodyY = -(Mathf.Ceil(PlateHeight * 0.5f) + bodyTop);
+            const float bodyHeight = 220f;
+            CreateChallengeHeader(panel, a, panelWidth - 20f, new Vector2(10f, bodyY), out RectTransform headerRootRect, out TMP_Text headerLabelText, out TMP_Text headerCountText, out TMP_Text headerPercentText, out UI_LootGlowParticles headerGaugeGraphic);
             RectTransform bodyViewport = TopLeft("Body", panel, panelWidth - 20f, bodyHeight);
-            bodyViewport.anchoredPosition = new Vector2(10f, -(Mathf.Ceil(PlateHeight * 0.5f) + 12f));
+            bodyViewport.anchoredPosition = new Vector2(10f, bodyY - ChallengeHeaderHeight);
             bodyViewport.gameObject.AddComponent<RectMask2D>();
             Image bodyCatch = bodyViewport.gameObject.AddComponent<Image>();
             bodyCatch.color = new Color(0f, 0f, 0f, 0f);
@@ -473,7 +477,7 @@ public static class RoguelikeLobbyUIBuilder
             bodyScroll.inertia = true;
 
             UI_RoguelikeScrollbar bodyBar = CreateScrollbar("ScrollTrack", panel, ScrollbarThickness, bodyHeight, false);
-            ((RectTransform)bodyBar.transform).anchoredPosition = new Vector2(10f + (panelWidth - 20f) + 1f, -(Mathf.Ceil(PlateHeight * 0.5f) + 12f));
+            ((RectTransform)bodyBar.transform).anchoredPosition = new Vector2(10f + (panelWidth - 20f) + 1f, bodyY - ChallengeHeaderHeight);
 
             TMP_Text empty = Text("Empty", panel, a.font, TextAlignmentOptions.Midline, MutedColor);
             SetTop(empty.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, -120f), new Vector2(panelWidth - 20f, SmallLineHeight));
@@ -497,6 +501,11 @@ public static class RoguelikeLobbyUIBuilder
             Set(so, "rowRoot", rowRoot);
             Set(so, "rowTemplate", rowTemplate);
             Set(so, "emptyText", empty);
+            Set(so, "headerRoot", headerRootRect);
+            Set(so, "headerLabel", headerLabelText);
+            Set(so, "headerCount", headerCountText);
+            Set(so, "headerPercent", headerPercentText);
+            Set(so, "headerGauge", headerGaugeGraphic);
             Set(so, "clearShards", clearShards);
             Set(so, "bodyScroll", bodyScroll);
             Set(so, "bodyViewport", bodyViewport);
@@ -516,17 +525,18 @@ public static class RoguelikeLobbyUIBuilder
         }
     }
 
-    // 도전과제 칸 안쪽 배치(기본 62, 런타임에 폰트 · 줄 수에 맞춰 늘어난다 - UI_RoguelikeChallengeRow.FitHeight): 위 제목 1줄, 그 아래 팁, 오른쪽 끝 세로 중앙에 달성 깃발(달성한 칸만 켠다).
-    // Galmuri11 12pt는 한 줄 14px, 2줄은 30px다. Panel_Info 테두리 안쪽에 제목 14 + 팁 2줄(31)을 넣으려면 46(기록 줄 높이)으로는 모자라 62로 잡는다(테두리 그림에서 위 8 · 아래 9px 띄움, 한 화면 약 4칸). 여기 수치는 프리팹의 기본값이다.
-    // 글자 오른쪽 여백은 깃발 자리를 늘 비워 두도록 달성 여부와 무관하게 30으로 고정한다(달성 전후로 팁 줄바꿈이 달라지지 않게 한다).
-    private const float ChallengeTextX = 10f;
-    private const float ChallengeTextRight = 30f;
-    private const float ChallengeRowHeight = 62f;
-    private const float ChallengeFlagRight = 11f;
-    private const float ChallengeTitleY = 8f;
+    // 도전과제 칸(시안 B 리본, Docs/Roguelike/_Work/ChallengeUI_B_Ribbon_Plan.md): 상자 없이 투명 바탕 + 왼쪽 강조 줄 + 아래 구분선, 제목은 리본(달성) 위 / CREAM(미달성), 아래 팁, 오른쪽에 진행 수치(미달성). 달성 깃발은 없다(리본이 달성 표시).
+    // 여기 수치는 프리팹의 기본값이고, 실제 배치(제목 · 팁 · 리본 위치와 칸 높이)는 런타임에 UI_RoguelikeChallengeRow.FitHeight가 언어별 잉크 높이로 다시 잡는다(칸 높이 최소 42).
+    private const float ChallengeRowHeight = 42f;
+    private const float ChallengeHeaderHeight = 30f;
+    private const float ChallengeTipWidth = 300f;
     private const float ChallengeTitleHeight = 14f;
-    private const float ChallengeTipY = 22f;
-    private const float ChallengeTipHeight = 31f;
+    private const float ChallengeTipHeight = 15f;
+    private const float ChallengeTipX = 16f;
+    private const float ChallengeTitleX = 16f;
+    private const float ChallengeHeaderTextHeight = 14f;
+    private static readonly Color InkColor = new Color32(0x3A, 0x1F, 0x10, 255);
+    private static readonly Color ClearedTipColor = new Color32(0xCD, 0xB5, 0x8E, 255);
 
     // 달성 칸 파티클 머티리얼: UIGlow 가산(_Mode 1, SrcAlpha / One), 발광 배율 1(메인메뉴 캔버스는 Overlay라 블룸이 없다). 있으면 그대로 재사용한다.
     private const string ClearGlowMaterialPath = "Assets/Graphics/VFX/Materials/M_UIChallengeClearAdd.mat";
@@ -565,12 +575,39 @@ public static class RoguelikeLobbyUIBuilder
         return graphic;
     }
 
+    /// <summary>
+    /// 본문 위쪽 머리줄(_width x 30): "달성" 라벨(MUTED) · "n / 총수"(GOLD) · 백분율(GOLD, 오른쪽 끝 정렬) · 게이지 그래픽(기본 UI 머티리얼, 원점 = 머리줄 왼쪽 아래).
+    /// 글자 위치와 게이지 그림은 런타임(UIView_RoguelikeChallenges)이 언어 · 시간에 맞춰 다시 잡는다. 글자 오브젝트에는 LocalizedFontTracker가 붙는다.
+    /// </summary>
+    private static void CreateChallengeHeader(RectTransform _panel, Assets _a, float _width, Vector2 _position, out RectTransform _root, out TMP_Text _label, out TMP_Text _count, out TMP_Text _percent, out UI_LootGlowParticles _gauge)
+    {
+        _root = TopLeft("Header", _panel, _width, ChallengeHeaderHeight);
+        _root.anchoredPosition = _position;
+
+        _gauge = CreateGlowGraphic("Gauge", _root, null);
+
+        _label = Text("Label", _root, _a.font, TextAlignmentOptions.TopLeft, MutedColor);
+        _label.rectTransform.sizeDelta = new Vector2(60f, ChallengeHeaderTextHeight);
+
+        _count = Text("Count", _root, _a.font, TextAlignmentOptions.TopLeft, GoldColor);
+        _count.rectTransform.sizeDelta = new Vector2(60f, ChallengeHeaderTextHeight);
+
+        _percent = Text("Percent", _root, _a.font, TextAlignmentOptions.TopRight, GoldColor);
+        RectTransform percentRect = _percent.rectTransform;
+        percentRect.anchorMin = Vector2.one;
+        percentRect.anchorMax = Vector2.one;
+        percentRect.pivot = Vector2.one;
+        percentRect.sizeDelta = new Vector2(40f, ChallengeHeaderTextHeight);
+        percentRect.anchoredPosition = Vector2.zero;
+    }
+
     private static UI_RoguelikeChallengeRow CreateChallengeRow(RectTransform _parent, Assets _a, float _width, Material _clearMaterial)
     {
         RectTransform row = TopLeft("RowTemplate", _parent, _width, ChallengeRowHeight);
+
+        // 칸 바탕은 없다: 알파 0 Image가 마우스 · 패드 선택(레이캐스트)만 받는다.
         Image bg = row.gameObject.AddComponent<Image>();
-        bg.sprite = _a.infoPanel;
-        bg.type = Image.Type.Sliced;
+        bg.color = new Color(0f, 0f, 0f, 0f);
         bg.raycastTarget = true;
 
         // 칸 전체가 패드 선택 대상이다(눌러도 하는 일은 없다). 탐색은 화면 스크립트가 보이는 칸끼리 위 / 아래로 Explicit으로 잇는다. 포커스 표시는 커서 상자가 한다.
@@ -579,46 +616,63 @@ public static class RoguelikeLobbyUIBuilder
         button.targetGraphic = bg;
         button.navigation = new Navigation { mode = Navigation.Mode.Explicit };
 
-        float textWidth = _width - ChallengeTextX - ChallengeTextRight;
-        TMP_Text title = Text("Title", row, _a.font, TextAlignmentOptions.MidlineLeft, CreamColor);
-        title.overflowMode = TextOverflowModes.Ellipsis;
-        title.rectTransform.sizeDelta = new Vector2(textWidth, ChallengeTitleHeight);
-        title.rectTransform.anchoredPosition = new Vector2(ChallengeTextX, -ChallengeTitleY);
+        // 보이는 것 전부의 부모: 등장 연출이 이 오브젝트의 위치(5px 아래에서 올라옴)와 알파만 움직이고 칸 자신(레이캐스트 · 커서 대상)은 제자리에 둔다.
+        RectTransform content = StretchRect("Content", row);
+        CanvasGroup contentGroup = content.gameObject.AddComponent<CanvasGroup>();
+        contentGroup.blocksRaycasts = false;
+        contentGroup.interactable = false;
 
-        TMP_Text tip = Text("Tip", row, _a.font, TextAlignmentOptions.TopLeft, MutedColor);
+        // 강조 줄 · 구분선 · 달성 틴트: 맨 아래 형제(다른 것 뒤)에서 칸 전체를 덮는다. 기본 UI 머티리얼(불투명 색).
+        UI_LootGlowParticles decor = CreateGlowGraphic("Decor", content, null);
+
+        // 달성 리본: 폭 · 높이 · 위치는 런타임이 정한다. 기본은 꺼 둔다.
+        RectTransform ribbonRect = TopLeft("Ribbon", content, 100f, 15f);
+        UI_ChallengeRibbon ribbon = ribbonRect.gameObject.AddComponent<UI_ChallengeRibbon>();
+        ribbon.raycastTarget = false;
+        ribbonRect.gameObject.SetActive(false);
+
+        TMP_Text title = Text("Title", content, _a.font, TextAlignmentOptions.TopLeft, CreamColor);
+        title.rectTransform.sizeDelta = new Vector2(_width - ChallengeTitleX, ChallengeTitleHeight);
+        title.rectTransform.anchoredPosition = new Vector2(ChallengeTitleX, 0f);
+
+        // 미달성 진행 수치: 제목 줄 오른쪽 끝 정렬(x 332). 기본은 꺼 둔다.
+        TMP_Text progress = Text("Progress", content, _a.font, TextAlignmentOptions.TopRight, MutedColor);
+        RectTransform progressRect = progress.rectTransform;
+        progressRect.anchorMin = Vector2.one;
+        progressRect.anchorMax = Vector2.one;
+        progressRect.pivot = Vector2.one;
+        progressRect.sizeDelta = new Vector2(60f, ChallengeTitleHeight);
+        progressRect.anchoredPosition = Vector2.zero;
+        progress.gameObject.SetActive(false);
+
+        TMP_Text tip = Text("Tip", content, _a.font, TextAlignmentOptions.TopLeft, MutedColor);
         tip.textWrappingMode = TextWrappingModes.Normal;
-        tip.overflowMode = TextOverflowModes.Ellipsis;
-        tip.rectTransform.sizeDelta = new Vector2(textWidth, ChallengeTipHeight);
-        tip.rectTransform.anchoredPosition = new Vector2(ChallengeTextX, -ChallengeTipY);
+        tip.rectTransform.sizeDelta = new Vector2(ChallengeTipWidth, ChallengeTipHeight);
+        tip.rectTransform.anchoredPosition = new Vector2(ChallengeTipX, 0f);
 
-        // 달성 깃발: 오른쪽 끝에서 11px 안쪽, 세로 중앙, 스프라이트 크기 그대로. 기본은 꺼 둔다.
-        Rect flagSize = _a.iconFlag.rect;
-        RectTransform flag = IconRect("ClearedMark", row, _a.iconFlag, flagSize.width, flagSize.height);
-        flag.anchorMin = new Vector2(1f, 0.5f);
-        flag.anchorMax = new Vector2(1f, 0.5f);
-        flag.pivot = new Vector2(1f, 0.5f);
-        flag.anchoredPosition = new Vector2(-ChallengeFlagRight, 0f);
-        flag.GetComponent<Image>().color = GoldColor;
-        flag.gameObject.SetActive(false);
-
-        // 달성 칸 파티클 그래픽: 맨 위 형제(글자 · 깃발보다 위)에서 칸 전체를 덮는다. 칸 루트의 UI_ChallengeClearGlow가 그린다.
-        UI_LootGlowParticles clearGraphic = CreateGlowGraphic("ClearGlow", row, _clearMaterial);
+        // 달성 칸 파티클 그래픽: 맨 위 형제(글자보다 위)에서 칸 전체를 덮는다. 칸 루트의 UI_ChallengeClearGlow가 그린다.
+        UI_LootGlowParticles clearGraphic = CreateGlowGraphic("ClearGlow", content, _clearMaterial);
         UI_ChallengeClearGlow clearGlow = row.gameObject.AddComponent<UI_ChallengeClearGlow>();
         SerializedObject glowSo = new SerializedObject(clearGlow);
         Set(glowSo, "graphic", clearGraphic);
-        Set(glowSo, "flag", flag);
+        Set(glowSo, "ribbon", ribbon);
+        Set(glowSo, "titleText", title);
         glowSo.ApplyModifiedPropertiesWithoutUndo();
 
         UI_RoguelikeChallengeRow comp = row.gameObject.AddComponent<UI_RoguelikeChallengeRow>();
         SerializedObject so = new SerializedObject(comp);
         Set(so, "clearGlow", clearGlow);
-        Set(so, "clearedMark", flag.gameObject);
-        so.FindProperty("clearedTitleColor").colorValue = GoldColor;
+        so.FindProperty("clearedTitleColor").colorValue = InkColor;
+        so.FindProperty("clearedTipColor").colorValue = ClearedTipColor;
         Set(so, "titleText", title);
         Set(so, "tipText", tip);
         Set(so, "button", button);
         Set(so, "background", bg);
-        Set(so, "goldSprite", _a.infoPanelGold);
+        Set(so, "content", content);
+        Set(so, "contentGroup", contentGroup);
+        Set(so, "decor", decor);
+        Set(so, "ribbon", ribbon);
+        Set(so, "progressText", progress);
         so.ApplyModifiedPropertiesWithoutUndo();
         return comp;
     }

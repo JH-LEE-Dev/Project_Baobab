@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: combo_boomerang_shockwave
   nameKey: Roguelike_Card_combo_boomerang_shockwave
   descriptionKey: Roguelike_Card_combo_boomerang_shockwave_Desc
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 98d7fab806c15dc4eb30f82043942f67, type: 3}
   kind: 3
   skillTag: 0
   exclusiveGroup: 2

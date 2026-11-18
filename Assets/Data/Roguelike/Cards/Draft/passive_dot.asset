@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: passive_dot
   nameKey: Roguelike_Card_passive_dot
   descriptionKey: Roguelike_Card_passive_dot_Desc
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 857c73938cad906438f63a25758fc0f7, type: 3}
   kind: 1
   skillTag: 0
   exclusiveGroup: 0

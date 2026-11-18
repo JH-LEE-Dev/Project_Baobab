@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: combo_spin_boomerang
   nameKey: Roguelike_Card_combo_spin_boomerang
   descriptionKey: Roguelike_Card_combo_spin_boomerang_Desc
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 4fae240594957d040bb423175b6dfc2b, type: 3}
   kind: 3
   skillTag: 0
   exclusiveGroup: 2

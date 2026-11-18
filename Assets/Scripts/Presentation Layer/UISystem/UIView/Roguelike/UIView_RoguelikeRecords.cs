@@ -36,7 +36,7 @@ using UnityEngine.UI;
 ///   패드: 위 / 아래로 줄 이동(Explicit), A로 띠를 열면 커서가 띠의 첫 칸으로 넘어가 좌 / 우로 칸을 옮긴다(보이도록 띠가 한 칸씩 미끄러져 스크롤).
 ///   띠 칸에서 위 / 아래를 누르면 옆 기록의 카드 띠가 열리고 커서는 카드 칸에 남는다(같은 칸 번호, 넘치면 마지막 칸. 카드가 0장인 기록이면 띠를 닫고 그 줄로 커서만 옮긴다. 맨 위 / 맨 아래에서는 아무 일도 없다).
 ///   B는 띠가 열려 있든 아니든 항상 창 닫기다. LB / RB 탭 전환은 띠를 닫고 새 탭의 첫 줄을 고른다.
-///   포커스 표시는 로그라이크의 다른 화면과 같은 커서 상자(viewCtx.cursorBoxUI)다. 마우스 모드의 호버는 두 단계다: 포인터가 올라간 줄은 hoveredRow에 기록만 하고, 그 줄이 본문 뷰포트 안에 온전히 보이며 본문이 멈춰 있을 때만 "인정"해 효과음 · 포커스 · 커서를 낸다(걸쳐 보이는 줄 · 스크롤 중에는 반응 없음, 클릭은 그대로 받는다). 패드의 커서는 대상이 일부라도 잘려 있으면 숨었다가 온전해지면 뜬다. 패드 모드에서는 마우스가 올라온 것을 기록만 하고 커서를 옮기지 않는다(본문이 미끄러지며 줄이 멈춘 포인터 아래를 지나가도 커서를 빼앗지 않는다).
+///   포커스 표시는 로그라이크의 다른 화면과 같은 커서 상자(viewCtx.cursorBoxUI)다. 마우스 모드의 호버는 두 단계다: 포인터가 올라간 줄은 hoveredRow에 기록만 하고, 그 줄이 본문 뷰포트 안에 온전히 보이며 본문이 멈춰 있을 때만 "인정"해 효과음 · 포커스 · 커서를 낸다(걸쳐 보이는 줄에는 반응 없음, 이미 인정된 줄은 온전히 보이는 동안 스크롤 중에도 유지하고 효과음은 마우스가 그 줄에 들어온 뒤 1번만 낸다, 클릭은 그대로 받는다). 패드의 커서는 대상이 일부라도 잘려 있으면 숨었다가 온전해지면 뜬다. 패드 모드에서는 마우스가 올라온 것을 기록만 하고 커서를 옮기지 않는다(본문이 미끄러지며 줄이 멈춘 포인터 아래를 지나가도 커서를 빼앗지 않는다).
 ///   B · Esc · 딤 클릭 · 뒤로 버튼은 띠 상태와 상관없이 창을 바로 닫는다: UICancelEvent(이 창)와 깊이 관리(UIDepthController.TryCloseTopView가 부르는 Hide) 두 경로가 같은 프레임에 와도 두 번째는 이미 닫힌 뒤(IsVisible == false)라 한 번만 닫힌다.
 ///   패드 포커스는 ControllerSupport_UI가이드.md 3-8을 따른다: 패드 모드로 열릴 때 · 패드로 바뀔 때만 첫 줄 선택, Explicit 탐색, 선택이 null이 되면 복구, 마우스 모드로 바뀌면 선택 해제, 닫을 때 선택 비움.
 /// </summary>
@@ -225,6 +225,7 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     private UI_RoguelikeCardIconSlot focusedSlot;
     private UI_RoguelikeRecordRow hoveredRow;
     private UI_RoguelikeRecordRow acceptedRow;
+    private UI_RoguelikeRecordRow soundedRow;
     private float lastBodyScroll;
     private RectTransform cursorTarget;
     private CursorMotionSettings cursorMotion;
@@ -1261,14 +1262,17 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
         ApplyRowFocus(_row);
     }
 
+    /// <summary>마우스가 줄에서 나갔다: 호버 기록과 효과음을 낸 줄 기록을 비운다(다시 들어오면 효과음이 난다).</summary>
     private void OnRowExited(UI_RoguelikeRecordRow _row)
     {
         if (_row == hoveredRow) hoveredRow = null;
+        if (_row == soundedRow) soundedRow = null;
     }
 
     /// <summary>
-    /// 마우스 모드의 호버 인정. 마우스가 올라간 줄이 본문 뷰포트 안에 온전히 보이고, 본문이 미끄러지거나 끌리거나 관성으로 움직이는 중이 아니며, 줄이 켜져 있을 때만 그 줄을 인정한다.
-    /// 인정된 줄이 바뀔 때만 반응한다: 새로 인정되면 효과음 1번 + 포커스 줄 갱신 + 커서 상자, 인정이 풀리면 커서 상자만 숨긴다(효과음 없음).
+    /// 마우스 모드의 호버 인정. 마우스가 올라간 줄이 본문 뷰포트 안에 온전히 보이고 줄이 켜져 있을 때만 그 줄을 인정한다.
+    /// 새 줄은 본문이 미끄러지거나 끌리거나 관성으로 움직이는 중에는 인정하지 않지만, 이미 인정된 줄은 온전히 보이는 동안 스크롤 중에도 유지한다.
+    /// 인정된 줄이 바뀔 때만 반응한다: 새로 인정되면 포커스 줄 갱신 + 커서 상자, 효과음은 마우스가 그 줄에 들어온 뒤 1번만(soundedRow), 인정이 풀리면 커서 상자만 숨긴다(효과음 없음).
     /// </summary>
     private void UpdateMouseHover()
     {
@@ -1278,10 +1282,14 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
         lastBodyScroll = scroll;
 
         // 꺼진 줄은 PointerExit을 받지 못하므로 기록을 여기서 지운다(다시 켜졌을 때 마우스가 없는데도 반응하지 않게).
-        if (null != hoveredRow && false == hoveredRow.gameObject.activeInHierarchy) hoveredRow = null;
+        if (null != hoveredRow && false == hoveredRow.gameObject.activeInHierarchy)
+        {
+            if (hoveredRow == soundedRow) soundedRow = null;
+            hoveredRow = null;
+        }
 
         UI_RoguelikeRecordRow candidate = null;
-        if (null != hoveredRow && true == hoveredRow.gameObject.activeInHierarchy && false == bBodyMoving && true == IsFullyInView(hoveredRow.Rect)) candidate = hoveredRow;
+        if (null != hoveredRow && true == hoveredRow.gameObject.activeInHierarchy && (false == bBodyMoving || hoveredRow == acceptedRow) && true == IsFullyInView(hoveredRow.Rect)) candidate = hoveredRow;
 
         if (candidate == acceptedRow) return;
 
@@ -1292,27 +1300,34 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
             return;
         }
 
-        Sound.PlayUI(SoundID.ResultUIHover);
+        if (candidate != soundedRow)
+        {
+            Sound.PlayUI(SoundID.ResultUIHover);
+            soundedRow = candidate;
+        }
+
         focusedRow = candidate;
         focusedSlot = null;
         ShowCursor(candidate.Rect, rowCursorMotion);
     }
 
     /// <summary>
-    /// 탭을 넘길 때: 인정 상태만 비우고 커서를 숨긴다. 줄 오브젝트는 탭끼리 돌려 쓰므로 마우스가 올라가 있는 줄(hoveredRow)은 남겨 둔다 -
+    /// 탭을 넘길 때: 인정 상태와 효과음을 낸 줄 기록(soundedRow)만 비우고 커서를 숨긴다(새 내용의 줄에서는 효과음이 다시 난다). 줄 오브젝트는 탭끼리 돌려 쓰므로 마우스가 올라가 있는 줄(hoveredRow)은 남겨 둔다 -
     /// 새 PointerEnter가 오지 않아도 다음 프레임에 UpdateMouseHover가 새 내용의 줄을 다시 인정한다.
     /// </summary>
     private void ResetAcceptedHover()
     {
         acceptedRow = null;
+        soundedRow = null;
         if (false == IsGamepadMode) HideCursor();
     }
 
-    /// <summary>마우스 호버 기록과 인정 상태를 비운다(창 열기 · 창 닫기 · 패드로 바뀔 때). 남은 참조로 엉뚱한 줄이 반응하지 않게 한다.</summary>
+    /// <summary>마우스 호버 기록 · 인정 상태 · 효과음을 낸 줄 기록을 비운다(창 열기 · 창 닫기 · 패드로 바뀔 때). 남은 참조로 엉뚱한 줄이 반응하지 않게 한다.</summary>
     private void ResetHover()
     {
         hoveredRow = null;
         acceptedRow = null;
+        soundedRow = null;
     }
 
     private void OnSlotSelected(UI_RoguelikeCardIconSlot _slot)

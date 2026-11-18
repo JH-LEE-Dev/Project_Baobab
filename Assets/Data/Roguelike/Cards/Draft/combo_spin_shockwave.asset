@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: combo_spin_shockwave
   nameKey: Roguelike_Card_combo_spin_shockwave
   descriptionKey: Roguelike_Card_combo_spin_shockwave_Desc
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: e888c5a424443f742977e572f1aef12f, type: 3}
   kind: 3
   skillTag: 0
   exclusiveGroup: 2

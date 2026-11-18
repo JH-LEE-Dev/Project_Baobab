@@ -6,8 +6,12 @@ public struct RoguelikeChallengeViewData
 {
     /// <summary>제목(1줄).</summary>
     public string title;
-    /// <summary>팁 = 달성 조건 설명(최대 2줄, 넘치면 말줄임).</summary>
+    /// <summary>팁 = 달성 조건 설명(줄 수만큼 칸 높이가 늘어난다).</summary>
     public string tip;
-    /// <summary>달성 여부. 달성한 칸은 금색 테두리 바탕 + 제목 금색 + 오른쪽 금색 깃발, 미달성 칸은 기본 바탕이다.</summary>
+    /// <summary>달성 여부. 달성한 칸은 금색 리본(깃발 없음), 미달성 칸은 제목 + 진행 수치(목표가 2 이상일 때)다.</summary>
     public bool bCleared;
+    /// <summary>현재 진행값(미달성 칸의 "진행 / 목표" 수치). 기본 0.</summary>
+    public int progress;
+    /// <summary>목표값. 1 이하(기본 0 포함)면 진행 수치를 숨긴다.</summary>
+    public int goal;
 }
