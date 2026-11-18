@@ -17,6 +17,12 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
     // 마을 Grid의 증설분 건물 충돌 타일맵을 켜고 끈다.
     public event Action<int> ActiveLineCountChangedEvent;
 
+    // 자동 입금 특성으로 상점이 잠기거나 풀릴 때(true = 잠김) 알린다. TownSystem이 강아지 우선 구역에서 상점을 빼고 넣는다.
+    public event Action<bool> ShopRemoteDepositLockChangedEvent;
+
+    /// <summary>자동 입금 특성이 적용되어 상점 상호작용이 잠겨 있는지.</summary>
+    public bool IsShopRemoteDepositLocked => shopNPC != null && shopNPC.IsRemoteDepositLocked;
+
     // 외부 의존성
 
     [SerializeField] GameObject shopPrefab;
@@ -69,7 +75,21 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
     private float logProcessorSpeedMul = 1f;
     private int logProcessingStack = 0;
     private float amountMultiplier = 0f;
-    private bool bRemoteDepositActive = false;
+
+    // 자동 입금(RemoteDeposit) 특성.
+    //  - 보유(bRemoteDepositOwned): 특성을 가지고 있는지.
+    //  - 적용(IsRemoteDepositApplied): 상점이 잠기고 상점 돈 HUD가 사라진 상태. 특성 창에서 찍었으면 창을 닫은 뒤에야 적용된다.
+    //  - 입금 중(ShopNPC.IsRemoteDepositRunning): 평가된 돈이 상점에 쌓이지 않고 캐릭터에게 바로 간다. 마을에서만, 원격 운반 서비스
+    //    (OffroadContainer.UpdateRemoteTransportGate)와 같은 시점에 시작·정지한다 - 마을에 도착해 캐릭터가 처음 움직일 수 있게
+    //    된 순간 시작하고, 마을을 떠나는 카메라 상승(숲 출발·메인메뉴 이탈·엔딩)이 시작되면 멈춘다. 숲에 있는 동안 번 돈은
+    //    잠긴 상점에 쌓였다가 다음 마을 도착 때 입금이 시작되며 한 번에 캐릭터에게 들어간다.
+    private bool bRemoteDepositOwned = false;
+    private bool bRemoteDepositWaitTentClose = false;
+    private bool bRemoteDepositStarted = false;
+    private bool bRemoteDepositDeparted = false;
+    private bool bTentUIOpen = false;
+
+    private bool IsRemoteDepositApplied => bRemoteDepositOwned && !bRemoteDepositWaitTentClose;
 
     // 가공 콤보(LogProcessorSpeedUp) 최대 중첩 수.
     private const int MaxProcessingStack = 10;
@@ -316,14 +336,9 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
 
         if (shopNPC != null)
         {
+            // 자동 입금 특성이 있으면 복원된 상점 잔액은 잠긴 상점에 그대로 두고, 마을에 도착해 입금이 시작될 때
+            // (UpdateRemoteDepositState) 한 번에 캐릭터에게 들어간다.
             shopNPC.LoadSaveData(_data.shopMoney, _data.bFirstTimeEarnMoney);
-
-            // 스킬 세이브 로드(원격 입금 재적용)가 로그 가공 세이브 로드보다 먼저 실행되므로,
-            // 여기서 복원된 상점 잔액이 잠긴 상점에 갇혀 유실되지 않도록 다시 한번 정산한다.
-            if (bRemoteDepositActive)
-            {
-                shopNPC.ClearMoneyToPlayer();
-            }
         }
 
         int savedLineCount = Mathf.Clamp(_data.activeLineCount > 0 ? _data.activeLineCount : 1, 1, allLines.Count);
@@ -450,9 +465,10 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
 
     private void LogEvaluated(long _money)
     {
-        if (bRemoteDepositActive)
+        if (shopNPC.IsRemoteDepositRunning)
         {
-            EarnMoneyEvent?.Invoke(_money);
+            // 돈은 상점에서 캐릭터로 날아가는 금화가 닿을 때 들어간다(금화를 띄우지 못하면 ShopNPC가 바로 넣는다).
+            shopNPC.QueueRemoteDepositMoney(_money);
         }
         else
         {
@@ -462,14 +478,76 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
 
     public void SetRemoteDeposit(bool _bActive)
     {
-        bRemoteDepositActive = _bActive;
+        bool bWasOwned = bRemoteDepositOwned;
+        bRemoteDepositOwned = _bActive;
 
         if (_bActive)
         {
-            shopNPC.ClearMoneyToPlayer();
+            // 특성 창에서 찍었으면 창을 닫은 뒤에 적용한다(세이브 로드처럼 창이 닫혀 있으면 바로 적용).
+            if (!bWasOwned) bRemoteDepositWaitTentClose = bTentUIOpen;
+        }
+        else
+        {
+            bRemoteDepositWaitTentClose = false;
         }
 
-        shopNPC.SetRemoteDepositLock(_bActive);
+        UpdateRemoteDepositState();
+    }
+
+    /// <summary>특성 창(TentUI)이 열리고 닫힐 때 TownSystem이 알려준다. 자동 입금은 특성 창을 닫은 뒤에 적용된다.</summary>
+    public void SetTentUIOpen(bool _bOpen)
+    {
+        bTentUIOpen = _bOpen;
+        if (!_bOpen) bRemoteDepositWaitTentClose = false;
+
+        UpdateRemoteDepositState();
+    }
+
+    /// <summary>
+    /// 마을을 떠나는 카메라 상승이 시작됐다(OffroadContainer.StopRemoteTransportForDeparture와 같은 시점). 이번 마을 방문에서는
+    /// 더 이상 자동 입금하지 않고, 그 뒤 평가된 돈은 잠긴 상점에 쌓인다. TownSystem이 부른다.
+    /// </summary>
+    public void StopRemoteDepositForDeparture()
+    {
+        bRemoteDepositDeparted = true;
+        UpdateRemoteDepositState();
+    }
+
+    private void UpdateRemoteDepositState()
+    {
+        if (shopNPC == null) return;
+
+        bool bApplied = IsRemoteDepositApplied;
+        if (shopNPC.IsRemoteDepositLocked != bApplied)
+        {
+            shopNPC.SetRemoteDepositLock(bApplied);
+            ShopRemoteDepositLockChangedEvent?.Invoke(bApplied);
+        }
+
+        bool bRunning = bApplied && UpdateRemoteDepositGate();
+        if (bRunning == shopNPC.IsRemoteDepositRunning) return;
+
+        shopNPC.SetRemoteDepositRunning(bRunning);
+
+        // 입금이 시작되는 순간 상점에 쌓여 있던 돈은 전부 즉시 캐릭터에게 들어간다.
+        if (bRunning) shopNPC.ClearMoneyToPlayer();
+    }
+
+    // 원격 운반 서비스의 시작 조건(OffroadContainer.UpdateRemoteTransportGate)과 같다: 마을에 있고, 떠나는 중이 아니며,
+    // 이번 마을 방문에서 캐릭터가 차에서 내려 움직일 수 있게 된 적이 있다(한 번 시작하면 그 뒤 UI 때문에 이동이 잠겨도 이어진다).
+    private bool UpdateRemoteDepositGate()
+    {
+        if (MapType.Town != currentMapType || bRemoteDepositDeparted) return false;
+
+        if (!bRemoteDepositStarted)
+        {
+            if (inputManager == null || inputManager.IsMovePaused) return false;
+            if (character == null || !character.gameObject.activeInHierarchy || ((ICharacter)character).bRide) return false;
+
+            bRemoteDepositStarted = true;
+        }
+
+        return true;
     }
 
     private void EarnMoney(long _money)
@@ -500,9 +578,17 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         currentMapType = _mapType;
         if (comboPresenter != null) comboPresenter.SetMapType(_mapType);
 
+        // 맵에 새로 도착할 때마다 자동 입금은 캐릭터가 움직일 수 있게 된 뒤 다시 시작한다(OffroadContainer.SetInTown과 같다).
+        bRemoteDepositStarted = false;
+        bRemoteDepositDeparted = false;
+        bTentUIOpen = false;
+        bRemoteDepositWaitTentClose = false;
+
         for (int i = 0; i < allLines.Count; i++) allLines[i].SetMapType(_mapType);
         shopNPC?.SetMapType(_mapType);
         logContainer?.SetMapType(_mapType);
+
+        UpdateRemoteDepositState();
     }
 
     private void ShopInteractStateChanged(bool _boolean)
@@ -555,6 +641,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
 
     private void Update()
     {
+        UpdateRemoteDepositState();
         CalcDistForInteraction();
         PollLineSupply();
     }
@@ -643,7 +730,8 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
             return;
         }
 
-        if (logContainer.isPhysicalOverlapped && shopNPC.isPhysicalOverlapped)
+        // 자동 입금으로 상점이 잠겨 있으면 상점은 상호작용 대상이 아니므로 원목 보관함과 다투지 않는다(창문 열림 연출만 한다).
+        if (logContainer.isPhysicalOverlapped && shopNPC.isPhysicalOverlapped && !shopNPC.IsRemoteDepositLocked)
         {
             Vector3 playerPos = character.centerTransform.position;
             float distToContainerSq = (logContainerCol != null) ? (logContainerCol.ClosestPoint(playerPos) - (Vector2)playerPos).sqrMagnitude : (logContainer.transform.position - playerPos).sqrMagnitude;

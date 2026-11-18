@@ -33,6 +33,8 @@ Shader "Custom/OutlineStencilWriter-Tree"
         Stencil
         {
             Ref 32
+            // 64번 비트(반투명 나무 밑동 가림 마스크)는 남긴다. 나머지 비트는 예전처럼 32로 덮어쓴다.
+            WriteMask 191
             Comp Always
             Pass Replace
         }

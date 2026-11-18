@@ -21,11 +21,13 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         }
     }
 
-    // 평가기 -> 상점(원격 입금이면 -> 캐릭터)으로 날아가는 입금 금화. 돈은 이미 처리된 뒤라 순수 연출이다.
+    // 평가기 -> 상점으로 날아가는 입금 금화. bRemoteDeposit이면 상점에 닿은 순간 상점에서 캐릭터로 금화를 던진다(자동 입금).
+    // remoteMoney는 이 금화가 싣고 가는 자동 입금 돈이다(원목 하나의 값, 특등품 덤 금화는 0).
     private struct DepositCoin
     {
         public Coin coin;
-        public bool bToCharacter;
+        public bool bRemoteDeposit;
+        public long remoteMoney;
         public float trailTimer;
     }
 
@@ -35,6 +37,8 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         public Vector3 from;
         public float delay;
         public bool bTopgrade;
+        public bool bRemoteDeposit;
+        public long remoteMoney;
     }
 
     private struct CoinSpawnInfo
@@ -65,9 +69,16 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
     private bool bPhysicalOverlapped = false;
     private bool bCanReach = true;
     private bool bLastInteractState = false;
+    private bool bLastDoorOpenState = false;
     private bool bRemoteDepositLocked = false;
+    // 자동 입금이 지금 진행 중인지(마을에서만 켜진다, LogProcessingManager.UpdateRemoteDepositState).
+    private bool bRemoteDepositRunning = false;
 
     public bool isPhysicalOverlapped => bPhysicalOverlapped;
+    /// <summary>자동 입금 특성이 적용되어 상점 상호작용이 잠겨 있는지.</summary>
+    public bool IsRemoteDepositLocked => bRemoteDepositLocked;
+    /// <summary>자동 입금이 지금 진행 중인지(평가된 돈이 상점에 쌓이지 않고 캐릭터에게 간다).</summary>
+    public bool IsRemoteDepositRunning => bRemoteDepositRunning;
     private InputManager inputManager;
     private long money;
     private bool bFirstTimeEarnMoney = true;
@@ -83,6 +94,15 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
     // 캐릭터에 도착하는 순간 전액 한 번에 처리한다(뒤이어 도착하는 코인들은 시각 연출일 뿐).
     private long pendingBatchMoney = 0;
     private bool bAwaitingFirstArrival = false;
+
+    // 자동 입금: 원목 하나의 돈은 그 원목의 금화(평가기 -> 상점 -> 캐릭터)가 싣고 가서 캐릭터에 닿을 때 들어간다.
+    // pendingRemoteDepositMoney는 아직 지급 전인 자동 입금 돈 전체(금화에 실린 것 + 아직 금화에 안 실린 것)로,
+    // 상점 잔액·캐릭터 소지금 어디에도 없으므로 저장 시 GetPendingBatchMoney에 함께 적는다.
+    // unassignedRemoteDepositMoney는 평가는 됐지만 금화에 실리지 못한 돈이다(이펙트가 안 보여 금화를 안 띄움 등) - Update에서 바로 넣는다.
+    // 금화를 띄우거나 이어 던지지 못하면 그 금화에 실린 돈도 바로 넣는다.
+    private long pendingRemoteDepositMoney = 0;
+    private long unassignedRemoteDepositMoney = 0;
+    private readonly List<FlyingCoin> remoteCoins = new List<FlyingCoin>(16);
 
     // 상호작용 키는 Input System 콜백(해당 프레임의 모든 Update()보다 먼저 실행됨)에서 바로 들어온다.
     // 원목 가공 완료로 인한 InsertMoney()는 LogInBelt 등의 Update() 체인 안에서 일어나므로, 여기서
@@ -275,12 +295,18 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
             if (null != depositCoins[i].coin) coinItemPoolingManager.ReturnCoin(depositCoins[i].coin);
         }
         depositCoins.Clear();
+        for (int i = 0; i < remoteCoins.Count; i++)
+        {
+            if (null != remoteCoins[i].coin) coinItemPoolingManager.ReturnCoin(remoteCoins[i].coin);
+        }
+        remoteCoins.Clear();
         if (null != moneyVfx) moneyVfx.ClearAll();
     }
 
     /// <summary>
     /// 원목 하나가 평가되어 돈이 들어온 순간의 연출. 평가기(_storagePos) 윗면에서 금화가 튀어 나와 상점으로 날아간다
-    /// (원격 입금 중이면 캐릭터로). _bTopgrade면 금화가 더 날아간다. 돈은 이미 처리된 뒤라 그림만 그린다.
+    /// (자동 입금 중이면 상점에 닿은 순간 상점에서 캐릭터로 다시 던진다). _bTopgrade면 금화가 더 날아간다.
+    /// 자동 입금이 아니면 돈은 이미 처리된 뒤라 그림만 그린다.
     /// </summary>
     public void PlayDepositVisual(Vector3 _storagePos, bool _bTopgrade)
     {
@@ -292,7 +318,15 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         float baseDelay = _bTopgrade ? depositStagger : 0f;
         for (int i = 0; i < count; i++)
         {
-            pendingDeposits.Add(new PendingDeposit { from = from, delay = baseDelay + depositStagger * i, bTopgrade = _bTopgrade });
+            // 바로 앞에서 QueueRemoteDepositMoney로 넣은 원목 값은 이번 평가의 첫 금화가 싣고 간다.
+            long remoteMoney = 0;
+            if (bRemoteDepositRunning && 0 == i)
+            {
+                remoteMoney = unassignedRemoteDepositMoney;
+                unassignedRemoteDepositMoney = 0;
+            }
+
+            pendingDeposits.Add(new PendingDeposit { from = from, delay = baseDelay + depositStagger * i, bTopgrade = _bTopgrade, bRemoteDeposit = bRemoteDepositRunning, remoteMoney = remoteMoney });
         }
 
         if (false == bRemoteDepositLocked) pendingDepositHeat += count;
@@ -309,6 +343,15 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
     public void InsertMoney(long _money)
     {
+        // 자동 입금 중이면 상점에 쌓지 않고 상점에서 캐릭터로 금화를 던져 닿을 때 넣는다(용광로 주괴 판매 등).
+        // 원목 평가 돈은 평가기 금화가 싣고 오므로 이 길로 오지 않는다(LogProcessingManager.LogEvaluated).
+        if (bRemoteDepositRunning && 0 < _money)
+        {
+            pendingRemoteDepositMoney += _money;
+            LaunchRemoteDepositCoin(_money);
+            return;
+        }
+
         money += _money;
         ShopMoneyChangedEvent?.Invoke();
     }
@@ -325,7 +368,22 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
     /// </summary>
     public long GetPendingBatchMoney()
     {
-        return pendingBatchMoney;
+        return pendingBatchMoney + pendingRemoteDepositMoney;
+    }
+
+    /// <summary>
+    /// 자동 입금 중 평가된 돈. 바로 이어서 부르는 PlayDepositVisual의 금화가 평가기 -> 상점 -> 캐릭터로 날아가 닿을 때 들어간다.
+    /// </summary>
+    public void QueueRemoteDepositMoney(long _money)
+    {
+        if (0 >= _money) return;
+        pendingRemoteDepositMoney += _money;
+        unassignedRemoteDepositMoney += _money;
+    }
+
+    public void SetRemoteDepositRunning(bool _bRunning)
+    {
+        bRemoteDepositRunning = _bRunning;
     }
 
     public void LoadSaveData(long _money, bool _bFirstTime)
@@ -353,14 +411,21 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
     private void UpdateInteractState()
     {
-        bool currentState = !bRemoteDepositLocked && bCanReach && bPhysicalOverlapped;
+        // 창문은 캐릭터가 다가오면 열린다. 자동 입금으로 잠겨 있으면 창문만 열고 상호작용(아웃라인·E·수금)은 하지 않는다.
+        bool bNear = bCanReach && bPhysicalOverlapped;
+        bool currentState = !bRemoteDepositLocked && bNear;
         if (bLastInteractState != currentState)
         {
             bLastInteractState = currentState;
             bCanInteract = currentState;
             InteractStateEvent?.Invoke(currentState);
             outLineObject.SetActive(currentState);
-            PlayAnimation(currentState);
+        }
+
+        if (bLastDoorOpenState != bNear)
+        {
+            bLastDoorOpenState = bNear;
+            PlayAnimation(bNear);
         }
     }
 
@@ -589,10 +654,80 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         UpdateBounce(Time.deltaTime);
         UpdateFlyingCoins(Time.deltaTime);
         UpdateDepositCoins(Time.deltaTime);
+        UpdateRemoteDepositCoins(Time.deltaTime);
         UpdateShopTwinkle(Time.deltaTime);
     }
 
-    // 입금 금화 출발·비행·도착. 돈과 무관한 순수 연출이다.
+    // 자동 입금 금화(상점 -> 캐릭터)의 비행·도착. 닿을 때 그 금화에 실린 원목 값을 넣는다.
+    private void UpdateRemoteDepositCoins(float _deltaTime)
+    {
+        for (int i = remoteCoins.Count - 1; i >= 0; i--)
+        {
+            FlyingCoin fc = remoteCoins[i];
+            fc.coin.ManualUpdate(_deltaTime);
+
+            if (fc.coin.isArrived)
+            {
+                if (IsMoneyVfxVisible()) moneyVfx.PlayCoinArrive(fc.coin.transform.position, false, false);
+
+                PayRemoteDepositMoney(fc.value);
+
+                character?.PlayItemAcquireBounce();
+                character?.PlayItemAcquireFlash();
+                // 수금 금화가 캐릭터에 박힐 때와 같은 진동(연속 전용 약한 파형).
+                Rumble.Play(EHapticEvent.ItemStream);
+                TryPlayCoinGetSound(fc.coin.transform.position);
+
+                coinItemPoolingManager.ReturnCoin(fc.coin);
+                remoteCoins.RemoveAt(i);
+                continue;
+            }
+
+            EmitTrail(fc.coin, characterTransform, ref fc.trailTimer, _deltaTime);
+            remoteCoins[i] = fc;
+        }
+
+        // 평가는 됐는데 금화에 실리지 못한 돈(이펙트가 꺼져 있어 금화를 안 띄움)은 바로 넣는다.
+        if (0 < unassignedRemoteDepositMoney)
+        {
+            long amount = unassignedRemoteDepositMoney;
+            unassignedRemoteDepositMoney = 0;
+            PayRemoteDepositMoney(amount);
+        }
+    }
+
+    private void PayRemoteDepositMoney(long _amount)
+    {
+        if (0 >= _amount) return;
+
+        pendingRemoteDepositMoney -= _amount;
+        EarnMoneyEvent?.Invoke(_amount);
+    }
+
+    // 상점(수금 금화가 나가는 자리)에서 캐릭터로 자동 입금 금화를 던진다. 캐릭터는 마을 어디에나 있을 수 있어 거리에 맞춰 늘린다.
+    // 던지지 못하면 실린 돈을 바로 넣는다.
+    private void LaunchRemoteDepositCoin(long _money)
+    {
+        Coin coin = null;
+        if (IsMoneyVfxVisible() && null != characterTransform)
+        {
+            Vector3 start = null != coinThrowTransform ? coinThrowTransform.position : transform.position;
+            float dist = Vector2.Distance(start, characterTransform.position);
+            float duration = Mathf.Clamp(depositFlyDuration + dist * 0.05f, depositFlyDuration, 1f);
+            float height = Mathf.Min(depositFlyHeight + dist * 0.08f, 2f);
+            coin = LaunchMoneyCoin(start, characterTransform, height, duration);
+        }
+
+        if (null == coin)
+        {
+            PayRemoteDepositMoney(_money);
+            return;
+        }
+
+        remoteCoins.Add(new FlyingCoin(coin, _money));
+    }
+
+    // 입금 금화 출발·비행·도착. 자동 입금이면 금화가 원목 값을 싣고 상점을 거쳐 캐릭터로 간다.
     private void UpdateDepositCoins(float _deltaTime)
     {
         for (int i = pendingDeposits.Count - 1; i >= 0; i--)
@@ -606,7 +741,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
             }
 
             pendingDeposits.RemoveAt(i);
-            LaunchDepositCoin(pending.from, pending.bTopgrade);
+            LaunchDepositCoin(pending.from, pending.bTopgrade, pending.bRemoteDeposit, pending.remoteMoney);
         }
 
         for (int i = depositCoins.Count - 1; i >= 0; i--)
@@ -616,10 +751,14 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
             if (dc.coin.isArrived)
             {
-                if (IsMoneyVfxVisible())
+                if (IsMoneyVfxVisible()) moneyVfx.PlayDepositLand(dc.coin.transform.position);
+
+                // 자동 입금이면 상점에 닿은 금화를 그대로 캐릭터에게 던진다. 그사이 입금이 멈췄으면(마을을 떠나는 중)
+                // 더 던지지 않고 실린 돈만 바로 넣는다.
+                if (dc.bRemoteDeposit)
                 {
-                    if (dc.bToCharacter) moneyVfx.PlayCoinArrive(dc.coin.transform.position, false, false);
-                    else moneyVfx.PlayDepositLand(dc.coin.transform.position);
+                    if (bRemoteDepositRunning) LaunchRemoteDepositCoin(dc.remoteMoney);
+                    else PayRemoteDepositMoney(dc.remoteMoney);
                 }
 
                 coinItemPoolingManager.ReturnCoin(dc.coin);
@@ -627,43 +766,44 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
                 continue;
             }
 
-            EmitTrail(dc.coin, dc.bToCharacter ? characterTransform : depositLandPoint, ref dc.trailTimer, _deltaTime);
+            EmitTrail(dc.coin, depositLandPoint, ref dc.trailTimer, _deltaTime);
             depositCoins[i] = dc;
         }
     }
 
-    private void LaunchDepositCoin(Vector3 _from, bool _bTopgrade)
+    private void LaunchDepositCoin(Vector3 _from, bool _bTopgrade, bool _bRemoteDeposit, long _remoteMoney)
     {
-        if (false == IsMoneyVfxVisible()) return;
+        Coin coin = null;
+        if (IsMoneyVfxVisible() && null != depositLandPoint)
+            coin = LaunchMoneyCoin(_from, depositLandPoint, depositFlyHeight, depositFlyDuration);
 
-        // 원격 입금 중이면 상점이 잠겨 있으므로 금화가 캐릭터에게 바로 날아간다.
-        bool bToCharacter = bRemoteDepositLocked && null != characterTransform;
-        Transform target = bToCharacter ? characterTransform : depositLandPoint;
-        if (null == target) return;
-
-        Coin coin = coinItemPoolingManager.GetCoin(CoinType.Gold);
-        if (null == coin) return;
-        coin.gameObject.SetActive(true);
-
-        float duration = depositFlyDuration;
-        float height = depositFlyHeight;
-        if (bToCharacter)
+        if (null == coin)
         {
-            // 캐릭터는 마을 어디에나 있을 수 있어 거리에 맞춰 늘린다.
-            float dist = Vector2.Distance(_from, target.position);
-            duration = Mathf.Clamp(depositFlyDuration + dist * 0.05f, depositFlyDuration, 1f);
-            height = Mathf.Min(depositFlyHeight + dist * 0.08f, 2f);
+            // 금화를 못 띄웠으면 실린 자동 입금 돈은 바로 넣는다.
+            PayRemoteDepositMoney(_remoteMoney);
+            return;
         }
 
-        Vector3 dir = (target.position - _from).normalized;
+        depositCoins.Add(new DepositCoin { coin = coin, bRemoteDeposit = _bRemoteDeposit, remoteMoney = _remoteMoney, trailTimer = 0f });
+
+        moneyVfx.PlayDepositPop(_from, _bTopgrade);
+    }
+
+    // 입금·자동 입금 금화 공용 발사: 풀에서 금화를 빌려 _from에서 _target으로 포물선으로 띄운다(옆으로 살짝 흔들고 높이는 ±10%).
+    // 금화를 빌리지 못하면 null.
+    private Coin LaunchMoneyCoin(Vector3 _from, Transform _target, float _height, float _duration)
+    {
+        Coin coin = coinItemPoolingManager.GetCoin(CoinType.Gold);
+        if (null == coin) return null;
+        coin.gameObject.SetActive(true);
+
+        Vector3 dir = (_target.position - _from).normalized;
         if (Vector3.zero == dir) dir = Vector3.up;
         Vector3 normal = new Vector3(-dir.y, dir.x, 0f);
         Vector3 jitter = normal * UnityEngine.Random.Range(-0.15f, 0.15f);
 
-        coin.DynamicTransferLaunch(_from, target, height * UnityEngine.Random.Range(0.9f, 1.1f), duration, jitter, 0f);
-        depositCoins.Add(new DepositCoin { coin = coin, bToCharacter = bToCharacter, trailTimer = 0f });
-
-        moneyVfx.PlayDepositPop(_from, _bTopgrade);
+        coin.DynamicTransferLaunch(_from, _target, _height * UnityEngine.Random.Range(0.9f, 1.1f), _duration, jitter, 0f);
+        return coin;
     }
 
     // 날아가는 금화 뒤로 꼬리 금가루를 일정 간격으로 뿌린다. 등장·흡수 구간(작아져 있을 때)과 도착 지점 바로 앞에서는

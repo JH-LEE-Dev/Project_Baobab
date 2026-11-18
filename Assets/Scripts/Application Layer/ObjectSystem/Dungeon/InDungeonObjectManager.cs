@@ -2763,6 +2763,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         itemManager?.SetEmberGuideActive(_bActive);
     }
 
+    /// <summary>기믹 안내 중 화살표가 떠 있는 불씨를 _results에 담는다(안내 중이 아니면 비운다).</summary>
+    public void CollectGuideEmbers(List<EmberItem> _results)
+    {
+        if (itemManager != null) itemManager.CollectGuideEmbers(_results);
+        else _results.Clear();
+    }
+
     // 과열이 가득 차는 순간의 연출 수치(화면 흔들림 세기·시간, 터지는 소리의 크기·높낮이)
     private const float OverheatFullShakeIntensity = 4f;
     private const float OverheatFullShakeSeconds = 0.35f;

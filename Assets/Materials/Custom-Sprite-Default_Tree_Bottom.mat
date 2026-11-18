@@ -45,19 +45,30 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _BarrierAfterglow: 0
+    - _DamageLook: 0
     - _Dummy: 0
     - _EnableExternalAlpha: 0
     - _EnableWindSway: 0
+    - _FlashAmount: 0
+    - _HDRIntensity: 1
+    - _HeatCharge: 0
     - _StencilRef: 0
     - _SwayDetailSpeed: 1.45
     - _SwayDetailWeight: 0.35
     - _SwayMainSpeed: 0.55
     - _SwayPositionAmplitude: 0.03
     - _SwayRotationAmplitude: 1.25
+    - _TreeColorMask: 15
+    - _TreeStencilComp: 3
+    - _TreeStencilReadMask: 64
+    - _TreeStencilRef: 0
     - _ZWrite: 0
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _FlashColor: {r: 1, g: 1, b: 1, a: 1}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
+    - _SporeShieldFx: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

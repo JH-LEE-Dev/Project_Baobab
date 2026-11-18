@@ -150,6 +150,12 @@ public class PuppyManager : MonoBehaviour
             priorityZones.Add(_zone);
     }
 
+    /// <summary>등록한 우선 영역을 뺀다(기물이 상호작용을 잃었을 때, 예: 자동 입금으로 잠긴 상점).</summary>
+    public void RemovePriorityZone(Collider2D _zone)
+    {
+        if (null != _zone) priorityZones.Remove(_zone);
+    }
+
     public void SetTutorialSleep(bool _bSleep)
     {
         if (bTutorialSleep == _bSleep) return;

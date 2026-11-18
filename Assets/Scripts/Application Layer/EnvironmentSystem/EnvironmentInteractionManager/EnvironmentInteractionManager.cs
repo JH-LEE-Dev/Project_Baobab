@@ -26,6 +26,23 @@ public class EnvironmentInteractionManager : MonoBehaviour
     private const float FADED_ALPHA = 0.5f;
     private const float NORMAL_ALPHA = 1.0f;
 
+    // 용암숲 기믹 안내(튜토리얼) 중 화살표가 떠 있는 불씨를 가리는 나무도 캐릭터를 가릴 때처럼 반투명하게 한다.
+    [Header("용암숲 기믹 안내 불씨 가림")]
+    [Tooltip("불씨를 가릴 수 있는 나무를 찾는 반경(나무 밑동 기준). 수관이 불씨 위로 이만큼까지 올라온다고 본다.")]
+    [SerializeField] private float emberOccluderSearchRadius = 2.5f;
+    private readonly List<EmberItem> guideEmbers = new List<EmberItem>(16);
+    private readonly List<IStaticCollidable> emberNearbyTrees = new List<IStaticCollidable>(32);
+    private readonly HashSet<TreeObj> emberOccludingTrees = new HashSet<TreeObj>();
+    // 불씨 원점 기준 판정 점(불덩이 중심과 상하좌우 4px, 32px = 1유닛). 하나라도 덮이면 가린다고 본다.
+    private static readonly Vector2[] EmberSamplePoints =
+    {
+        new Vector2(0f, 5f / 32f),
+        new Vector2(-4f / 32f, 5f / 32f),
+        new Vector2(4f / 32f, 5f / 32f),
+        new Vector2(0f, 1f / 32f),
+        new Vector2(0f, 9f / 32f),
+    };
+
     public void Initialize()
     {
 
@@ -71,11 +88,15 @@ public class EnvironmentInteractionManager : MonoBehaviour
         // 1. 캐릭터 주변 나무 수집
         CollisionSystem.Instance.GetCollidablesInSurroundingCells(character.Position, treeLayer, nearbyCollidables);
 
+        // 1-1. 기믹 안내 불씨를 가리는 나무 수집(안내 중이 아니면 비어 있어 아래 판정은 예전과 같다)
+        CollectEmberOccludingTrees();
+
         // 2. 현재 투명한 나무들 중 리셋 대상 선별
         treesToReset.Clear();
         foreach (var _tree in currentlyFadedTrees)
         {
             if (_tree == null) continue;
+            if (emberOccludingTrees.Contains(_tree)) continue;
 
             bool _isStillNearby = false;
             for (int j = 0; j < nearbyCollidables.Count; j++)
@@ -115,6 +136,52 @@ public class EnvironmentInteractionManager : MonoBehaviour
                 }
             }
         }
+
+        // 5. 기믹 안내 불씨를 가리는 나무 처리
+        foreach (var _tree in emberOccludingTrees)
+        {
+            if (currentlyFadedTrees.Add(_tree))
+            {
+                _tree.FadeAlpha(FADED_ALPHA, fadeDuration);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 기믹 안내 중 화살표가 떠 있는 불씨마다, 그 불씨보다 앞에 그려지면서 불씨 그림을 덮는 나무를 emberOccludingTrees에 모은다.
+    /// </summary>
+    private void CollectEmberOccludingTrees()
+    {
+        emberOccludingTrees.Clear();
+        if (inDungeonObjectManager == null) return;
+
+        inDungeonObjectManager.CollectGuideEmbers(guideEmbers);
+        for (int e = 0; e < guideEmbers.Count; e++)
+        {
+            EmberItem _ember = guideEmbers[e];
+            Vector2 _emberPos = _ember.transform.position;
+            Renderer _emberRenderer = _ember.SortingRenderer;
+
+            CollisionSystem.Instance.GetCollidablesInRadius(_emberPos, emberOccluderSearchRadius, treeLayer, emberNearbyTrees);
+            for (int i = 0; i < emberNearbyTrees.Count; i++)
+            {
+                if (emberNearbyTrees[i] is TreeObj _tree && _tree != null && false == emberOccludingTrees.Contains(_tree)
+                    && IsCoveringEmber(_tree, _emberPos, _emberRenderer))
+                {
+                    emberOccludingTrees.Add(_tree);
+                }
+            }
+        }
+        guideEmbers.Clear();
+    }
+
+    private static bool IsCoveringEmber(TreeObj _tree, Vector2 _emberPos, Renderer _emberRenderer)
+    {
+        for (int i = 0; i < EmberSamplePoints.Length; i++)
+        {
+            if (_tree.CoversWorldPoint(_emberPos + EmberSamplePoints[i], _emberRenderer)) return true;
+        }
+        return false;
     }
 
     private bool IsInsideAlphaDownRange(TreeObj _tree)

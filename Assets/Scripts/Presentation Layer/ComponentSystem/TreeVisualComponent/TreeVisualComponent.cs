@@ -1594,6 +1594,131 @@ public class TreeVisualComponent : MonoBehaviour
             color.a = _alpha;
             bottomHighlightRenderer.color = color;
         }
+
+        // 반투명한 동안 수관이 덮는 칸에는 밑동을 그리지 않는다(밑동이 수관을 뚫고 비쳐 보이지 않게).
+        UpdateFadeMask(_alpha < FadeMaskAlphaThreshold);
+    }
+
+    // ── 반투명 밑동 가림 마스크(TreeFadeMask) ──
+    // 이 값보다 투명하면 마스크를 켠다. 불투명(1)일 때는 끄므로 평소 그림·그리기 수는 예전과 같다.
+    private const float FadeMaskAlphaThreshold = 0.999f;
+    private TreeFadeMask fadeMask;
+    // 원본 수관 재질마다 하나씩 만든 마스크 재질(같은 셰이더, 스텐실 64를 찍고 색은 안 씀).
+    private static readonly Dictionary<Material, Material> fadeMaskMaterials = new Dictionary<Material, Material>();
+    private static readonly int TreeStencilRefID = Shader.PropertyToID("_TreeStencilRef");
+    private static readonly int TreeStencilCompID = Shader.PropertyToID("_TreeStencilComp");
+    private static readonly int TreeColorMaskID = Shader.PropertyToID("_TreeColorMask");
+
+    private void UpdateFadeMask(bool _bActive)
+    {
+        if (false == _bActive)
+        {
+            if (fadeMask != null && fadeMask.gameObject.activeSelf) fadeMask.gameObject.SetActive(false);
+            return;
+        }
+
+        if (false == Application.isPlaying || topRenderer == null || bottomRenderer == null) return;
+
+        if (fadeMask == null)
+        {
+            Material maskMaterial = GetFadeMaskMaterial();
+            if (maskMaterial == null) return;
+
+            GameObject maskObj = new GameObject("Fade Mask");
+            maskObj.layer = topRenderer.gameObject.layer;
+            maskObj.transform.SetParent(topRenderer.transform, false);
+            SpriteRenderer maskRenderer = maskObj.AddComponent<SpriteRenderer>();
+            maskRenderer.sharedMaterial = maskMaterial;
+            maskRenderer.renderingLayerMask = topRenderer.renderingLayerMask;
+            fadeMask = maskObj.AddComponent<TreeFadeMask>();
+            fadeMask.Bind(maskRenderer, topRenderer, bottomRenderer);
+        }
+
+        if (false == fadeMask.gameObject.activeSelf) fadeMask.gameObject.SetActive(true);
+        fadeMask.Sync();
+    }
+
+    private Material GetFadeMaskMaterial()
+    {
+        EnsureDefaultMaterialsCached();
+        Material baseMaterial = defaultTopMaterial;
+        if (baseMaterial == null || false == baseMaterial.HasProperty(TreeStencilRefID)) return null;
+
+        if (false == fadeMaskMaterials.TryGetValue(baseMaterial, out Material maskMaterial) || maskMaterial == null)
+        {
+            maskMaterial = new Material(baseMaterial)
+            {
+                name = baseMaterial.name + " (Fade Mask)",
+                hideFlags = HideFlags.DontSave,
+            };
+            maskMaterial.SetFloat(TreeStencilRefID, 64f);
+            maskMaterial.SetFloat(TreeStencilCompID, (float)CompareFunction.Always);
+            maskMaterial.SetFloat(TreeColorMaskID, 0f);
+            fadeMaskMaterials[baseMaterial] = maskMaterial;
+        }
+        return maskMaterial;
+    }
+
+    // 스프라이트 메시(정점·삼각형) 사본. Sprite.vertices/triangles는 부를 때마다 새 배열을 만들어서 스프라이트마다 한 번만 읽는다.
+    private static readonly Dictionary<Sprite, KeyValuePair<Vector2[], ushort[]>> spriteMeshCache = new Dictionary<Sprite, KeyValuePair<Vector2[], ushort[]>>();
+
+    /// <summary>
+    /// 수관·밑동 그림이 _occludee(그 렌더러)보다 앞에 그려지면서 월드 좌표 _worldPoint를 덮는지.
+    /// 덮음 판정은 스프라이트의 실제 메시(그림 둘레를 따라 잘린 메시) 안인지로 하므로 그림 사각형의 투명 여백은 거의 걸리지 않는다.
+    /// </summary>
+    public bool CoversWorldPoint(Vector2 _worldPoint, Renderer _occludee)
+    {
+        return IsRendererCoveringPoint(topRenderer, _worldPoint, _occludee)
+            || IsRendererCoveringPoint(bottomRenderer, _worldPoint, _occludee);
+    }
+
+    private static bool IsRendererCoveringPoint(SpriteRenderer _renderer, Vector2 _worldPoint, Renderer _occludee)
+    {
+        if (_renderer == null || false == _renderer.enabled || false == _renderer.gameObject.activeInHierarchy) return false;
+        Sprite sprite = _renderer.sprite;
+        if (sprite == null) return false;
+        if (_occludee != null && false == IsDrawnAfter(_renderer, _occludee)) return false;
+
+        Vector3 local = _renderer.transform.InverseTransformPoint(new Vector3(_worldPoint.x, _worldPoint.y, _renderer.transform.position.z));
+        if (_renderer.flipX) local.x = -local.x;
+        if (_renderer.flipY) local.y = -local.y;
+
+        Bounds bounds = sprite.bounds;
+        if (local.x < bounds.min.x || local.x > bounds.max.x || local.y < bounds.min.y || local.y > bounds.max.y) return false;
+
+        if (false == spriteMeshCache.TryGetValue(sprite, out KeyValuePair<Vector2[], ushort[]> mesh))
+        {
+            mesh = new KeyValuePair<Vector2[], ushort[]>(sprite.vertices, sprite.triangles);
+            spriteMeshCache[sprite] = mesh;
+        }
+
+        Vector2[] vertices = mesh.Key;
+        ushort[] triangles = mesh.Value;
+        Vector2 p = local;
+        for (int i = 0; i + 2 < triangles.Length; i += 3)
+        {
+            if (IsPointInTriangle(p, vertices[triangles[i]], vertices[triangles[i + 1]], vertices[triangles[i + 2]])) return true;
+        }
+        return false;
+    }
+
+    // _front가 _back보다 나중에(위에) 그려지는지. 정렬 레이어 → 정렬 순서로 비교한다(같으면 앞이라고 보지 않는다).
+    private static bool IsDrawnAfter(Renderer _front, Renderer _back)
+    {
+        int frontLayer = SortingLayer.GetLayerValueFromID(_front.sortingLayerID);
+        int backLayer = SortingLayer.GetLayerValueFromID(_back.sortingLayerID);
+        if (frontLayer != backLayer) return frontLayer > backLayer;
+        return _front.sortingOrder > _back.sortingOrder;
+    }
+
+    private static bool IsPointInTriangle(Vector2 _p, Vector2 _a, Vector2 _b, Vector2 _c)
+    {
+        float d1 = (_p.x - _b.x) * (_a.y - _b.y) - (_a.x - _b.x) * (_p.y - _b.y);
+        float d2 = (_p.x - _c.x) * (_b.y - _c.y) - (_b.x - _c.x) * (_p.y - _c.y);
+        float d3 = (_p.x - _a.x) * (_c.y - _a.y) - (_c.x - _a.x) * (_p.y - _a.y);
+        bool bNeg = d1 < 0f || d2 < 0f || d3 < 0f;
+        bool bPos = d1 > 0f || d2 > 0f || d3 > 0f;
+        return false == (bNeg && bPos);
     }
 
     public void SetAlpha(float _alpha)

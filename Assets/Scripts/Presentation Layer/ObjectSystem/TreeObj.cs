@@ -1373,6 +1373,12 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         }
     }
 
+    /// <summary>수관·밑동 그림이 _occludee보다 앞에 그려지면서 _worldPoint를 덮는지(TreeVisualComponent.CoversWorldPoint).</summary>
+    public bool CoversWorldPoint(Vector2 _worldPoint, Renderer _occludee)
+    {
+        return treeVisualComponent != null && treeVisualComponent.CoversWorldPoint(_worldPoint, _occludee);
+    }
+
     public void SetOnWaterObjectState(bool _isWaterNearby)
     {
         if (treeVisualComponent == null)

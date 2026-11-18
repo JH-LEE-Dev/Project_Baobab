@@ -76,10 +76,13 @@ Material:
     - _SwayPositionAmplitude: 0.03
     - _SwayRotationAmplitude: 1.25
     - _SweepSpeed: 0.8
+    - _TreeStencilComp: 3
+    - _TreeStencilReadMask: 64
     - _Whiteness: 0.18
     - _ZWrite: 0
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _FlashColor: {r: 1, g: 1, b: 1, a: 1}
     - _GemColor: {r: 0.36605084, g: 0.80531186, b: 1.9766746, a: 1}
     - _GemColorB: {r: 0.6618443, g: 1.5222418, b: 1.7207952, a: 1}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
