@@ -211,8 +211,7 @@ public class TownSystem : MonoBehaviour
         puppyManager.ClearPriorityZones();
         puppyManager.AddPriorityZone(tentManager.Tent != null ? tentManager.Tent.InteractionCollider : null);
 
-        if (logProcessingManager.shopNPC != null)
-            puppyManager.AddPriorityZone(logProcessingManager.shopNPC.GetComponent<Collider2D>());
+        RefreshShopPuppyPriorityZone();
 
         if (logProcessingManager.logContainer != null)
             puppyManager.AddPriorityZone(logProcessingManager.logContainer.GetComponent<Collider2D>());
@@ -281,6 +280,9 @@ public class TownSystem : MonoBehaviour
 
         logProcessingManager.ShopInteracteStateChangedEvent -= ShopInteractStateChanged;
         logProcessingManager.ShopInteracteStateChangedEvent += ShopInteractStateChanged;
+
+        logProcessingManager.ShopRemoteDepositLockChangedEvent -= ShopRemoteDepositLockChanged;
+        logProcessingManager.ShopRemoteDepositLockChangedEvent += ShopRemoteDepositLockChanged;
 
         logProcessingManager.LogProcessorIsActiveEvent -= LogItemProcessorActiveState;
         logProcessingManager.LogProcessorIsActiveEvent += LogItemProcessorActiveState;
@@ -366,6 +368,7 @@ public class TownSystem : MonoBehaviour
 
         townObjectManager.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
         logProcessingManager.ShopInteracteStateChangedEvent -= ShopInteractStateChanged;
+        logProcessingManager.ShopRemoteDepositLockChangedEvent -= ShopRemoteDepositLockChanged;
         logProcessingManager.LogProcessorIsActiveEvent -= LogItemProcessorActiveState;
         logProcessingManager.ShopMoneyChangedEvent -= ShopMoneyChanged;
         logProcessingManager.ItemAddedToLogContainerEvent -= ItemAddedToLogContainer;
@@ -536,8 +539,30 @@ public class TownSystem : MonoBehaviour
         signalHub.Publish(new MoneyEarnedSignal(_money));
     }
 
+    private void ShopRemoteDepositLockChanged(bool _bLocked)
+    {
+        RefreshShopPuppyPriorityZone();
+    }
+
+    // 상점은 강아지보다 우선하는 코어루프 기물이지만, 자동 입금으로 잠겨 상호작용이 없으면 우선 영역에서 뺀다
+    // (그대로 두면 상점 앞에서 상점도 강아지도 반응하지 않는다).
+    private void RefreshShopPuppyPriorityZone()
+    {
+        if (puppyManager == null || logProcessingManager.shopNPC == null)
+            return;
+
+        Collider2D shopZone = logProcessingManager.shopNPC.GetComponent<Collider2D>();
+        if (logProcessingManager.IsShopRemoteDepositLocked)
+            puppyManager.RemovePriorityZone(shopZone);
+        else
+            puppyManager.AddPriorityZone(shopZone);
+    }
+
     private void TentInteract(bool _bInteract)
     {
+        // 자동 입금 특성은 특성 창을 닫은 뒤에 적용되므로 창이 열려 있는지 알려준다(닫힘은 TentUIClosed에서).
+        if (_bInteract) logProcessingManager.SetTentUIOpen(true);
+
         signalHub.Publish(new TentInteractSignal(_bInteract));
     }
 
@@ -547,6 +572,9 @@ public class TownSystem : MonoBehaviour
     private void TentUIClosed(TentUIClosedSignal _tentUIClosedSignal)
     {
         tentManager.SyncInteractStateOnExternalClose();
+
+        // 특성 창에서 자동 입금을 찍었다면 창을 닫은 지금 적용한다.
+        logProcessingManager.SetTentUIOpen(false);
 
         // 특성 창에서 프레스티지를 올려 전리품 단계가 바뀌었다면, 창을 닫고 나온 지금 기둥의 진화 연출을 재생한다.
         lootPillarManager?.PlayPendingEvolutions();
@@ -601,6 +629,7 @@ public class TownSystem : MonoBehaviour
 
         // 저장 뒤에 원목을 더 보내지 않도록 원격 운반을 먼저 멈춘 다음, 엔딩 시청을 기록하고 저장한다.
         offroadContainer.StopRemoteTransportForDeparture();
+        logProcessingManager.StopRemoteDepositForDeparture();
         EndingStartedEvent?.Invoke();
         return true;
     }
@@ -831,7 +860,10 @@ public class TownSystem : MonoBehaviour
         // 숲 출발로 카메라가 하늘로 올라가기 시작하는 순간 원격 운반 서비스를 멈춘다.
         // (isMainMenu = true는 메인메뉴 ↔ 마을 연출이라 여기서 거르지 않고, 이탈 쪽은 GoToMainMenuRequested에서 멈춘다)
         if (!isMainMenu)
+        {
             offroadContainer.StopRemoteTransportForDeparture();
+            logProcessingManager.StopRemoteDepositForDeparture();
+        }
 
         signalHub.Publish(new StartSkyProductionSignal(isMainMenu));
     }
@@ -1051,6 +1083,7 @@ public class TownSystem : MonoBehaviour
 
         // 메인메뉴로 나가는 카메라 상승도 마을을 떠나는 것이므로 원격 운반 서비스를 멈춘다(저장 뒤에 더 보내지 않게 먼저).
         offroadContainer.StopRemoteTransportForDeparture();
+        logProcessingManager.StopRemoteDepositForDeparture();
 
         // 마을 → 메인메뉴 이탈 시점 자동저장. 게임 종료(OnApplicationQuit)와 같은 느낌의 타이밍으로,
         // townObjectManager가 정리되기 전, 가장 온전한 상태에서 저장한다.
