@@ -283,7 +283,9 @@ public class ShockWaveVisualRunner : MonoBehaviour
 
         timer += Time.deltaTime;
 
-        UpdateCachedDirection();
+        // 방향은 Play에서 한 번만 정한다. 충격파 본체(Owner)는 판정이 끝나면 풀로 돌아가 다음 발사에 다시 쓰이므로,
+        // 여기서 매 프레임 다시 읽으면 아직 사라지는 중인 이 연출이 새 충격파 방향으로 돌아간다.
+        // (본체 방향은 발사 전 SetDirection으로만 정해지고 날아가는 동안에는 바뀌지 않는다.)
         UpdateTransform();
 
         // 본체는 예전과 같은 시간에 사라지고, 효과 레이어(흙먼지·소멸 흩날림)는 조금 더 남는다.
