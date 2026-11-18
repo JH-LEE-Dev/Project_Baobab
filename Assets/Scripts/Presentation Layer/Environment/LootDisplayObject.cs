@@ -143,6 +143,14 @@ namespace PresentationLayer.Environment
         private Action cachedOnEvolveBurst;
         // PlayGrowthEvolve가 진행 중인 연출을 끊고 다시 시작하는 동안 true. 그 사이 불리는 폭발 콜백에서 폭발음을 막는다.
         private bool bEvolveRestarting;
+        // 진화음을 낼 위치. 함께 진화하는 묶음(BeginEvolveBatch~EndEvolveBatch)이면 묶음 기둥들의 가운데, 혼자면 자기 위치다.
+        private Vector3 evolveSoundPosition;
+
+        // 진화음은 기둥마다 따로 내지 않고 하나를 같이 쓴다(커터 가공 루프처럼 여러 개가 겹치면 듣기 좋지 않다).
+        // 묶음으로 시작한 기둥들은 시작음을 묶음 끝에서 한 번만 내고, 같은 프레임에 터지는 폭발음도 한 번만 낸다.
+        private static readonly List<LootDisplayObject> evolveBatch = new List<LootDisplayObject>(8);
+        private static bool bEvolveBatching;
+        private static int lastEvolveBurstSoundFrame = -1;
 
         // 성장 뽀잉/번쩍임 상태. 기둥과 전리품을 기둥 바닥(growthPopAnchorWorld) 기준으로 함께 늘이고 줄인다.
         // 진화 연출(VFX_LootEvolve)은 폭발 직후까지 전리품의 부모(LootAnchor)를 흔든다. 전리품 자신의 위치(밑둥 맞춤, SetDisplayBase)를
@@ -538,8 +546,52 @@ namespace PresentationLayer.Environment
             bEvolveRestarting = false;
             pendingGrowthTier = _tier;
 
-            // 레벨업 시작음
-            Sound.Play(SoundID.SFXLevelUpAura01, transform.position);
+            // 레벨업 시작음. 묶음 중이면 묶음 끝(EndEvolveBatch)에서 한 번만 낸다.
+            evolveSoundPosition = transform.position;
+            if (true == bEvolveBatching)
+            {
+                if (false == evolveBatch.Contains(this)) evolveBatch.Add(this);
+                return;
+            }
+
+            Sound.Play(SoundID.SFXLevelUpAura01, evolveSoundPosition);
+        }
+
+        /// <summary>
+        /// 여러 기둥이 한꺼번에 진화할 때 PlayGrowthEvolve 호출들을 이것과 EndEvolveBatch 사이에 둔다.
+        /// 그 사이 진화를 시작한 기둥이 몇 개든 시작음·폭발음은 한 번씩만, 그 기둥들의 가운데에서 난다.
+        /// </summary>
+        public static void BeginEvolveBatch()
+        {
+            evolveBatch.Clear();
+            bEvolveBatching = true;
+        }
+
+        public static void EndEvolveBatch()
+        {
+            bEvolveBatching = false;
+
+            int _count = 0;
+            Vector3 _center = Vector3.zero;
+            for (int i = 0; i < evolveBatch.Count; i++)
+            {
+                if (null == evolveBatch[i]) continue;
+                _center += evolveBatch[i].evolveSoundPosition;
+                _count++;
+            }
+
+            if (0 < _count)
+            {
+                _center /= _count;
+                for (int i = 0; i < evolveBatch.Count; i++)
+                {
+                    if (null != evolveBatch[i]) evolveBatch[i].evolveSoundPosition = _center;
+                }
+
+                Sound.Play(SoundID.SFXLevelUpAura01, _center);
+            }
+
+            evolveBatch.Clear();
         }
 
         // 진화 연출의 폭발 시각: 이때 새 단계의 후광 색과 스프라이트로 바꾼다.
@@ -554,9 +606,14 @@ namespace PresentationLayer.Environment
             // 폭발음은 연출이 끝까지 진행돼 폭발 시각에 닿았을 때만 낸다(다시 시작/기둥이 꺼지며 정리될 때는 제외).
             if (true == bEvolveRestarting || false == isActiveAndEnabled) return;
 
-            Sound.Play(SoundID.SFXLevelUpAura, transform.position);
-            Sound.Play(SoundID.SFXLevelUpAura01, transform.position);
-            Sound.Play(SoundID.SFXLevelUpChime, transform.position);
+            // 함께 시작한 기둥들은 같은 프레임에 터진다. 그 프레임에 이미 폭발음이 났으면 다시 내지 않는다.
+            if (Time.frameCount != lastEvolveBurstSoundFrame)
+            {
+                lastEvolveBurstSoundFrame = Time.frameCount;
+                Sound.Play(SoundID.SFXLevelUpAura, evolveSoundPosition);
+                Sound.Play(SoundID.SFXLevelUpAura01, evolveSoundPosition);
+                Sound.Play(SoundID.SFXLevelUpChime, evolveSoundPosition);
+            }
 
             StartGrowthPop();
         }
