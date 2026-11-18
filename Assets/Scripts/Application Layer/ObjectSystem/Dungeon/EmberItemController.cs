@@ -276,6 +276,22 @@ public class EmberItemController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 기믹 안내 중 화살표가 떠 있는(바닥에 놓인) 불씨를 _results에 담는다. 안내 중이 아니면 비운 채로 둔다.
+    /// EnvironmentInteractionManager가 이 불씨를 가리는 나무를 반투명하게 할 때 쓴다.
+    /// </summary>
+    public void CollectGuideEmbers(List<EmberItem> _results)
+    {
+        _results.Clear();
+        if (false == bGuideActive) return;
+
+        for (int i = 0; i < activeEmbers.Count; i++)
+        {
+            EmberItem ember = activeEmbers[i];
+            if (ember != null && ember.GuideIndicator != null) _results.Add(ember);
+        }
+    }
+
     private void ShowGuideIndicator(EmberItem _ember)
     {
         if (_ember.GuideIndicator != null || guideIndicatorPrefab == null) return;

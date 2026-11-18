@@ -47,6 +47,8 @@ public class EmberItem : Item, IStaticCollidable
     // 둘 다 컨트롤러가 붙이고 뗀다. bGuideTracked는 ResetItem에서 내린다.
     public bool bGuideTracked { get; set; }
     public QuestIndicator GuideIndicator { get; set; }
+    // 정렬 기준 렌더러(바닥에 있을 때 불씨 연출이 이 정렬 순서를 따른다). 나무가 불씨를 가리는지 판정할 때 쓴다.
+    public SpriteRenderer SortingRenderer => spriteRenderer;
 
     private bool bNeedsUpdate;
 
