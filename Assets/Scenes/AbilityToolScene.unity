@@ -1522,6 +1522,52 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: 8a8014001c2e05d459af0ff79a8431bd, type: 3}
   - skillType: 164
     sprite: {fileID: 21300000, guid: 8a69633610f107c40a7a16157dc81a53, type: 3}
+  - skillType: 165
+    sprite: {fileID: 21300000, guid: 4316160308314eb4994ef2cb518a1a2f, type: 3}
+  - skillType: 166
+    sprite: {fileID: 21300000, guid: 860893d804ee4424d8f6fde24da641b1, type: 3}
+  - skillType: 167
+    sprite: {fileID: 21300000, guid: b2af57fe9066d2d4fad2a34810f1af96, type: 3}
+  - skillType: 168
+    sprite: {fileID: 21300000, guid: 84369ddcd5397cc4eb839e2930e57989, type: 3}
+  - skillType: 169
+    sprite: {fileID: 21300000, guid: 3c111bb282c694945a5d9103e16d0efa, type: 3}
+  - skillType: 170
+    sprite: {fileID: 21300000, guid: b02535aa290842042bd71575dbad3aa0, type: 3}
+  - skillType: 171
+    sprite: {fileID: 21300000, guid: d5a4d48deee32a941903fa324a9f4f67, type: 3}
+  - skillType: 172
+    sprite: {fileID: 21300000, guid: 3d2e42a6062ae88419d2020d20b08e3d, type: 3}
+  - skillType: 173
+    sprite: {fileID: 21300000, guid: 3fe0b006e2f5d274ca5dfe08d8cfe373, type: 3}
+  - skillType: 174
+    sprite: {fileID: 21300000, guid: e81dc1b490e5a1b45a657d402e0ebe66, type: 3}
+  - skillType: 175
+    sprite: {fileID: 21300000, guid: 669232fef594099429893480465ecfc2, type: 3}
+  - skillType: 176
+    sprite: {fileID: 21300000, guid: c4859921f6cf0684bb1c49898fd03ba2, type: 3}
+  - skillType: 177
+    sprite: {fileID: 21300000, guid: 0c2529f567d04374795984b0f123ca53, type: 3}
+  - skillType: 178
+    sprite: {fileID: 21300000, guid: 9fc299eff0fa4804096f4c3052783a40, type: 3}
+  - skillType: 179
+    sprite: {fileID: 21300000, guid: 4e60166b389407e49992fc1097cadf0f, type: 3}
+  - skillType: 180
+    sprite: {fileID: 21300000, guid: 330d7f8528bc0d24ea05df3331016b5a, type: 3}
+  - skillType: 181
+    sprite: {fileID: 21300000, guid: 8a69633610f107c40a7a16157dc81a53, type: 3}
+  - skillType: 182
+    sprite: {fileID: 21300000, guid: 8a8014001c2e05d459af0ff79a8431bd, type: 3}
+  - skillType: 183
+    sprite: {fileID: 21300000, guid: 2c1ffb93b931f8449b6293a93893bbb4, type: 3}
+  - skillType: 184
+    sprite: {fileID: 21300000, guid: bf4471c29610a264c8300adb8c48c584, type: 3}
+  - skillType: 185
+    sprite: {fileID: 21300000, guid: 57589cbefec41b94589094e99b38e086, type: 3}
+  - skillType: 186
+    sprite: {fileID: 21300000, guid: 1754313e9ce79f7418c8da805f487ea7, type: 3}
+  - skillType: 187
+    sprite: {fileID: 21300000, guid: c332136eb1a0ce945b2084e0d911a5b5, type: 3}
   levelBadgeBindings:
   - levelBadge: 1
     sprite: {fileID: 8086268826789988410, guid: 914ac703c90021144a8a7973a041eeff, type: 3}
