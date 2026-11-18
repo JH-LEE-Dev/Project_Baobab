@@ -10,7 +10,7 @@ namespace PresentationLayer.VFX
     ///  튀는 조각은 칸 밖으로 나가야 하므로 UI_ChallengeClearShards(판 아래 공용 층)가 그린다.
     ///  칸 테두리가 없어져 이전의 칸 번쩍 · 테두리를 도는 빛 · 칸 전체 광택 · 테두리 반짝임은 없다.
     ///
-    /// 그리는 방식: 칸 전체를 덮는 UI_LootGlowParticles(원점 = 칸 왼쪽 아래, 1 캔버스 단위 = 게임 1px)에 정수 사각형을 쌓는다. 30fps 틱이 바뀔 때만 다시 그리고 Commit한다.
+    /// 그리는 방식: 칸 전체를 덮는 UI_LootGlowParticles(원점 = 칸 왼쪽 아래, 1 캔버스 단위 = 게임 1px)에 정수 사각형을 쌓는다. 60fps 틱이 바뀔 때만 다시 그리고 Commit한다.
     /// 시뮬레이션은 640x360 게임 픽셀에 y가 아래로 증가하므로, 칸 왼쪽 위 기준 "시뮬레이션 좌표"로 계산해 그릴 때만 UGUI 좌표(y 위로 증가)로 뒤집는다.
     /// 정점 알파 = 가산 세기(UIGlow 가산 모드, _GlowMax 1). 시간은 호출 측이 넘기는 unscaled 시간이고 난수는 인스턴스별 xorshift라 전역 상태를 건드리지 않는다.
     /// 광택의 가산 세기는 기존 칸 광택과 같은 값(띠 0.10, 가운데 2px 심 0.16)을 쓴다(가산이라 시뮬레이션의 알파 블렌드 0.22 / 0.30을 그대로 쓰면 너무 밝다).
@@ -37,9 +37,9 @@ namespace PresentationLayer.VFX
         private static readonly Color32 ColorTwinkleLight = new Color32(0xFF, 0xF6, 0xC8, 255);
         private static readonly Color32 ColorTwinkleGold = new Color32(0xFF, 0xE0, 0x8A, 255);
 
-        private const float TickRate = 30.0f;
+        private const float TickRate = 60.0f;
         private const float TickInterval = 1.0f / TickRate;
-        private const int MaxCatchUpTicks = 6;
+        private const int MaxCatchUpTicks = 12;
         // 등장 요소 없이 반복 연출만 돌릴 때의 시작 시각(펼침이 끝난 뒤)
         private const float RepeatStartTime = 1.0f;
 
@@ -61,7 +61,7 @@ namespace PresentationLayer.VFX
         private const int TwinkleEdgeMargin = 6;
 
         private const int MoteCapacity = 24;
-        private const float MoteSpawnChance = 0.10f;
+        private const float MoteSpawnChance = 0.05f;
         private const int MoteSpawnMargin = 4;
         private const int MoteSpawnBottom = 2;
         private const int MoteTopMargin = 1;
@@ -152,7 +152,7 @@ namespace PresentationLayer.VFX
             ApplyReveal(1.0f);
         }
 
-        /// <summary>_deltaTime(unscaled)만큼 진행한다. 30fps 틱 번호가 바뀔 때만 다시 그리고 Commit한다.</summary>
+        /// <summary>_deltaTime(unscaled)만큼 진행한다. 60fps 틱 번호가 바뀔 때만 다시 그리고 Commit한다.</summary>
         public void Tick(float _deltaTime)
         {
             if (false == bPlaying || null == graphic) return;
@@ -245,7 +245,7 @@ namespace PresentationLayer.VFX
             PutRect(_x, _y + 1, 1, _arm, _color);
         }
 
-        // 틱 하나: 금가루 생성(칸당 확률 0.10, 펼침이 끝난 뒤부터) 뒤 이동 · 소멸
+        // 틱 하나: 금가루 생성(칸당 확률 0.05, 초당 약 3개, 펼침이 끝난 뒤부터) 뒤 이동 · 소멸
         private void StepMotes()
         {
             bool bRevealed = RevealSeconds <= simTick * TickInterval - delay;

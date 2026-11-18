@@ -174,6 +174,12 @@ public class UIView_ESC : UIView
 
         isClosing = false;
         isOpeningOption = false;
+
+        // Overlay 루트에는 로그라이크 카드 선택 · 보유 카드 · 결과 창이 ESC보다 나중에 생성되어 형제 순서상 앞에 그려진다.
+        // ESC 메뉴는 항상 그 위에 보여야 하므로 열릴 때마다 Overlay 루트의 마지막 형제(= 가장 앞)로 올린다.
+        // 옵션 창(UI_Option)은 ESC 프리팹의 자식이라 함께 올라간다.
+        transform.SetAsLastSibling();
+
         base.Show();
     }
 

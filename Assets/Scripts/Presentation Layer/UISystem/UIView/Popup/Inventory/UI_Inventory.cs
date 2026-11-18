@@ -452,7 +452,7 @@ public class UI_Inventory : MonoBehaviour
 
     /// <summary>
     /// [로그라이크 전용] 인벤토리 HUD(가방·용량 게이지·열기 키 아이콘)를 켜고 끈다. 로그라이크는 아이템 드롭·인벤토리를 쓰지 않아
-    /// 표시하지 않는다(기획서 v2.2 10-1). 코인 HUD는 런 골드를 보여 주므로 그대로 둔다. 본편에서는 호출되지 않는다.
+    /// 표시하지 않는다. 코인 HUD도 런 동안 SetCoinVisibleForRun으로 따로 숨긴다. 본편에서는 호출되지 않는다.
     /// </summary>
     public void SetInventoryVisibleForRun(bool _bVisible)
     {
@@ -465,9 +465,6 @@ public class UI_Inventory : MonoBehaviour
         if (null != iconsRoot)
             iconsRoot.gameObject.SetActive(_bVisible);
     }
-
-    /// <summary>[로그라이크 전용] 코인 HUD의 RectTransform.</summary>
-    public RectTransform CoinCounterRectForRun => null != uiCoin ? uiCoin.transform as RectTransform : null;
 
     /// <summary>
     /// 특정 인벤토리 슬롯의 스마트 스왑 아웃라인을 켜고, 공유 인디케이터를 대상 슬롯 위치로 이동시켜 활성화합니다.

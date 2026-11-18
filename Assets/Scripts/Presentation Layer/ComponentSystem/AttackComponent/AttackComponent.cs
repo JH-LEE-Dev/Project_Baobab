@@ -53,6 +53,9 @@ public class AttackComponent : PComponent
     private float extraShockWaveWaitSeconds = -1f;
     private WaitForSeconds extraStrikeWait;
     private float extraStrikeWaitSeconds = -1f;
+    // [로그라이크] 회전베기 추가 회전 사이 대기(칼날 한 바퀴 시간). 값이 바뀔 때만 새로 만든다.
+    private WaitForSeconds whirlwindRepeatWait;
+    private float whirlwindRepeatWaitSeconds = -1f;
 
     private static WaitForSeconds GetCachedWait(ref WaitForSeconds _cache, ref float _cachedSeconds, float _seconds)
     {
@@ -192,7 +195,6 @@ public class AttackComponent : PComponent
         public ExtraStrikeTarget target;
         public float time;
         public Vector2 direction;    // 회전베기 중심에서 나무 쪽(월드). 카메라 찍기 방향.
-        public bool bExtraStrike;    // [로그라이크] 도끼 연속 타격으로 덧붙은 타격
     }
 
     private Stack<List<WhirlwindHit>> whirlwindHitListPool;
@@ -518,6 +520,10 @@ public class AttackComponent : PComponent
             whirlwindVfx = WhirlwindVFX.Spawn(centerPos, effectiveEllipseRadius);
             WhirlwindStrikeEvent?.Invoke();
             CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
+
+            // [로그라이크] 다다익선: 첫 회전이 끝난 직후 추가 회전을 이어 건다(본편은 AxeExtraStrikes가 0이라 걸리지 않는다).
+            // 첫 회전에 맞는 나무가 없어 아래에서 일찍 반환돼도 추가 회전은 나가므로 탐색보다 먼저 건다.
+            if (RunCombatOverrides.AxeExtraStrikes > 0) StartCoroutine(WhirlwindRepeatRoutine(RunCombatOverrides.AxeExtraStrikes));
         }
 
         // 1단계: 타원 판정 범위를 모두 포함할 수 있도록 타원의 장반경(effectiveEllipseRadius)으로 1차 탐색
@@ -720,7 +726,7 @@ public class AttackComponent : PComponent
         }
 
         // [로그라이크] 루비 다다익선 "도끼 공격 연속 2회 타격": 방금 맞힌 대상을 간격을 두고 한 번 더 친다. 본편은 덮어쓰기 값이 0이라 지나가지 않는다.
-        // 회전베기는 순차 타격 목록에 연속 타격을 함께 넣었으므로(QueueWhirlwindSweep) 여기서 다시 걸지 않는다.
+        // 회전베기는 이 연속 타격 대신 첫 회전 직후 추가 회전을 연다(WhirlwindRepeatRoutine, 위 회전베기 발동부에서 건다).
         if (bAxeHit && RunCombatOverrides.AxeExtraStrikes > 0 && false == bIsWhirlwindStrike)
         {
             if (null == extraStrikeListPool) extraStrikeListPool = new Stack<List<ExtraStrikeTarget>>(4);
@@ -939,7 +945,7 @@ public class AttackComponent : PComponent
 
     /// <summary>
     /// 회전베기 순차 타격을 건다. multiAttackResults의 대상마다 이펙트 칼날이 그 방향을 지나는 시각을 구해 그 순서대로 친다.
-    /// [로그라이크] 도끼 연속 타격이 있으면 대상마다 자기 타격 시각 + 간격 × n에 다시 친다(본편은 0회).
+    /// 한 회전에 대상마다 한 번만 친다(다다익선의 연속 2회전은 WhirlwindRepeatRoutine이 추가 회전을 따로 연다).
     /// 실제로 걸린 타격이 있으면 _bAnyQueued가 true이고, 걸린 나무 중 가장 가까운 것을 돌려준다(공격당 1회 충격파 판정용).
     /// _vfx(없으면 null)에는 칼날이 나무를 벨 때마다 그 자리를 알려 베인 자국과 불꽃을 낸다.
     /// </summary>
@@ -950,9 +956,6 @@ public class AttackComponent : PComponent
         if (null == whirlwindHitListPool) whirlwindHitListPool = new Stack<List<WhirlwindHit>>(2);
         List<WhirlwindHit> hits = 0 < whirlwindHitListPool.Count ? whirlwindHitListPool.Pop() : new List<WhirlwindHit>(32);
         hits.Clear();
-
-        int extraStrikes = Mathf.Max(0, RunCombatOverrides.AxeExtraStrikes);
-        float extraDelay = RunCombatOverrides.AxeExtraStrikeDelay;
 
         TreeObj nearestTree = null;
         float nearestDistSq = float.MaxValue;
@@ -968,11 +971,7 @@ public class AttackComponent : PComponent
             ExtraStrikeTarget strikeTarget = MakeStrikeTarget(damageable);
             Vector2 direction = (Vector2)offset;
 
-            InsertWhirlwindHit(hits, new WhirlwindHit { target = strikeTarget, time = time, direction = direction, bExtraStrike = false });
-            for (int n = 1; n <= extraStrikes; n++)
-            {
-                InsertWhirlwindHit(hits, new WhirlwindHit { target = strikeTarget, time = time + extraDelay * n, direction = direction, bExtraStrike = true });
-            }
+            InsertWhirlwindHit(hits, new WhirlwindHit { target = strikeTarget, time = time, direction = direction });
 
             if (target is TreeObj tree)
             {
@@ -1004,6 +1003,94 @@ public class AttackComponent : PComponent
         _hits.Insert(index, _hit);
     }
 
+    /// <summary>
+    /// [로그라이크 전용] 루비 다다익선 "회전베기 연속 2회전". 첫 회전의 칼날이 한 바퀴를 다 돈 직후마다(WhirlwindVFX.SweepDuration) 추가 회전을 연다.
+    /// _count는 RunCombatOverrides.AxeExtraStrikes(= 추가 회전 수)이고, 추가 회전은 다시 추가 회전을 만들지 않으므로 이 루틴 하나가 순서대로 연다.
+    /// 귀환 확정 · 조작 잠금 등으로 공격할 수 없게 되면 남은 추가 회전은 버린다(WhirlwindSweepRoutine과 같은 규칙).
+    /// </summary>
+    private System.Collections.IEnumerator WhirlwindRepeatRoutine(int _count)
+    {
+        for (int n = 0; n < _count; n++)
+        {
+            yield return GetCachedWait(ref whirlwindRepeatWait, ref whirlwindRepeatWaitSeconds, WhirlwindVFX.SweepDuration);
+            if (false == bCanAttack) yield break;
+
+            PlayExtraWhirlwind();
+        }
+    }
+
+    /// <summary>
+    /// 추가 회전 1회. 중심은 그 순간의 플레이어 위치이고, 반경 · 피해 배율은 첫 회전과 같은 식으로 구한다(Attack의 회전베기 경로).
+    /// 이펙트를 다시 띄우고 대상을 다시 탐색한 뒤 QueueWhirlwindSweep으로 순차 타격한다. 탐색 → 큐 등록은 한 프레임 안에서 끝내
+    /// 공유 버퍼(collisionResults · multiAttackResults · axeOnlyHits)를 다른 공격과 섞어 쓰지 않는다.
+    /// 첫 회전에서 이미 처리한 휘두름 카운트 · NotifyAxeSwung · 마스터리/공격당 충격파 · AttackSuccessEvent · WhirlwindStrikeEvent는 다시 내지 않는다.
+    /// 첫 회전의 탐색 루프(Attack)와 같은 규칙이며, 그 루프는 건드리지 않으려고 회전베기 분기만 여기에 따로 둔다.
+    /// </summary>
+    private void PlayExtraWhirlwind()
+    {
+        if (null == CollisionSystem.Instance) return;
+
+        Vector3 centerPos = transform.position;
+
+        float effectiveEllipseRadius = ellipseAttackRadius * ctx.characterStat.axeAttackRangeMultiplier;
+        float whirlwindRangeMultiplier = WhirlwindBaseRangeMultiplier * RunCombatOverrides.WhirlwindRangeMultiplier;
+        float whirlwindDamageMultiplier = WhirlwindBaseDamageMultiplier * RunCombatOverrides.WhirlwindDamageMultiplier;
+        effectiveEllipseRadius *= whirlwindRangeMultiplier;
+
+        WhirlwindVFX whirlwindVfx = WhirlwindVFX.Spawn(centerPos, effectiveEllipseRadius);
+        CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
+
+        CollisionSystem.Instance.GetCollidablesInRadius(centerPos, effectiveEllipseRadius, targetLayer, collisionResults);
+
+        Vector3 attackDirVec = attackPointTransform.position - centerPos;
+        Vector3 isoAttackDir = Vector3.right;
+        if (attackDirVec.sqrMagnitude > 0.0001f)
+        {
+            isoAttackDir = new Vector3(attackDirVec.x, attackDirVec.y * 2f, 0f).normalized;
+        }
+
+        float radiusSq = effectiveEllipseRadius * effectiveEllipseRadius;
+        multiAttackResults.Clear();
+        axeOnlyHits.Clear();
+
+        for (int i = 0; i < collisionResults.Count; i++)
+        {
+            IStaticCollidable target = collisionResults[i];
+
+            // 묘목은 어떤 상호작용도 받지 않는다(첫 회전과 같다).
+            if (target is IDamageable targetDamageable && false == targetDamageable.bCanApplyDamage) continue;
+
+            // 스텔라의 별 같은 도끼 전용 대상: 360도는 스텔라 III(bSkillsHitRunTargets)에서만, 아니면 평소 휘두름 범위(첫 회전과 같다).
+            if (target is IBasicAxeOnlyTarget axeOnly)
+            {
+                bool bAxeOnlyFullCircle = RunCombatOverrides.bSkillsHitRunTargets;
+                float axeOnlyRadius = false == bAxeOnlyFullCircle ? ellipseAttackRadius * ctx.characterStat.axeAttackRangeMultiplier : effectiveEllipseRadius;
+                if (IsAxeOnlyTargetInSwing(target, axeOnly, centerPos, isoAttackDir, axeOnlyRadius, bAxeOnlyFullCircle)) axeOnlyHits.Add(target);
+                continue;
+            }
+
+            // 등각 타원 거리로 2차 필터링. 회전베기는 360도 전체를 친다.
+            Vector3 targetPos = target.Position + target.Offset;
+            if (GetIsometricDistSq(targetPos, centerPos) > radiusSq) continue;
+
+            multiAttackResults.Add(target);
+        }
+
+        if (0 < multiAttackResults.Count)
+        {
+            // 내구도 · 콤보(AttackSuccessEvent)와 충격파 기준 나무는 첫 회전에서만 처리하므로 반환값은 쓰지 않는다.
+            QueueWhirlwindSweep(centerPos, whirlwindDamageMultiplier, whirlwindVfx, out _);
+        }
+
+        // 범위 안의 별은 첫 회전처럼 회전 시작 순간 맞는다.
+        for (int i = 0; i < axeOnlyHits.Count; i++)
+        {
+            if (axeOnlyHits[i] is IDamageable axeOnlyTarget && axeOnlyTarget.bCanApplyDamage) ProcessAxeHit(axeOnlyTarget, centerPos);
+        }
+
+        axeOnlyHits.Clear();
+    }
+
     private System.Collections.IEnumerator WhirlwindSweepRoutine(List<WhirlwindHit> _hits, Vector3 _center, float _damageScale, WhirlwindVFX _vfx, int _vfxPlayId)
     {
         try
@@ -1018,8 +1105,6 @@ public class AttackComponent : PComponent
 
                 if (_hits[next].time <= elapsed)
                 {
-                    bool bExtraHit = false;
-
                     // 같은 프레임에 칼날이 지난 나무들의 타일맵 쓰기는 한 번에 반영한다(TreeTileWriteBatch 참고).
                     TreeTileWriteBatch.Begin();
                     try
@@ -1031,26 +1116,13 @@ public class AttackComponent : PComponent
 
                             ProcessAxeHit(hit.target.target, _center, _damageScale);
 
-                            if (hit.bExtraStrike)
-                            {
-                                bExtraHit = true;
-                            }
-                            else
-                            {
-                                // 베인 자리(나무 판정점)에 베인 자국과 불꽃. 풀에서 다른 회전베기로 다시 쓰였으면 VFX가 번호로 거른다.
-                                if (null != _vfx) _vfx.AddHit(_vfxPlayId, _center + (Vector3)hit.direction, hit.direction);
-                            }
+                            // 베인 자리(나무 판정점)에 베인 자국과 불꽃. 풀에서 다른 회전베기로 다시 쓰였으면 VFX가 번호로 거른다.
+                            if (null != _vfx) _vfx.AddHit(_vfxPlayId, _center + (Vector3)hit.direction, hit.direction);
                         }
                     }
                     finally
                     {
                         TreeTileWriteBatch.End();
-                    }
-
-                    // 회전베기 카메라 흔들림은 발동 순간 한 번뿐이다. 연속 타격(로그라이크)만 예전처럼 맞힐 때 짧게 흔든다.
-                    if (bExtraHit)
-                    {
-                        CameraMoveController.Instance?.ShakeCameraIfStronger(1.2f, 0.08f);
                     }
                 }
 

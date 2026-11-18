@@ -62,9 +62,8 @@ public static class RoguelikeLobbyUIBuilder
     private static readonly Color ScrollTrackColor = new Color32(0x3A, 0x26, 0x1C, 255);
     private static readonly Color ScrollThumbColor = new Color32(0xCA, 0x8F, 0x73, 255);
     private const float ScrollbarThickness = 3f;
-    // 카드 띠 연결선(주황 단색 2개)과 띠 들여쓰기(UIView_RoguelikeRecords.StripIndent와 같은 14)
+    // 카드 띠 연결선(주황 단색 2개)
     private static readonly Color StripLinkColor = new Color32(0xFF, 0x9D, 0x2E, 255);
-    private const float StripIndentWidth = 14f;
 
     private static readonly Color DimColor = new Color(0.02f, 0.03f, 0.06f, 0.6f);
     private static readonly Color CreamColor = new Color(0.95f, 0.89f, 0.77f, 1f);
@@ -485,7 +484,7 @@ public static class RoguelikeLobbyUIBuilder
             UI_OptionButton backButton = CreateBackButton(panel, a, out UI_KeyboardImage backKey);
             if (null == backButton) return;
 
-            // 튀는 조각 공용 층: 판 전체를 덮고 본문 RectMask2D 밖(Body보다 뒤 형제 = 위에 그려짐)이라 칸 밖으로 나가도 잘리지 않는다. 마우스를 받지 않는다.
+            // 튀는 조각 공용 층: 판 전체를 덮고 본문 RectMask2D 밖(Body보다 뒤 형제 = 위에 그려짐)이라 칸 밖으로는 튀되, 본문 뷰포트 밖은 UI_ChallengeClearShards가 코드로 잘라낸다. 마우스를 받지 않는다.
             UI_LootGlowParticles shardsGraphic = CreateGlowGraphic("ClearShards", panel, clearMaterial);
             UI_ChallengeClearShards clearShards = shardsGraphic.gameObject.AddComponent<UI_ChallengeClearShards>();
             SerializedObject shardsSo = new SerializedObject(clearShards);

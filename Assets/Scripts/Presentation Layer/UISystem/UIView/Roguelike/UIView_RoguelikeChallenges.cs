@@ -63,7 +63,7 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
     private const float HeaderGaugeShineSpeed = 90f;
     private const int HeaderGaugeShineMargin = 40;
     private const int HeaderGaugeShineWidth = 3;
-    private const float HeaderTickRate = 30f;
+    private const float HeaderTickRate = 60f;
     // 칸 안 리본 위아래 여백(윗선 1 + 여백 2 / 여백 2 + 아랫선 1)
     private const int RibbonInkPadding = 3;
     private const int DefaultRibbonHeight = 15;
@@ -316,6 +316,7 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
     private void PlayClearGlows()
     {
         if (null != clearShards) clearShards.Clear();
+        SyncShardView();
 
         int order = 0;
         int visibleOrder = 0;
@@ -353,12 +354,17 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
             if (true == bVisible)
             {
                 visibleClearedOrder++;
-                if (null != clearShards)
+                if (null != clearShards && null != rowRoot)
                 {
-                    // 튀는 조각은 펼침이 끝난 리본 위에서 터진다(시작점 = 리본 몸통 사각형).
+                    // 튀는 조각은 펼침이 끝난 리본 위에서 터진다(시작점 = 리본 몸통 사각형). (좌표는 본문 내용 기준 - 스크롤하면 칸을 따라간다)
                     row.GetRibbonRect(out int ribbonX, out int ribbonY, out int ribbonWidth, out int ribbonRectHeight);
-                    Vector3 local = clearShards.transform.InverseTransformPoint(row.Rect.TransformPoint(new Vector3(ribbonX, -ribbonY, 0f)));
-                    clearShards.Burst(new Vector2(Mathf.Round(local.x), Mathf.Round(local.y)), ribbonWidth, ribbonRectHeight, delay + UI_ChallengeClearGlow.RevealSeconds, ClearShardSeedBase + order * ClearShardSeedStep);
+                    Transform layer = clearShards.transform;
+                    Vector3 local = layer.InverseTransformPoint(row.Rect.TransformPoint(new Vector3(ribbonX, -ribbonY, 0f)));
+                    Vector3 origin = layer.InverseTransformPoint(rowRoot.TransformPoint(Vector3.zero));
+                    Vector3 rowTop = layer.InverseTransformPoint(row.Rect.TransformPoint(new Vector3(0f, row.Rect.rect.yMax, 0f)));
+                    float originX = Mathf.Round(origin.x);
+                    float originY = Mathf.Round(origin.y);
+                    clearShards.Burst(new Vector2(Mathf.Round(local.x) - originX, Mathf.Round(local.y) - originY), ribbonWidth, ribbonRectHeight, Mathf.Round(rowTop.y) - originY, row.Rect.rect.height, delay + UI_ChallengeClearGlow.RevealSeconds, ClearShardSeedBase + order * ClearShardSeedStep);
                 }
             }
 
@@ -376,10 +382,11 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
         if (null != clearShards) clearShards.Clear();
     }
 
-    /// <summary>매 프레임(unscaled): 조각 층과, 본문 뷰포트와 세로로 겹치는 칸의 등장 연출 · 달성 칸 리본 연출만 30fps로 진행한다. 가려진 칸은 멈췄다가 다시 보이면 이어서 돈다.</summary>
+    /// <summary>매 프레임(unscaled): 조각 층에 지금 스크롤 위치를 먼저 넘긴 뒤, 조각 층과, 본문 뷰포트와 세로로 겹치는 칸의 등장 연출 · 달성 칸 리본 연출만 60fps로 진행한다. 가려진 칸은 멈췄다가 다시 보이면 이어서 돈다.</summary>
     private void TickClearGlows()
     {
         float deltaTime = Time.unscaledDeltaTime;
+        SyncShardView();
         if (null != clearShards) clearShards.Tick(deltaTime);
 
         for (int i = 0; rows.Count > i; i++)
@@ -400,6 +407,19 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
 
         float top = rowRoot.anchoredPosition.y + _row.anchoredPosition.y;
         return top > -bodyViewport.rect.height && top - _row.rect.height < 0f;
+    }
+
+    /// <summary>조각 층에 내용 원점(정수 px)과 본문 뷰포트 사각형(위 · 아래 · 왼 · 오른)을 그 층의 로컬 좌표로 넘긴다. 할당 없음.</summary>
+    private void SyncShardView()
+    {
+        if (null == clearShards || null == rowRoot || null == bodyViewport) return;
+
+        Transform layer = clearShards.transform;
+        Vector3 origin = layer.InverseTransformPoint(rowRoot.TransformPoint(Vector3.zero));
+        Rect viewRect = bodyViewport.rect;
+        Vector3 viewTopLeft = layer.InverseTransformPoint(bodyViewport.TransformPoint(new Vector3(viewRect.xMin, viewRect.yMax, 0f)));
+        Vector3 viewBottomRight = layer.InverseTransformPoint(bodyViewport.TransformPoint(new Vector3(viewRect.xMax, viewRect.yMin, 0f)));
+        clearShards.SetView(new Vector2Int(Mathf.RoundToInt(origin.x), Mathf.RoundToInt(origin.y)), Mathf.Round(viewTopLeft.y), Mathf.Round(viewBottomRight.y), Mathf.Round(viewTopLeft.x), Mathf.Round(viewBottomRight.x));
     }
 
     // // 칸 · 배치 (정수 픽셀)
@@ -582,7 +602,7 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
     }
 
     /// <summary>
-    /// 매 프레임(unscaled): 30fps 틱이 바뀔 때만 게이지를 다시 그린다. 채움은 0.15 ~ 0.65초에 0 -> 달성 비율(OutCubic),
+    /// 매 프레임(unscaled): 60fps 틱이 바뀔 때만 게이지를 다시 그린다. 채움은 0.15 ~ 0.65초에 0 -> 달성 비율(OutCubic),
     /// 채운 구간 안에서만 3x4 흰색 45% 광택이 초당 90px로 왼 -> 오른쪽으로 지나가고, 25 · 50 · 75% 눈금이 위에 겹친다.
     /// </summary>
     private void TickHeaderGauge(float _deltaTime)
@@ -763,6 +783,7 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
     private void OnBodyScrolled(Vector2 _normalized)
     {
         UpdateBodyBar();
+        SyncShardView();
     }
 
     private void UpdateBodyBar()

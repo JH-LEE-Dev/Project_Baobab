@@ -8,8 +8,7 @@ using UnityEngine.UI;
 /// <summary>
 /// 카드 선택 화면. 기획서 v2.4 4-1·4-2 "선택 단계 규칙", 10-2 "카드 선택 화면 조작"·"카드 선택 화면 연출", 10-3 "카드 UI 연출".
 ///
-/// [v2.4] 골드·가격·건너뛰기·감정이 없다. 카드는 모두 무료이고, 한 장 고르거나 선택 단계마다 1회 리롤한다.
-///   OpenSelection/ReplaceOffers의 골드·리롤 비용·건너뛰기·첫 선택 인자는 시스템 코드가 정리될 때까지 시그니처에만 남아 있고 UI는 쓰지 않는다.
+/// 골드·가격·건너뛰기·감정이 없다. 카드는 모두 무료이고, 한 장 고르거나 선택 단계마다 1회 리롤한다.
 ///
 /// [시스템 → 뷰] RoguelikeUICoordinator가 아래 public 메서드를 부른다.
 /// [뷰 → 시스템] 플레이어 입력은 이벤트로만 올린다. 뷰는 선택 판정을 하지 않는다(시스템이 거절하면 PlayRejected로 돌려준다).
@@ -165,12 +164,11 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     private Vector2 shakeBasePosition;
     private float shakeTime;
 
-    public IReadOnlyList<RoguelikeCardViewData> Offers => offers;
     /// <summary>이번 선택 단계에서 리롤을 쓸 수 있는가(선택 단계마다 1회).</summary>
     public bool bCanReroll { get; private set; }
 
     /// <summary>
-    /// [시스템 연결 지점] 왼쪽 위 WAVE 배지. 언리밋이면 Unlimit-N. 한 번도 부르지 않으면 배지를 숨긴다(LobbyRemoval_AppLayer_Request.md).
+    /// [시스템 연결 지점] 왼쪽 위 WAVE 배지. 언리밋이면 Unlimit-N. 한 번도 부르지 않으면 배지를 숨긴다(기획서 v3.2 C-2).
     /// </summary>
     public void SetWave(int _waveNumber, bool _bUnlimit, int _unlimitIndex)
     {
@@ -245,7 +243,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         if (null != tray) tray.HoldPreviousCount();
     }
 
-    /// <summary>건너뛰기 등으로 구매 없이 닫는다. 화면 전체가 흐려지며 닫힌 뒤 _onComplete를 부른다.</summary>
+    /// <summary>런 강제 종료 등으로 구매 없이 닫는다. 화면 전체가 흐려지며 닫힌 뒤 _onComplete를 부른다.</summary>
     public virtual void CloseSelection(Action _onComplete)
     {
         if (false == IsVisible)

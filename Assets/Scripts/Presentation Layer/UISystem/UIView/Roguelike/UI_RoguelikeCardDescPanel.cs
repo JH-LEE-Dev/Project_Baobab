@@ -139,18 +139,6 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
 
     // // 측정 (패널이 그 내용으로 그려진 채 남는다. 부른 쪽이 끝나고 Clear나 다시 그리기로 정리한다)
 
-    public float MeasureCardWidth(in RoguelikeCardViewData _data)
-    {
-        ApplyCardTexts(in _data);
-        return RequiredWidth();
-    }
-
-    public float MeasureOwnedWidth(in RoguelikeOwnedCardViewData _data)
-    {
-        ApplyOwnedTexts(in _data);
-        return RequiredWidth();
-    }
-
     public float MeasureOwnedHeight(in RoguelikeOwnedCardViewData _data)
     {
         SetOwnedCard(in _data);
@@ -161,12 +149,6 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
     {
         SetCard(in _data);
         return TargetHeight;
-    }
-
-    public float MeasureInfoWidth(string _name, string _description)
-    {
-        ApplyTexts(_name, string.Empty, _description);
-        return RequiredWidth();
     }
 
     public float MeasureInfoHeight(string _name, string _description)

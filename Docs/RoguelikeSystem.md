@@ -1,6 +1,6 @@
 # 로그라이크 모드 시스템 안내
 
-노션 기획서 "로그라이크 모드 — 코어 루프 기획서"를 구현한 시스템이다. 현재 기준은 [기획서 v2.7](Roguelike/Roguelike_Planning_v2.7.md)이고(2026-10-22 적용: 임계치 50 · 스폰 상한 80 · 웨이브표 v2.7 · 유예 = 반복 피해 간격 4초 · 피해 쿨다운 카드 삭제(27장) · 이동속도 대쉬 2개 · 범위 패시브 도끼 동시 타격 · 부메랑 나무 조준 · 충격파 · 스텔라 · 오프로드 · 회전베기 수치 · 포자 조합 3종 대폭발 · 오염 · 묘목 복귀 연출 · 스텔라 · 오프로드 이펙트 연동. 그 전 v2.5(2026-10-21): 초기 나무 = 임계치의 절반 · 3초 묶음 분산 스폰 · 섬 가장자리 1칸 제외 · 4티어 용암 피해 제거 · 드론 자동 발사와 체인 확대 · 오프로드 소환 위치 · 스텔라 별 타격 판정과 4티어 폭발 상한 · 포자 수류탄 비행 · 착지 연출. 그 전 v2.4: 골드 제거 · 카드 25장 · 액티브 7레벨 · 리롤 선택마다 1회 · 건너뛰기 없음 · 포자 오염), UI 할 일은 [UI 작업 목록](Roguelike/UI_WorkList.md)에 모았다.
+노션 기획서 "로그라이크 모드 — 코어 루프 기획서"를 구현한 시스템이다. 현재 기준은 [기획서 v3.2](Roguelike/Roguelike_Planning_v3.2.md)이고(2026-10-22 적용: 임계치 50 · 스폰 상한 80 · 웨이브표 v2.7 · 유예 = 반복 피해 간격 4초 · 피해 쿨다운 카드 삭제(27장) · 이동속도 대쉬 2개 · 범위 패시브 도끼 동시 타격 · 부메랑 나무 조준 · 충격파 · 스텔라 · 오프로드 · 회전베기 수치 · 포자 조합 3종 대폭발 · 오염 · 묘목 복귀 연출 · 스텔라 · 오프로드 이펙트 연동. 그 전 v2.5(2026-10-21): 초기 나무 = 임계치의 절반 · 3초 묶음 분산 스폰 · 섬 가장자리 1칸 제외 · 4티어 용암 피해 제거 · 드론 자동 발사와 체인 확대 · 오프로드 소환 위치 · 스텔라 별 타격 판정과 4티어 폭발 상한 · 포자 수류탄 비행 · 착지 연출. 그 전 v2.4: 골드 제거 · 카드 25장 · 액티브 7레벨 · 리롤 선택마다 1회 · 건너뛰기 없음 · 포자 오염), UI 할 일은 [기획서 v3.2 10장](Roguelike/Roguelike_Planning_v3.2.md)에 모았다.
 UI·이펙트는 이 시스템 위에 각 담당이 입힌다. 이 문서는 어디에 무엇을 꽂으면 되는지 정리한다.
 
 ## 0. 실행 방법 (UI·이펙트 담당은 여기부터)
@@ -135,7 +135,7 @@ UIView는 API(퍼블릭 메서드·이벤트)와 입력 모드 처리까지만 �
 - 카드 데이터(`RoguelikeCardViewData`)에 판단이 끝나 있다: 표시 프레임(일반 = `Bronze`, 에메랄드·프리즘·계약 자동), 고른 뒤 레벨과 레벨 상한(액티브 7 · 패시브 5), 처음 보는 카드(자물쇠 연출), 레어 여부(`CardRarity.IsRare`). `price`(0)·`bAffordable`(true)은 v2.4에서 의미가 없다.
 - `PlayPurchase`/`CloseSelection`의 완료 콜백을 **반드시** 불러야 시스템이 다음 단계로 간다(안 부르면 10초 뒤 강제 진행).
 - 대쉬 게이지도 본편 것이 그대로 뜬다: 이동속도 증가 3 · 5레벨에 `Character.SetDashForRun`이 대쉬를 열면 `IDashState`를 읽는 하단 HUD `HUD_DashGauge`와 캐릭터 발밑 `UI_DashCharaGauge`(최대 2칸)가 보인다. 로그라이크 전용 대쉬 UI는 만들지 않는다.
-- v2.6 · v2.7에서 생긴 카드 효과 4종(`ShockwaveFireOnWhiff` · `DashChargeAdd` · `AxeTargetCountAdd` · `ShockwaveDamageScalePercent`)은 `RoguelikeUI.json`에 효과 문구 키가 없다. 목록과 단위는 [UI 작업 목록](Roguelike/UI_WorkList.md) 3-2.
+- v2.6 · v2.7에서 생긴 카드 효과 4종(`ShockwaveFireOnWhiff` · `DashChargeAdd` · `AxeTargetCountAdd` · `ShockwaveDamageScalePercent`)은 `RoguelikeUI.json`에 효과 문구 키가 없다. 목록과 단위는 [기획서 v3.2 10장](Roguelike/Roguelike_Planning_v3.2.md).
 - 스태미너 바는 본편 HUD(`UIView_HUD`)가 그대로 그린다. 본편 하단 코인 HUD·가방 HUD·도끼 내구도 HUD는 로그라이크 세션 동안 시스템이 숨긴다(v2.4에서 골드가 없어졌다).
 - 메인메뉴 로그라이크 버튼: `UI_MainMenu`에 버튼을 추가하고 `parentView.OnRoguelikeButtonClicked()`를 부른다. 해금 조건은 본편 엔딩이 없어 아직 적용하지 않는다(상시 활성).
 - 로비 오브젝트(게임 시작·순위표) 외형: `Assets/Prefabs/Roguelike/LobbyObject_*.prefab`의 `Visual` 자식을 교체. 타격 반응은 `HitReactionEvent`.
