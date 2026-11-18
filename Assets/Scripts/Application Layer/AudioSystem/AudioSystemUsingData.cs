@@ -23,6 +23,7 @@ public enum SoundID
     OutItem = 1933263251,
     Cutter = -688056987,
     SawmillCutterLoop = -213121976,
+    Earthquake = -1204611363,
     HookApear = 1236307780,
     LootUIShelfUp = 951060624,
     LootUIShiny = 534103246,

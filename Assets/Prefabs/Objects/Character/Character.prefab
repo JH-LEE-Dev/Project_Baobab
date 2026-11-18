@@ -2094,8 +2094,8 @@ MonoBehaviour:
   - 0.05
   overheatBurnTickCount: 6
   overheatBurnTickInterval: 0.5
-  shockWaveOverheatDurationBase: 1.25
-  shockWaveOverheatDurationPerLevel: 0.0275
+  shockWaveOverheatDurationBase: 1
+  shockWaveOverheatDurationPerLevel: 0.02
   boomerangOverheatHitRadiusPerLevel: 0.02
   boomerangOverheatCooldownMul: 0.5
   droneOverheatChainBonus: 01000000020000000300000004000000

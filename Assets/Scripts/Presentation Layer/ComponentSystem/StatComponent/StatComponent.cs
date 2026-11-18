@@ -201,8 +201,8 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public float overheatBurnTickInterval = 0.5f; // 틱 간격(초)
 
     [Header("Overheat - 과열 충격파")]
-    public float shockWaveOverheatDurationBase = 1.25f; // 유지시간 배율 = 기본값 + 과열 * 1당 값
-    public float shockWaveOverheatDurationPerLevel = 0.0275f;
+    public float shockWaveOverheatDurationBase = 1f; // 유지시간 배율 = 기본값 + 과열 * 1당 값 (과열 100이면 1 + 100 * 0.02 = 3배)
+    public float shockWaveOverheatDurationPerLevel = 0.02f;
 
     [Header("Overheat - 과열 부메랑")]
     public float boomerangOverheatHitRadiusPerLevel = 0.02f; // 판정 범위 배율 = 1 + 과열 * 값

@@ -4889,7 +4889,7 @@ MonoBehaviour:
   repairSparkPoint: {fileID: 2236563588636971392}
   countHud: {fileID: 3880462177544858547}
   hammerInterval: 0.5
-  durabilityPerSecond: 5
+  baseRepairRatePerSecond: 0.01
   gaugeBackgroundSprite: {fileID: 21300000, guid: 8f987c13629ff364aa9c27b86c81946e, type: 3}
   gaugeOutlineSprite: {fileID: 21300000, guid: 2b93f9ed4238442449e0f3c5f82c3129, type: 3}
   gaugeFillSprite: {fileID: 21300000, guid: 3f69589dc8c1dd24795a27c1fdf73cb9, type: 3}

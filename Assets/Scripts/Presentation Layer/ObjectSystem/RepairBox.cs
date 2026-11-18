@@ -53,8 +53,8 @@ public class RepairBox : MonoBehaviour
     [Header("Axe Deposit")]
     [Tooltip("도끼를 맡긴 동안 모루를 두드리는(번쩍임·뽀잉·스파크) 주기(초)")]
     [SerializeField] private float hammerInterval = 0.5f;
-    [Tooltip("도끼를 맡긴 동안 1초에 회복하는 도끼 내구도(수치). 최대 내구도까지만 찬다. 수리 효율 특성 보너스는 여기에 더해진다.")]
-    [SerializeField] private float durabilityPerSecond = 5f;
+    [Tooltip("도끼를 맡긴 동안 1초에 회복하는 도끼 내구도(최대 내구도 대비 비율, 0.01 = 1%/s). 최대 내구도까지만 찬다. 수리 효율 특성 보너스는 이 비율에 더해진다.")]
+    [SerializeField] private float baseRepairRatePerSecond = 0.01f;
 
     [Header("Durability HUD (모루 위 원판)")]
     [Tooltip("화면 도끼 HUD의 원판 게이지 바탕(Gauge.png)")]
@@ -97,7 +97,7 @@ public class RepairBox : MonoBehaviour
     [Tooltip("돌려받는 순간 손에 든 도끼 그림이 따로 뽀잉하는 세기(0이면 캐릭터와 함께만 출렁인다)")]
     [SerializeField] private float heldAxeBounceAmplitude = 0.3f;
 
-    // 수리 효율 특성 보너스(최대 내구도 대비 초당 비율, 0.01 = 1%/s). OffroadVehicleObj.ResetRepairBox가 넣는다.
+    // 수리 효율 특성 보너스(최대 내구도 대비 초당 비율, 0.01 = 1%/s). 기본 비율(baseRepairRatePerSecond)에 더해진다. OffroadVehicleObj.ResetRepairBox가 넣는다.
     private float repairRateBonus = 0f;
 
     // 도끼를 맡아 두고 있는지. 맡은 동안 다시 상호작용하면 돌려준다.
@@ -187,7 +187,7 @@ public class RepairBox : MonoBehaviour
         if (false == character.IsAxeDurabilityFull)
         {
             float dt = Time.deltaTime;
-            float perSecond = durabilityPerSecond + character.AxeMaxDurability * repairRateBonus;
+            float perSecond = character.AxeMaxDurability * (baseRepairRatePerSecond + repairRateBonus);
             character.RestoreAxeDurabilityGradually(perSecond * dt);
 
             if (character.IsAxeDurabilityFull)

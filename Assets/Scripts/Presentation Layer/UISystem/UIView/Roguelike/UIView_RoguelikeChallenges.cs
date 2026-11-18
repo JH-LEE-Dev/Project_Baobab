@@ -877,11 +877,18 @@ public class UIView_RoguelikeChallenges : UIView_RoguelikeModalBase
 
     /// <summary>
     /// 칸에 마우스가 올라왔거나(_bPointer) 패드 선택이 옮겨 왔다.
-    /// 마우스가 올라온 것은 hoveredRow로만 기록하고 반응(효과음 · 커서)은 UpdateMouseHover가 칸이 온전히 보이고 본문이 멈췄을 때 한다.
+    /// 마우스가 올라온 것은 장치 모드와 상관없이 hoveredRow로만 기록하고 반응(효과음 · 포커스 · 커서)은 하지 않는다: 마우스 모드의 반응은 UpdateMouseHover가 칸이 온전히 보이고 본문이 멈췄을 때 한다.
+    /// 패드 모드에서는 본문이 미끄러지며 칸이 멈춰 있는 포인터 아래를 지나가도 PointerEnter가 오는데, 이때 커서를 옮기면 EventSystem 선택과 어긋나므로 커서를 빼앗지 않는다.
+    /// 마우스 모드에서 클릭으로 생긴 선택은 커서를 띄우지 않는다.
     /// </summary>
     private void OnRowFocused(UI_RoguelikeChallengeRow _row, bool _bPointer)
     {
-        if (true == _bPointer) hoveredRow = _row;
+        if (true == _bPointer)
+        {
+            hoveredRow = _row;
+            return;
+        }
+
         if (false == IsGamepadMode) return;
 
         ApplyRowFocus(_row);

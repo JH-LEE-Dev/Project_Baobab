@@ -30,20 +30,18 @@ Material:
     m_Ints: []
     m_Floats:
     - _Alpha: 1
-    - _Angle: 90
-    - _AngleEdgeFade: 0.04
-    - _FlameDepth: 0.12
-    - _FlameFrequency: 19
+    - _Angle: 120
+    - _AngleEdgeFade: 0.08
     - _MaxRadius: 0.5
     - _MinRadius: 0.3
-    - _RimWidth: 0.045
+    - _TrailAlpha: 0.45
+    - _TrailFrequency: 18
+    - _TrailNoise: 0.15
+    - _TrailOffset: 0.25
     - _TrailSeed: 0
+    - _TrailThickness: 0.06
     - _TrailTime: 0
     m_Colors:
     - _AttackDir: {r: 1, g: 0, b: 0, a: 0}
-    - _Blue: {r: 0.08, g: 0.45, b: 1.5, a: 1}
-    - _Cyan: {r: 0.12, g: 1.75, b: 2.1, a: 1}
-    - _Ember: {r: 1.55, g: 0.14, b: 0.025, a: 1}
-    - _Violet: {r: 0.85, g: 0.12, b: 1.25, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

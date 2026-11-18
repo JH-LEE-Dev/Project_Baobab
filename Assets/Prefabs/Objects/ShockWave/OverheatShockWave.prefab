@@ -132,7 +132,8 @@ MonoBehaviour:
   visualFadeOutDuration: 0.15
   visualStartThickness: 0.025
   visualAngleMultiplier: 1
-  particleMaterial: {fileID: 2100000, guid: 81d93ab675f147f5a4a9a3d85e198a34, type: 2}
+  fxMaterial: {fileID: 2100000, guid: f83a8f8f1049fc246aa6423e06f11310, type: 2}
+  particleMaterial: {fileID: 0}
   dustFrames:
   - {fileID: -956478508, guid: 4151f8405e5385141850af539e3936d0, type: 3}
   - {fileID: 1929381588, guid: 4151f8405e5385141850af539e3936d0, type: 3}
