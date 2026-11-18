@@ -65,6 +65,8 @@ namespace LocalizationQA
             return _set;
         }
 
+        public List<LocQABinding> All => data.bindings;
+
         public LocQABinding Get(string _guid, string _path)
         {
             map.TryGetValue(Key(_guid, _path), out LocQABinding _b);
@@ -258,14 +260,14 @@ namespace LocalizationQA
 
         public static void ScanAll(LocQASettings _settings)
         {
-            string _folder = string.IsNullOrEmpty(_settings.prefabFolder) ? "Assets/Prefabs/UI" : _settings.prefabFolder.TrimEnd('/');
+            string _folder = LocQAFolders.Main(_settings.prefabFolder, "Assets/Prefabs/UI");
             if (false == AssetDatabase.IsValidFolder(_folder))
             {
                 EditorUtility.DisplayDialog("Localization QA", $"폴더를 찾을 수 없습니다: {_folder}", "확인");
                 return;
             }
 
-            string[] _guids = AssetDatabase.FindAssets("t:Prefab", new[] { _folder });
+            string[] _guids = AssetDatabase.FindAssets("t:Prefab", LocQAFolders.Get(_settings.prefabFolder, "Assets/Prefabs/UI"));
             List<string> _paths = new List<string>(_guids.Length);
             for (int i = 0; i < _guids.Length; i++) _paths.Add(AssetDatabase.GUIDToAssetPath(_guids[i]));
             _paths.Sort(StringComparer.Ordinal);
@@ -559,7 +561,7 @@ namespace LocalizationQA
 
                 if (null != _rec.entry)
                 {
-                    _rec.text.text = LocQAStringTable.FillFormat(LocQALanguages.Resolve(_rec.entry.data, _lang), _settings.formatSample);
+                    _rec.text.text = LocQAKeyIcons.Format(LocQAStringTable.FillFormat(LocQALanguages.Resolve(_rec.entry.data, _lang), _settings.formatSample));
                 }
             }
         }

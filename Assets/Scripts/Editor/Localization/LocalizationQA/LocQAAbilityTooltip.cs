@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using TMPro;
 using UnityEditor;
 using UnityEngine;
 
@@ -27,12 +28,18 @@ namespace LocalizationQA
             public SkillType type;
             public Skill skill;
             public LocQAEntry name;
+            public List<Skill> skills;  // 이 노드가 속한 데이터 세트(데모 / 정식)의 스킬 전체. 누적값 계산용
         }
+
+        public const string NodeMissingReason = "특성 노드 데이터(데모·정식)에 없는 노드라 툴팁에 나오지 않음";
+        public const string CommandMissingReason = "이 명령(SkillCommandType)을 쓰는 스킬이 데이터에 없음";
+        private const string NamePrefix = "AbilityUI/";
+        private const string DescriptionPrefix = "AbilityUI/AbilityDescription_";
 
         public static LocQAHostPlan Plan(MonoBehaviour _ability, MonoBehaviour _tooltip, string _entryId, LocQAStringTable _table)
         {
             if (null == _ability || null == _tooltip) return null;
-            List<Node> _nodes = LoadNodes(_table, out List<Skill> _skills);
+            List<Node> _nodes = LoadNodes(_table);
             if (0 == _nodes.Count) return null;
 
             bool _maxed = false;
@@ -73,7 +80,7 @@ namespace LocalizationQA
                 tooltip = _tooltip,
                 ability = _ability,
                 tooltipBackground = true == _maxed ? (Color?)null : StaticField<Color>(_ability, "ToolTipBackgroundAvailableColor"),
-                tooltipContent = _lang => Content(_ability, _picked, _skills, _maxed, _forceFree, _lang, _table),
+                tooltipContent = _lang => Content(_ability, _picked, _picked.skills, _maxed, _forceFree, _lang, _table),
             };
         }
 
@@ -191,31 +198,136 @@ namespace LocalizationQA
 
         // //데이터
 
-        private static List<Node> LoadNodes(LocQAStringTable _table, out List<Skill> _skills)
+        /// <summary>
+        /// 데모 · 정식 두 데이터 세트의 노드. 지금 빌드 쪽 세트를 먼저 넣는다. (같은 문구를 쓰는 노드는 지금 빌드 쪽으로 그린다)
+        /// 다른 쪽 세트에만 있는 노드도 그 세트의 스킬 값으로 그린다.
+        /// </summary>
+        private static List<Node> LoadNodes(LocQAStringTable _table)
         {
-            List<Node> _nodes = new List<Node>(128);
-            _skills = new List<Skill>();
+            List<Node> _nodes = new List<Node>(256);
 
             string[] _guids = AssetDatabase.FindAssets("t:AbilityBuildVariantData");
             if (0 == _guids.Length) return _nodes;
             AbilityBuildVariantData _variant = AssetDatabase.LoadAssetAtPath<AbilityBuildVariantData>(AssetDatabase.GUIDToAssetPath(_guids[0]));
-            if (null == _variant || null == _variant.CurrentSkillDataBase || null == _variant.CurrentAbilityNodeDatabase) return _nodes;
+            if (null == _variant) return _nodes;
 
-            _skills = _variant.CurrentSkillDataBase.skills ?? new List<Skill>();
+            bool _demoFirst = BuildInfo.IsDemo;
+            AddNodes(_nodes, _table, _demoFirst ? _variant.DemoAbilityNodeDatabase : _variant.FullAbilityNodeDatabase, _demoFirst ? _variant.DemoSkillDataBase : _variant.FullSkillDataBase);
+            AddNodes(_nodes, _table, _demoFirst ? _variant.FullAbilityNodeDatabase : _variant.DemoAbilityNodeDatabase, _demoFirst ? _variant.FullSkillDataBase : _variant.DemoSkillDataBase);
+            return _nodes;
+        }
+
+        private static void AddNodes(List<Node> _nodes, LocQAStringTable _table, TextAsset _nodeDatabase, SkillDataBase _skillDatabase)
+        {
+            if (null == _nodeDatabase || null == _skillDatabase) return;
+
+            List<Skill> _skills = _skillDatabase.skills ?? new List<Skill>();
             Dictionary<SkillType, Skill> _skillMap = new Dictionary<SkillType, Skill>();
             for (int i = 0; i < _skills.Count; i++) _skillMap[_skills[i].skillType] = _skills[i];
 
-            AbilityNodeDatabaseJson _json = JsonUtility.FromJson<AbilityNodeDatabaseJson>(_variant.CurrentAbilityNodeDatabase.text);
-            if (null == _json || null == _json.nodes) return _nodes;
+            AbilityNodeDatabaseJson _json = JsonUtility.FromJson<AbilityNodeDatabaseJson>(_nodeDatabase.text);
+            if (null == _json || null == _json.nodes) return;
 
             for (int i = 0; i < _json.nodes.Length; i++)
             {
                 AbilityNodeDefinitionJson _definition = _json.nodes[i];
                 if (false == Enum.TryParse(_definition.skillType, out SkillType _type)) continue;
                 if (false == _skillMap.TryGetValue(_type, out Skill _skill)) continue;
-                _nodes.Add(new Node { type = _type, skill = _skill, name = FindAbilityEntry(_table, _definition.nameLocId) });
+                _nodes.Add(new Node { type = _type, skill = _skill, name = FindAbilityEntry(_table, _definition.nameLocId), skills = _skills });
             }
-            return _nodes;
+        }
+
+        /// <summary>특성 DB 동기화 결과 (목록 갱신 때)</summary>
+        internal sealed class SyncReport
+        {
+            public int nodes;           // 데모 · 정식 노드 수 (같은 노드는 한 번)
+            public int added;           // 새로 연결한 문구
+            public int markedUnused;    // 어느 노드도 쓰지 않아 미사용으로 표시한 문구
+            public int revived;         // 미사용이었다가 다시 쓰이게 된 문구
+            public readonly List<string> missingNames = new List<string>();   // 이름 문구(nameLocId)가 AbilityUI에 없는 노드
+        }
+
+        /// <summary>
+        /// 특성 툴팁 칸에 데모 · 정식 노드의 이름 · 설명 문구를 모두 연결한다. 노드를 추가 · 삭제해도 목록 갱신만 누르면 따라간다.
+        ///  - 이름: 툴팁 제목 칸 (nameLocId)
+        ///  - 설명: 툴팁 설명 칸 (그 노드 스킬의 마지막 명령 AbilityDescription_명령 — 미리보기 값이 명령마다 오고 마지막 것이 남는다)
+        /// 어느 노드도 쓰지 않는 이름 · 설명 문구는, 어느 칸에도 연결되지 않았을 때만 미사용으로 표시한다. (사람이 적은 사유는 건드리지 않는다)
+        /// </summary>
+        public static SyncReport Sync(LocQAReviewData _data, LocQAStringTable _table, GameObject _tooltipPrefab, string _tooltipGuid)
+        {
+            SyncReport _report = new SyncReport();
+            AbilityToolTip _tooltip = null != _tooltipPrefab ? _tooltipPrefab.GetComponentInChildren<AbilityToolTip>(true) : null;
+            if (null == _tooltip) return _report;
+
+            TMP_Text _titleText = typeof(AbilityToolTip).GetField("titleText", FLAGS)?.GetValue(_tooltip) as TMP_Text;
+            TMP_Text _descriptionText = typeof(AbilityToolTip).GetField("descriptionText", FLAGS)?.GetValue(_tooltip) as TMP_Text;
+
+            List<Node> _nodes = LoadNodes(_table);
+            HashSet<string> _names = new HashSet<string>(StringComparer.Ordinal);
+            HashSet<string> _descriptions = new HashSet<string>(StringComparer.Ordinal);
+            HashSet<SkillType> _seen = new HashSet<SkillType>();
+            for (int i = 0; i < _nodes.Count; i++)
+            {
+                Node _node = _nodes[i];
+                if (true == _seen.Add(_node.type)) _report.nodes++;
+                if (null != _node.name) _names.Add(_node.name.id);
+                else if (false == _report.missingNames.Contains(_node.type.ToString())) _report.missingNames.Add(_node.type.ToString());
+
+                SkillCommandType _command = LastCommand(_node.skill);
+                if (SkillCommandType.None == _command) continue;
+                string _descriptionId = DescriptionPrefix + _command;
+                if (null != _table.Find(_descriptionId)) _descriptions.Add(_descriptionId);
+            }
+
+            _report.added += Bind(_data, _tooltipPrefab, _tooltipGuid, _titleText, _names);
+            _report.added += Bind(_data, _tooltipPrefab, _tooltipGuid, _descriptionText, _descriptions);
+
+            HashSet<string> _connected = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < _data.Items.Count; i++) _connected.Add(_data.Items[i].entryId);
+
+            for (int i = 0; i < _table.Entries.Count; i++)
+            {
+                string _id = _table.Entries[i].id;
+                bool _isDescription = _id.StartsWith(DescriptionPrefix, StringComparison.Ordinal);
+                bool _isName = false == _isDescription && _id.StartsWith(NamePrefix, StringComparison.Ordinal) && _id.EndsWith("_Name", StringComparison.Ordinal);
+                if (false == _isDescription && false == _isName) continue;
+
+                string _reason = true == _isDescription ? CommandMissingReason : NodeMissingReason;
+                bool _used = true == _isDescription ? _descriptions.Contains(_id) : _names.Contains(_id);
+                string _current = _data.UnusedReason(_id);
+
+                if (true == _used || true == _connected.Contains(_id))
+                {
+                    // 동기화가 적은 사유만 걷는다.
+                    if (_reason == _current)
+                    {
+                        _data.SetUnused(_id, null);
+                        _report.revived++;
+                    }
+                }
+                else if (null == _current)
+                {
+                    _data.SetUnused(_id, _reason);
+                    _report.markedUnused++;
+                }
+            }
+            return _report;
+        }
+
+        private static int Bind(LocQAReviewData _data, GameObject _prefab, string _guid, TMP_Text _text, HashSet<string> _entryIds)
+        {
+            if (null == _text || 0 == _entryIds.Count) return 0;
+            if (false == LocQAReviewCollector.GetSlot(_text, out string _slotGuid, out string _slotPath)) return 0;
+            string _contextPath = LocQAPaths.GetPath(_text.transform, _prefab.transform);
+            int _depth = LocQAReviewCollector.ContextScore(_prefab, _text.transform);
+
+            int _added = 0;
+            foreach (string _id in _entryIds)
+            {
+                bool _isNew = null == _data.Find(_slotGuid + "|" + _slotPath + "|" + _id);
+                if (true == _data.AddOrImprove(_slotGuid, _slotPath, _guid, _contextPath, _depth, _id, "코드분석") && true == _isNew) _added++;
+            }
+            return _added;
         }
 
         // 노드 이름은 AbilityUI 파일의 항목 id로 찾는다. (ResolveLocalizedEntryText(nameLocId))

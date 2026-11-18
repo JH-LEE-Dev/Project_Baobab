@@ -28,7 +28,29 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/DescriptionBox/Description",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_AdvancedLogChance",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_AttackRythm",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_AutoLoadInRestArea",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -95,6 +117,17 @@
             "contextPath": "ToolTipBG/DescriptionBox/Description",
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_AxeRange",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_BarrierPenetration",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -182,6 +215,17 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/DescriptionBox/Description",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_ConstellationAfterimage",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_ConstellationDamage",
             "source": "코드분석",
             "template": "",
@@ -215,7 +259,95 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/DescriptionBox/Description",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_Drone",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_DroneAttackSpeed",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_DroneChainAttack",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_DroneChainAttackRange",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_DroneCritical",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_DroneDamage",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_DroneRange",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_EfficientMovement",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_EmberDropBonus",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -237,7 +369,62 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/DescriptionBox/Description",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_FinalAttack",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_FluffySporeForestOverGrowth",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_Hello",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_IncreaseJackPotAmount",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_IncreaseJackPotChance",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_IncreaseRepairEfficiency",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -281,6 +468,17 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/DescriptionBox/Description",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_LogInsurance",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_LogProcessingSpeed",
             "source": "코드분석",
             "template": "",
@@ -292,10 +490,32 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/DescriptionBox/Description",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_LogProcessorSpeedUp",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_LogValue",
             "source": "코드분석",
             "template": "",
             "samples": "2900"
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_MagmaForestOverGrowth",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -336,6 +556,28 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/DescriptionBox/Description",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_OverheatGainBonus",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_PerfectLogChance",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_PickupRange",
             "source": "코드분석",
             "template": "",
@@ -358,7 +600,62 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/DescriptionBox/Description",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_Preheat",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_ProcessLineExpand",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_RecoveryPower",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_RemoteDeposit",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_RemoteLogTransport",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_Repair",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -436,6 +733,17 @@
             "contextPath": "ToolTipBG/DescriptionBox/Description",
             "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_ShockWaveMastery",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_ShockWaveOverheatBoost",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -611,6 +919,28 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/DescriptionBox/Description",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_TopgradeAssessment",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_TreeHeatResistance",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/AbilityDescription_TreeVitamin",
             "source": "코드분석",
             "template": "",
@@ -626,6 +956,17 @@
             "source": "코드분석",
             "template": "",
             "samples": "0.05"
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/DescriptionBox/Description",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/DescriptionBox/Description",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AbilityDescription_WhirlWind",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
         },
         {
             "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
@@ -699,6 +1040,28 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/AttackRythm2_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AutoLoadInRestArea_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/AxeAttackSpeed1_Name",
             "source": "코드분석",
             "template": "",
@@ -743,6 +1106,17 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/AxeCriticalChance3_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/AxeCriticalDamage1_Name",
             "source": "코드분석",
             "template": "",
@@ -755,6 +1129,17 @@
             "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
             "contextDepth": 1000,
             "entryId": "AbilityUI/AxeCriticalDamage2_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AxeCriticalDamage3_Name",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -820,6 +1205,17 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/AxeDamage6_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/AxeDurability1_Name",
             "source": "코드분석",
             "template": "",
@@ -853,7 +1249,51 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/AxeDurability4_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/AxeRange1_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/AxeRange2_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/BarrierPenetration1_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/BarrierPenetration2_Name",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -909,6 +1349,17 @@
             "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
             "contextDepth": 1000,
             "entryId": "AbilityUI/BoomerangAttackSpeed2_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/BoomerangCooldownReduction2_Name",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -1062,7 +1513,40 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/BountifulTree5_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/ConstellationAfterimage1_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/ConstellationDamage1_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/ConstellationDamage2_Name",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -1095,6 +1579,193 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/ConveyorSpeed2_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/DiamondTreeChance_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/Drone1_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/Drone2_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/Drone3_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/DroneAttackRange1_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/DroneAttackRange2_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/DroneAttackSpeed1_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/DroneAttackSpeed2_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/DroneAttackSpeed3_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/DroneChainAttack1_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/DroneChainAttack2_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/DroneChainAttackRange1_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/DroneCritical_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/DroneDamage1_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/DroneDamage2_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/DroneDamage3_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/EfficientMovement1_Name",
             "source": "코드분석",
             "template": "",
@@ -1107,6 +1778,28 @@
             "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
             "contextDepth": 1000,
             "entryId": "AbilityUI/EfficientMovement2_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/EmberDropBonus1_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/EmberDropBonus2_Name",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -1194,7 +1887,84 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/FatigueMaxIncrease6_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/FinalAttack_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/FluffySporeForestOverGrowth_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/GoldTreeChance_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/Hello_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/IncreaseJackPotAmount_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/IncreaseJackPotChance1_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/IncreaseRepairEfficiency1_Name",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -1227,6 +1997,17 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/ItemTransferSpeedUP2_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/LogCapacityIncrease1_Name",
             "source": "코드분석",
             "template": "",
@@ -1239,6 +2020,50 @@
             "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
             "contextDepth": 1000,
             "entryId": "AbilityUI/LogCapacityIncrease2_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/LogCapacityIncrease3_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/LogInsurance1_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/LogInsurance2_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/LogInsurance3_Name",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -1293,6 +2118,39 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/LogProcessingSpeed5_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/LogProcessingSpeed6_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/LogProcessorSpeedUp_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/LogValue1_Name",
             "source": "코드분석",
             "template": "",
@@ -1337,7 +2195,62 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/LogValue5_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/MagmaForestOverGrowth_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/ManifestationBrand1_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/ManifestationBrand2_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/MovementSpeed2_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/MovementSpeed3_Name",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -1370,6 +2283,28 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/OverheatGainBonus1_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/OverheatGainBonus2_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/PickupRange1_Name",
             "source": "코드분석",
             "template": "",
@@ -1392,6 +2327,17 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/PickupRange3_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/PowerSupply_Name",
             "source": "코드분석",
             "template": "",
@@ -1403,7 +2349,95 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/Preheat1_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/ProcessLineExpand1_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/ProcessLineExpand2_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/RainbowTreeChance_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/RecoveryPower1_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/RecoveryPower2_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/RemoteDeposit_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/RemoteLogTransport_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/Repair1_Name",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -1426,6 +2460,17 @@
             "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
             "contextDepth": 1000,
             "entryId": "AbilityUI/SawmillLogStorageExpansion2_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/SawmillLogStorageExpansion3_Name",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -1492,6 +2537,17 @@
             "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
             "contextDepth": 1000,
             "entryId": "AbilityUI/ShockWaveMastery_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/ShockWaveOverheatBoost_Name",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -1612,7 +2668,40 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/SourceOfSpeed2_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/SourceOfSpeed3_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/SourceOfStamina1_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/SourceOfStamina2_Name",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -1777,7 +2866,40 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/StarMarkDamage2_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/StarMarkDamage3_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/StarPathSpeedBoost1_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/StarPathSpeedBoost2_Name",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -1832,7 +2954,40 @@
             "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
             "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
             "contextDepth": 1000,
+            "entryId": "AbilityUI/SteelAxe4_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
             "entryId": "AbilityUI/TestNode_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/TopgradeAssessment1_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/TreeHeatResistance1_Name",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -1855,6 +3010,28 @@
             "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
             "contextDepth": 1000,
             "entryId": "AbilityUI/WeakPointHit1_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/WeakPointHit2_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/WhirlWind_Name",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -1888,6 +3065,17 @@
             "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
             "contextDepth": 1000,
             "entryId": "AbilityUI/WoodenTransportBoxExpansion2_Name",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "slotPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextGuid": "0693cecbf0fc4eb4e988a48e7663f4bf",
+            "contextPath": "ToolTipBG/TitleAndLevelBox/Title",
+            "contextDepth": 1000,
+            "entryId": "AbilityUI/WoodenTransportBoxExpansion3_Name",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -1977,6 +3165,127 @@
             "contextDepth": 1,
             "entryId": "OptionUI/pressKeyPrompt",
             "source": "수동",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/Best",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/Best",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Result_BestWave",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/Best",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/Best",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Result_NewRecord",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/KeyGuide/HintMove",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/KeyGuide/HintMove",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Hint_Move",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/KeyGuide/HintSelect",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/KeyGuide/HintSelect",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Hint_Select",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/MainMenuButton/Visual/Label",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/MainMenuButton/Visual/Label",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Result_MainMenu",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/OwnedLabel",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/OwnedLabel",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Result_OwnedCards",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/PlayTimeLabel",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/PlayTimeLabel",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Result_PlayTime",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/RetryButton/Visual/Label",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/RetryButton/Visual/Label",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Result_Retry",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/TitlePlate/Title",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/TitlePlate/Title",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Result_Abandoned",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/TitlePlate/Title",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/TitlePlate/Title",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Result_GameOver",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/TreesLabel",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/TreesLabel",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Result_TreesFelled",
+            "source": "코드분석",
             "template": "",
             "samples": ""
         },
@@ -2190,6 +3499,226 @@
             "samples": ""
         },
         {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "BTNs/BTN_Roguelike/Visual/TMP_Dot",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/BTNs/BTN_Roguelike/Visual/TMP_Dot",
+            "contextDepth": 1,
+            "entryId": "MainMenuUI/DotText",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "BTNs/BTN_Roguelike/Visual/TMP_Text",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/BTNs/BTN_Roguelike/Visual/TMP_Text",
+            "contextDepth": 1,
+            "entryId": "MainMenuUI/Roguelike",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeMenu/BTN_RL_Back/Visual/TMP_Dot",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeMenu/BTN_RL_Back/Visual/TMP_Dot",
+            "contextDepth": 1,
+            "entryId": "MainMenuUI/DotText",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeMenu/BTN_RL_Back/Visual/TMP_Text",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeMenu/BTN_RL_Back/Visual/TMP_Text",
+            "contextDepth": 1,
+            "entryId": "RoguelikeUI/Roguelike_Menu_Back",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeMenu/BTN_RL_Challenges/Visual/TMP_Dot",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeMenu/BTN_RL_Challenges/Visual/TMP_Dot",
+            "contextDepth": 1,
+            "entryId": "MainMenuUI/DotText",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeMenu/BTN_RL_Challenges/Visual/TMP_Text",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeMenu/BTN_RL_Challenges/Visual/TMP_Text",
+            "contextDepth": 1,
+            "entryId": "RoguelikeUI/Roguelike_Menu_Challenges",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeMenu/BTN_RL_Option/Visual/TMP_Dot",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeMenu/BTN_RL_Option/Visual/TMP_Dot",
+            "contextDepth": 1,
+            "entryId": "MainMenuUI/DotText",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeMenu/BTN_RL_Option/Visual/TMP_Text",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeMenu/BTN_RL_Option/Visual/TMP_Text",
+            "contextDepth": 1,
+            "entryId": "MainMenuUI/Options",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeMenu/BTN_RL_Records/Visual/TMP_Dot",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeMenu/BTN_RL_Records/Visual/TMP_Dot",
+            "contextDepth": 1,
+            "entryId": "MainMenuUI/DotText",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeMenu/BTN_RL_Records/Visual/TMP_Text",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeMenu/BTN_RL_Records/Visual/TMP_Text",
+            "contextDepth": 1,
+            "entryId": "RoguelikeUI/Roguelike_Menu_Records",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeMenu/BTN_RL_Start/Visual/TMP_Dot",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeMenu/BTN_RL_Start/Visual/TMP_Dot",
+            "contextDepth": 1,
+            "entryId": "MainMenuUI/DotText",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeMenu/BTN_RL_Start/Visual/TMP_Text",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeMenu/BTN_RL_Start/Visual/TMP_Text",
+            "contextDepth": 1,
+            "entryId": "RoguelikeUI/Roguelike_Menu_Start",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeMenu/Plate/Label",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeMenu/Plate/Label",
+            "contextDepth": 1,
+            "entryId": "MainMenuUI/Roguelike",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeRecordPanel/Panel/Label0",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeRecordPanel/Panel/Label0",
+            "contextDepth": 1,
+            "entryId": "RoguelikeUI/Roguelike_Menu_BestWave",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeRecordPanel/Panel/Label1",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeRecordPanel/Panel/Label1",
+            "contextDepth": 1,
+            "entryId": "RoguelikeUI/Roguelike_Menu_UnlimitBest",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeRecordPanel/Panel/Label2",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeRecordPanel/Panel/Label2",
+            "contextDepth": 1,
+            "entryId": "RoguelikeUI/Roguelike_Menu_TreesBest",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeRecordPanel/Panel/TitlePlate/Title",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeRecordPanel/Panel/TitlePlate/Title",
+            "contextDepth": 1,
+            "entryId": "RoguelikeUI/Roguelike_Menu_BestTitle",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeRecordPanel/Panel/Value0",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeRecordPanel/Panel/Value0",
+            "contextDepth": 1,
+            "entryId": "RoguelikeUI/Roguelike_Menu_NoRecord",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeRecordPanel/Panel/Value1",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeRecordPanel/Panel/Value1",
+            "contextDepth": 1,
+            "entryId": "RoguelikeUI/Roguelike_Menu_NoRecord",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeRecordPanel/Panel/Value2",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeRecordPanel/Panel/Value2",
+            "contextDepth": 1,
+            "entryId": "RoguelikeUI/Roguelike_Menu_NoRecord",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
             "slotGuid": "380342ca825ed8643bdca4bd050d56c6",
             "slotPath": "Visuals/Body/Text (TMP)",
             "contextGuid": "380342ca825ed8643bdca4bd050d56c6",
@@ -2273,6 +3802,17 @@
             "contextPath": "UI_EscapeMenu/Buttons/Buttons_1/Ray/Text (TMP)",
             "contextDepth": 1,
             "entryId": "EscapeMenuUI/Option",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "520d4e0f53cfd9249aef204c9c7eb9a1",
+            "slotPath": "Buttons/Buttons_2/Ray/Text (TMP)",
+            "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
+            "contextPath": "UI_EscapeMenu/Buttons/Buttons_2/Ray/Text (TMP)",
+            "contextDepth": 1,
+            "entryId": "EscapeMenuUI/Abandon",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -2388,12 +3928,111 @@
             "samples": ""
         },
         {
+            "slotGuid": "6024b23e059b2e143b0587117c676d30",
+            "slotPath": "Body/Header",
+            "contextGuid": "6024b23e059b2e143b0587117c676d30",
+            "contextPath": "Body/Header",
+            "contextDepth": 1000,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_ClearedToast",
+            "source": "수동",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6024b23e059b2e143b0587117c676d30",
+            "slotPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextGuid": "6024b23e059b2e143b0587117c676d30",
+            "contextPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextDepth": 1000,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_CardMaxAll_Title",
+            "source": "수동",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6024b23e059b2e143b0587117c676d30",
+            "slotPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextGuid": "6024b23e059b2e143b0587117c676d30",
+            "contextPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextDepth": 1000,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_PrismAll_Title",
+            "source": "수동",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6024b23e059b2e143b0587117c676d30",
+            "slotPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextGuid": "6024b23e059b2e143b0587117c676d30",
+            "contextPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextDepth": 1000,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_RubyAll_Title",
+            "source": "수동",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6024b23e059b2e143b0587117c676d30",
+            "slotPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextGuid": "6024b23e059b2e143b0587117c676d30",
+            "contextPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextDepth": 1000,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_TierAll_Title",
+            "source": "수동",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6024b23e059b2e143b0587117c676d30",
+            "slotPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextGuid": "6024b23e059b2e143b0587117c676d30",
+            "contextPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextDepth": 1000,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_TreeN_Title",
+            "source": "수동",
+            "template": "",
+            "samples": "10,000"
+        },
+        {
+            "slotGuid": "6024b23e059b2e143b0587117c676d30",
+            "slotPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextGuid": "6024b23e059b2e143b0587117c676d30",
+            "contextPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextDepth": 1000,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_UnlimitN_Title",
+            "source": "수동",
+            "template": "",
+            "samples": "25"
+        },
+        {
+            "slotGuid": "6024b23e059b2e143b0587117c676d30",
+            "slotPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextGuid": "6024b23e059b2e143b0587117c676d30",
+            "contextPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextDepth": 1000,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_Wave30_Title",
+            "source": "수동",
+            "template": "",
+            "samples": ""
+        },
+        {
             "slotGuid": "644c96ad309ba114f9743fd5b9c6d5eb",
             "slotPath": "MainPop/MessageUI/Border/Message",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
             "contextPath": "UI_WarningPopup/MainPop/MessageUI/Border/Message",
             "contextDepth": 1,
             "entryId": "EscapeMenuUI/ExitGameWarning",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "644c96ad309ba114f9743fd5b9c6d5eb",
+            "slotPath": "MainPop/MessageUI/Border/Message",
+            "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
+            "contextPath": "UI_WarningPopup/MainPop/MessageUI/Border/Message",
+            "contextDepth": 1,
+            "entryId": "EscapeMenuUI/LobbyWarning",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -2460,6 +4099,204 @@
             "contextPath": "UI_WarningPopup/MainPop/MessageUI/Border/Message",
             "contextDepth": 1,
             "entryId": "SaveCheckUI/FailedMessage",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/Body/Rows/RowTemplate/Content/Tip",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/Body/Rows/RowTemplate/Content/Tip",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_CardMaxAll_Tip",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/Body/Rows/RowTemplate/Content/Tip",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/Body/Rows/RowTemplate/Content/Tip",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_PrismAll_Tip",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/Body/Rows/RowTemplate/Content/Tip",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/Body/Rows/RowTemplate/Content/Tip",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_PrismCard_Tip",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/Body/Rows/RowTemplate/Content/Tip",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/Body/Rows/RowTemplate/Content/Tip",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_RubyAll_Tip",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/Body/Rows/RowTemplate/Content/Tip",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/Body/Rows/RowTemplate/Content/Tip",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_TierAll_Tip",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/Body/Rows/RowTemplate/Content/Tip",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/Body/Rows/RowTemplate/Content/Tip",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_TreeN_Tip",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/Body/Rows/RowTemplate/Content/Tip",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/Body/Rows/RowTemplate/Content/Tip",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_UnlimitN_Tip",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/Body/Rows/RowTemplate/Content/Tip",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/Body/Rows/RowTemplate/Content/Tip",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_Wave30_Tip",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/Body/Rows/RowTemplate/Content/Title",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/Body/Rows/RowTemplate/Content/Title",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_CardMaxAll_Title",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/Body/Rows/RowTemplate/Content/Title",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/Body/Rows/RowTemplate/Content/Title",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_PrismAll_Title",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/Body/Rows/RowTemplate/Content/Title",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/Body/Rows/RowTemplate/Content/Title",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_PrismCard_Title",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/Body/Rows/RowTemplate/Content/Title",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/Body/Rows/RowTemplate/Content/Title",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_RubyAll_Title",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/Body/Rows/RowTemplate/Content/Title",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/Body/Rows/RowTemplate/Content/Title",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_TierAll_Title",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/Body/Rows/RowTemplate/Content/Title",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/Body/Rows/RowTemplate/Content/Title",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_TreeN_Title",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/Body/Rows/RowTemplate/Content/Title",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/Body/Rows/RowTemplate/Content/Title",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_UnlimitN_Title",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/Body/Rows/RowTemplate/Content/Title",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/Body/Rows/RowTemplate/Content/Title",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Challenge_Wave30_Title",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/Header/Label",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/Header/Label",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Challenges_ClearedLabel",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/TitlePlate/Title",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/TitlePlate/Title",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Menu_Challenges",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -3356,12 +5193,1409 @@
             "samples": ""
         },
         {
+            "slotGuid": "b1626051da8aa744fb17c1a0462a209a",
+            "slotPath": "Panel/Empty",
+            "contextGuid": "b1626051da8aa744fb17c1a0462a209a",
+            "contextPath": "Panel/Empty",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Records_Empty",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "b1626051da8aa744fb17c1a0462a209a",
+            "slotPath": "Panel/TabPlate/TabName",
+            "contextGuid": "b1626051da8aa744fb17c1a0462a209a",
+            "contextPath": "Panel/TabPlate/TabName",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Records_TabClear",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "b1626051da8aa744fb17c1a0462a209a",
+            "slotPath": "Panel/TabPlate/TabName",
+            "contextGuid": "b1626051da8aa744fb17c1a0462a209a",
+            "contextPath": "Panel/TabPlate/TabName",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Records_TabRecent",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "b1626051da8aa744fb17c1a0462a209a",
+            "slotPath": "Panel/TabPlate/TabName",
+            "contextGuid": "b1626051da8aa744fb17c1a0462a209a",
+            "contextPath": "Panel/TabPlate/TabName",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Records_TabUnlimit",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
             "slotGuid": "bd28f55901e93bd4aa5204630655ec49",
             "slotPath": "Text (TMP)",
             "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
             "contextPath": "UI_PressAnyKey/Text (TMP)",
             "contextDepth": 1,
             "entryId": "MainMenuUI/PressAnyKey",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_CardSelect_RerollDesc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_CardSelect_Unavailable",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_boomerang_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_drone_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_offroad_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_shockwave_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_spin_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_sporebomb_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_stella_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_boomerang_shockwave_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spin_boomerang_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spin_shockwave_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spore_drone_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spore_offroad_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spore_shockwave_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_stella_drone_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_attackspeed_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_damage_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_dot_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_dot_speed_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_duration_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_grace_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_max_stamina_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_movespeed_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_range_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_stamina_recover_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_ruby_glass_cannon_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_ruby_more_the_merrier_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_ruby_patience_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Level",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Level",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_CardLevel_Max",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_CardSelect_Reroll",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_boomerang",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_drone",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_offroad",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_shockwave",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_spin",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_sporebomb",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_stella",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_boomerang_shockwave",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spin_boomerang",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spin_shockwave",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spore_drone",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spore_offroad",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spore_shockwave",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_stella_drone",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_attackspeed",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_damage",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_dot",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_dot_speed",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_duration",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_grace",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_max_stamina",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_movespeed",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_range",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_stamina_recover",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_ruby_glass_cannon",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_ruby_more_the_merrier",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_ruby_patience",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/RerollButton/Label",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/RerollButton/Label",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_CardSelect_Reroll",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/TitlePlate/Title",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/TitlePlate/Title",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_CardSelect_Pick",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "PadGuide/HintMove",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "PadGuide/HintMove",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Hint_Move",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "PadGuide/HintSelect",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "PadGuide/HintSelect",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Hint_Select",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Book/Viewport/ScrollContent/EmptyText",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Book/Viewport/ScrollContent/EmptyText",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_OwnedCards_Empty",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_boomerang_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_drone_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_offroad_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_shockwave_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_spin_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_sporebomb_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_stella_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_boomerang_shockwave_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spin_boomerang_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spin_shockwave_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spore_drone_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spore_offroad_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spore_shockwave_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_stella_drone_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_attackspeed_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_damage_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_dot_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_dot_speed_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_duration_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_grace_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_max_stamina_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_movespeed_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_range_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_stamina_recover_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_ruby_glass_cannon_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_ruby_more_the_merrier_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_ruby_patience_Desc",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Level",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Level",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_CardLevel_Max",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_boomerang",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_drone",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_offroad",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_shockwave",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_spin",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_sporebomb",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_active_stella",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_boomerang_shockwave",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spin_boomerang",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spin_shockwave",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spore_drone",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spore_offroad",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spore_shockwave",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_stella_drone",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_attackspeed",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_damage",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_dot",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_dot_speed",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_duration",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_grace",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_max_stamina",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_movespeed",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_range",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_stamina_recover",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_ruby_glass_cannon",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_ruby_more_the_merrier",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_Card_ruby_patience",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/KeyGuide/CloseRow/CloseText",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/KeyGuide/CloseRow/CloseText",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_OwnedCards_HintClose",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/KeyGuide/MoveRow/MoveText",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/KeyGuide/MoveRow/MoveText",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_OwnedCards_HintMove",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/TitleBar/Count",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/TitleBar/Count",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_OwnedCards_NormalShort",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/TitleBar/Count",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/TitleBar/Count",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_OwnedCards_RareShort",
+            "source": "코드분석",
+            "template": "",
+            "samples": ""
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/TitleBar/Title",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/TitleBar/Title",
+            "contextDepth": 0,
+            "entryId": "RoguelikeUI/Roguelike_OwnedCards_Title",
             "source": "코드분석",
             "template": "",
             "samples": ""
@@ -3959,94 +7193,6 @@
             "source": "코드분석",
             "template": "",
             "samples": ""
-        },
-        {
-            "slotGuid": "6024b23e059b2e143b0587117c676d30",
-            "slotPath": "Body/Header",
-            "contextGuid": "6024b23e059b2e143b0587117c676d30",
-            "contextPath": "Body/Header",
-            "contextDepth": 1000,
-            "entryId": "RoguelikeUI/Roguelike_Challenge_ClearedToast",
-            "source": "수동",
-            "template": "",
-            "samples": ""
-        },
-        {
-            "slotGuid": "6024b23e059b2e143b0587117c676d30",
-            "slotPath": "Body/PanelMask/Panel/TitleClip/Title",
-            "contextGuid": "6024b23e059b2e143b0587117c676d30",
-            "contextPath": "Body/PanelMask/Panel/TitleClip/Title",
-            "contextDepth": 1000,
-            "entryId": "RoguelikeUI/Roguelike_Challenge_PrismAll_Title",
-            "source": "수동",
-            "template": "",
-            "samples": ""
-        },
-        {
-            "slotGuid": "6024b23e059b2e143b0587117c676d30",
-            "slotPath": "Body/PanelMask/Panel/TitleClip/Title",
-            "contextGuid": "6024b23e059b2e143b0587117c676d30",
-            "contextPath": "Body/PanelMask/Panel/TitleClip/Title",
-            "contextDepth": 1000,
-            "entryId": "RoguelikeUI/Roguelike_Challenge_CardMaxAll_Title",
-            "source": "수동",
-            "template": "",
-            "samples": ""
-        },
-        {
-            "slotGuid": "6024b23e059b2e143b0587117c676d30",
-            "slotPath": "Body/PanelMask/Panel/TitleClip/Title",
-            "contextGuid": "6024b23e059b2e143b0587117c676d30",
-            "contextPath": "Body/PanelMask/Panel/TitleClip/Title",
-            "contextDepth": 1000,
-            "entryId": "RoguelikeUI/Roguelike_Challenge_RubyAll_Title",
-            "source": "수동",
-            "template": "",
-            "samples": ""
-        },
-        {
-            "slotGuid": "6024b23e059b2e143b0587117c676d30",
-            "slotPath": "Body/PanelMask/Panel/TitleClip/Title",
-            "contextGuid": "6024b23e059b2e143b0587117c676d30",
-            "contextPath": "Body/PanelMask/Panel/TitleClip/Title",
-            "contextDepth": 1000,
-            "entryId": "RoguelikeUI/Roguelike_Challenge_TreeN_Title",
-            "source": "수동",
-            "template": "",
-            "samples": "10,000"
-        },
-        {
-            "slotGuid": "6024b23e059b2e143b0587117c676d30",
-            "slotPath": "Body/PanelMask/Panel/TitleClip/Title",
-            "contextGuid": "6024b23e059b2e143b0587117c676d30",
-            "contextPath": "Body/PanelMask/Panel/TitleClip/Title",
-            "contextDepth": 1000,
-            "entryId": "RoguelikeUI/Roguelike_Challenge_UnlimitN_Title",
-            "source": "수동",
-            "template": "",
-            "samples": "25"
-        },
-        {
-            "slotGuid": "6024b23e059b2e143b0587117c676d30",
-            "slotPath": "Body/PanelMask/Panel/TitleClip/Title",
-            "contextGuid": "6024b23e059b2e143b0587117c676d30",
-            "contextPath": "Body/PanelMask/Panel/TitleClip/Title",
-            "contextDepth": 1000,
-            "entryId": "RoguelikeUI/Roguelike_Challenge_TierAll_Title",
-            "source": "수동",
-            "template": "",
-            "samples": ""
-        },
-        {
-            "slotGuid": "6024b23e059b2e143b0587117c676d30",
-            "slotPath": "Body/PanelMask/Panel/TitleClip/Title",
-            "contextGuid": "6024b23e059b2e143b0587117c676d30",
-            "contextPath": "Body/PanelMask/Panel/TitleClip/Title",
-            "contextDepth": 1000,
-            "entryId": "RoguelikeUI/Roguelike_Challenge_Wave30_Title",
-            "source": "수동",
-            "template": "",
-            "samples": ""
         }
     ],
     "slots": [
@@ -4157,6 +7303,132 @@
             "contextDepth": 1,
             "defaultText": "변경할 키를 입력하세요.\n(ESC: 취소)",
             "ignored": false
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/Best",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/Best",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/KeyGuide/HintMove",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/KeyGuide/HintMove",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/KeyGuide/HintSelect",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/KeyGuide/HintSelect",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/MainMenuButton/Visual/Label",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/MainMenuButton/Visual/Label",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/OwnedLabel",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/OwnedLabel",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/PlayTimeLabel",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/PlayTimeLabel",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/PlayTimeValue",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/PlayTimeValue",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": true
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/RetryButton/Visual/Label",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/RetryButton/Visual/Label",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/TitlePlate/Title",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/TitlePlate/Title",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/TitlePlate/TitleShadow",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/TitlePlate/TitleShadow",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": true
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/TreesLabel",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/TreesLabel",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/TreesValue",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/TreesValue",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": true
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/WaveLabel",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/WaveLabel",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": true
+        },
+        {
+            "slotGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "slotPath": "Panel/PanelVisual/WaveValue",
+            "contextGuid": "122d271bb3b38d544adb4340c754d1b5",
+            "contextPath": "Panel/PanelVisual/WaveValue",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": true
         },
         {
             "slotGuid": "1a01f98089c26f0499de9e808fdb386e",
@@ -4273,6 +7545,204 @@
             "contextPath": "UI_MainMenu/BTNs/BTN_Option/Visual/TMP_Text",
             "contextDepth": 1,
             "defaultText": "Option\n",
+            "ignored": false
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "BTNs/BTN_Roguelike/Visual/TMP_Dot",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/BTNs/BTN_Roguelike/Visual/TMP_Dot",
+            "contextDepth": 1,
+            "defaultText": "◆",
+            "ignored": false
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "BTNs/BTN_Roguelike/Visual/TMP_Text",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/BTNs/BTN_Roguelike/Visual/TMP_Text",
+            "contextDepth": 1,
+            "defaultText": "NewGame",
+            "ignored": false
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeMenu/BTN_RL_Back/Visual/TMP_Dot",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeMenu/BTN_RL_Back/Visual/TMP_Dot",
+            "contextDepth": 1,
+            "defaultText": "◆",
+            "ignored": false
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeMenu/BTN_RL_Back/Visual/TMP_Text",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeMenu/BTN_RL_Back/Visual/TMP_Text",
+            "contextDepth": 1,
+            "defaultText": "NewGame",
+            "ignored": false
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeMenu/BTN_RL_Challenges/Visual/TMP_Dot",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeMenu/BTN_RL_Challenges/Visual/TMP_Dot",
+            "contextDepth": 1,
+            "defaultText": "◆",
+            "ignored": false
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeMenu/BTN_RL_Challenges/Visual/TMP_Text",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeMenu/BTN_RL_Challenges/Visual/TMP_Text",
+            "contextDepth": 1,
+            "defaultText": "NewGame",
+            "ignored": false
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeMenu/BTN_RL_Option/Visual/TMP_Dot",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeMenu/BTN_RL_Option/Visual/TMP_Dot",
+            "contextDepth": 1,
+            "defaultText": "◆",
+            "ignored": false
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeMenu/BTN_RL_Option/Visual/TMP_Text",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeMenu/BTN_RL_Option/Visual/TMP_Text",
+            "contextDepth": 1,
+            "defaultText": "NewGame",
+            "ignored": false
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeMenu/BTN_RL_Records/Visual/TMP_Dot",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeMenu/BTN_RL_Records/Visual/TMP_Dot",
+            "contextDepth": 1,
+            "defaultText": "◆",
+            "ignored": false
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeMenu/BTN_RL_Records/Visual/TMP_Text",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeMenu/BTN_RL_Records/Visual/TMP_Text",
+            "contextDepth": 1,
+            "defaultText": "NewGame",
+            "ignored": false
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeMenu/BTN_RL_Start/Visual/TMP_Dot",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeMenu/BTN_RL_Start/Visual/TMP_Dot",
+            "contextDepth": 1,
+            "defaultText": "◆",
+            "ignored": false
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeMenu/BTN_RL_Start/Visual/TMP_Text",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeMenu/BTN_RL_Start/Visual/TMP_Text",
+            "contextDepth": 1,
+            "defaultText": "NewGame",
+            "ignored": false
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeMenu/Plate/Label",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeMenu/Plate/Label",
+            "contextDepth": 1,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeMenu/Plate/LabelShadow",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeMenu/Plate/LabelShadow",
+            "contextDepth": 1,
+            "defaultText": "",
+            "ignored": true
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeRecordPanel/Panel/Label0",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeRecordPanel/Panel/Label0",
+            "contextDepth": 1,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeRecordPanel/Panel/Label1",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeRecordPanel/Panel/Label1",
+            "contextDepth": 1,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeRecordPanel/Panel/Label2",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeRecordPanel/Panel/Label2",
+            "contextDepth": 1,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeRecordPanel/Panel/TitlePlate/Title",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeRecordPanel/Panel/TitlePlate/Title",
+            "contextDepth": 1,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeRecordPanel/Panel/TitlePlate/TitleShadow",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeRecordPanel/Panel/TitlePlate/TitleShadow",
+            "contextDepth": 1,
+            "defaultText": "",
+            "ignored": true
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeRecordPanel/Panel/Value0",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeRecordPanel/Panel/Value0",
+            "contextDepth": 1,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeRecordPanel/Panel/Value1",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeRecordPanel/Panel/Value1",
+            "contextDepth": 1,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "323645c365d430340bfb16e08f94f2f7",
+            "slotPath": "RoguelikeRecordPanel/Panel/Value2",
+            "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
+            "contextPath": "UI_MainMenu/RoguelikeRecordPanel/Panel/Value2",
+            "contextDepth": 1,
+            "defaultText": "",
             "ignored": false
         },
         {
@@ -4447,6 +7917,24 @@
             "ignored": true
         },
         {
+            "slotGuid": "6024b23e059b2e143b0587117c676d30",
+            "slotPath": "Body/Header",
+            "contextGuid": "bce080b463b462d488af255457175f93",
+            "contextPath": "ChallengeToast/Body/Header",
+            "contextDepth": 1,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "6024b23e059b2e143b0587117c676d30",
+            "slotPath": "Body/PanelMask/Panel/TitleClip/Title",
+            "contextGuid": "bce080b463b462d488af255457175f93",
+            "contextPath": "ChallengeToast/Body/PanelMask/Panel/TitleClip/Title",
+            "contextDepth": 1,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
             "slotGuid": "644c96ad309ba114f9743fd5b9c6d5eb",
             "slotPath": "MainPop/MessageUI/Border/Message",
             "contextGuid": "0bd5670bcae6da44e879475ac190ee2c",
@@ -4454,6 +7942,87 @@
             "contextDepth": 1,
             "defaultText": "Message",
             "ignored": false
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/Body/Rows/RowTemplate/Content/Progress",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/Body/Rows/RowTemplate/Content/Progress",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": true
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/Body/Rows/RowTemplate/Content/Tip",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/Body/Rows/RowTemplate/Content/Tip",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/Body/Rows/RowTemplate/Content/Title",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/Body/Rows/RowTemplate/Content/Title",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/Empty",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/Empty",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/Header/Count",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/Header/Count",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": true
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/Header/Label",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/Header/Label",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/Header/Percent",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/Header/Percent",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": true
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/TitlePlate/Title",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/TitlePlate/Title",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "slotPath": "Panel/TitlePlate/TitleShadow",
+            "contextGuid": "6f2e8a47f6edbdd438ff41d52d88ac01",
+            "contextPath": "Panel/TitlePlate/TitleShadow",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": true
         },
         {
             "slotGuid": "7842cf31a45cee54ba7e7564a83bc5cb",
@@ -4816,6 +8385,69 @@
             "ignored": true
         },
         {
+            "slotGuid": "b1626051da8aa744fb17c1a0462a209a",
+            "slotPath": "Panel/Body/Rows/RowTemplate/More",
+            "contextGuid": "b1626051da8aa744fb17c1a0462a209a",
+            "contextPath": "Panel/Body/Rows/RowTemplate/More",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": true
+        },
+        {
+            "slotGuid": "b1626051da8aa744fb17c1a0462a209a",
+            "slotPath": "Panel/Body/Rows/RowTemplate/Rank",
+            "contextGuid": "b1626051da8aa744fb17c1a0462a209a",
+            "contextPath": "Panel/Body/Rows/RowTemplate/Rank",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": true
+        },
+        {
+            "slotGuid": "b1626051da8aa744fb17c1a0462a209a",
+            "slotPath": "Panel/Body/Rows/RowTemplate/Time",
+            "contextGuid": "b1626051da8aa744fb17c1a0462a209a",
+            "contextPath": "Panel/Body/Rows/RowTemplate/Time",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": true
+        },
+        {
+            "slotGuid": "b1626051da8aa744fb17c1a0462a209a",
+            "slotPath": "Panel/Body/Rows/RowTemplate/Wave",
+            "contextGuid": "b1626051da8aa744fb17c1a0462a209a",
+            "contextPath": "Panel/Body/Rows/RowTemplate/Wave",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": true
+        },
+        {
+            "slotGuid": "b1626051da8aa744fb17c1a0462a209a",
+            "slotPath": "Panel/Empty",
+            "contextGuid": "b1626051da8aa744fb17c1a0462a209a",
+            "contextPath": "Panel/Empty",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "b1626051da8aa744fb17c1a0462a209a",
+            "slotPath": "Panel/TabPlate/TabName",
+            "contextGuid": "b1626051da8aa744fb17c1a0462a209a",
+            "contextPath": "Panel/TabPlate/TabName",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "b1626051da8aa744fb17c1a0462a209a",
+            "slotPath": "Panel/TabPlate/TabNameShadow",
+            "contextGuid": "b1626051da8aa744fb17c1a0462a209a",
+            "contextPath": "Panel/TabPlate/TabNameShadow",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": true
+        },
+        {
             "slotGuid": "bd28f55901e93bd4aa5204630655ec49",
             "slotPath": "Text (TMP)",
             "contextGuid": "9ebf378887fd90d49a073c3a90cce74c",
@@ -4823,6 +8455,105 @@
             "contextDepth": 1,
             "defaultText": "Press any key to Start",
             "ignored": false
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Description",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Description",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Level",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Level",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/DescPanel/Name",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/DescPanel/Name",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/RerollButton/CountBadge/Count",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/RerollButton/CountBadge/Count",
+            "contextDepth": 0,
+            "defaultText": "1",
+            "ignored": true
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/RerollButton/Label",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/RerollButton/Label",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/TitlePlate/Title",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/TitlePlate/Title",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "Content/TitlePlate/TitleShadow",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "Content/TitlePlate/TitleShadow",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": true
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "PadGuide/HintMove",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "PadGuide/HintMove",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "PadGuide/HintSelect",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "PadGuide/HintSelect",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "WaveBadge/WaveText",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "WaveBadge/WaveText",
+            "contextDepth": 0,
+            "defaultText": "WAVE 1",
+            "ignored": true
+        },
+        {
+            "slotGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "slotPath": "WaveBadge/WaveTextShadow",
+            "contextGuid": "bd53942b5fcb5594c857c1bf09b67b8b",
+            "contextPath": "WaveBadge/WaveTextShadow",
+            "contextDepth": 0,
+            "defaultText": "WAVE 1",
+            "ignored": true
         },
         {
             "slotGuid": "c12e0ecbfef8767468e41930b0814944",
@@ -4840,6 +8571,78 @@
             "contextPath": "Icons/TMP/Text (TMP)",
             "contextDepth": 1000,
             "defaultText": "도끼 사용",
+            "ignored": false
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Book/Viewport/ScrollContent/EmptyText",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Book/Viewport/ScrollContent/EmptyText",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Description",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Description",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Level",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Level",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/Info/DescPanel/Name",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/Info/DescPanel/Name",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/KeyGuide/CloseRow/CloseText",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/KeyGuide/CloseRow/CloseText",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/KeyGuide/MoveRow/MoveText",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/KeyGuide/MoveRow/MoveText",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/TitleBar/Count",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/TitleBar/Count",
+            "contextDepth": 0,
+            "defaultText": "",
+            "ignored": false
+        },
+        {
+            "slotGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "slotPath": "Content/TitleBar/Title",
+            "contextGuid": "d73c6e98d182ed74696b75c5896b7e68",
+            "contextPath": "Content/TitleBar/Title",
+            "contextDepth": 0,
+            "defaultText": "",
             "ignored": false
         },
         {
@@ -5083,10 +8886,6 @@
             "reason": "특성 노드 데이터(데모·정식)에 없는 노드라 툴팁에 나오지 않음"
         },
         {
-            "entryId": "AbilityUI/AbilityDescription_LogProcessorSpeedUp",
-            "reason": "이 명령(SkillCommandType)을 쓰는 스킬이 데이터에 없음"
-        },
-        {
             "entryId": "AbilityUI/AbilityDescription_ShieldExplosionRange",
             "reason": "이 명령(SkillCommandType)을 쓰는 스킬이 데이터에 없음"
         },
@@ -5173,6 +8972,310 @@
         {
             "entryId": "InventoryUI/Open",
             "reason": "게임에서 표시되지 않음 (UI_Inventory의 Icons/KeyIcon/OpenText는 프리팹에서 꺼져 있고 켜는 코드가 없음)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_DamagePercent",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_AttackSpeedPercent",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_RangePercent",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_DurationPercent",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_DotDamagePercent",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_CountAdd",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_CountAdd_Boomerang",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_CountAdd_Drone",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_CountAdd_Offroad",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_CountAdd_SporeBomb",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_ChancePercent_Shockwave",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_ChancePercent_Stella",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_ChancePercent",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_TriggerHitCountAdd",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_ChainCountAdd",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_CooldownReductionPercent",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_MoveSpeedPercent",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_MoveSpeedPercent_Offroad",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_StaminaRecoverPerWave",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_MaxStaminaAdd",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_MaxStaminaPercent",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_GraceTimeAdd",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_DamageCooldownAdd",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_ThresholdAdd",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_TreeSpawnRatePercent",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_StarMarkDurationAdd",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_ShockwaveRepeatAdd",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_StarHitByActives",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_StarBlastRepeatAdd",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_SporeStackAdd",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_DamagePercentAboveThreshold",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_DurationExtendOnDotKill",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_AttackSpeedPercentWhileMoving",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_AxeExtraStrikeAdd",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_StarMarkDamageTakenAdd",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_EffectUnit_Seconds",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spin_shockwave_L1",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_boomerang_shockwave_L1",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spin_boomerang_L1",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_stella_drone_L1",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_DotTickIntervalAdd",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_DotTickIntervalReducePercent",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_DotTickIntervalReduceAtMaxStackPercent",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_AttackSpeedPercent_Offroad",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_AttackSpeedPercent_Drone",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_AttackSpeedPercent_SporeBomb",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_AttackSpeedPercent_Boomerang",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Effect_RangePercent_Offroad",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spore_drone_L1",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spore_offroad_L1",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Card_combo_spore_shockwave_L1",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Card_active_spin_X1",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Card_active_spin_X3",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Card_active_spin_X5",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Card_active_spin_X7",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Card_active_offroad_X1",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Card_active_offroad_X7",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Card_active_shockwave_X7",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_range_X2",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_range_X3",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_range_X4",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_range_X5",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_movespeed_X3",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Card_passive_movespeed_X5",
+            "reason": "카드 효과 줄 문구 — 지금 게임 화면에 나오지 않음 (카드 선택 설명 패널은 선택 모드라 기본 설명만, 보유 카드 화면도 기본 설명만)"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_OwnedCards_NextLevelHint",
+            "reason": "코드에서 참조하지 않음"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_OwnedCards_CurrentEffect",
+            "reason": "코드에서 참조하지 않음"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Hint_Back",
+            "reason": "코드에서 참조하지 않음"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Hint_Tab",
+            "reason": "코드에서 참조하지 않음"
+        },
+        {
+            "entryId": "RoguelikeUI/Roguelike_Challenges_Empty",
+            "reason": "도전과제 정의가 항상 있어 목록이 비지 않음 (RoguelikeChallenges.FillViewData)"
+        },
+        {
+            "entryId": "AbilityUI/TestNode2_Name",
+            "reason": "특성 노드 데이터(데모·정식)에 없는 노드라 툴팁에 나오지 않음"
+        },
+        {
+            "entryId": "AbilityUI/TestNode3_Name",
+            "reason": "특성 노드 데이터(데모·정식)에 없는 노드라 툴팁에 나오지 않음"
+        },
+        {
+            "entryId": "AbilityUI/TestNode4_Name",
+            "reason": "특성 노드 데이터(데모·정식)에 없는 노드라 툴팁에 나오지 않음"
+        },
+        {
+            "entryId": "AbilityUI/AbilityDescription_Overheat",
+            "reason": "이 명령(SkillCommandType)을 쓰는 스킬이 데이터에 없음"
+        },
+        {
+            "entryId": "AbilityUI/AbilityDescription_OverheatPermanent",
+            "reason": "이 명령(SkillCommandType)을 쓰는 스킬이 데이터에 없음"
+        },
+        {
+            "entryId": "AbilityUI/AbilityDescription_BoomerangOverheatBoost",
+            "reason": "이 명령(SkillCommandType)을 쓰는 스킬이 데이터에 없음"
+        },
+        {
+            "entryId": "AbilityUI/AbilityDescription_DroneOverheatBoost",
+            "reason": "이 명령(SkillCommandType)을 쓰는 스킬이 데이터에 없음"
         }
     ]
 }

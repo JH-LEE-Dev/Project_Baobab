@@ -285,6 +285,7 @@ namespace LocalizationQA
 
         private static readonly Regex FormatRegex = new Regex(@"\{\d+(?::[^{}]*)?\}", RegexOptions.Compiled);
         private static readonly Regex TagRegex = new Regex(@"<[^>]+>", RegexOptions.Compiled);
+        private static readonly Regex KeyTokenRegex = new Regex(@"\{key:[^{}]*\}", RegexOptions.Compiled);
 
         public readonly List<LocQAEntry> Entries = new List<LocQAEntry>(512);
 
@@ -506,6 +507,7 @@ namespace LocalizationQA
         {
             if (string.IsNullOrEmpty(_text)) return string.Empty;
             string _stripped = TagRegex.Replace(_text.Replace("\\n", "\n").Replace("\\t", "\t"), string.Empty);
+            _stripped = KeyTokenRegex.Replace(_stripped, string.Empty);   // {key:액션명}은 키 아이콘으로 바뀐다
             return FormatRegex.Replace(_stripped, string.Empty);
         }
     }
@@ -733,6 +735,32 @@ namespace LocalizationQA
         {
             EditorPrefs.SetString(PREF_KEY, JsonUtility.ToJson(this));
         }
+    }
+
+    /// <summary>
+    /// 검사할 프리팹 폴더들. 설정한 폴더에 더해, 그 폴더 밖에 있는 UI 폴더(로그라이크 UI)도 항상 함께 본다.
+    /// </summary>
+    internal static class LocQAFolders
+    {
+        private static readonly string[] Extra = { "Assets/Prefabs/Roguelike/UI" };
+
+        public static string[] Get(string _prefabFolder, string _default)
+        {
+            string _main = string.IsNullOrEmpty(_prefabFolder) ? _default : _prefabFolder.TrimEnd('/');
+            List<string> _result = new List<string>(1 + Extra.Length);
+            if (true == AssetDatabase.IsValidFolder(_main)) _result.Add(_main);
+            for (int i = 0; i < Extra.Length; i++)
+            {
+                if (false == AssetDatabase.IsValidFolder(Extra[i])) continue;
+                // 설정 폴더 안에 이미 들어 있으면 두 번 넣지 않는다.
+                if (true == AssetDatabase.IsValidFolder(_main) && (Extra[i] == _main || Extra[i].StartsWith(_main + "/", StringComparison.Ordinal))) continue;
+                _result.Add(Extra[i]);
+            }
+            return _result.ToArray();
+        }
+
+        /// <summary>설정한 폴더가 없을 때 띄울 이름</summary>
+        public static string Main(string _prefabFolder, string _default) => string.IsNullOrEmpty(_prefabFolder) ? _default : _prefabFolder.TrimEnd('/');
     }
 
     // //결과
