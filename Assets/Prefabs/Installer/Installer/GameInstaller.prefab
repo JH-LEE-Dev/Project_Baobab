@@ -2295,6 +2295,7 @@ MonoBehaviour:
   shadowFadeDuration: 0.1
   shadowOffsetMinScale: 0.1
   shadowLengthDamping: 0.7
+  emberOccluderSearchRadius: 2.5
   updateInterval: 0.1
 --- !u!1 &6412770358841193001
 GameObject:
@@ -4104,7 +4105,7 @@ MonoBehaviour:
   quakeStackPerEmberMax: 3
   quakeTier1Radius: 8
   quakeTier1Damage: 5000
-  quakeTier3Damage: 70000
+  quakeTier3Damage: 0
   goldTreePityMinKills: 3
   goldTreePityMaxKills: 7
   treePrefab: {fileID: 5272385284174554040, guid: 3224048e2842e2c48bc93158251200d2, type: 3}

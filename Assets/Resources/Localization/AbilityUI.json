@@ -6868,7 +6868,7 @@
         {
             "id": 9187,
             "key": "AbilityDescription_FinalAttack",
-            "kr": "체력이 <COLOR=54D86A>15%</COLOR> 이하인 나무를 <COLOR=fca311>즉시</COLOR> 벨 수 있습니다.",
+            "kr": "체력이 <COLOR=54D86A>10%</COLOR> 이하인 나무를 <COLOR=fca311>즉시</COLOR> 벨 수 있습니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",

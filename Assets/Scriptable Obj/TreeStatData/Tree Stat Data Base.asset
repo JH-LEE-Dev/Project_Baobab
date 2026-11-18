@@ -69,7 +69,7 @@ MonoBehaviour:
     spRegen: 0
     regenStrategy: {fileID: 0}
   - treeType: 12
-    hp: 250000
+    hp: 500000
     sp: 0
     spRegen: 0
     regenStrategy: {fileID: 0}
