@@ -62,9 +62,8 @@ public static class RoguelikeLobbyUIBuilder
     private static readonly Color ScrollTrackColor = new Color32(0x3A, 0x26, 0x1C, 255);
     private static readonly Color ScrollThumbColor = new Color32(0xCA, 0x8F, 0x73, 255);
     private const float ScrollbarThickness = 3f;
-    // 카드 띠 연결선(주황 단색 2개)과 띠 들여쓰기(UIView_RoguelikeRecords.StripIndent와 같은 14)
+    // 카드 띠 연결선(주황 단색 2개)
     private static readonly Color StripLinkColor = new Color32(0xFF, 0x9D, 0x2E, 255);
-    private const float StripIndentWidth = 14f;
 
     private static readonly Color DimColor = new Color(0.02f, 0.03f, 0.06f, 0.6f);
     private static readonly Color CreamColor = new Color(0.95f, 0.89f, 0.77f, 1f);

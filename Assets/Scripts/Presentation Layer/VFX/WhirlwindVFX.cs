@@ -75,8 +75,8 @@ public class WhirlwindVFX : MonoBehaviour
 
     private const float PixelsPerUnit = 32f;
 
-    // 칼날: 바깥 가장자리 반지름(판정 반지름 = 1). 예전 스프라이트처럼 판정 범위보다 조금 크게 그려 가장자리 나무도 칼날 안에 든다.
-    private const float BladeOuterRho = 1.08f;
+    // 칼날: 바깥 가장자리 반지름(판정 반지름 = 1). 판정 가장자리와 같게 그려 칼날이 판정 밖으로 나가지 않는다(기획서 v3.2 G-4).
+    private const float BladeOuterRho = 1.0f;
     // 꼬리 쪽 바깥 가장자리가 안으로 말려 드는 양(초승달 모양)
     private const float BladeTailCurl = 0.14f;
     // 칼날 최대 두께(반지름 비율)
@@ -88,9 +88,9 @@ public class WhirlwindVFX : MonoBehaviour
     // 돌기가 끝난 뒤 머리가 밀려 나가는 빠르기(도/초)와 칼날이 식어 사라지는 시간
     private const float BladeDriftSpeed = 80f;
     private const float BladeFadeSeconds = 0.14f;
-    // 등장 팝: 작게 나와 부풀었다가 자리잡는다(그림 반지름 배율)
+    // 등장 팝: 작게 나와 판정 반지름(1.0)까지 커진다(그림 반지름 배율). 판정보다 크게 부풀지 않는다(PopPeakScale 1.0 = 되돌아오는 구간 없음).
     private const float PopStartScale = 0.84f;
-    private const float PopPeakScale = 1.06f;
+    private const float PopPeakScale = 1.0f;
     private const float PopRiseSeconds = 0.05f;
     private const float PopSettleSeconds = 0.12f;
 
@@ -98,8 +98,8 @@ public class WhirlwindVFX : MonoBehaviour
     private const float EchoLag = 0.04f;
     private const float EchoRadiusRatio = 0.86f;
 
-    // 테두리 별빛의 기준 반지름
-    private const float ScarRho = 1.02f;
+    // 테두리 별빛의 기준 반지름. 별빛은 이 값 + 0.06 ~ 0.16에 놓이므로 0.84면 0.90 ~ 1.00으로 판정 가장자리(1.0) 안에 든다(기획서 v3.2 G-4).
+    private const float ScarRho = 0.84f;
 
     // 마무리 별빛
     private const int FinaleTwinkleCount = 12;
@@ -798,7 +798,7 @@ public class WhirlwindVFX : MonoBehaviour
             float cos = Mathf.Cos(a);
             float sin = Mathf.Sin(a);
 
-            float rho = Mathf.Lerp(0.9f, 1.04f, h2);
+            float rho = Mathf.Lerp(0.9f, 1.0f, h2); // 출발 반지름은 판정 가장자리(1.0) 이하
             float tangentX = -sin;
             float tangentY = cos * 0.5f;
             float tangentLength = Mathf.Sqrt(tangentX * tangentX + tangentY * tangentY);

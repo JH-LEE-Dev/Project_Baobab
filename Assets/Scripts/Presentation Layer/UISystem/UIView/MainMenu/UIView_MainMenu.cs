@@ -477,7 +477,7 @@ public class UIView_MainMenu : UIView
     /// 로그라이크 모드 버튼에서 부른다. 해금 조건(본편 모든 특성 해금 + 엔딩)은 본편 엔딩이 아직 없어
     /// 적용하지 않는다(기획서 9장 - 개발 중에는 상시 활성).
     /// 진입 연출 1~2단계(기획서 4-1): 지금 메인메뉴 화면에 디스토션이 걸리고 검게 덮인다. 검은 화면 아래에서
-    /// 새로하기·이어하기와 같은 퇴장 정리(버튼·딤머·로고)를 바로 끝내고 씬을 넘긴다. 검은 화면은 로그라이크 로비가 걷는다.
+    /// 새로하기·이어하기와 같은 퇴장 정리(버튼·딤머·로고)를 바로 끝내고 씬을 넘긴다. 검은 화면은 로그라이크 씬 진입 후 시스템(RoguelikeScreenTransition.ClearIfCovering)이 걷는다.
     /// </summary>
     public void OnRoguelikeButtonClicked()
     {
@@ -842,7 +842,7 @@ public class UIView_MainMenu : UIView
 
     /// <summary>
     /// [시스템 연결 지점] 다음에 메인 버튼이 나타날 때 로그라이크 하위 메뉴를 연 상태로 보여 준다(한 번만).
-    /// 로그라이크 결과 화면에서 메인메뉴를 골라 돌아왔을 때 BootStrap이 부른다(LobbyRemoval_AppLayer_Request.md S3).
+    /// 로그라이크 결과 화면에서 메인메뉴를 골라 돌아왔을 때 BootStrap이 부른다.
     /// </summary>
     public void OpenRoguelikeMenuOnShow()
     {
