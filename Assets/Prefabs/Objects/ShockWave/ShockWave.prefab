@@ -80,7 +80,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -547504293
-  m_SortingLayer: 11
+  m_SortingLayer: 12
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: 380cee39bfac2204ebd9ae96532998b4, type: 3}
@@ -132,3 +132,4 @@ MonoBehaviour:
   visualFadeOutDuration: 0.15
   visualStartThickness: 0.025
   visualAngleMultiplier: 1
+  fxMaterial: {fileID: 2100000, guid: 924225dcfdaefbe40981b13e4c6751b1, type: 2}

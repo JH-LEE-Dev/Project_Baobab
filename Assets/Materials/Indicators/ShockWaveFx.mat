@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: ShockWaveFx
+  m_Shader: {fileID: 4800000, guid: 01423a907a3879640961ec82850f26b5, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _GlowMax: 2.4
+    - _GlowMin: 1
+    - _Seed: 1
+    - _T: 0
+    m_Colors:
+    - _Center: {r: 0, g: 0, b: 1, a: 32}
+    - _ColorDark: {r: 0.8392, g: 0.4706, b: 0.1569, a: 0}
+    - _ColorLight: {r: 1, g: 0.9255, b: 0.698, a: 0.0784}
+    - _ColorMid: {r: 1, g: 0.7608, b: 0.3216, a: 0}
+    - _ColorWhite: {r: 1, g: 1, b: 1, a: 1}
+    - _Dir: {r: 1, g: 0, b: 0.785, a: 0}
+    - _Geo: {r: 0.1, g: 0.5, b: 4, a: 0.25}
+    - _Pebble: {r: 0.46, g: 0.34, b: 0.22, a: 0}
+    - _PebbleDark: {r: 0.3, g: 0.22, b: 0.15, a: 0}
+    - _Tint: {r: 1, g: 1, b: 1, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
