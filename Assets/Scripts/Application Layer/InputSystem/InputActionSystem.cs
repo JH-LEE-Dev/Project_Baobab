@@ -147,51 +147,6 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""SwitchMode"",
-                    ""type"": ""Button"",
-                    ""id"": ""d5797455-52c6-437e-b8de-3c7f69a29511"",
-                    ""expectedControlType"": """",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": false
-                },
-                {
-                    ""name"": ""AxeMode"",
-                    ""type"": ""Button"",
-                    ""id"": ""e9602ac7-cd9f-4254-8e56-6a50617d3bc2"",
-                    ""expectedControlType"": """",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": false
-                },
-                {
-                    ""name"": ""RifleMode"",
-                    ""type"": ""Button"",
-                    ""id"": ""e39a7bde-851b-45b1-ba43-fc0e93088b4a"",
-                    ""expectedControlType"": """",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": false
-                },
-                {
-                    ""name"": ""Reload"",
-                    ""type"": ""Button"",
-                    ""id"": ""76f717b3-7678-4015-b04d-11e01a27dd40"",
-                    ""expectedControlType"": """",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": false
-                },
-                {
-                    ""name"": ""AimCorrection"",
-                    ""type"": ""Button"",
-                    ""id"": ""67315ccc-d343-4f75-9a55-41ae74ba06d9"",
-                    ""expectedControlType"": """",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": false
-                },
-                {
                     ""name"": ""LogSwap"",
                     ""type"": ""Button"",
                     ""id"": ""c7a41f30-5b62-4e88-9a37-2d6e81f4c905"",
@@ -327,61 +282,6 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""Interaction"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
-                    ""id"": ""093114c3-0f19-4b9b-847b-58e764e94821"",
-                    ""path"": ""<Keyboard>/tab"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""SwitchMode"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
-                    ""id"": ""112cc807-16be-46a2-b6e0-35ed145426bd"",
-                    ""path"": ""<Keyboard>/1"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""AxeMode"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
-                    ""id"": ""cbe7ba3b-9ab2-41d5-bd95-14ffc1a117ba"",
-                    ""path"": ""<Keyboard>/2"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""RifleMode"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
-                    ""id"": ""f7ecc1da-e735-4b54-9933-b5846101f3e5"",
-                    ""path"": ""<Keyboard>/r"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""Reload"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
-                    ""id"": ""6f09f443-5826-473b-baf8-2ae645b20531"",
-                    ""path"": ""<Keyboard>/shift"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""AimCorrection"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -859,11 +759,6 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
         m_Normal_Click = m_Normal.FindAction("Click", throwIfNotFound: true);
         m_Normal_Inventory = m_Normal.FindAction("Inventory", throwIfNotFound: true);
         m_Normal_Interaction = m_Normal.FindAction("Interaction", throwIfNotFound: true);
-        m_Normal_SwitchMode = m_Normal.FindAction("SwitchMode", throwIfNotFound: true);
-        m_Normal_AxeMode = m_Normal.FindAction("AxeMode", throwIfNotFound: true);
-        m_Normal_RifleMode = m_Normal.FindAction("RifleMode", throwIfNotFound: true);
-        m_Normal_Reload = m_Normal.FindAction("Reload", throwIfNotFound: true);
-        m_Normal_AimCorrection = m_Normal.FindAction("AimCorrection", throwIfNotFound: true);
         m_Normal_LogSwap = m_Normal.FindAction("LogSwap", throwIfNotFound: true);
         m_Normal_Dash = m_Normal.FindAction("Dash", throwIfNotFound: true);
         m_Normal_Aim = m_Normal.FindAction("Aim", throwIfNotFound: true);
@@ -966,11 +861,6 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
     private readonly InputAction m_Normal_Click;
     private readonly InputAction m_Normal_Inventory;
     private readonly InputAction m_Normal_Interaction;
-    private readonly InputAction m_Normal_SwitchMode;
-    private readonly InputAction m_Normal_AxeMode;
-    private readonly InputAction m_Normal_RifleMode;
-    private readonly InputAction m_Normal_Reload;
-    private readonly InputAction m_Normal_AimCorrection;
     private readonly InputAction m_Normal_LogSwap;
     private readonly InputAction m_Normal_Dash;
     private readonly InputAction m_Normal_Aim;
@@ -1009,26 +899,6 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Normal/Interaction".
         /// </summary>
         public InputAction @Interaction => m_Wrapper.m_Normal_Interaction;
-        /// <summary>
-        /// Provides access to the underlying input action "Normal/SwitchMode".
-        /// </summary>
-        public InputAction @SwitchMode => m_Wrapper.m_Normal_SwitchMode;
-        /// <summary>
-        /// Provides access to the underlying input action "Normal/AxeMode".
-        /// </summary>
-        public InputAction @AxeMode => m_Wrapper.m_Normal_AxeMode;
-        /// <summary>
-        /// Provides access to the underlying input action "Normal/RifleMode".
-        /// </summary>
-        public InputAction @RifleMode => m_Wrapper.m_Normal_RifleMode;
-        /// <summary>
-        /// Provides access to the underlying input action "Normal/Reload".
-        /// </summary>
-        public InputAction @Reload => m_Wrapper.m_Normal_Reload;
-        /// <summary>
-        /// Provides access to the underlying input action "Normal/AimCorrection".
-        /// </summary>
-        public InputAction @AimCorrection => m_Wrapper.m_Normal_AimCorrection;
         /// <summary>
         /// Provides access to the underlying input action "Normal/LogSwap".
         /// </summary>
@@ -1085,21 +955,6 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
             @Interaction.started += instance.OnInteraction;
             @Interaction.performed += instance.OnInteraction;
             @Interaction.canceled += instance.OnInteraction;
-            @SwitchMode.started += instance.OnSwitchMode;
-            @SwitchMode.performed += instance.OnSwitchMode;
-            @SwitchMode.canceled += instance.OnSwitchMode;
-            @AxeMode.started += instance.OnAxeMode;
-            @AxeMode.performed += instance.OnAxeMode;
-            @AxeMode.canceled += instance.OnAxeMode;
-            @RifleMode.started += instance.OnRifleMode;
-            @RifleMode.performed += instance.OnRifleMode;
-            @RifleMode.canceled += instance.OnRifleMode;
-            @Reload.started += instance.OnReload;
-            @Reload.performed += instance.OnReload;
-            @Reload.canceled += instance.OnReload;
-            @AimCorrection.started += instance.OnAimCorrection;
-            @AimCorrection.performed += instance.OnAimCorrection;
-            @AimCorrection.canceled += instance.OnAimCorrection;
             @LogSwap.started += instance.OnLogSwap;
             @LogSwap.performed += instance.OnLogSwap;
             @LogSwap.canceled += instance.OnLogSwap;
@@ -1138,21 +993,6 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
             @Interaction.started -= instance.OnInteraction;
             @Interaction.performed -= instance.OnInteraction;
             @Interaction.canceled -= instance.OnInteraction;
-            @SwitchMode.started -= instance.OnSwitchMode;
-            @SwitchMode.performed -= instance.OnSwitchMode;
-            @SwitchMode.canceled -= instance.OnSwitchMode;
-            @AxeMode.started -= instance.OnAxeMode;
-            @AxeMode.performed -= instance.OnAxeMode;
-            @AxeMode.canceled -= instance.OnAxeMode;
-            @RifleMode.started -= instance.OnRifleMode;
-            @RifleMode.performed -= instance.OnRifleMode;
-            @RifleMode.canceled -= instance.OnRifleMode;
-            @Reload.started -= instance.OnReload;
-            @Reload.performed -= instance.OnReload;
-            @Reload.canceled -= instance.OnReload;
-            @AimCorrection.started -= instance.OnAimCorrection;
-            @AimCorrection.performed -= instance.OnAimCorrection;
-            @AimCorrection.canceled -= instance.OnAimCorrection;
             @LogSwap.started -= instance.OnLogSwap;
             @LogSwap.performed -= instance.OnLogSwap;
             @LogSwap.canceled -= instance.OnLogSwap;
@@ -1439,41 +1279,6 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnInteraction(InputAction.CallbackContext context);
-        /// <summary>
-        /// Method invoked when associated input action "SwitchMode" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-        /// </summary>
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnSwitchMode(InputAction.CallbackContext context);
-        /// <summary>
-        /// Method invoked when associated input action "AxeMode" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-        /// </summary>
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnAxeMode(InputAction.CallbackContext context);
-        /// <summary>
-        /// Method invoked when associated input action "RifleMode" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-        /// </summary>
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnRifleMode(InputAction.CallbackContext context);
-        /// <summary>
-        /// Method invoked when associated input action "Reload" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-        /// </summary>
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnReload(InputAction.CallbackContext context);
-        /// <summary>
-        /// Method invoked when associated input action "AimCorrection" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-        /// </summary>
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnAimCorrection(InputAction.CallbackContext context);
         /// <summary>
         /// Method invoked when associated input action "LogSwap" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
