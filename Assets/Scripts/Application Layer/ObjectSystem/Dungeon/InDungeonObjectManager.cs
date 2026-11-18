@@ -209,8 +209,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private int obsidianCharmPityThreshold;
 
     // "흑요 부적" 성장 기준 프레스티지 레벨(II 없이 I → III)과 지진 수치. 단계별 수치는 밸런스 작업 전 임시값이다.
-    // 피해는 4스테이지 나무 체력(잿불 100만 / 용암수액 300만 / 흑요 1000만) 기준이다. 과열 배율(최대 3배)이 뒤에 곱해진다.
-    // I: 잿불은 한 번에, 용암수액은 과열 중이면 한 번에 쓰러진다. III: 잿불·용암수액은 한 번에, 흑요는 과열 절반 이상이면 한 번에 쓰러진다.
+    // 피해는 맞는 나무의 최대 체력 비율이다(I 10% / III 15%). 과열 배율(최대 3배) 등 나무 피해 배율은 다른 공격처럼 뒤에 곱해진다.
     [SerializeField] private int obsidianCharmTier3PrestigeLevel = 11;
     [SerializeField, Tooltip("지진이 발동하는 지진 스택(버프 HUD 최대치)")]
     private int quakeMaxStack = 100;
@@ -223,8 +222,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     [SerializeField, Tooltip("흑요 부적 I(씨앗) 지진 범위(바닥 평면 거리 - 세로 차이를 두 배로 편 거리, 가로로 이만큼·세로로 절반). " +
                              "이 안의 나무만 맞고, 바닥 물결·흙먼지·나무 떨림·충격파 연출도 여기까지만 퍼진다. III(나무)는 화면 전체 그대로다")]
     private float quakeTier1Radius = 8f;
-    [SerializeField] private float quakeTier1Damage = 1500000f;
-    [SerializeField] private float quakeTier3Damage = 5000000f;
+    [SerializeField, Tooltip("흑요 부적 I(씨앗) 지진 피해 = 맞는 나무 최대 체력 × 이 비율")]
+    private float quakeTier1MaxHpRatio = 0.10f;
+    [SerializeField, Tooltip("흑요 부적 III(나무) 지진 피해 = 맞는 나무 최대 체력 × 이 비율")]
+    private float quakeTier3MaxHpRatio = 0.15f;
     // 이번 숲 방문에 적용되는 단계(0이면 효과 없음). 숲에 들어올 때 정하고 방문 도중에는 바꾸지 않는다.
     private int obsidianCharmTierThisRun;
     // 지진 스택(0~quakeMaxStack). 숲 방문마다 비운다.
@@ -3589,7 +3590,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         int version = quakeVersion;
 
         bool bScreenWide = 3 == _tier;
-        float damage = bScreenWide ? quakeTier3Damage : quakeTier1Damage;
+        float maxHpRatio = bScreenWide ? quakeTier3MaxHpRatio : quakeTier1MaxHpRatio;
         Vector3 origin = null != character ? character.transform.position : Vector3.zero;
         origin.z = 0f;
 
@@ -3660,7 +3661,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             // 귀환 절차 중(경고창·탑승 연출)이나 쓰러진 뒤에는 피해를 주지 않는다. 앞머리는 그대로 퍼진다(유성우와 같은 규칙).
             if (false == (bStarGazeSuspendedByGameEnd || character == null || character.bDead))
             {
-                ApplyQuakeDamage(origin, reached, front, damage, range, strikeRect);
+                ApplyQuakeDamage(origin, reached, front, maxHpRatio, range, strikeRect);
             }
 
             reached = front;
@@ -3714,7 +3715,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     // 진원 기준 등각 타원 띠(_inner 초과 ~ _outer 이하, 바닥 평면 거리) 가운데 _strikeRect(화면 전체 피해 범위) 안의 나무를 때린다.
     // _range는 앞머리가 가는 거리 전체(쓰러진 나무가 튀어 오르는 높이를 진원 거리로 정할 때만 쓴다).
-    private void ApplyQuakeDamage(Vector3 _origin, float _inner, float _outer, float _damage, float _range, Rect _strikeRect)
+    // 피해는 나무마다 맞는 순간의 최대 체력 × _maxHpRatio다.
+    private void ApplyQuakeDamage(Vector3 _origin, float _inner, float _outer, float _maxHpRatio, float _range, Rect _strikeRect)
     {
         if (CollisionSystem.Instance == null || _outer <= _inner) return;
 
@@ -3748,7 +3750,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                     bQuakeStrikeInProgress = true;
 
                     // 진동은 지진 연출이 한 번 낸다.
-                    tree.TakeDamage(_damage, false);
+                    tree.TakeDamage(tree.health.GetMaxHealth() * _maxHpRatio, false);
                     bQuakeStrikeInProgress = false;
                     // 맞은 나무만 위로 한 번 튀어 보인다(물결 위 물체 연출).
                     environmentProvider?.NotifyQuakeStruck(tree.transform);

@@ -280,6 +280,8 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         }
         PostProcessSettingsApplier.Instance?.PlayQuakeChromaticAberrationPulse();
         Rumble.Play(EHapticEvent.Earthquake);
+        // 지진 효과음은 처음부터 크게 터지는 소리라 전조가 아니라 물결이 퍼지는 이 순간(진동과 같은 프레임)에 진원에서 낸다.
+        Sound.Play(SoundID.Earthquake, quakeCenter);
 
         // 히트스톱·섬광을 걸고(섬광이 전조 어두워짐을 덮는다), 여진·충격파 왜곡을 이어 간다. 앞머리를 따라 흙먼지가 일고 위에서 잔돌이 떨어진다.
         quakeImpact.Play(quakeCenter, quakeStrikeRadius, bQuakeHitStop);
