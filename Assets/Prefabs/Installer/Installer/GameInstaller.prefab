@@ -3062,7 +3062,7 @@ MonoBehaviour:
     slamRadius: 4.5
     slamBounceSeconds: 0.14
     slamDecaySeconds: 0.12
-    hitStopSeconds: 0.12
+    hitStopSeconds: 0
     hitStopTimeScale: 0.02
     flashExposure: 1
     flashTint: {r: 1.7, g: 1.15, b: 0.7, a: 1}

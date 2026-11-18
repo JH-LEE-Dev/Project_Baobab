@@ -193,15 +193,24 @@ public class LootPillarManager : MonoBehaviour
     {
         if (0 == pendingEvolutions.Count) return;
 
-        for (int i = 0; i < spawnedPillars.Count; i++)
+        // 여러 전리품이 함께 진화해도 진화음은 한 번만 낸다.
+        LootDisplayObject.BeginEvolveBatch();
+        try
         {
-            LootDisplayObject pillar = spawnedPillars[i];
-            if (null == pillar) continue;
-
-            if (true == pendingEvolutions.TryGetValue(pillar.CurrentLootType, out int tier))
+            for (int i = 0; i < spawnedPillars.Count; i++)
             {
-                pillar.PlayGrowthEvolve(tier);
+                LootDisplayObject pillar = spawnedPillars[i];
+                if (null == pillar) continue;
+
+                if (true == pendingEvolutions.TryGetValue(pillar.CurrentLootType, out int tier))
+                {
+                    pillar.PlayGrowthEvolve(tier);
+                }
             }
+        }
+        finally
+        {
+            LootDisplayObject.EndEvolveBatch();
         }
 
         pendingEvolutions.Clear();

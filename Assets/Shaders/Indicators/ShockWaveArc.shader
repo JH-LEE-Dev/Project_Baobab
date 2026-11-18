@@ -97,9 +97,30 @@ Shader "Custom/ShockWaveArc"
                 float4 _Echo;
             CBUFFER_END
 
+            // 양옆 경계: 경계선이 안팎으로 물결치는 폭(게임 픽셀, ±), 물결 마디 길이(게임 픽셀), 이글거리는 속도(초당 그림 수),
+            // 경계에서 옅어지는 폭(게임 픽셀): 퍼지는 동안 / 끝무렵(본체가 식어 얇은 선이 될 때) - 끝무렵에는 선 양끝이 길게 점으로 풀린다.
+            // 과열 충격파(OverheatShockWaveArc)와 같은 값.
+            #define SIDE_WAVE_PX 6.0
+            #define SIDE_WAVE_CELL_PX 9.0
+            #define SIDE_FLICKER_FPS 15.0
+            #define SIDE_SOFT_PX 12.0
+            #define SIDE_SOFT_LATE_PX 56.0
+
             float Hash(float n)
             {
                 return frac(sin(n) * 43758.5453);
+            }
+
+            // 4x4 순서 디더 문턱값(0~1): 옅어지는 정도를 16단계 점 밀도로 나타낸다.
+            float Bayer4(int _x, int _y)
+            {
+                int x = _x & 3;
+                int y = _y & 3;
+                int v = (y == 0) ? (x == 0 ? 0 : x == 1 ? 8 : x == 2 ? 2 : 10)
+                      : (y == 1) ? (x == 0 ? 12 : x == 1 ? 4 : x == 2 ? 14 : 6)
+                      : (y == 2) ? (x == 0 ? 3 : x == 1 ? 11 : x == 2 ? 1 : 9)
+                      :            (x == 0 ? 15 : x == 1 ? 7 : x == 2 ? 13 : 5);
+                return (v + 0.5) / 16.0;
             }
 
             float Noise1D(float x)
@@ -159,21 +180,38 @@ Shader "Custom/ShockWaveArc"
                     if (radius > outerBound || radius < innerBound - 0.001) discard;
                 }
                 float2 dir = radius > 0.0001 ? centered / radius : float2(1.0, 0.0);
-                float cosThreshold = cos(radians(_Angle * 0.5));
                 float angleDot = dot(dir, normalize(_AttackDir.xy));
-                float angleMask = _Angle >= 359.0 ? 1.0 : smoothstep(cosThreshold, cosThreshold + _AngleEdgeFade, angleDot);
-                if (angleMask <= 0.0) discard;
-                // 부채꼴 양옆 가장자리는 체커 도트로 흩어진다.
-                if (angleMask < 0.55 && false == bChecker) discard;
-
                 float angleCoord = atan2(dir.y, dir.x);
+                float t = _TrailTime;
+
+                // 양옆 경계: 공격 범위(_Angle) 경계선을 그대로 쓰되, 곧게 잘린 느낌이 나지 않게 경계선이 반지름을 따라
+                // 몇 픽셀씩 안팎으로 물결치며 15fps로 이글거리고, 경계 쪽은 점 밀도가 줄며 옅어진다(끝무렵 얇은 선일 때는 더 길게).
+                // 범위 크기·두께·모양은 그대로이고 양옆 경계만 바뀐다(과열 충격파와 같은 방식).
+                float edgeSoft = 1.0; // 0 = 경계, 1 = 경계에서 SIDE_SOFT_PX 이상 안쪽
+                if (_Angle < 359.0)
+                {
+                    float spread = acos(clamp(angleDot, -1.0, 1.0));
+                    // 경계까지 화면 게임 픽셀(등각 타원의 둘레 방향 길이로 환산)
+                    float tangentScale = sqrt(dir.y * dir.y + 0.25 * dir.x * dir.x);
+                    float radPx = radius * visualRadius * ppu;
+                    float edgePx = (radians(_Angle * 0.5) - spread) * radPx * tangentScale;
+                    float sideStep = floor(t * SIDE_FLICKER_FPS);
+                    float sideNoise = Noise1D(radPx / SIDE_WAVE_CELL_PX + sideStep * 3.17 + _TrailSeed * 13.1) * 0.65
+                        + Noise1D(radPx / (SIDE_WAVE_CELL_PX * 0.4) - sideStep * 5.71 + _TrailSeed * 7.3 + 31.0) * 0.35;
+                    float edge = edgePx + (sideNoise * 2.0 - 1.0) * SIDE_WAVE_PX;
+                    if (edge <= 0.0) discard;
+                    float softPx = lerp(SIDE_SOFT_PX, SIDE_SOFT_LATE_PX, saturate(1.0 - _Alpha));
+                    edgeSoft = saturate(edge / softPx);
+                    // 경계로 갈수록 점 밀도가 16단계로 줄어 선이 뚝 끊기지 않고 풀린다.
+                    if (edgeSoft < Bayer4(ix, iy)) discard;
+                }
+
                 float noiseA = Noise1D(angleCoord * _TrailFrequency + _TrailTime * 8.0 + _TrailSeed * 37.17);
                 float noiseB = Noise1D(angleCoord * (_TrailFrequency * 0.43) - _TrailTime * 5.0 + _TrailSeed * 91.73 + 17.0);
                 float jagged = (noiseA * 0.7 + noiseB * 0.3) * 2.0 - 1.0;
                 float inner = saturate(_MinRadius - _TrailOffset + jagged * _TrailNoise);
 
                 // 등장: 처음 0.07초 하얗게 번쩍이고, 앞 가장자리(판정)는 그대로 둔 채 뒤로 두꺼워졌다가 돌아온다.
-                float t = _TrailTime;
                 float flash = 1.0 - smoothstep(0.0, 1.0, saturate(t / 0.07));
                 float pop = t < 0.04 ? 0.5 * t / 0.04 : 0.5 * max(0.0, 1.0 - (t - 0.04) / 0.1);
                 inner = max(0.0, _MaxRadius - (_MaxRadius - inner) * (1.0 + pop));
@@ -188,10 +226,11 @@ Shader "Custom/ShockWaveArc"
                     float thickness = max(0.0001, _MaxRadius - inner);
                     float across = (radius - inner) / thickness; // 0 = 뒤(안쪽), 1 = 앞(바깥)
                     float pxToFront = (_MaxRadius - radius) * pxPerUnit;
-                    float b = across + flash * 0.7 - cool * 1.25;
+                    // 양옆 경계 쪽은 한두 단계 식은 색이 되어 경계가 흰 덩어리로 뚝 끊기지 않는다.
+                    float b = across + flash * 0.7 - cool * 1.25 - (1.0 - edgeSoft) * 0.5;
                     float rimPx = _RimPx * (1.0 - cool * 0.7) + flash * 3.0;
 
-                    if (pxToFront < rimPx && cool < 0.55) return Output(_ColorWhite, IN.color, 1.0);
+                    if (pxToFront < rimPx && cool < 0.55 && edgeSoft > 0.5) return Output(_ColorWhite, IN.color, 1.0);
                     if (b > 0.6) return Output(_ColorWhite, IN.color, flash * 0.8);
                     if (b > 0.4) return Output(_ColorLight, IN.color, _ColorLight.a + flash * 0.5);
                     if (b > 0.22) return Output(_ColorMid, IN.color, _ColorMid.a);

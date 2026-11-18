@@ -45,6 +45,8 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     private float quakeFlashScale = 1f;
     // 흙먼지·파편·잔돌 낙하(QuakeDebrisEffect). 물결이 퍼지기 시작할 때 함께 시작한다.
     private readonly QuakeDebrisEffect quakeDebris = new QuakeDebrisEffect();
+    // 히트스톱이 걸리는 지진(나무 지진)에서만 전조·히트스톱 동안 기운이 모였다가 터지는 연출을 낸다.
+    private readonly QuakeChargeEffect quakeCharge = new QuakeChargeEffect();
     // 전조(QuakeTileRipple.IsBuildingUp) 연출을 냈는지와, 카메라 잔떨림을 다시 건 뒤 지난 시간.
     private bool bQuakeBuildUpPlayed;
     private float quakeBuildUpShakeTimer;
@@ -98,6 +100,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         quakeRipple.Initialize(quakeRippleSettings);
         quakeImpact.Initialize(quakeRippleSettings, transform);
         quakeDebris.Initialize(quakeRippleSettings, transform);
+        quakeCharge.Initialize(quakeRippleSettings, transform);
 
         BindEvents();
         SubscribeSignals();
@@ -119,6 +122,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         StopQuakeEffects();
         quakeImpact.Release();
         quakeDebris.Release();
+        quakeCharge.Release();
 
         if (environmentObjManager != null)
             environmentObjManager.ReleaseAllObjs();
@@ -190,12 +194,17 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
             bQuakeFeedbackPending = false;
             if (quakeRipple.IsPlaying) PlayQuakeFeedback();
             // 전조만 내고 물결이 끊겼으면(맵이 바뀌는 등) 어두워진 화면을 되돌린다.
-            else if (bQuakeBuildUpPlayed) PostProcessSettingsApplier.Instance?.StopQuakeDarken();
+            else
+            {
+                if (bQuakeBuildUpPlayed) PostProcessSettingsApplier.Instance?.StopQuakeDarken();
+                quakeCharge.Stop();
+            }
         }
 
         // 히트스톱은 실제 시간, 여진·충격파·흙먼지는 게임 시간으로 진행한다.
         quakeImpact.Tick(Time.deltaTime, Time.unscaledDeltaTime);
         quakeDebris.Tick(Time.deltaTime);
+        quakeCharge.Tick(Time.deltaTime, Time.unscaledDeltaTime);
     }
 
     /// <summary>
@@ -211,6 +220,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
             quakeBuildUpShakeTimer = QuakeBuildUpShakeInterval;
             PostProcessSettingsApplier.Instance?.PlayQuakeDarken(quakeRippleSettings.buildUpDarkenExposure, seconds);
             Rumble.Play(EHapticEvent.QuakeBuildUp);
+            if (bQuakeHitStop) quakeCharge.PlayAbsorb(quakeCenter);
         }
 
         if (quakeRippleSettings.buildUpShakeIntensity <= 0f) return;
@@ -234,6 +244,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         quakeRipple.Stop();
         quakeImpact.Stop();
         quakeDebris.Stop();
+        quakeCharge.Stop();
     }
 
     /// <summary>
@@ -287,6 +298,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 
         // 히트스톱·섬광을 걸고(섬광이 전조 어두워짐을 덮는다), 여진·충격파 왜곡을 이어 간다. 앞머리를 따라 흙먼지가 일고 위에서 잔돌이 떨어진다.
         quakeImpact.Play(quakeCenter, quakeStrikeRadius, bQuakeHitStop, quakeFlashScale);
+        if (bQuakeHitStop) quakeCharge.Burst(quakeCenter, quakeRipple);
         PostProcessSettingsApplier.Instance?.StopQuakeDarken();
         quakeDebris.Play(quakeRipple);
 
