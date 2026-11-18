@@ -5,7 +5,7 @@ using UnityEngine.EventSystems;
 /// <summary>
 /// 카드 선택 화면의 선택 대상(카드 슬롯·리롤 버튼)이 입력을 화면과 카드 연출에 알리는 중계기.
 ///   포커스   마우스가 올라왔을 때(IPointerEnter)와 패드·키보드 선택이 옮겨 왔을 때(ISelect)가 같은 FocusedEvent를 올려서,
-///            호버와 선택 강조가 항상 같은 연출이 되게 한다(UI_WorkList 0장 "마우스 호버와 선택 강조를 같은 연출로").
+///            호버와 선택 강조가 항상 같은 연출이 되게 한다(기획서 10장 픽셀 UI 규칙 "마우스 호버와 선택 강조를 같은 연출로").
 ///   누름     마우스를 누르는 동안 PressedEvent(true), 떼거나 대상 밖으로 나가면 PressedEvent(false). 패드·키보드 제출은 SubmittedEvent 한 번(누름과 뗌이 같이 온다).
 ///
 /// 커서 박스가 따라갈 대상은 cursorTarget이다. 비어 있으면 이 오브젝트 자신. 카드 슬롯은 판정 박스(HitBox)가 이 컴포넌트를 갖고,

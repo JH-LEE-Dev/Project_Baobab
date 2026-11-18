@@ -9,7 +9,7 @@ using UnityEngine.UI;
 /// 보관함·ESC 메뉴가 timeScale을 0으로 만들어도 멈추지 않는다. 트윈 라이브러리를 쓰지 않아 호출당 힙 할당이 없다.
 /// 한 번에 연출 하나만 돈다(새 연출이 시작되면 이전 연출은 그 자리에서 끝난 것으로 본다).
 ///
-/// [뒤집힘] 폭을 짝수 정수 픽셀 단계로 줄였다 늘린다(3D 회전 금지 - UI_WorkList 0장). 한 장 0.5초:
+/// [뒤집힘] 폭을 짝수 정수 픽셀 단계로 줄였다 늘린다(3D 회전 금지 - 기획서 10장 픽셀 UI 규칙). 한 장 0.5초:
 ///   접힘(앞 40%)  폭이 점점 빨라지며 가장 얇은 폭(EdgeWidth)까지 줄고, 그동안 카드가 HopHeight만큼 뜬다.
 ///   옆면(7%)      가장 얇은 폭으로 두 프레임쯤 머문다(60fps에서 프레임이 이 순간을 건너뛰지 않게). 이때 뒷면 → 앞면으로 바뀌고(앞면이 드러남 = IsRevealed),
 ///                 카드 두께(옆면)가 앞면 테두리 색으로 보이고 프레임이 약하게 번쩍이며, 희귀 카드는 대각 광택 띠가 지나가며 레어로 바뀐다.
@@ -66,7 +66,6 @@ public class UI_RoguelikeCardSlot : MonoBehaviour
     public int OfferIndex => offerIndex;
     public RoguelikeCardViewData Data => data;
     public bool IsRevealed => bRevealed;
-    public bool IsAnimating => EAnim.Idle != anim && EAnim.Intro != anim && EAnim.Landing != anim;
     public bool IsIntroPlaying => EAnim.Intro == anim;
     public UI_RoguelikeSelectRelay Relay => relay;
     public Button SelectButton => button;

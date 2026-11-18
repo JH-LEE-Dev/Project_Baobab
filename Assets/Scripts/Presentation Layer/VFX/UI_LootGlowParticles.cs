@@ -5,7 +5,8 @@ namespace PresentationLayer.VFX
 {
     /// <summary>
     /// 상세 HUD 전리품 빛(UI_LootRevealGlow)의 픽셀 입자·반짝임을 그리는 UGUI 그래픽. 1 캔버스 단위 = 게임 1px 격자에 정수 사각형을 쌓는다.
-    /// 호출 측이 BeginQuads → Dot/Rect/Shape → Commit 순서로 채우고, Commit만 SetVerticesDirty를 부른다(30fps 틱이 바뀔 때만).
+    /// 호출 측이 BeginQuads → Dot/Rect/Shape → Commit 순서로 채우고, Commit만 SetVerticesDirty를 부른다(호출 측 틱이 바뀔 때만).
+    /// SetClip으로 잘라내기 사각형을 켜면 그 밖은 쌓지 않는다(기본은 꺼짐).
     /// 사각형 배열은 미리 잡아 재사용하므로 재생 중 힙 할당이 없다. 정점 색은 호출 측이 감마 rgb + 발광 알파로 넣는다(UIPixelGlow).
     /// </summary>
     [RequireComponent(typeof(CanvasRenderer))]
@@ -26,6 +27,13 @@ namespace PresentationLayer.VFX
         private PixelQuad[] quads = new PixelQuad[QuadCapacity];
         private int quadCount;
         private int committedCount = -1;
+
+        // 선택형 잘라내기 사각형(부모 기준 px). 켜져 있으면 Rect가 이 사각형 밖을 잘라 쌓는다.
+        private bool bClip;
+        private int clipX0;
+        private int clipY0;
+        private int clipX1;
+        private int clipY1;
 
         // 퍼블릭 초기화 및 제어 메서드
 
@@ -50,9 +58,33 @@ namespace PresentationLayer.VFX
             Commit();
         }
 
+        /// <summary>이후 Rect · Dot · Shape를 정수 칸 [_x0, _x1) x [_y0, _y1) 안으로 잘라 쌓는다(이미 쌓은 사각형은 그대로).</summary>
+        public void SetClip(int _x0, int _y0, int _x1, int _y1)
+        {
+            bClip = true;
+            clipX0 = _x0;
+            clipY0 = _y0;
+            clipX1 = _x1;
+            clipY1 = _y1;
+        }
+
+        /// <summary>잘라내기를 끈다(기본값).</summary>
+        public void ClearClip()
+        {
+            bClip = false;
+        }
+
         /// <summary>정수 칸 [_x0, _x1) x [_y0, _y1) (부모 기준 px)</summary>
         public void Rect(int _x0, int _y0, int _x1, int _y1, Color32 _color)
         {
+            if (true == bClip)
+            {
+                _x0 = Mathf.Max(_x0, clipX0);
+                _y0 = Mathf.Max(_y0, clipY0);
+                _x1 = Mathf.Min(_x1, clipX1);
+                _y1 = Mathf.Min(_y1, clipY1);
+            }
+
             if (_x1 <= _x0 || _y1 <= _y0) return;
 
             // 꽉 차면 사각형을 버리지 않고 배열을 두 배로 늘린다

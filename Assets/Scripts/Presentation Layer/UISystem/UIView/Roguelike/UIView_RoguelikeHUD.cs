@@ -14,9 +14,8 @@ using UnityEngine;
 ///   - 목표치 바(ThresholdBar): 분홍적색 가로 막대. 도끼 + 현재 처치 수 / 목표 처치 수 - SetWaveProgress
 ///   - 스태미너 바(StaminaBar) + 대쉬 칸(DashCells): 본편 HUD의 스태미너 · 대쉬 게이지는 로그라이크에서 화면에서만 숨고(UIView_HUD),
 ///     같은 호출이 정적 연결점(RoguelikeHUDLink)을 통해 이 두 컴포넌트에도 전달된다.
-///   - 코인 HUD: 보유 골드(본편 코인 HUD 표현 재사용 권장 - CurrencyCounterHUD). 언리밋에서는 숨긴다.
 ///   [퇴장] SetCombatVisible(false)는 좌측 하단 요소가 모두 왼쪽으로, 보관함 트레이는 오른쪽으로 화면 밖으로 정수 픽셀 이동(약 0.25초, unscaled)한 뒤 숨긴다.
-///     결과 화면이 뜰 때 뒤쪽을 비워 결과 창에만 시선이 가게 하는 용도다(호출은 시스템 - LobbyRemoval_AppLayer_Request.md S5). 다시 켜면 원위치에서 나타난다.
+///     결과 화면이 뜰 때 뒤쪽을 비워 결과 창에만 시선이 가게 하는 용도다(호출은 시스템). 다시 켜면 원위치에서 나타난다.
 ///   - 보관함 트레이(OwnedTray): 우하단. 인벤토리 키 아이콘 + 보유 카드 총량 숫자판. 표시 전용(클릭 없음) - SetOwnedCardCounts
 ///     보유 카드 창은 이 뷰가 아니라 키(인벤토리 키)로 연다(RoguelikeUICoordinator).
 ///
@@ -95,7 +94,7 @@ public class UIView_RoguelikeHUD : UIView
     }
 
     /// <summary>웨이브 표기. 언리밋이면 _unlimitIndex를 무한대 아이콘 옆에 그린다. 웨이브가 시작될 때 임계치 바가 첫 값으로 곧바로 서게 한다(빈 바에서 차오르지 않는다).</summary>
-    /// <param name="_regionStartWaves">지역(티어)이 바뀌는 시작 웨이브(1웨이브 제외, 오름차순). 웨이브 진행 점 간격 계산용(WavePips_AppLayer_Request.md). null일 수 있다.</param>
+    /// <param name="_regionStartWaves">지역(티어)이 바뀌는 시작 웨이브(1웨이브 제외, 오름차순). 웨이브 진행 점 간격 계산용. null이면 대체값 상수를 쓴다.</param>
     public virtual void SetWave(int _waveNumber, bool _bUnlimit, int _unlimitIndex, IReadOnlyList<int> _regionStartWaves = null)
     {
         if (null != waveLabel) waveLabel.SetWave(_waveNumber, _bUnlimit, _unlimitIndex, _regionStartWaves);
@@ -140,17 +139,11 @@ public class UIView_RoguelikeHUD : UIView
         if (null != challengeToast) challengeToast.Show(in _data);
     }
 
-    /// <summary>보유 골드. _bAnimated면 코인이 흡수되어 오르는 연출(기획서 3-3 골드 획득 5단계).</summary>
-    public virtual void SetGold(long _gold, bool _bAnimated) { }
-
-    /// <summary>코인 HUD 표시 여부. 언리밋에서는 골드를 쓸 곳이 없어 숨긴다(기획서 3-5).</summary>
-    public virtual void SetGoldVisible(bool _bVisible) { }
-
     /// <summary>
-    /// [UI 담당] 웨이브 종료 때 바닥 코인이 날아가 닿는 지점(코인 HUD 아이콘). 기획서 3-3 골드 획득 5단계 "코인 HUD 쪽으로 날아가는 애니메이션".
-    /// null이면 기획서 5-1 배치(하단 중앙, 바 기준 왼쪽 윗부분)의 임시 화면 지점으로 날아간다(RoguelikeSystem.coinHudFallbackViewport).
+    /// [삭제 예정] 골드는 폐지되어 이 메서드는 아무 일도 하지 않는다. 코디네이터(RoguelikeUICoordinator.cs 88줄)가 아직 호출하므로
+    /// 정의만 남긴다. Application Layer 정리 후 삭제 예정(기획서 v3.2 C-2).
     /// </summary>
-    public virtual RectTransform CoinFlyTarget => null;
+    public virtual void SetGoldVisible(bool _bVisible) { }
 
     /// <summary>
     /// 전투 HUD 요소(웨이브·목표치 바·유예 타이머·임계치 바·스태미너 바·대쉬 칸·보관함 트레이) 표시 여부.

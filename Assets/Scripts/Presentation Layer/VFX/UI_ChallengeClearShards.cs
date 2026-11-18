@@ -4,11 +4,12 @@ namespace PresentationLayer.VFX
 {
     /// <summary>
     /// 도전과제 창 달성 칸의 "튀는 조각" 공용 층(승인된 시뮬레이션 https://claude.ai/artifact/VCZpYTh7sskVdJgvELxkVv).
-    /// 조각은 칸 밖으로 튀어야 하므로 본문 마스크 밖(판 아래 공용 그래픽)에 그린다. 칸마다 Burst를 부르면 지연 뒤 12개가 한꺼번에 생긴다
+    /// 조각은 칸 밖으로 튀어야 하므로 본문 마스크 밖(판 아래 공용 그래픽)에 그린다. 다만 본문 뷰포트 사각형(SetView) 밖은 픽셀 단위로 잘라 목록 영역 밖에는 보이지 않는다. 칸마다 Burst를 부르면 지연 뒤 12개가 한꺼번에 생긴다
     /// (앞 4개는 깃발 자리 = 칸 세로 중앙보다 1px 위, 나머지 8개는 윗변). 모양 k%3 = ◆ / + / ●, 색 k%3 = 흰 / 금 / 호박. 중력 낙하, 수명 35% 뒤 한 단계 작게(◆ -> +, 나머지 -> ●), 70% 뒤 `.`, 85% 뒤 알파 0.5.
     ///
-    /// 좌표는 그래픽 로컬 좌표(1 캔버스 단위 = 게임 1px, y 위로 증가)다. 30fps 틱이 바뀔 때만 다시 그리고 Commit한다.
+    /// 그리는 좌표는 그래픽 로컬 좌표(1 캔버스 단위 = 게임 1px, y 위로 증가)다. 60fps 틱이 바뀔 때만 다시 그리고 Commit한다.
     /// 틱당 최대 쿼드 수: 갓 생긴 조각이 가장 크다(◆ 5쿼드, + 3쿼드, ● 1쿼드, 칸당 4 x (5 + 3 + 1) = 36). 본문에 보이는 칸은 최대 5칸이라 5 x 36 = 180, 배열이 전부 찬 64개여도 192(256 이하).
+    /// 좌표는 본문 내용(rowRoot) 기준으로 저장하고, 호출 측이 SetView로 넘긴 내용 원점 오프셋을 그릴 때만 더한다. 조각이 나온 칸이 본문 뷰포트에서 벗어나면 그 조각은 그리지 않는다.
     /// 조각 · 대기 목록은 고정 배열이고 난수는 Burst마다 넘기는 시드의 정수 xorshift다. 초기화 뒤 힙 할당 없음.
     /// </summary>
     [DisallowMultipleComponent]
@@ -18,9 +19,9 @@ namespace PresentationLayer.VFX
         private const int PendingCapacity = 8;
         private const int ShardsPerBurst = 12;
         private const int FlagShardCount = 4;
-        private const float TickRate = 30.0f;
+        private const float TickRate = 60.0f;
         private const float TickInterval = 1.0f / TickRate;
-        private const int MaxCatchUpTicks = 6;
+        private const int MaxCatchUpTicks = 12;
         private const float Gravity = 260.0f;
 
         // 칸 안 깃발 자리(칸 왼쪽 위 기준, 시뮬레이션 수치): 오른쪽에서 21px + 5, 세로는 칸 중앙(깃발 앵커)에서 위로 1px
@@ -39,6 +40,8 @@ namespace PresentationLayer.VFX
             public float vy;
             public float life;
             public float max;
+            public float ownerTop;
+            public float ownerHeight;
         }
 
         private struct Pending
@@ -49,6 +52,8 @@ namespace PresentationLayer.VFX
             public float height;
             public float delay;
             public int seed;
+            public float ownerTop;
+            public float ownerHeight;
         }
 
         // ◆ + ● 순서(k % 3)
@@ -68,13 +73,21 @@ namespace PresentationLayer.VFX
         private float accumulated;
         private uint rngState = 1u;
 
+        // 내용(rowRoot) 원점이 지금 이 그래픽 로컬 좌표의 어디에 있는지(정수 px)와, 본문 뷰포트 위 · 아래 · 왼 · 오른(이 그래픽 로컬 좌표). 기본값은 오프셋 0 · 전부 보임.
+        private Vector2Int contentOffset;
+        private float clipTop = float.MaxValue;
+        private float clipBottom = float.MinValue;
+        private float clipLeft = float.MinValue;
+        private float clipRight = float.MaxValue;
+
         // 퍼블릭 초기화 및 제어 메서드
 
         /// <summary>
         /// 칸 하나의 조각 12개를 _delay초 뒤에 터뜨린다.
-        /// _rowTopLeft = 칸 왼쪽 위 모서리(그래픽 로컬 좌표, 정수), _rowWidth = 칸 폭, _rowHeight = 칸 높이(깃발이 세로 중앙에 붙으므로 깃발 자리 계산에 쓴다), _seed = 이 칸의 난수 시드.
+        /// _rowTopLeft = 칸 왼쪽 위 모서리(내용 좌표, 정수. SetView의 오프셋을 빼고 저장한 값), _rowWidth = 칸 폭, _rowHeight = 칸 높이(깃발이 세로 중앙에 붙으므로 깃발 자리 계산에 쓴다),
+        /// _ownerTop · _ownerHeight = 조각이 나온 칸의 위쪽 y(내용 좌표) · 높이(그 칸이 본문 뷰포트에서 벗어나면 조각을 그리지 않는다), _seed = 이 칸의 난수 시드.
         /// </summary>
-        public void Burst(Vector2 _rowTopLeft, float _rowWidth, float _rowHeight, float _delay, int _seed)
+        public void Burst(Vector2 _rowTopLeft, float _rowWidth, float _rowHeight, float _ownerTop, float _ownerHeight, float _delay, int _seed)
         {
             for (int i = 0; PendingCapacity > i; i++)
             {
@@ -84,6 +97,8 @@ namespace PresentationLayer.VFX
                 pendings[i].topLeft = _rowTopLeft;
                 pendings[i].width = _rowWidth;
                 pendings[i].height = _rowHeight;
+                pendings[i].ownerTop = _ownerTop;
+                pendings[i].ownerHeight = _ownerHeight;
                 pendings[i].delay = _delay;
                 pendings[i].seed = _seed;
                 pendingCount++;
@@ -102,7 +117,25 @@ namespace PresentationLayer.VFX
             if (null != graphic) graphic.ClearQuads();
         }
 
-        /// <summary>_deltaTime(unscaled)만큼 진행한다. 30fps 틱이 지나갈 때만 다시 그리고, 할 일이 없으면 바로 돌아간다.</summary>
+        /// <summary>
+        /// 매 프레임 · 스크롤할 때 호출 측이 넘긴다. _contentOffset = 내용 원점의 이 그래픽 로컬 좌표(정수 px).
+        /// _clipTop · _clipBottom · _clipLeft · _clipRight = 본문 뷰포트 사각형(이 그래픽 로컬 좌표, 정수). 조각은 이 사각형 밖으로는 그리지 않는다.
+        /// 값이 바뀌었고 살아 있는 조각이 있으면 바로 다시 그린다(스크롤과 같은 프레임에 칸을 따라가게).
+        /// </summary>
+        public void SetView(Vector2Int _contentOffset, float _clipTop, float _clipBottom, float _clipLeft, float _clipRight)
+        {
+            if (_contentOffset == contentOffset && _clipTop == clipTop && _clipBottom == clipBottom && _clipLeft == clipLeft && _clipRight == clipRight) return;
+
+            contentOffset = _contentOffset;
+            clipTop = _clipTop;
+            clipBottom = _clipBottom;
+            clipLeft = _clipLeft;
+            clipRight = _clipRight;
+            if (null != graphic) graphic.SetClip(Mathf.RoundToInt(clipLeft), Mathf.RoundToInt(clipBottom), Mathf.RoundToInt(clipRight), Mathf.RoundToInt(clipTop));
+            if (null != graphic && 0 < activeCount) Draw();
+        }
+
+        /// <summary>_deltaTime(unscaled)만큼 진행한다. 60fps 틱이 지나갈 때만 다시 그리고, 할 일이 없으면 바로 돌아간다.</summary>
         public void Tick(float _deltaTime)
         {
             if (null == graphic || (0 == activeCount && 0 == pendingCount)) return;
@@ -192,6 +225,8 @@ namespace PresentationLayer.VFX
                     shards[i].vy = vy;
                     shards[i].life = 0.0f;
                     shards[i].max = max;
+                    shards[i].ownerTop = _pending.ownerTop;
+                    shards[i].ownerHeight = _pending.ownerHeight;
                     activeCount++;
                     break;
                 }
@@ -212,6 +247,10 @@ namespace PresentationLayer.VFX
             {
                 if (false == shards[i].bActive) continue;
 
+                // 조각이 나온 칸이 본문 뷰포트에서 완전히 벗어났으면 그리지 않는다(마스크 밖 층이라 머리줄 위에 떠 보이지 않게).
+                float ownerTop = shards[i].ownerTop + contentOffset.y;
+                if (clipBottom >= ownerTop || clipTop <= ownerTop - shards[i].ownerHeight) continue;
+
                 float q = shards[i].life / shards[i].max;
                 int kind = shards[i].kind;
                 int shape;
@@ -220,8 +259,8 @@ namespace PresentationLayer.VFX
                 else shape = PixelPainter.ShapeDot;
 
                 // 시뮬레이션은 y 아래로 증가 + 반올림(half up)이라 위로 증가하는 좌표에서는 올림 - 1 이 같은 칸이다.
-                int cellX = Mathf.FloorToInt(shards[i].x + 0.5f);
-                int cellY = Mathf.CeilToInt(shards[i].y - 0.5f) - 1;
+                int cellX = Mathf.FloorToInt(shards[i].x + 0.5f) + contentOffset.x;
+                int cellY = Mathf.CeilToInt(shards[i].y - 0.5f) - 1 + contentOffset.y;
                 graphic.Shape(shape, cellX, cellY, KindColor(kind, 0.85f < q ? 0.5f : 1.0f));
             }
 

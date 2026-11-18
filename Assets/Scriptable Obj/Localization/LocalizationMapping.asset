@@ -537,3 +537,35 @@ MonoBehaviour:
     enumValueName: ObsidianTree
     enumIntValue: 12
     compositeKey: 14680076
+  - enumTypeName: SkillCommandType
+    enumValueName: EmberDropBonus
+    enumIntValue: 124
+    compositeKey: 4203489
+  - enumTypeName: SkillCommandType
+    enumValueName: OverheatGainBonus
+    enumIntValue: 111
+    compositeKey: 4203490
+  - enumTypeName: SkillCommandType
+    enumValueName: FinalAttack
+    enumIntValue: 42
+    compositeKey: 4203491
+  - enumTypeName: SkillCommandType
+    enumValueName: RemoteDeposit
+    enumIntValue: 115
+    compositeKey: 4203492
+  - enumTypeName: SkillCommandType
+    enumValueName: IncreaseRepairEfficiency
+    enumIntValue: 64
+    compositeKey: 4203493
+  - enumTypeName: SkillCommandType
+    enumValueName: Preheat
+    enumIntValue: 123
+    compositeKey: 4203494
+  - enumTypeName: SkillCommandType
+    enumValueName: TreeHeatResistance
+    enumIntValue: 127
+    compositeKey: 4203495
+  - enumTypeName: SkillCommandType
+    enumValueName: IncreaseJackPotAmount
+    enumIntValue: 51
+    compositeKey: 4203496

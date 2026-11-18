@@ -22,7 +22,7 @@ public struct WaveSpec
     public int batchSize;
     /// <summary>묶음 주기(초). batchSize가 있을 때만 쓴다.</summary>
     public float batchSeconds;
-    /// <summary>나무의 절대 HP(부록 A-2). 언리밋 N은 N웨이브 줄 HP에 웨이브마다 증가율을 누적한다(부록 A "언리밋 곡선").</summary>
+    /// <summary>나무의 절대 HP(부록 A-2). 언리밋 N은 N웨이브 줄 HP에 웨이브마다 증가율을 누적한다(부록 A "언리밋 곡선")(unlimitHpOverrides에 지정된 번호는 그 값).</summary>
     public float treeHp;
     /// <summary>티어 안 나무 종류 순번(0 = 초기, 1 = 중간, 2 = 후반).</summary>
     public int treeKind;
@@ -63,8 +63,10 @@ public static class WaveSchedule
 
         if (spec.bUnlimit)
         {
-            // Unlimit-N: HP = N웨이브 줄 HP × (1 + 증가율)^(N−1). 목표 처치 수는 N웨이브 줄 값과 unlimitMaxKillTarget 중 작은 값.
+            // Unlimit-N: HP = N웨이브 줄 HP × (1 + 증가율)^(N−1). unlimitHpOverrides에 N이 있으면 그 HP를 쓴다(4티어 진입 급등 완화, 부록 A "언리밋 곡선").
+            // 목표 처치 수는 N웨이브 줄 값과 unlimitMaxKillTarget 중 작은 값.
             spec.treeHp = Mathf.Max(1f, row.treeHp) * Mathf.Pow(1f + Mathf.Max(0f, _balance.unlimitHpGrowthPerWave), spec.unlimitIndex - 1);
+            if (true == _balance.TryGetUnlimitHpOverride(spec.unlimitIndex, out float overrideHp)) spec.treeHp = overrideHp;
             spec.killTarget = Mathf.Clamp(row.killTarget, 1, Mathf.Max(1, _balance.unlimitMaxKillTarget));
         }
 

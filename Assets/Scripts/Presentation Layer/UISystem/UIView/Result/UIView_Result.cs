@@ -1915,7 +1915,7 @@ public class UIView_Result : UIView
                 slotUI.UpdateBindSlotData(slots[i], offroadContainer.maxItemCntPerSlot);
         }
 
-        ApplyContainerSlotLayout();
+        ApplyContainerSlotLayout(activeSlotCount);
     }
 
     private void BindDisplayContainerSlots(DisplayInventorySlot[] displaySlots, bool playChangedSlotInteraction)
@@ -1946,7 +1946,7 @@ public class UIView_Result : UIView
         if (playedChangedSlotInteraction)
             TryPlayInventoryLogSound();
 
-        ApplyContainerSlotLayout();
+        ApplyContainerSlotLayout(displaySlots.Length);
     }
 
     private void ResetResultProductionSounds()
@@ -2016,7 +2016,7 @@ public class UIView_Result : UIView
         return 0 < GetAcquiredItemCounts().Count;
     }
 
-    private void ApplyContainerSlotLayout()
+    private void ApplyContainerSlotLayout(int _activeCount)
     {
         if (containerSlotBackground == null)
             return;
@@ -2027,7 +2027,12 @@ public class UIView_Result : UIView
         if (gridLayout == null || rootRect == null)
             return;
 
-        gridLayout.constraint = GridLayoutGroup.Constraint.Flexible;
+        // 운반상자 UI_Storage와 동일하게 8칸은 가로 4칸, 세로 2칸으로 배치한다.
+        gridLayout.constraint = 8 == _activeCount
+            ? GridLayoutGroup.Constraint.FixedColumnCount
+            : GridLayoutGroup.Constraint.Flexible;
+        if (8 == _activeCount)
+            gridLayout.constraintCount = 4;
 
         rootRect.anchoredPosition = new Vector2(0f, Mathf.Round(containerTopY));
     }

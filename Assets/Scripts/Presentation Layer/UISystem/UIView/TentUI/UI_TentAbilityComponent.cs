@@ -1871,6 +1871,11 @@ public class UI_TentAbilityComponent : MonoBehaviour
             case SkillCommandType.Hello:
             case SkillCommandType.RemoteLogTransport:
             case SkillCommandType.ConstellationAfterimage:
+            case SkillCommandType.ShockWaveOverheatBoost:
+            case SkillCommandType.Repair:
+            case SkillCommandType.RemoteDeposit:
+            case SkillCommandType.IncreaseJackPotAmount:
+            case SkillCommandType.FinalAttack:
 
                 return true;
             default:

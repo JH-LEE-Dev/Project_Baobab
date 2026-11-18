@@ -1817,7 +1817,7 @@ MonoBehaviour:
   abilityBuildVariantData: {fileID: 11400000, guid: 435d117acee74a889a1c34c20d764a81, type: 2}
   prestigeLevel: 0
   skillExperience: 0
-  experienceToLevelUp: 28000000280000003c0000003c0000004100000046000000460000004600000046000000320000003200000032000000
+  experienceToLevelUp: 28000000280000003c0000003c0000004100000046000000460000004600000046000000500000005000000050000000
 --- !u!1 &5075027738427714103
 GameObject:
   m_ObjectHideFlags: 0
@@ -2295,6 +2295,7 @@ MonoBehaviour:
   shadowFadeDuration: 0.1
   shadowOffsetMinScale: 0.1
   shadowLengthDamping: 0.7
+  emberOccluderSearchRadius: 2.5
   updateInterval: 0.1
 --- !u!1 &6412770358841193001
 GameObject:
@@ -3365,6 +3366,9 @@ MonoBehaviour:
   emberItemPrefab: {fileID: 6885275396082023371, guid: 4020514d49da95d4ea739865a7e3dbfe, type: 3}
   enabledMapTypes: 05000000
   overheatPerEmber: 1
+  gainFalloffStart: 20
+  gainFloorStart: 75
+  gainMinEfficiency: 0.005
   initialEmbersPerTree: 0.1
   naturalSpawnInterval: 10
   naturalSpawnHalfExtents: {x: 16, y: 8}
@@ -3553,11 +3557,11 @@ MonoBehaviour:
   - forestType: 10
     decAmount: 400
   - forestType: 11
-    decAmount: 800
+    decAmount: 600
   - forestType: 12
-    decAmount: 1600
+    decAmount: 1000
   - forestType: 13
-    decAmount: 2500
+    decAmount: 2000
 --- !u!114 &8919172322634990837
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4099,8 +4103,9 @@ MonoBehaviour:
   quakeMaxStack: 100
   quakeStackPerEmberMin: 2
   quakeStackPerEmberMax: 3
+  quakeTier1Radius: 8
   quakeTier1Damage: 5000
-  quakeTier3Damage: 70000
+  quakeTier3Damage: 0
   goldTreePityMinKills: 3
   goldTreePityMaxKills: 7
   treePrefab: {fileID: 5272385284174554040, guid: 3224048e2842e2c48bc93158251200d2, type: 3}

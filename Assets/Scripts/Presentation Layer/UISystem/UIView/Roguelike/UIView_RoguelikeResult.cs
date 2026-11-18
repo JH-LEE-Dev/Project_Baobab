@@ -10,14 +10,13 @@ using UnityEngine.EventSystems;
 /// 로그라이크 결과 화면. 기획서 3-7 "결과 화면과 런 종료".
 ///
 /// [흐름] OpenResult → 등장 연출 → 플레이어가 다시 도전 / 메인메뉴를 고른다.
-///   RetryRequestedEvent / MainMenuRequestedEvent를 올린다. 시스템이 아직 두 이벤트를 구독하지 않았을 때를 위해
-///   ConfirmRequestedEvent도 함께 올린다(기존 흐름: 확인 → 디스토션 → 로비). 연결은 LobbyRemoval_AppLayer_Request.md S2.
+///   고른 쪽에 따라 RetryRequestedEvent / MainMenuRequestedEvent를 올린다.
 ///   이 화면은 ESC로 닫히지 않는다(프리팹 bCloseableByESC = false). 시스템이 ESC 키도 잠근다.
 ///
 /// [구성 - 시안 v3] 어두운 딤 위 가운데 한 장(Panel_Book):
 ///   제목 명판(게임 오버 / 포기, 판 위쪽 가장자리에 걸침) → WAVE(언리밋은 UNLIMIT) + 도달 숫자(2배 글자) → 최고 웨이브(신기록이면 금색 "신기록")
 ///   → 플레이 시간 · 부순 나무 행 → 보유 카드 칸(아이콘 + 레벨, 넘치면 다음 줄) → 다시 도전 / 메인메뉴 버튼 → 키 안내(패드 모드에서만).
-///   뒤쪽 HUD를 화면 밖으로 빼는 것은 시스템이 이 화면을 열 때 HUD에 요청한다(같은 문서 S5, UIView_RoguelikeHUD.SetCombatVisible).
+///   뒤쪽 HUD를 화면 밖으로 빼는 것은 시스템이 이 화면을 열 때 HUD에 요청한다(UIView_RoguelikeHUD.SetCombatVisible).
 ///
 /// [18개 언어 규격] 폭은 18개 언어 중 가장 긴 문구로 정한 최소값(Spec*)과 현재 언어의 실제 폭 중 큰 값이다 - 언어를 바꿔도 판 크기가 같다.
 ///   높이는 구성기가 글자 높이 + 위아래 여백 2px로 정한 줄 높이를 쓴다. 검수는 Localization QA 툴.
@@ -64,8 +63,6 @@ public class UIView_RoguelikeResult : UIView_RoguelikeModalBase
     private static readonly Color NewRecordColor = new Color(1f, 0.83f, 0.35f, 1f);
     private static readonly Color BestColor = new Color(0.73f, 0.65f, 0.54f, 1f);
 
-    /// <summary>기존 확인(시스템 연결 전 호환용). 다시 도전 · 메인메뉴 어느 쪽을 눌러도 함께 올라간다.</summary>
-    public event Action ConfirmRequestedEvent;
     public event Action RetryRequestedEvent;
     public event Action MainMenuRequestedEvent;
 
@@ -201,9 +198,6 @@ public class UIView_RoguelikeResult : UIView_RoguelikeModalBase
         viewCtx?.cursorBoxUI?.HideImmediately();
         if (null != EventSystem.current) EventSystem.current.SetSelectedGameObject(null);
     }
-
-    /// <summary>[호환] 예전 확인 버튼 경로. 다시 도전과 같다.</summary>
-    protected void RequestConfirm() => Request(true);
 
     // // 내용
 
@@ -591,8 +585,6 @@ public class UIView_RoguelikeResult : UIView_RoguelikeModalBase
 
         if (true == _bRetry) RetryRequestedEvent?.Invoke();
         else MainMenuRequestedEvent?.Invoke();
-
-        ConfirmRequestedEvent?.Invoke();
     }
 
     private void OnDeviceChanged(EInputDeviceType _device)
@@ -642,7 +634,6 @@ public class UIView_RoguelikeResult : UIView_RoguelikeModalBase
     {
         KillTweens();
         if (null != inputManager && null != inputManager.inputReader) inputManager.inputReader.InputDeviceChangedEvent -= deviceChangedHandler;
-        ConfirmRequestedEvent = null;
         RetryRequestedEvent = null;
         MainMenuRequestedEvent = null;
         base.OnDestroy();

@@ -46,7 +46,6 @@ public static class RoguelikeHudColors
     public static readonly Color32 PipPassedBottom = Hex(0xA87A2C);
     public static readonly Color32 PipRemain = Hex(0x5A4334);
 
-    public static readonly Color NumberOver = new Color(1f, 0x9A / 255f, 0x80 / 255f, 1f);
     public static readonly Color NumberUnlimit = new Color(1f, 0xE3 / 255f, 0x9A / 255f, 1f);
     public static readonly Color NumberDone = new Color(1f, 0xD0 / 255f, 0x60 / 255f, 1f);
 

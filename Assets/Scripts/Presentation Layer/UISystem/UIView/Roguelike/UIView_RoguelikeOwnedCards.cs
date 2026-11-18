@@ -12,7 +12,7 @@ using UnityEngine.UI;
 ///
 /// 열려 있는 동안 게임이 일시정지된다(Time.timeScale = 0, RoguelikeUICoordinator가 건다). 전투 중에 열어도
 /// 나무 스폰·임계치 피해가 진행되지 않는다. 닫히면(어떤 경로든) 원래 속도로 돌아간다.
-/// 런이 진행 중인 단계(런 시작~웨이브 클리어·런 클리어)에서만 열리고, 쓰러짐·결과·로비로 넘어가면 시스템이 닫는다.
+/// 런이 진행 중인 단계(런 시작~웨이브 클리어·런 클리어)에서만 열리고, 쓰러짐·결과로 넘어가면 시스템이 닫는다.
 /// 일시정지 중이므로 이 화면의 움직임은 unscaled 시간으로 돌린다(카드 움직임 · 스크롤 모두 Time.unscaledDeltaTime).
 ///
 /// [구성 - 고정 설명 패널(A안)] 어두운 딤 위에 한 묶음(Content)이 화면 가운데에 놓인다.
@@ -764,7 +764,7 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
         base.Hide();
     }
 
-    /// <summary>트레이가 연결되어 있고 켜져 있으면 창의 맨 위 레이어로 올린다(딤 · 책 위에 보이게). 꺼져 있으면(로비 등) 올리지 않는다.</summary>
+    /// <summary>트레이가 연결되어 있고 켜져 있으면 창의 맨 위 레이어로 올린다(딤 · 책 위에 보이게). 꺼져 있으면(트레이가 없는 화면 등) 올리지 않는다.</summary>
     private void AttachTray()
     {
         if (null == tray || null == trayLayer || false == tray.gameObject.activeInHierarchy) return;

@@ -75,12 +75,6 @@ public static class RoguelikeRecordViewBuilder
         return best;
     }
 
-    public static bool HasAnyRecord(RoguelikeRecordData _records)
-    {
-        if (null == _records) return false;
-        return true == _records.bHasRecent || 0 < _records.clearRanking.Count || 0 < _records.unlimitRanking.Count;
-    }
-
     private static RoguelikeRecordViewData ToRecordView(RunRecordEntry _entry, CardDatabaseSO _database)
     {
         if (null == _entry) return default;

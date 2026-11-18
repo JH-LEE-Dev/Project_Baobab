@@ -9,7 +9,7 @@ using UnityEngine.UI;
 
 /// <summary>
 /// 순위표(런 기록 3탭). 기획서 3-6 - 최근 기록 / 클리어 랭킹(1~5위) / 언리밋 랭킹(1~5위).
-/// 메인메뉴의 로그라이크 하위 메뉴 "기록"에서 연다(로비 폐지 - LobbyRemoval_AppLayer_Request.md). 로그라이크 씬에서도 같은 프리팹이 그대로 동작한다.
+/// 메인메뉴의 로그라이크 하위 메뉴 "기록"에서 연다(로비는 폐지되었다). 로그라이크 씬에서도 같은 프리팹이 그대로 동작한다.
 ///
 /// [구성 - 시안 v3] 어두운 딤 위 가운데 한 장(Panel_Book):
 ///   위쪽 가장자리의 탭 명판 "◀ 현재 탭 ▶" + 아래 점 3개와 점 커서(첫 실행 언어 설정 팝업과 같은 넘김 연출). 탭 이름이 언어마다 길이가 크게 달라 세 개를 나란히 두지 않는다.
@@ -146,8 +146,6 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     protected readonly List<RoguelikeRecordViewData> clearRanking = new List<RoguelikeRecordViewData>(5);
     protected readonly List<RoguelikeRecordViewData> unlimitRanking = new List<RoguelikeRecordViewData>(5);
 
-    public IReadOnlyList<RoguelikeRecordViewData> ClearRanking => clearRanking;
-    public IReadOnlyList<RoguelikeRecordViewData> UnlimitRanking => unlimitRanking;
 
     //외부 의존성 (프리팹에서 연결 - LumberBoy/UI/Build Roguelike Records)
     [Header("화면")]
@@ -251,12 +249,6 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
     private Action<int> stripWheelHandler;
 
     private bool IsGamepadMode => null != inputManager && true == inputManager.IsGamepadMode;
-
-    /// <summary>마우스 호버로 인정된 줄(마우스 모드에서 줄이 온전히 보이고 본문이 멈춰 있을 때만 값이 있다). 확인용 읽기 전용.</summary>
-    public UI_RoguelikeRecordRow AcceptedHoverRow => acceptedRow;
-
-    /// <summary>마지막으로 포커스를 받은 줄(마우스는 인정된 줄, 패드는 선택한 줄). 확인용 읽기 전용.</summary>
-    public UI_RoguelikeRecordRow FocusedRow => focusedRow;
 
     public override void Initialize(UIViewContext _ctx)
     {
@@ -414,19 +406,6 @@ public class UIView_RoguelikeRecords : UIView_RoguelikeModalBase
 
         if (0 > _direction) ShowPrevTab();
         else if (0 < _direction) ShowNextTab();
-    }
-
-    /// <summary>탭을 직접 고른다(0 최근 기록 · 1 클리어 랭킹 · 2 언리밋 랭킹). 창이 열린 뒤에 부른다.</summary>
-    public void ShowTab(int _tab)
-    {
-        currentTab = Mathf.Clamp(_tab, 0, TabCount - 1);
-        ResetAcceptedHover();
-        CloseStrip(false);
-        RefreshTab();
-        OpenTopStrip();
-        ResetTabFeedback();
-        SnapDotCursor();
-        if (true == IsVisible && true == IsGamepadMode) SelectFirstRow();
     }
 
     private void ShowPrevTab()

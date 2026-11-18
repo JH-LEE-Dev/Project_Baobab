@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // 로그라이크 UIView가 받는 표시용 데이터. 뷰는 게임 규칙 객체(CardShop, RunBuildState 등)를 직접 보지 않고
-// 이 구조체만 받는다. 판단(살 수 있는지, 에메랄드인지, 처음 보는 카드인지)은 시스템이 끝내서 넘긴다.
+// 이 구조체만 받는다. 판단(선택할 수 있는지, 에메랄드인지 등)은 시스템이 끝내서 넘긴다.
 
 /// <summary>카드 선택 화면의 카드 한 장. 기획서 5-2, 5-3.</summary>
 public struct RoguelikeCardViewData
@@ -20,11 +20,11 @@ public struct RoguelikeCardViewData
     public int levelAfterPurchase;
     public int maxLevel;
     public bool bRuby;
-    /// <summary>보유하지 않은 카드 → 자물쇠가 풀리는 등장 연출(기획서 5-3 "첫 등장 카드").</summary>
+    /// <summary>[삭제 예정] 뷰가 읽지 않는다(코디네이터가 값만 넣는다). Application Layer 정리 후 삭제 예정(기획서 v3.2 C-2).</summary>
     public bool bNewCard;
-    /// <summary>이번 판에서 처음 제시된 카드.</summary>
+    /// <summary>[삭제 예정] 뷰가 읽지 않는다(코디네이터가 값만 넣는다). Application Layer 정리 후 삭제 예정(기획서 v3.2 C-2).</summary>
     public bool bFirstSeen;
-    /// <summary>희귀 셰이더 연출 대상(MAX가 되는 에메랄드·프리즘·계약).</summary>
+    /// <summary>[삭제 예정] 뷰가 읽지 않는다(희귀 판정은 displayGrade로 한다). Application Layer 정리 후 삭제 예정(기획서 v3.2 C-2).</summary>
     public bool bRare;
 }
 
@@ -49,7 +49,9 @@ public struct RoguelikeOwnedCardViewData
 public struct RoguelikeCardPurchaseViewData
 {
     public int offerIndex;
+    /// <summary>[삭제 예정] 뷰가 읽지 않는다(코디네이터가 값만 넣는다). Application Layer 정리 후 삭제 예정(기획서 v3.2 C-2).</summary>
     public int newLevel;
+    /// <summary>[삭제 예정] 뷰가 읽지 않는다(코디네이터가 값만 넣는다). Application Layer 정리 후 삭제 예정(기획서 v3.2 C-2).</summary>
     public bool bNewCard;
     public ECardDisplayGrade displayGrade;
 }
@@ -65,7 +67,6 @@ public struct RoguelikeResultViewData
     public bool bAbandoned;
     public float playTimeSeconds;
     public int treesFelled;
-    public long coinsCollected;
     public List<RoguelikeOwnedCardViewData> cards;
     /// <summary>이번 판이 들어간 랭킹 순위(0부터). 못 들어갔으면 -1. "신기록" 연출용.</summary>
     public int clearRank;

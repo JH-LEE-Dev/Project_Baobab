@@ -460,7 +460,7 @@
     {
       "id": 29,
       "key": "desc_obsidiancharm_t1",
-      "kr": "불씨로 <color=#FF8C42,#FF3B1F><b>지진</b></color>을 충전한 뒤\n주변에 지진을 일으킵니다.",
+      "kr": "불씨로 충전하여 <color=#FF8C42,#FF3B1F><b>지진</b></color>을 일으킵니다.",
       "en": "Embers charge an <color=#FF8C42,#FF3B1F><b>Earthquake</b></color> that shakes the ground around you.",
       "zhHans": "用火种为<color=#FF8C42,#FF3B1F><b>地震</b></color>充能，之后在周围引发地震。",
       "zhHant": "用火種為<color=#FF8C42,#FF3B1F><b>地震</b></color>充能，之後在周圍引發地震。",
@@ -508,7 +508,7 @@
     {
       "id": 31,
       "key": "desc_obsidiancharm_t3",
-      "kr": "불씨로 <color=#FF8C42,#FF3B1F><b>지진</b></color>을 충전한 뒤\n주변에 강력한 지진을 일으킵니다.",
+      "kr": "불씨로 충전하여 <color=#FF8C42,#FF3B1F><b>강력한 지진</b></color>을 일으킵니다.",
       "en": "Embers charge a powerful <color=#FF8C42,#FF3B1F><b>Earthquake</b></color> that shakes the ground around you.",
       "zhHans": "用火种为<color=#FF8C42,#FF3B1F><b>地震</b></color>充能，之后在周围引发强力地震。",
       "zhHant": "用火種為<color=#FF8C42,#FF3B1F><b>地震</b></color>充能，之後在周圍引發強力地震。",

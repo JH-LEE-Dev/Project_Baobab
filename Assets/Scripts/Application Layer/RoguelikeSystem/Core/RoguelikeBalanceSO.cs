@@ -48,6 +48,15 @@ public class RoguelikeBalanceSO : ScriptableObject
         public int treeKind;
     }
 
+    [Serializable]
+    public struct UnlimitHpOverride
+    {
+        [Tooltip("덮어쓸 언리밋 번호(Unlimit-23이면 23).")]
+        public int unlimitIndex;
+        [Tooltip("이 언리밋 웨이브 나무의 절대 HP. 공식(N웨이브 줄 HP × (1 + 증가율)^(N−1)) 대신 이 값을 쓴다.")]
+        public float treeHp;
+    }
+
     [Header("웨이브")]
     [Tooltip("이 웨이브를 클리어하면 런 클리어(이후 언리밋).")]
     public int clearWave = 30;
@@ -98,6 +107,8 @@ public class RoguelikeBalanceSO : ScriptableObject
     public int unlimitMaxKillTarget = 100;
     [Tooltip("언리밋 최대 웨이브. 이 번호의 Unlimit 웨이브를 클리어하면 런이 끝나고 결과 화면으로 간다(종료 사유 UnlimitCompleted). 0 이하면 상한 없음.")]
     public int unlimitMaxWave = 25;
+    [Tooltip("특정 언리밋 웨이브의 나무 HP를 공식 대신 직접 지정한다(기획서 부록 A \"언리밋 곡선\"). 4티어 진입(Unlimit-23)에서 기본 HP와 누적 배율이 겹쳐 HP가 약 3배로 뛰는 것을 막으려고 22~25를 Unlimit-21 HP × 1.25^(N−21)로 둔다. 목록에 없는 번호는 공식을 쓴다.")]
+    public List<UnlimitHpOverride> unlimitHpOverrides = new List<UnlimitHpOverride>(4);
 
     [Header("카드 제시")]
     [Tooltip("한 번에 제시하는 카드 수 N(기획서 v2.5 4장).")]
@@ -164,6 +175,24 @@ public class RoguelikeBalanceSO : ScriptableObject
     {
         if (null == tiers || 0 == tiers.Count) return default;
         return tiers[Mathf.Clamp(_tierIndex, 0, tiers.Count - 1)];
+    }
+
+    /// <summary>_unlimitIndex(Unlimit-N의 N)에 지정된 나무 HP가 있으면 true와 그 값을 돌려준다.</summary>
+    public bool TryGetUnlimitHpOverride(int _unlimitIndex, out float _treeHp)
+    {
+        _treeHp = 0f;
+        if (null == unlimitHpOverrides) return false;
+
+        for (int i = 0; i < unlimitHpOverrides.Count; i++)
+        {
+            if (_unlimitIndex != unlimitHpOverrides[i].unlimitIndex) continue;
+            if (0f >= unlimitHpOverrides[i].treeHp) return false;
+
+            _treeHp = unlimitHpOverrides[i].treeHp;
+            return true;
+        }
+
+        return false;
     }
 
     public int TierCount => null == tiers ? 0 : tiers.Count;
@@ -256,6 +285,13 @@ public class RoguelikeBalanceSO : ScriptableObject
         unlimitHpGrowthPerWave = 0.35f;
         unlimitMaxKillTarget = 100;
         unlimitMaxWave = 25;
+        unlimitHpOverrides = new List<UnlimitHpOverride>(4)
+        {
+            new UnlimitHpOverride { unlimitIndex = 22, treeHp = 88435f },
+            new UnlimitHpOverride { unlimitIndex = 23, treeHp = 110544f },
+            new UnlimitHpOverride { unlimitIndex = 24, treeHp = 138179f },
+            new UnlimitHpOverride { unlimitIndex = 25, treeHp = 172724f },
+        };
 
         offerCount = 4;
         guaranteedSlotCap = 2;
