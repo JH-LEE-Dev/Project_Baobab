@@ -1875,6 +1875,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             case SkillCommandType.Repair:
             case SkillCommandType.RemoteDeposit:
             case SkillCommandType.IncreaseJackPotAmount:
+            case SkillCommandType.FinalAttack:
 
                 return true;
             default:

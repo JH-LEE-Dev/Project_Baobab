@@ -3939,7 +3939,7 @@
         },
         {
             "id": 304,
-            "key": "EmberDropBonus1_Name",
+            "key": "OverheatGainBonus1_Name",
             "kr": "불씨 획득량 증가 I",
             "en": "",
             "zhHans": "",
@@ -3963,7 +3963,7 @@
         },
         {
             "id": 305,
-            "key": "OverheatGainBonus1_Name",
+            "key": "EmberDropBonus1_Name",
             "kr": "불씨 드랍량 증가 I",
             "en": "",
             "zhHans": "",
@@ -4036,7 +4036,7 @@
         {
             "id": 308,
             "key": "DroneChainAttackRange1_Name",
-            "kr": "<COLOR=7EEDBE,EDD87E><Wave>벌목 로봇 연쇄공격 범위 M</Wave></COLOR>",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>벌목 로봇 연쇄공격 범위</Wave></COLOR>",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -4084,7 +4084,7 @@
         {
             "id": 310,
             "key": "ShockWaveOverheatBoost_Name",
-            "kr": "<COLOR=7EEDBE,EDD87E><Wave>과열 충격파 M</Wave></COLOR>",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>과열 충격파</Wave></COLOR>",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -4180,7 +4180,7 @@
         {
             "id": 314,
             "key": "FinalAttack_Name",
-            "kr": "<COLOR=7EEDBE,EDD87E><Wave>마무리 벌목 M</Wave></COLOR>",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>마무리 벌목</Wave></COLOR>",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -4492,7 +4492,7 @@
         {
             "id": 327,
             "key": "IncreaseJackPotAmount_Name",
-            "kr": "<COLOR=7EEDBE,EDD87E><Wave>잭팟 효율 증가 M</Wave></COLOR>",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>잭팟 효율 증가</Wave></COLOR>",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -6268,7 +6268,7 @@
         {
             "id": 9162,
             "key": "AbilityDescription_ShockWaveOverheatBoost",
-            "kr": "",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>충격파</Wave></COLOR>가 이제 과열 수치에 따라 <COLOR=54D86A>변화</COLOR>합니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -6292,7 +6292,7 @@
         {
             "id": 9163,
             "key": "AbilityDescription_BoomerangOverheatBoost",
-            "kr": "",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑</Wave></COLOR>이 이제 과열 수치에 따라 <COLOR=54D86A>변화</COLOR>합니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -6316,7 +6316,7 @@
         {
             "id": 9164,
             "key": "AbilityDescription_DroneOverheatBoost",
-            "kr": "",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>벌목 로봇</Wave></COLOR>이 이제 과열 수치에 따라 <COLOR=54D86A>변화</COLOR>합니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -6748,7 +6748,7 @@
         {
             "id": 9182,
             "key": "AbilityDescription_Repair",
-            "kr": "차량 근처에서 도끼를 수리할 수 있는 횟수가 <COLOR=54D86A>{0}번</COLOR> 증가합니다.",
+            "kr": "<COLOR=ff5d8f>차량 근처</COLOR>에서 도끼를 <COLOR=54D86A>수리</COLOR>할 수 있습니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -6868,7 +6868,7 @@
         {
             "id": 9187,
             "key": "AbilityDescription_FinalAttack",
-            "kr": "",
+            "kr": "체력이 <COLOR=54D86A>15%</COLOR> 이하인 나무를 <COLOR=fca311>즉시</COLOR> 벨 수 있습니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -6892,7 +6892,7 @@
         {
             "id": 9188,
             "key": "AbilityDescription_RemoteDeposit",
-            "kr": "",
+            "kr": "이제 <COLOR=8bbeff>상점</COLOR>에서 돈을 수령할 필요 없이 바로 캐릭터한테 <COLOR=54D86A>입금</COLOR>됩니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -6916,7 +6916,7 @@
         {
             "id": 9189,
             "key": "AbilityDescription_IncreaseRepairEfficiency",
-            "kr": "",
+            "kr": "<COLOR=ff5d8f>도끼 수리 속도</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -6940,7 +6940,7 @@
         {
             "id": 9190,
             "key": "AbilityDescription_Preheat",
-            "kr": "",
+            "kr": "숲에 입장했을 때, <COLOR=ff5d8f>시작 과열</COLOR>이 <COLOR=54D86A>{0}</COLOR> 증가합니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -6964,7 +6964,7 @@
         {
             "id": 9191,
             "key": "AbilityDescription_TreeHeatResistance",
-            "kr": "",
+            "kr": "나무가 내뿜는 열기에 대한\n<COLOR=ff5d8f>피해량, 기절 시간</COLOR>이 <COLOR=54D86A>{0}%</COLOR> 감소합니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -6988,7 +6988,7 @@
         {
             "id": 9192,
             "key": "AbilityDescription_IncreaseJackPotAmount",
-            "kr": "",
+            "kr": "<COLOR=8bbeff>잭팟</COLOR>의 배수가 <COLOR=54D86A>3배</COLOR>가 됩니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",

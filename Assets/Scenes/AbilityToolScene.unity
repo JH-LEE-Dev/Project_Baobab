@@ -1519,9 +1519,9 @@ MonoBehaviour:
   - skillType: 162
     sprite: {fileID: 21300000, guid: 42bc1d6b13321f04bbf8cda062a4598d, type: 3}
   - skillType: 163
-    sprite: {fileID: 21300000, guid: 8a8014001c2e05d459af0ff79a8431bd, type: 3}
-  - skillType: 164
     sprite: {fileID: 21300000, guid: 8a69633610f107c40a7a16157dc81a53, type: 3}
+  - skillType: 164
+    sprite: {fileID: 21300000, guid: 8a8014001c2e05d459af0ff79a8431bd, type: 3}
   - skillType: 165
     sprite: {fileID: 21300000, guid: 4316160308314eb4994ef2cb518a1a2f, type: 3}
   - skillType: 166
@@ -1563,7 +1563,7 @@ MonoBehaviour:
   - skillType: 184
     sprite: {fileID: 21300000, guid: bf4471c29610a264c8300adb8c48c584, type: 3}
   - skillType: 185
-    sprite: {fileID: 21300000, guid: 57589cbefec41b94589094e99b38e086, type: 3}
+    sprite: {fileID: 21300000, guid: 9aa9fc933d9728f49bdcc5277ae77d3f, type: 3}
   - skillType: 186
     sprite: {fileID: 21300000, guid: 1754313e9ce79f7418c8da805f487ea7, type: 3}
   - skillType: 187

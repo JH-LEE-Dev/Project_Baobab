@@ -167,9 +167,9 @@ public static class LocKeys
         public const int fatigueMaxIncrease6Name = 4194605;
         public const int logInsurance3Name = 4194606;
         public const int sourceOfSpeed3Name = 4194607;
-        public const int emberDropBonus1Name = 4194608;
+        public const int overheatGainBonus1Name = 4194608;
         public const int abilityDescriptionEmberDropBonus = 4203489;
-        public const int overheatGainBonus1Name = 4194609;
+        public const int emberDropBonus1Name = 4194609;
         public const int abilityDescriptionOverheatGainBonus = 4203490;
         public const int boomerangCooldownReduction2Name = 4194610;
         public const int droneChainAttack2Name = 4194611;
