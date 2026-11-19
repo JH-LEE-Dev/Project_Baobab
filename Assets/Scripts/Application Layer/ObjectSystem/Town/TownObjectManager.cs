@@ -61,6 +61,11 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     private bool bHasPicnicBasket;
     public bool HasPicnicBasket => bHasPicnicBasket;
 
+    // 특성 창(TentUI)이 열려 있는지. 열린 채 소풍 바구니를 찍으면 상자 모습은 그대로 두었다가(bPicnicBasketRevealPending)
+    // 창이 닫힐 때 전리품 진화 연출과 함께 바구니로 바꾼다. 세이브 불러오기·디버그 창 등 창 밖에서 켜면 바로 바뀐다.
+    private bool bTentUIOpen;
+    private bool bPicnicBasketRevealPending;
+
     [SerializeField] private TreeVisualDataBase treeVisualDataBase;
 
     private IInventory characterInventory;
@@ -124,6 +129,8 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
         offroadVehicle.SetVisualActive(true);
         offroadVehicle.DeActivateRepairBox();
+        bTentUIOpen = false;
+        bPicnicBasketRevealPending = false;
         offroadVehicle.SetPicnicBasket(bHasPicnicBasket);
         
         if (treeRoot == null)
@@ -447,10 +454,30 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
     public void SetPicnicBasket(bool _bPicnicBasket)
     {
+        bool bNewlyAcquired = _bPicnicBasket && false == bHasPicnicBasket;
         bHasPicnicBasket = _bPicnicBasket;
 
+        // 특성 창에서 새로 찍었으면 창이 닫힐 때(SetTentUIOpen(false)) 연출과 함께 바꾼다. 엔딩 조건(HasPicnicBasket)은 지금 바로 켜진다.
+        if (bNewlyAcquired && bTentUIOpen && offroadVehicle != null)
+        {
+            bPicnicBasketRevealPending = true;
+            return;
+        }
+
+        bPicnicBasketRevealPending = false;
         if (offroadVehicle != null)
             offroadVehicle.SetPicnicBasket(bHasPicnicBasket);
+    }
+
+    /// <summary>특성 창이 열리고 닫힐 때 TownSystem이 알린다. 닫힐 때 보류해 둔 소풍 바구니 전환 연출을 재생한다.</summary>
+    public void SetTentUIOpen(bool _bOpen)
+    {
+        bTentUIOpen = _bOpen;
+        if (true == _bOpen || false == bPicnicBasketRevealPending) return;
+
+        bPicnicBasketRevealPending = false;
+        if (bHasPicnicBasket && offroadVehicle != null)
+            offroadVehicle.PlayPicnicBasketReveal();
     }
 
     public void TeleportUIClosed()

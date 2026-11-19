@@ -562,6 +562,8 @@ public class TownSystem : MonoBehaviour
     {
         // 자동 입금 특성은 특성 창을 닫은 뒤에 적용되므로 창이 열려 있는지 알려준다(닫힘은 TentUIClosed에서).
         if (_bInteract) logProcessingManager.SetTentUIOpen(true);
+        // 소풍 바구니도 특성 창을 닫은 뒤에 연출과 함께 바뀐다.
+        if (_bInteract) townObjectManager.SetTentUIOpen(true);
 
         signalHub.Publish(new TentInteractSignal(_bInteract));
     }
@@ -578,6 +580,9 @@ public class TownSystem : MonoBehaviour
 
         // 특성 창에서 프레스티지를 올려 전리품 단계가 바뀌었다면, 창을 닫고 나온 지금 기둥의 진화 연출을 재생한다.
         lootPillarManager?.PlayPendingEvolutions();
+
+        // 특성 창에서 소풍 바구니를 찍었다면 같은 진화 연출과 함께 운반 상자를 바구니로 바꾼다.
+        townObjectManager.SetTentUIOpen(false);
     }
 
     // 던전 → 마을 귀환에서 조작이 풀린 순간. 처음 얻은 전리품의 기둥을 하늘에서 떨어뜨린다(메인메뉴 → 마을은 MainMenuIntroEnd).
