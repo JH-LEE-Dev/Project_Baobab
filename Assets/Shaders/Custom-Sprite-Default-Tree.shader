@@ -22,6 +22,9 @@ Shader "Custom/Custom-Sprite-Default-Tree"
         [HideInInspector] _HeatCharge("Heat Charge", Float) = 0
         // 깎인 정도(0~1). 4스테이지에서 깎인 나무에만 MaterialPropertyBlock으로 넣는다(금이 가며 빛이 샌다).
         [HideInInspector] _DamageLook("Damage Look", Float) = 0
+        // 깎인 모습 무늬 위치를 정하는 나무 루트 월드 위치(xy). _DamageLook과 함께 MaterialPropertyBlock으로 넣는다.
+        // 렌더러 위치는 피격 흔들림으로 움직여 무늬가 바뀌므로 흔들리지 않는 루트 위치를 따로 받는다.
+        [HideInInspector] _DamageLookPivot("Damage Look Pivot", Vector) = (0,0,0,0)
         // 배리어가 깨진 직후의 잔광 세기(0~1). 3스테이지에서 배리어가 깨진 나무에만 MaterialPropertyBlock으로 잠깐 넣는다.
         [HideInInspector] _BarrierAfterglow("Barrier Afterglow", Float) = 0
         // 2스테이지 포자막 상태(x 깎인 정도, y 번쩍임, z 차오르는 중, w 가득 참 맥동). 포자막 렌더러에만 MaterialPropertyBlock으로 넣는다.
@@ -123,6 +126,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailWeight)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HeatCharge)
                 UNITY_DEFINE_INSTANCED_PROP(float, _DamageLook)
+                UNITY_DEFINE_INSTANCED_PROP(float4, _DamageLookPivot)
                 UNITY_DEFINE_INSTANCED_PROP(float, _BarrierAfterglow)
                 UNITY_DEFINE_INSTANCED_PROP(float4, _SporeShieldFx)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
@@ -149,7 +153,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
 
                 Varyings o = CommonLitVertex(input);
                 o.worldPos = float4(TransformObjectToWorld(input.positionOS).xy, objectPivotWorldPos.xy);
-                o.damageFx = ComputeTreeDamageFx(objectPivotWorldPos.xy, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _DamageLook));
+                o.damageFx = ComputeTreeDamageFx(objectPivotWorldPos.xy, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _DamageLook), UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _DamageLookPivot).xy);
                 o.color = input.color * UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Color) * unity_SpriteColor;
 
                 return o;
@@ -248,6 +252,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailWeight)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HeatCharge)
                 UNITY_DEFINE_INSTANCED_PROP(float, _DamageLook)
+                UNITY_DEFINE_INSTANCED_PROP(float4, _DamageLookPivot)
                 UNITY_DEFINE_INSTANCED_PROP(float, _BarrierAfterglow)
                 UNITY_DEFINE_INSTANCED_PROP(float4, _SporeShieldFx)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
@@ -364,6 +369,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailWeight)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HeatCharge)
                 UNITY_DEFINE_INSTANCED_PROP(float, _DamageLook)
+                UNITY_DEFINE_INSTANCED_PROP(float4, _DamageLookPivot)
                 UNITY_DEFINE_INSTANCED_PROP(float, _BarrierAfterglow)
                 UNITY_DEFINE_INSTANCED_PROP(float4, _SporeShieldFx)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
@@ -390,7 +396,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
 
                 Varyings o = CommonUnlitVertex(input);
                 o.worldPos = float4(TransformObjectToWorld(input.positionOS).xy, objectPivotWorldPos.xy);
-                o.damageFx = ComputeTreeDamageFx(objectPivotWorldPos.xy, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _DamageLook));
+                o.damageFx = ComputeTreeDamageFx(objectPivotWorldPos.xy, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _DamageLook), UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _DamageLookPivot).xy);
                 o.color = input.color * UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Color) * unity_SpriteColor;
                 return o;
             }

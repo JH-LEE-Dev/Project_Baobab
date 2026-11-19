@@ -68,7 +68,15 @@ Shader "Custom/WaterURP"
             #include "../Include/WaterShimmer.hlsl"
             #include "../Include/TileFrameAnimation.hlsl"
 
-            float4 _MainTex_TexelSize;
+            // SRP Batcher가 이 셰이더를 묶을 수 있도록 _MainTex_TexelSize(재질 상수 버퍼 밖 값)를 선언하지 않고 텍스처에서 크기를 직접 읽는다.
+            // 이 셰이더는 zw(텍스처 크기)만 써서 크기가 2의 거듭제곱이 아니어도 값이 정확히 같다.
+            float4 MainTexTexelSize()
+            {
+                uint width;
+                uint height;
+                _MainTex.GetDimensions(width, height);
+                return float4(1.0 / (float)width, 1.0 / (float)height, (float)width, (float)height);
+            }
 
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             CBUFFER_START(UnityPerMaterial)
@@ -99,7 +107,7 @@ Shader "Custom/WaterURP"
                 if (IsWaterShimmerEnabled())
                 {
                     float3 texColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv).rgb;
-                    float4 shimmer = ComputeWaterShimmer(input.uv, input.shimmerPositionWS, _MainTex_TexelSize, texColor);
+                    float4 shimmer = ComputeWaterShimmer(input.uv, input.shimmerPositionWS, MainTexTexelSize(), texColor);
                     color.rgb = lerp(color.rgb, shimmer.rgb, shimmer.a);
                 }
 

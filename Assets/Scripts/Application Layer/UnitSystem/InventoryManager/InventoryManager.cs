@@ -427,7 +427,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
     public void MoneyEarned(long _money)
     {
-        money += _money;
+        money = MoneyLimit.Add(money, _money);
     }
 
     public void CarrotEarned(float _amount)
@@ -1205,7 +1205,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
     public void LoadSaveData(InventorySaveData _data)
     {
-        money = _data.money;
+        money = MoneyLimit.Clamp(_data.money);
         carrot = _data.carrot;
         goldOre = _data.goldOre;
         diamondOre = _data.diamondOre;
@@ -1671,7 +1671,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
     public void SetMoney(long _money)
     {
-        money = _money;
+        money = MoneyLimit.Clamp(_money);
     }
 
     private void UpdateInventoryEmptyState()

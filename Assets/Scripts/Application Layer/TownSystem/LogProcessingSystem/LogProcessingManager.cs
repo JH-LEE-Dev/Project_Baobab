@@ -270,6 +270,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         if (shopNPC != null)
         {
             _saveData.shopMoney = shopNPC.GetMoney();
+            _saveData.shopStoredLogCount = shopNPC.GetStoredLogCount();
             _saveData.bFirstTimeEarnMoney = shopNPC.GetbFirstTimeEarnMoney();
         }
 
@@ -315,6 +316,8 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
             // 경로(DepartToForest)에서는 코인이 도착해 라이브 소지금에 들어가지만 그 세션의
             // 라이브 상태는 로드 시 버려지므로 이중 지급이 되지 않는다.
             _saveData.shopMoney += shopNPC.GetPendingBatchMoney();
+            // 위에서 되돌려 적은 돈의 원목 수도 함께 되돌려 적는다(다음 정산 금화 수).
+            _saveData.shopStoredLogCount += shopNPC.GetPendingLogCount();
         }
     }
 
@@ -337,8 +340,8 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         if (shopNPC != null)
         {
             // 자동 입금 특성이 있으면 복원된 상점 잔액은 잠긴 상점에 그대로 두고, 마을에 도착해 입금이 시작될 때
-            // (UpdateRemoteDepositState) 한 번에 캐릭터에게 들어간다.
-            shopNPC.LoadSaveData(_data.shopMoney, _data.bFirstTimeEarnMoney);
+            // (UpdateRemoteDepositState) 쌓인 원목 수만큼의 금화에 실려 캐릭터에게 들어간다.
+            shopNPC.LoadSaveData(_data.shopMoney, _data.bFirstTimeEarnMoney, _data.shopStoredLogCount);
         }
 
         int savedLineCount = Mathf.Clamp(_data.activeLineCount > 0 ? _data.activeLineCount : 1, 1, allLines.Count);
@@ -472,7 +475,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         }
         else
         {
-            shopNPC.InsertMoney(_money);
+            shopNPC.InsertLogMoney(_money);
         }
     }
 
@@ -529,7 +532,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
 
         shopNPC.SetRemoteDepositRunning(bRunning);
 
-        // 입금이 시작되는 순간 상점에 쌓여 있던 돈은 전부 즉시 캐릭터에게 들어간다.
+        // 입금이 시작되는 순간 상점에 쌓여 있던 돈은 쌓인 원목 수만큼(최대 50개)의 금화에 실려 캐릭터에게 날아간다.
         if (bRunning) shopNPC.ClearMoneyToPlayer();
     }
 

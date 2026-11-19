@@ -60,7 +60,15 @@ Shader "Custom/2D/GroundWindGustLit"
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/Lit2DCommon.hlsl"
 
-            float4 _MainTex_TexelSize;
+            // SRP Batcher가 이 셰이더를 묶을 수 있도록 _MainTex_TexelSize(재질 상수 버퍼 밖 값)를 선언하지 않고 텍스처에서 크기를 직접 읽는다.
+            // xy(1/크기)도 쓰지만 이 셰이더를 쓰는 바닥 타일 텍스처는 모두 2의 거듭제곱 크기라 1/크기가 정확히 같은 값이다.
+            float4 MainTexTexelSize()
+            {
+                uint width;
+                uint height;
+                _MainTex.GetDimensions(width, height);
+                return float4(1.0 / (float)width, 1.0 / (float)height, (float)width, (float)height);
+            }
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _Color;
@@ -92,7 +100,7 @@ Shader "Custom/2D/GroundWindGustLit"
 
                 if (IsWindGustEnabled())
                 {
-                    float2 texelCenterWS = StageAmbienceTexelCenterWS(input.gustPositionWS, input.uv, _MainTex_TexelSize);
+                    float2 texelCenterWS = StageAmbienceTexelCenterWS(input.gustPositionWS, input.uv, MainTexTexelSize());
                     float gust = SampleWindGustGrass(texelCenterWS);
                     if (gust > 0.0)
                     {
@@ -108,9 +116,9 @@ Shader "Custom/2D/GroundWindGustLit"
                         if (gust > bendStart)
                         {
                             // 누운 풀잎은 바람 위쪽 이웃 텍셀 그림을 가져와 1텍셀 바람 쪽으로 밀린 것처럼 보인다.
-                            float2 centerUV = StageAmbienceTexelCenterUV(input.uv, _MainTex_TexelSize);
+                            float2 centerUV = StageAmbienceTexelCenterUV(input.uv, MainTexTexelSize());
                             float windSide = _WindGustA.x >= 0.0 ? 1.0 : -1.0;
-                            float2 sourceUV = centerUV - float2(_MainTex_TexelSize.x * windSide, 0.0);
+                            float2 sourceUV = centerUV - float2(MainTexTexelSize().x * windSide, 0.0);
                             half4 destination = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, centerUV);
                             half4 source = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, sourceUV);
                             bool sourceOk = source.a < 0.5h || IsGrassColor(source.rgb);

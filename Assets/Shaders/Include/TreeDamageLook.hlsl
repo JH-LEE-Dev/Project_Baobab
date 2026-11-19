@@ -6,7 +6,7 @@
 // 4스테이지(용암 숲) 나무가 깎일수록 달라지는 모습. 렌더링 전용이다.
 // - 돌처럼 생긴 나무: 금이 가며 그 틈으로 용암 빛이 새어 나온다(깎일수록 금이 한 자리에서 뻗어 나가고, 많이 깎이면 굵어진다).
 // - 잿불 나무(침엽수 모양): 금 대신 잎 층 아래 그늘에서 숯불이 붙어 아래층부터 위로 번진다.
-// 나무마다 깎인 정도(_DamageLook)를 MaterialPropertyBlock으로 받는다(TreeVisualComponent.SetDamageLook, 넣는 쪽은 TreeObj).
+// 나무마다 깎인 정도(_DamageLook)와 나무 루트 위치(_DamageLookPivot)를 MaterialPropertyBlock으로 받는다(TreeVisualComponent.SetDamageLook, 넣는 쪽은 TreeObj).
 // 값의 부호가 모습을 고른다: 양수 = 금, 음수 = 숯불, 0 = 없음. 크기(0~1)가 깎인 정도다.
 // 켜고 끄는 것은 전역값 _TreeDamageLookOn(0/1)을 따른다. StageAmbienceShaderGlobals가 스테이지 데이터의 열기 차오름
 // 켜짐과 같은 값으로 채우며(본편 4스테이지·로그라이크 용암 숲에서만 1), 다른 스테이지에서는 값이 들어와도 아무것도 바꾸지 않는다.
@@ -79,15 +79,19 @@ float2 TreeDamageHash2(float2 _p)
 }
 
 // [정점 단계] 나무 한 그루에 한 번만 구하면 되는 값. 정점마다 같은 값이 나오므로 보간 없이(nointerpolation) 넘긴다.
-// _pivotWorld: 나무 밑동(오브젝트 원점) 월드 좌표, _damageLook: 렌더러의 _DamageLook
+// _pivotWorld: 렌더러(오브젝트 원점) 월드 좌표(열기 물결용), _damageLook: 렌더러의 _DamageLook
+// _damagePivot: 렌더러의 _DamageLookPivot(나무 루트 월드 좌표, 무늬 위치용)
+// 무늬 위치는 렌더러 위치가 아니라 루트 위치로 정한다. 렌더러는 피격 흔들림(visualRoot 펀치, 최대 약 6픽셀)으로 움직이는데,
+// 반 픽셀을 넘을 때마다 해시가 바뀌어 흔들리는 동안 금·숯불 무늬가 프레임마다 통째로 바뀌었다.
+// 흔들리지 않을 때는 렌더러 위치와 루트 위치가 같아(렌더러가 루트 원점에 있다) 예전과 같은 무늬가 나온다.
 // 반환 xy = 무늬 위치(픽셀), z = 열기 물결에 달궈진 정도(0~1, 단계), w = 깎인 모습(양수 금 / 음수 숯불 / 0 없음)
-float4 ComputeTreeDamageFx(float2 _pivotWorld, float _damageLook)
+float4 ComputeTreeDamageFx(float2 _pivotWorld, float _damageLook, float2 _damagePivot)
 {
     float4 fx = float4(0.0, 0.0, OverheatBurstFlareHeatAt(_pivotWorld), 0.0);
 
     if (_TreeDamageLookOn >= 0.5 && _damageLook != 0.0)
     {
-        fx.xy = floor(TreeDamageHash2(floor(_pivotWorld * 32.0 + 0.5)) * TreeDamagePatternSize);
+        fx.xy = floor(TreeDamageHash2(floor(_damagePivot * 32.0 + 0.5)) * TreeDamagePatternSize);
         fx.w = _damageLook;
     }
 

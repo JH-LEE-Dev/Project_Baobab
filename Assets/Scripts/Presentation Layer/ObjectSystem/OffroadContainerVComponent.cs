@@ -2,6 +2,8 @@ using System.Collections;
 using UnityEngine;
 using DG.Tweening;
 using System;
+using PresentationLayer.VFX;
+using PresentationLayer.Environment;
 
 public class OffroadContainerVComponent : MonoBehaviour
 {
@@ -63,6 +65,29 @@ public class OffroadContainerVComponent : MonoBehaviour
     private Sprite originalCarriedSprite;
     private bool bPicnicBasket;
 
+    // 특성 창에서 소풍 바구니를 찍고 창을 닫으면, 전리품 기둥 진화와 같은 연출(VFX_LootEvolve)을 상자에서 재생하고
+    // 폭발 시각에 바구니로 바꾼다. 번쩍임·뽀잉 값은 마을 전리품 기둥(LootPillar 프리팹)의 성장 연출 값과 같다.
+    [Header("Picnic Basket Reveal")]
+    [SerializeField] private VFX_LootEvolve picnicBasketRevealEffect;
+    [SerializeField] private int revealFromTier = 2;
+    [SerializeField] private int revealToTier = 3;
+    [SerializeField] private float revealFlashHold = 0.05f;
+    [SerializeField] private float revealFlashDuration = 0.3f;
+    [SerializeField] private float revealPopDuration = 0.6f;
+    [SerializeField] private float revealPopAmplitude = 0.2f;
+    [SerializeField] private float revealPopWidthRatio = 0.6f;
+    [SerializeField] private float revealPopFrequency = 3.5f;
+    [SerializeField] private float revealPopDamping = 6f;
+    private static readonly int FlashAmountID = Shader.PropertyToID("_FlashAmount");
+    private MaterialPropertyBlock revealFlashMPB;
+    private Action cachedOnRevealBurst;
+    // 연출이 재생 중이고 폭발 시각에 바구니로 바꿔야 하는지. 그 사이 특성이 되돌려지면(SetPicnicBasket(false)) 꺼서 바꾸지 않는다.
+    private bool bRevealPending;
+    private Coroutine revealPopCoroutine;
+    private bool bRevealPopPlaying;
+    private Vector3 revealPopBaseLocalPosition;
+    private Vector3 revealPopBaseLocalScale;
+
     public void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
@@ -106,6 +131,7 @@ public class OffroadContainerVComponent : MonoBehaviour
     /// </summary>
     public void SetPicnicBasket(bool _bPicnicBasket)
     {
+        bRevealPending = false;
         if (bPicnicBasket == _bPicnicBasket) return;
         bPicnicBasket = _bPicnicBasket;
 
@@ -123,6 +149,115 @@ public class OffroadContainerVComponent : MonoBehaviour
         if (jumpSR != null) jumpSR.sprite = bPicnicBasket && picnicBasketJumpSprite != null ? picnicBasketJumpSprite : originalJumpSprite;
         if (openSR != null) openSR.sprite = bPicnicBasket && picnicBasketOpenSprite != null ? picnicBasketOpenSprite : originalOpenSprite;
         if (carriedSR != null) carriedSR.sprite = bPicnicBasket && picnicBasketCarriedSprite != null ? picnicBasketCarriedSprite : originalCarriedSprite;
+    }
+
+    /// <summary>
+    /// 전리품 진화 연출을 재생하고 폭발 시각에 바구니로 바꾼다. 특성 창을 닫았을 때 TownObjectManager가 부른다.
+    /// 연출을 재생할 수 없거나(꺼져 있음/연결 안 됨) 이미 바구니면 바로 바꾼다.
+    /// </summary>
+    public void PlayPicnicBasketReveal()
+    {
+        if (true == bPicnicBasket) return;
+
+        // 연출 컴포넌트는 쉬는 동안 꺼져 있으므로(재생할 때만 켜짐) 오브젝트가 켜져 있는지로 본다.
+        // 상자가 차 위에 실려 바닥 그림이 꺼져 있으면 연출 자리가 맞지 않으니 바로 바꾼다.
+        if (null == picnicBasketRevealEffect || false == isActiveAndEnabled
+            || false == picnicBasketRevealEffect.gameObject.activeInHierarchy || false == spriteRenderer.enabled)
+        {
+            SetPicnicBasket(true);
+            return;
+        }
+
+        if (null == cachedOnRevealBurst) cachedOnRevealBurst = OnPicnicBasketRevealBurst;
+
+        StopRevealPop();
+        picnicBasketRevealEffect.Play(revealFromTier, revealToTier, cachedOnRevealBurst);
+        bRevealPending = true;
+
+        LootDisplayObject.PlayEvolveStartSound(transform.position);
+    }
+
+    // 진화 연출의 폭발 시각: 바구니로 바꾸고 기둥처럼 하얗게 번쩍이며 뽀잉 튄다.
+    private void OnPicnicBasketRevealBurst()
+    {
+        if (false == bRevealPending) return;
+
+        SetPicnicBasket(true);
+
+        // 연출이 끝까지 진행돼 폭발 시각에 닿았을 때만 소리와 뽀잉을 낸다(상자가 꺼지며 정리될 때는 모습만 바꾼다).
+        if (false == isActiveAndEnabled) return;
+
+        LootDisplayObject.PlayEvolveBurstSound(transform.position);
+        StopRevealPop();
+        revealPopCoroutine = StartCoroutine(RevealPopSequence());
+    }
+
+    // LootDisplayObject의 성장 뽀잉과 같은 곡선. 상자 그림 바닥을 기준으로 늘이고 줄인다.
+    private IEnumerator RevealPopSequence()
+    {
+        revealPopBaseLocalPosition = transform.localPosition;
+        revealPopBaseLocalScale = transform.localScale;
+        bRevealPopPlaying = true;
+
+        float _bottom = null != spriteRenderer.sprite ? spriteRenderer.sprite.bounds.min.y : 0f;
+        Vector3 _anchor = revealPopBaseLocalPosition + Vector3.Scale(new Vector3(0f, _bottom, 0f), revealPopBaseLocalScale);
+        _anchor.z = revealPopBaseLocalPosition.z;
+
+        float _t = 0f;
+        float _total = Mathf.Max(revealPopDuration, revealFlashDuration);
+        while (_t < _total)
+        {
+            float _flash = _t <= revealFlashHold ? 1f : 1f - Mathf.Clamp01((_t - revealFlashHold) / Mathf.Max(0.0001f, revealFlashDuration - revealFlashHold));
+            SetRevealFlash(_flash * _flash);
+
+            float _a = 0f;
+            if (_t < revealPopDuration)
+            {
+                float _remain = 1f - _t / revealPopDuration;
+                _a = -revealPopAmplitude * Mathf.Exp(-revealPopDamping * _t) * Mathf.Cos(2f * Mathf.PI * revealPopFrequency * _t) * _remain;
+            }
+            Vector3 _scale = new Vector3(1f - _a * revealPopWidthRatio, 1f + _a, 1f);
+
+            transform.localScale = Vector3.Scale(revealPopBaseLocalScale, _scale);
+            transform.localPosition = _anchor + Vector3.Scale(revealPopBaseLocalPosition - _anchor, _scale);
+
+            yield return null;
+            _t += Time.deltaTime;
+        }
+
+        revealPopCoroutine = null;
+        StopRevealPop();
+    }
+
+    // 뽀잉·번쩍임을 멈추고 원래 자리/크기/색으로 돌린다.
+    private void StopRevealPop()
+    {
+        if (null != revealPopCoroutine)
+        {
+            StopCoroutine(revealPopCoroutine);
+            revealPopCoroutine = null;
+        }
+
+        if (false == bRevealPopPlaying) return;
+        bRevealPopPlaying = false;
+
+        transform.localPosition = revealPopBaseLocalPosition;
+        transform.localScale = revealPopBaseLocalScale;
+        SetRevealFlash(0f);
+    }
+
+    private void SetRevealFlash(float _amount)
+    {
+        if (null == revealFlashMPB) revealFlashMPB = new MaterialPropertyBlock();
+
+        spriteRenderer.GetPropertyBlock(revealFlashMPB);
+        revealFlashMPB.SetFloat(FlashAmountID, _amount);
+        spriteRenderer.SetPropertyBlock(revealFlashMPB);
+    }
+
+    private void OnDisable()
+    {
+        StopRevealPop();
     }
 
     public void LateUpdate()
@@ -421,6 +556,7 @@ public class OffroadContainerVComponent : MonoBehaviour
 
     public void Reset()
     {
+        StopRevealPop();
         spriteRenderer.enabled = true;
         containerForJump.SetActive(false);
         carriedContainer.SetActive(false);

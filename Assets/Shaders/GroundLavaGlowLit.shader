@@ -59,7 +59,15 @@ Shader "Custom/2D/GroundLavaGlowLit"
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/Lit2DCommon.hlsl"
 
-            float4 _MainTex_TexelSize;
+            // SRP Batcher가 이 셰이더를 묶을 수 있도록 _MainTex_TexelSize(재질 상수 버퍼 밖 값)를 선언하지 않고 텍스처에서 크기를 직접 읽는다.
+            // 이 셰이더는 zw(텍스처 크기)만 써서 크기가 2의 거듭제곱이 아니어도 값이 정확히 같다.
+            float4 MainTexTexelSize()
+            {
+                uint width;
+                uint height;
+                _MainTex.GetDimensions(width, height);
+                return float4(1.0 / (float)width, 1.0 / (float)height, (float)width, (float)height);
+            }
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _Color;
@@ -100,7 +108,7 @@ Shader "Custom/2D/GroundLavaGlowLit"
                 half4 lit = CombinedShapeLightShared(surfaceData, inputData);
                 if (IsLavaGlowEnabled())
                 {
-                    float2 texelCenterWS = StageAmbienceTexelCenterWS(input.glowPositionWS, input.uv, _MainTex_TexelSize);
+                    float2 texelCenterWS = StageAmbienceTexelCenterWS(input.glowPositionWS, input.uv, MainTexTexelSize());
                     lit.rgb = ApplyLavaGlow(lit.rgb, texelCenterWS);
                 }
                 return lit;

@@ -151,6 +151,8 @@ namespace PresentationLayer.Environment
         private static readonly List<LootDisplayObject> evolveBatch = new List<LootDisplayObject>(8);
         private static bool bEvolveBatching;
         private static int lastEvolveBurstSoundFrame = -1;
+        // 시작음도 같은 프레임에 두 번 내지 않는다(기둥 묶음과 소풍 바구니 연출이 함께 시작될 때).
+        private static int lastEvolveStartSoundFrame = -1;
 
         // 성장 뽀잉/번쩍임 상태. 기둥과 전리품을 기둥 바닥(growthPopAnchorWorld) 기준으로 함께 늘이고 줄인다.
         // 진화 연출(VFX_LootEvolve)은 폭발 직후까지 전리품의 부모(LootAnchor)를 흔든다. 전리품 자신의 위치(밑둥 맞춤, SetDisplayBase)를
@@ -554,7 +556,7 @@ namespace PresentationLayer.Environment
                 return;
             }
 
-            Sound.Play(SoundID.SFXLevelUpAura01, evolveSoundPosition);
+            PlayEvolveStartSound(evolveSoundPosition);
         }
 
         /// <summary>
@@ -588,7 +590,7 @@ namespace PresentationLayer.Environment
                     if (null != evolveBatch[i]) evolveBatch[i].evolveSoundPosition = _center;
                 }
 
-                Sound.Play(SoundID.SFXLevelUpAura01, _center);
+                PlayEvolveStartSound(_center);
             }
 
             evolveBatch.Clear();
@@ -607,15 +609,29 @@ namespace PresentationLayer.Environment
             if (true == bEvolveRestarting || false == isActiveAndEnabled) return;
 
             // 함께 시작한 기둥들은 같은 프레임에 터진다. 그 프레임에 이미 폭발음이 났으면 다시 내지 않는다.
-            if (Time.frameCount != lastEvolveBurstSoundFrame)
-            {
-                lastEvolveBurstSoundFrame = Time.frameCount;
-                Sound.Play(SoundID.SFXLevelUpAura, evolveSoundPosition);
-                Sound.Play(SoundID.SFXLevelUpAura01, evolveSoundPosition);
-                Sound.Play(SoundID.SFXLevelUpChime, evolveSoundPosition);
-            }
+            PlayEvolveBurstSound(evolveSoundPosition);
 
             StartGrowthPop();
+        }
+
+        /// <summary>진화 시작음. 같은 프레임에 이미 났으면 내지 않는다. 소풍 바구니 전환 연출(OffroadContainerVComponent)도 같이 쓴다.</summary>
+        public static void PlayEvolveStartSound(Vector3 _position)
+        {
+            if (Time.frameCount == lastEvolveStartSoundFrame) return;
+            lastEvolveStartSoundFrame = Time.frameCount;
+
+            Sound.Play(SoundID.SFXLevelUpAura01, _position);
+        }
+
+        /// <summary>진화 폭발음. 같은 프레임에 이미 났으면 내지 않는다. 소풍 바구니 전환 연출(OffroadContainerVComponent)도 같이 쓴다.</summary>
+        public static void PlayEvolveBurstSound(Vector3 _position)
+        {
+            if (Time.frameCount == lastEvolveBurstSoundFrame) return;
+            lastEvolveBurstSoundFrame = Time.frameCount;
+
+            Sound.Play(SoundID.SFXLevelUpAura, _position);
+            Sound.Play(SoundID.SFXLevelUpAura01, _position);
+            Sound.Play(SoundID.SFXLevelUpChime, _position);
         }
 
         // 기둥과 전리품을 하얗게 번쩍이며 눌렸다 튀게 한다. 진행은 LateUpdate에서 한다.

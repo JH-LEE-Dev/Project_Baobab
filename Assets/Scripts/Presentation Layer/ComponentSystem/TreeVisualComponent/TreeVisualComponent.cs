@@ -200,13 +200,18 @@ public class TreeVisualComponent : MonoBehaviour
     private MaterialPropertyBlock _mpb;
     private MaterialPropertyBlock Mpb => _mpb ??= new MaterialPropertyBlock();
 
-    // 실드(Top/Bottom Shield) 그림은 수관·밑동과 같은 재질을 쓰고 HDR 세기만 블록으로 올려서(기본 1.05), 블록 때문에 SRP Batcher를 못 타고
-    // 하나씩 그려졌다. HDR 세기만 다른 재질 사본을 (원본 재질, 세기)마다 하나씩 만들어 실드에 끼우고, 블록 값이 모두 끼운 재질 값과 같으면
+    // 실드(Top/Bottom Shield)·하이라이트·별자리·물 위 실드/하이라이트 그림은 HDR 세기만 블록으로 올려서(기본 1.05), 블록 때문에 SRP Batcher를
+    // 못 타고 하나씩 그려졌다. HDR 세기만 다른 재질 사본을 (원본 재질, 세기)마다 하나씩 만들어 끼우고, 블록 값이 모두 끼운 재질 값과 같으면
     // 블록을 비운다(CommitBodyBlock). 사본은 원본의 셰이더·프로퍼티·키워드를 그대로 베끼고 HDR만 바꾸므로 셰이더가 받는 값은 예전과 같다.
-    private static readonly Dictionary<Material, Dictionary<float, Material>> shieldHDRMaterialCache = new Dictionary<Material, Dictionary<float, Material>>();
-    // 실드에 처음 끼워져 있던 원본 재질(사본을 만들 기준).
+    private static readonly Dictionary<Material, Dictionary<float, Material>> hdrMaterialCache = new Dictionary<Material, Dictionary<float, Material>>();
+    // 각 렌더러에 처음 끼워져 있던 원본 재질(사본을 만들 기준).
     private Material topShieldBaseMaterial;
     private Material bottomShieldBaseMaterial;
+    private Material topHighlightBaseMaterial;
+    private Material bottomHighlightBaseMaterial;
+    private Material constellationBaseMaterial;
+    private Material topShieldOnWaterBaseMaterial;
+    private Material topHighlightOnWaterBaseMaterial;
 
     // Hit Flash
     private static readonly int FlashAmountID = Shader.PropertyToID("_FlashAmount");
@@ -214,8 +219,15 @@ public class TreeVisualComponent : MonoBehaviour
     private static readonly int HeatChargeID = Shader.PropertyToID("_HeatCharge");
     // 깎인 모습(양수 = 금, 음수 = 숯불, 0 = 없음). 지금 렌더러에 들어가 있는 값을 기억해 같은 값은 다시 쓰지 않는다.
     private static readonly int DamageLookID = Shader.PropertyToID("_DamageLook");
+    // 깎인 모습 무늬 위치를 정하는 나무 루트 월드 위치. 렌더러 위치는 피격 흔들림으로 움직여 무늬가 바뀌므로 루트 위치를 따로 넣는다.
+    private static readonly int DamageLookPivotID = Shader.PropertyToID("_DamageLookPivot");
     private float appliedTopDamageLook = 0f;
     private float appliedBottomDamageLook = 0f;
+    // 깎인 모습을 넣은 이 나무 전용 재질 사본(SetDamageLookToRenderer). 깎이지 않았으면 null이다.
+    private Material topDamageMaterial;
+    private Material bottomDamageMaterial;
+    // 원본 재질마다 쓰고 돌려받은 깎인 모습 재질 사본.
+    private static readonly Dictionary<Material, Stack<Material>> damageMaterialPool = new Dictionary<Material, Stack<Material>>();
     // 배리어가 깨진 직후의 푸른 테두리 잔광 세기. 지금 렌더러에 들어가 있는 값을 기억해 같은 값은 다시 쓰지 않는다.
     private static readonly int BarrierAfterglowID = Shader.PropertyToID("_BarrierAfterglow");
     private float appliedBarrierAfterglow = 0f;
@@ -236,8 +248,8 @@ public class TreeVisualComponent : MonoBehaviour
     // 플래시 진행은 TreeFlashSystem이 한 곳에서 틱한다(나무마다 코루틴을 만들지 않는다)
 
     // 수관·밑동(topRenderer/bottomRenderer) 블록에 들어가는 float 값들. 이 밖에는 _FlashColor(색)만 들어간다
-    // (HDR은 하이라이트·실드·물 위·별자리, 포자막은 실드, 외곽선 색은 외곽선 렌더러에만 넣는다).
-    private static readonly int[] BodyBlockFloatIDs = { FlashAmountID, HeatChargeID, DamageLookID, BarrierAfterglowID, EnableWindSwayID };
+    // (HDR은 하이라이트·실드·물 위·별자리, 포자막은 실드, 외곽선 색은 외곽선 렌더러에만 넣는다. 깎인 모습은 블록이 아니라 재질 사본에 넣는다).
+    private static readonly int[] BodyBlockFloatIDs = { FlashAmountID, HeatChargeID, BarrierAfterglowID, EnableWindSwayID };
     // 블록 값이 모두 이 값과 같으면 블록을 비운다(CommitBodyBlock). 기본 재질 값이며, 보석 재질도 같은 값을 가질 때만 쓴다.
     private float[] topBodyBlockDefaults;
     private float[] bottomBodyBlockDefaults;
@@ -1094,32 +1106,106 @@ public class TreeVisualComponent : MonoBehaviour
     /// 깎인 정도(0~1)를 나무 그림에 넣는다. 나무 셰이더가 4스테이지에서만 금(돌처럼 생긴 나무) 또는
     /// 숯불(_bEmber, 잿불 나무)을 그린다(다른 스테이지·로그라이크는 값이 들어와도 그대로다). 렌더링 전용이다.
     /// 숯불은 수관 그림의 명암에 맞춘 표현이라 수관에만 넣고 밑동에는 넣지 않는다.
-    /// 같은 값이면 아무것도 하지 않으므로, 호출부가 값을 단계로 끊어 넘기면 프로퍼티 블록 쓰기가 그만큼 줄어든다.
+    /// 같은 값이면 아무것도 하지 않으므로, 호출부가 값을 단계로 끊어 넘기면 재질 값 쓰기가 그만큼 줄어든다.
     /// </summary>
     public void SetDamageLook(float _amount, bool _bEmber)
     {
         float topLook = _bEmber ? -_amount : _amount;
         if (appliedTopDamageLook == topLook) return;
 
-        if (_flashMPB == null) _flashMPB = new MaterialPropertyBlock();
+        EnsureDefaultMaterialsCached();
 
         appliedTopDamageLook = topLook;
-        SetDamageLookToRenderer(topRenderer, topLook);
+        SetDamageLookToRenderer(topRenderer, defaultTopMaterial, ref topDamageMaterial, topLook);
 
         float bottomLook = _bEmber ? 0f : _amount;
         if (appliedBottomDamageLook != bottomLook)
         {
             appliedBottomDamageLook = bottomLook;
-            SetDamageLookToRenderer(bottomRenderer, bottomLook);
+            SetDamageLookToRenderer(bottomRenderer, defaultBottomMaterial, ref bottomDamageMaterial, bottomLook);
         }
     }
 
-    private void SetDamageLookToRenderer(SpriteRenderer sr, float _look)
+    // 깎인 모습(_DamageLook)과 무늬 위치 기준(_DamageLookPivot, 나무 루트 위치)은 프로퍼티 블록이 아니라 이 나무 전용 재질 사본에 넣는다.
+    // 블록이 남은 렌더러는 SRP Batcher를 못 타고 하나씩 그려지는데, 깎인 나무는 쓰러질 때까지 값을 들고 있어 넓은 공격 뒤에는
+    // 그런 나무가 많이 남았다. 사본은 원본 재질을 그대로 베끼고 이 두 값만 바꾸므로 셰이더가 받는 값은 블록으로 넣던 때와 같다.
+    // 무늬 위치는 나무마다 달라 사본을 나무끼리 나눠 쓸 수 없다. 깎인 모습이 0으로 돌아가면(쓰러져 풀로 돌아갈 때 등) 원본 재질로
+    // 되돌리고 사본은 원본 재질별 풀에 돌려 다른 나무가 다시 쓴다(살아 있는 깎인 나무 수만큼만 사본이 있다).
+    // 보석 재질이 끼워져 있는 동안은 사본을 끼우지 않는다(보석 셰이더는 이 값을 읽지 않아 블록으로 넣던 때도 아무것도 바뀌지 않았다).
+    // 보석이 풀리면 ApplyGemVisual이 사본을 다시 끼운다(블록은 재질을 바꿔도 남아 있었으므로 같은 결과).
+    private void SetDamageLookToRenderer(SpriteRenderer _sr, Material _baseMaterial, ref Material _damageMaterial, float _look)
     {
-        if (sr == null) return;
-        sr.GetPropertyBlock(_flashMPB);
-        _flashMPB.SetFloat(DamageLookID, _look);
-        CommitBodyBlock(sr, _flashMPB);
+        if (_sr == null || _baseMaterial == null) return;
+
+        if (0f == _look)
+        {
+            if (null == _damageMaterial) return;
+            if (_sr.sharedMaterial == _damageMaterial) _sr.sharedMaterial = _baseMaterial;
+            ReleaseDamageMaterial(_baseMaterial, _damageMaterial);
+            _damageMaterial = null;
+            return;
+        }
+
+        if (null == _damageMaterial) _damageMaterial = AcquireDamageMaterial(_baseMaterial);
+        _damageMaterial.SetFloat(DamageLookID, _look);
+        // 무늬 위치 기준(나무 루트 위치, 흔들리지 않는다). 풀에서 다시 꺼낸 나무도 여기서 새 위치로 들어간다.
+        Vector3 pivot = transform.position;
+        _damageMaterial.SetVector(DamageLookPivotID, new Vector4(pivot.x, pivot.y, 0f, 0f));
+        if (_sr.sharedMaterial == _baseMaterial) _sr.sharedMaterial = _damageMaterial;
+    }
+
+    private static Material AcquireDamageMaterial(Material _baseMaterial)
+    {
+        if (damageMaterialPool.TryGetValue(_baseMaterial, out Stack<Material> pool))
+        {
+            while (pool.Count > 0)
+            {
+                Material pooled = pool.Pop();
+                if (null != pooled) return pooled;
+            }
+        }
+
+        return new Material(_baseMaterial) { name = _baseMaterial.name + " (Damage)", hideFlags = HideFlags.DontSave };
+    }
+
+    private static void ReleaseDamageMaterial(Material _baseMaterial, Material _damageMaterial)
+    {
+        if (false == damageMaterialPool.TryGetValue(_baseMaterial, out Stack<Material> pool))
+        {
+            pool = new Stack<Material>();
+            damageMaterialPool.Add(_baseMaterial, pool);
+        }
+
+        pool.Push(_damageMaterial);
+    }
+
+    /// <summary>
+    /// 이 나무의 렌더러(_source)를 베낀 대역(_copy, 지진에 쓰러진 나무가 솟구치는 대역 등)이 깎인 모습 재질 사본을 그대로 끼우고 있으면
+    /// 원본 재질로 바꾸고 깎인 모습 값을 대역의 블록에 넣는다. 사본을 그대로 두면 나무가 풀로 돌아간 뒤 사본이 다른 나무에 넘어가
+    /// 대역의 금·숯불이 바뀐다. 블록으로 넣던 때 대역이 블록째 베끼던 값과 같다.
+    /// </summary>
+    public void DetachDamageLookCopy(SpriteRenderer _source, SpriteRenderer _copy)
+    {
+        if (_source == null || _copy == null) return;
+
+        Material damageMaterial = _source == topRenderer ? topDamageMaterial : (_source == bottomRenderer ? bottomDamageMaterial : null);
+        if (null == damageMaterial || _copy.sharedMaterial != damageMaterial) return;
+
+        _copy.sharedMaterial = _source == topRenderer ? defaultTopMaterial : defaultBottomMaterial;
+        if (_flashMPB == null) _flashMPB = new MaterialPropertyBlock();
+        _copy.GetPropertyBlock(_flashMPB);
+        _flashMPB.SetFloat(DamageLookID, damageMaterial.GetFloat(DamageLookID));
+        _flashMPB.SetVector(DamageLookPivotID, damageMaterial.GetVector(DamageLookPivotID));
+        _copy.SetPropertyBlock(_flashMPB);
+    }
+
+    // 깎인 채로 나무가 없어지면(씬 정리 등) 끼워 두었던 사본을 풀로 돌린다.
+    private void OnDestroy()
+    {
+        if (null != topDamageMaterial && null != defaultTopMaterial) ReleaseDamageMaterial(defaultTopMaterial, topDamageMaterial);
+        if (null != bottomDamageMaterial && null != defaultBottomMaterial) ReleaseDamageMaterial(defaultBottomMaterial, bottomDamageMaterial);
+        topDamageMaterial = null;
+        bottomDamageMaterial = null;
     }
 
     /// <summary>
@@ -1355,7 +1441,7 @@ public class TreeVisualComponent : MonoBehaviour
     /// 렌더러에 프로퍼티 블록을 넣는다. 수관·밑동은 블록 값(BodyBlockFloatIDs·_FlashColor)이 모두 기본 값과 같으면 블록을 비운다.
     /// 셰이더가 받는 값은 같아 그림은 그대로이고, 블록이 없는 렌더러는 SRP Batcher로 그려져 나무마다 드는 그리기 비용이 준다.
     /// 다음에 값을 쓸 때 GetPropertyBlock이 빈 블록을 주므로 비운 값들은 블록에 다시 들어가지 않지만, 모두 재질 값과 같아 결과가 같다.
-    /// 실드는 블록 값이 모두 지금 끼워진 재질(HDR 사본) 값과 같으면 비운다. 그 밖의 렌더러는 예전처럼 블록을 그대로 넣는다.
+    /// 실드·하이라이트·별자리·물 위 실드/하이라이트는 블록 값이 모두 지금 끼워진 재질(HDR 사본) 값과 같으면 비운다. 그 밖의 렌더러는 예전처럼 블록을 그대로 넣는다.
     /// </summary>
     private void CommitBodyBlock(SpriteRenderer _sr, MaterialPropertyBlock _block)
     {
@@ -1367,7 +1453,7 @@ public class TreeVisualComponent : MonoBehaviour
 
     private bool IsBodyBlockAtDefaults(SpriteRenderer _sr, MaterialPropertyBlock _block)
     {
-        if (_sr == topShieldRenderer || _sr == bottomShieldRenderer) return IsShieldBlockAtMaterial(_sr, _block);
+        if (IsHDRMaterialRenderer(_sr)) return IsBlockAtMaterial(_sr, _block);
 
         bool bTop = _sr == topRenderer;
         if (false == bTop && _sr != bottomRenderer) return false;
@@ -1387,18 +1473,26 @@ public class TreeVisualComponent : MonoBehaviour
         return true;
     }
 
-    // 실드 블록에 들어가는 값들(HDR·번쩍임 양·흔들림, 번쩍임 색, 포자막)이 모두 지금 끼워진 재질 값과 정확히 같은지 본다.
-    // 실드 블록에는 이 다섯 값만 들어간다(ApplyHDRToRenderer·SetFlash*ToRenderer·ApplyWindSwayToRenderer·SetSporeShieldFxToRenderer).
-    private static readonly int[] ShieldBlockFloatIDs = { HDRIntensityID, FlashAmountID, EnableWindSwayID };
+    // HDR 사본을 끼우는 렌더러(실드·하이라이트·별자리·물 위 실드/하이라이트)인지.
+    private bool IsHDRMaterialRenderer(SpriteRenderer _sr)
+    {
+        return _sr == topShieldRenderer || _sr == bottomShieldRenderer || _sr == topHighlightRenderer || _sr == bottomHighlightRenderer
+            || _sr == constellationRenderer || _sr == topShieldOnWaterSR || _sr == topHighlightOnWaterSR;
+    }
 
-    private static bool IsShieldBlockAtMaterial(SpriteRenderer _sr, MaterialPropertyBlock _block)
+    // 블록에 들어가는 값들(HDR·번쩍임 양·흔들림·열기, 번쩍임 색, 포자막)이 모두 지금 끼워진 재질 값과 정확히 같은지 본다.
+    // 이 렌더러들의 블록에는 이 여섯 값만 들어간다(ApplyHDRToRenderer·SetFlash*ToRenderer·ApplyWindSwayToRenderer·SetHeatChargeToRenderer(하이라이트)·
+    // SetSporeShieldFxToRenderer(실드)).
+    private static readonly int[] HDRMaterialBlockFloatIDs = { HDRIntensityID, FlashAmountID, EnableWindSwayID, HeatChargeID };
+
+    private static bool IsBlockAtMaterial(SpriteRenderer _sr, MaterialPropertyBlock _block)
     {
         Material material = _sr.sharedMaterial;
         if (null == material) return false;
 
-        for (int i = 0; i < ShieldBlockFloatIDs.Length; i++)
+        for (int i = 0; i < HDRMaterialBlockFloatIDs.Length; i++)
         {
-            int id = ShieldBlockFloatIDs[i];
+            int id = HDRMaterialBlockFloatIDs[i];
             if (_block.HasFloat(id) && (false == material.HasFloat(id) || material.GetFloat(id) != _block.GetFloat(id))) return false;
         }
 
@@ -1833,6 +1927,9 @@ public class TreeVisualComponent : MonoBehaviour
         {
             if (topRenderer != null && defaultTopMaterial != null) topRenderer.sharedMaterial = defaultTopMaterial;
             if (bottomRenderer != null && defaultBottomMaterial != null) bottomRenderer.sharedMaterial = defaultBottomMaterial;
+            // 깎인 모습 사본이 있으면 원본 대신 사본을 끼운다(SetDamageLookToRenderer 참고).
+            if (topRenderer != null && topDamageMaterial != null && topRenderer.sharedMaterial == defaultTopMaterial) topRenderer.sharedMaterial = topDamageMaterial;
+            if (bottomRenderer != null && bottomDamageMaterial != null && bottomRenderer.sharedMaterial == defaultBottomMaterial) bottomRenderer.sharedMaterial = bottomDamageMaterial;
             if (topOnWaterSR != null && defaultOnWaterMaterial != null) topOnWaterSR.sharedMaterial = defaultOnWaterMaterial;
             // 원본 머티리얼로 되돌린 뒤에 읽어야 그 머티리얼에 저장된 원래 sway 설정을 복원할 수 있다.
             SetWindSwayEnabled(true);
@@ -1966,35 +2063,40 @@ public class TreeVisualComponent : MonoBehaviour
         if (_renderer == null) return;
         float hdr = _active ? _intensity : 1f;
 
-        // 실드는 블록에 넣는 HDR과 같은 값을 가진 재질로 함께 바꿔 끼운다(블록을 비워도 HDR이 그대로 남게).
-        if (_renderer == topShieldRenderer) ApplyShieldHDRMaterial(_renderer, ref topShieldBaseMaterial, hdr);
-        else if (_renderer == bottomShieldRenderer) ApplyShieldHDRMaterial(_renderer, ref bottomShieldBaseMaterial, hdr);
+        // 블록에 넣는 HDR과 같은 값을 가진 재질로 함께 바꿔 끼운다(블록을 비워도 HDR이 그대로 남게).
+        if (_renderer == topShieldRenderer) ApplyHDRMaterial(_renderer, ref topShieldBaseMaterial, hdr);
+        else if (_renderer == bottomShieldRenderer) ApplyHDRMaterial(_renderer, ref bottomShieldBaseMaterial, hdr);
+        else if (_renderer == topHighlightRenderer) ApplyHDRMaterial(_renderer, ref topHighlightBaseMaterial, hdr);
+        else if (_renderer == bottomHighlightRenderer) ApplyHDRMaterial(_renderer, ref bottomHighlightBaseMaterial, hdr);
+        else if (_renderer == constellationRenderer) ApplyHDRMaterial(_renderer, ref constellationBaseMaterial, hdr);
+        else if (_renderer == topShieldOnWaterSR) ApplyHDRMaterial(_renderer, ref topShieldOnWaterBaseMaterial, hdr);
+        else if (_renderer == topHighlightOnWaterSR) ApplyHDRMaterial(_renderer, ref topHighlightOnWaterBaseMaterial, hdr);
 
         _renderer.GetPropertyBlock(Mpb);
         Mpb.SetFloat(HDRIntensityID, hdr);
         CommitBodyBlock(_renderer, Mpb);
     }
 
-    private static void ApplyShieldHDRMaterial(SpriteRenderer _renderer, ref Material _baseMaterial, float _hdr)
+    private static void ApplyHDRMaterial(SpriteRenderer _renderer, ref Material _baseMaterial, float _hdr)
     {
         if (null == _baseMaterial) _baseMaterial = _renderer.sharedMaterial;
         if (null == _baseMaterial || false == _baseMaterial.HasFloat(HDRIntensityID)) return;
 
-        Material target = _baseMaterial.GetFloat(HDRIntensityID) == _hdr ? _baseMaterial : GetShieldHDRMaterial(_baseMaterial, _hdr);
+        Material target = _baseMaterial.GetFloat(HDRIntensityID) == _hdr ? _baseMaterial : GetHDRMaterial(_baseMaterial, _hdr);
         if (_renderer.sharedMaterial != target) _renderer.sharedMaterial = target;
     }
 
-    private static Material GetShieldHDRMaterial(Material _baseMaterial, float _hdr)
+    private static Material GetHDRMaterial(Material _baseMaterial, float _hdr)
     {
-        if (false == shieldHDRMaterialCache.TryGetValue(_baseMaterial, out Dictionary<float, Material> byHdr))
+        if (false == hdrMaterialCache.TryGetValue(_baseMaterial, out Dictionary<float, Material> byHdr))
         {
             byHdr = new Dictionary<float, Material>();
-            shieldHDRMaterialCache.Add(_baseMaterial, byHdr);
+            hdrMaterialCache.Add(_baseMaterial, byHdr);
         }
 
         if (false == byHdr.TryGetValue(_hdr, out Material material) || null == material)
         {
-            material = new Material(_baseMaterial) { name = _baseMaterial.name + " (Shield HDR)", hideFlags = HideFlags.DontSave };
+            material = new Material(_baseMaterial) { name = _baseMaterial.name + " (HDR)", hideFlags = HideFlags.DontSave };
             material.SetFloat(HDRIntensityID, _hdr);
             byHdr[_hdr] = material;
         }

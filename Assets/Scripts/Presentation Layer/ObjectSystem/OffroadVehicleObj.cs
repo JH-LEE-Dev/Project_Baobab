@@ -1157,6 +1157,13 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
             offroadContainerVComponent.SetPicnicBasket(_bPicnicBasket);
     }
 
+    /// <summary>특성 창에서 소풍 바구니를 찍고 창을 닫았을 때: 전리품 진화 연출과 함께 운반 상자를 바구니로 바꾼다.</summary>
+    public void PlayPicnicBasketReveal()
+    {
+        if (offroadContainerVComponent != null)
+            offroadContainerVComponent.PlayPicnicBasketReveal();
+    }
+
     public void ChangeSprite(MapType _mapType)
     {
         if (!bOriginalSpritesSaved)
