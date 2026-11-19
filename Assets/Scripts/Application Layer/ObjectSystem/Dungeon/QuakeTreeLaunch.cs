@@ -100,6 +100,8 @@ public sealed class QuakeTreeLaunch
         {
             SpriteRenderer copy = GetRenderer(ghost.body, i, root, "Body");
             CopyRenderer(bodyBuffer[i], copy);
+            // 깎인 모습 재질 사본은 나무 전용이라 대역에는 원본 재질 + 블록 값으로 옮겨 담는다(나무가 풀로 돌아간 뒤에도 그대로 남게).
+            visual.DetachDamageLookCopy(bodyBuffer[i], copy);
             // 맞는 순간 하얗게 번쩍인다(Tick에서 잦아든다).
             copy.GetPropertyBlock(block);
             block.SetColor(FlashColorId, Color.white);
