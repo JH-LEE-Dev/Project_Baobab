@@ -177,11 +177,7 @@ public class EnvironmentInteractionManager : MonoBehaviour
 
     private static bool IsCoveringEmber(TreeObj _tree, Vector2 _emberPos, Renderer _emberRenderer)
     {
-        for (int i = 0; i < EmberSamplePoints.Length; i++)
-        {
-            if (_tree.CoversWorldPoint(_emberPos + EmberSamplePoints[i], _emberRenderer)) return true;
-        }
-        return false;
+        return _tree.CoversAnyWorldPoint(_emberPos, EmberSamplePoints, _emberRenderer);
     }
 
     private bool IsInsideAlphaDownRange(TreeObj _tree)

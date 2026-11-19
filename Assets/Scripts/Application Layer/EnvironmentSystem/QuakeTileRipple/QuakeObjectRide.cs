@@ -307,8 +307,8 @@ public sealed class QuakeObjectRide
 
         if (false == roots.Contains(_root))
         {
-            CustomSortable sortable = _root.GetComponent<CustomSortable>();
-            if (null == sortable || false == sortable.isActiveAndEnabled) return;
+            // TryGetComponent: 정렬기가 없는 루트에서 GetComponent가 내는 빈 값(에디터는 오류 문구 할당)을 피한다.
+            if (false == _root.TryGetComponent(out CustomSortable sortable) || false == sortable.isActiveAndEnabled) return;
 
             Track(sortable);
             partBuffer.Clear();
@@ -419,8 +419,9 @@ public sealed class QuakeObjectRide
         Transform root = null != vehicle ? vehicle.transform : _sortable.transform;
         if (roots.Contains(root) || HasTrackedAncestor(root)) return;
         // 칸 높이를 따르지 않으면 튈 나무·물체만 있으면 된다.
-        bool bTreeRoot = null != root.GetComponent<TreeObj>();
-        PopKind pop = PopKindOf(root);
+        bool bTreeRoot = root.TryGetComponent(out TreeObj _);
+        // 나무 루트면 아래 첫 조건에서 튐 종류를 보지 않으므로, 통째 나무가 아닌 것으로 밝혀질 때만 구한다(결과는 미리 구한 것과 같다).
+        PopKind pop = bTreeRoot ? PopKind.None : PopKindOf(root);
         if (false == bRideHeights && false == bTreeRoot && PopKind.None == pop) return;
 
         partBuffer.Clear();
@@ -429,6 +430,7 @@ public sealed class QuakeObjectRide
 
         // 나무는 루트 하나가 통째로 한 부분이다(충돌체 없음·정렬기 하나). 그 부분에만 높이를 담는다.
         bool bTree = bTreeRoot && partBuffer.Count == 1 && partBuffer[0].transform == root && null == partBuffer[0].source;
+        if (bTreeRoot && false == bTree) pop = PopKindOf(root);
         // 칸 높이를 따르지 않으면 높이를 담을 수 있는 나무와 튀는 물체만 둔다(다른 모양은 움직일 일이 없다).
         if (false == bRideHeights && false == bTree && PopKind.None == pop)
         {
@@ -460,8 +462,8 @@ public sealed class QuakeObjectRide
     private PopKind PopKindOf(Transform _root)
     {
         if (false == PopEnabled) return PopKind.None;
-        if (null != _root.GetComponent<Character>()) return characterPopHeight > 0f || squashAmount > 0f ? PopKind.Character : PopKind.None;
-        if (null != _root.GetComponent<Item>()) return itemPopHeight > 0f ? PopKind.Item : PopKind.None;
+        if (_root.TryGetComponent(out Character _)) return characterPopHeight > 0f || squashAmount > 0f ? PopKind.Character : PopKind.None;
+        if (_root.TryGetComponent(out Item _)) return itemPopHeight > 0f ? PopKind.Item : PopKind.None;
         return PopKind.None;
     }
 
@@ -572,8 +574,7 @@ public sealed class QuakeObjectRide
     /// </summary>
     private static void CollectParts(Transform _transform, CustomSortable _inherited, List<Part> _into)
     {
-        CustomSortable own = _transform.GetComponent<CustomSortable>();
-        if (null != own) _inherited = own;
+        if (_transform.TryGetComponent(out CustomSortable own)) _inherited = own;
 
         _transform.GetComponentsInChildren(true, innerSortables);
         int sortableCount = innerSortables.Count;
@@ -594,8 +595,7 @@ public sealed class QuakeObjectRide
         }
 
         // 자신의 그림(정렬 그룹 밖의 스프라이트만 - 대역은 정렬 그룹에 들어가지 못한다).
-        SpriteRenderer sprite = _transform.GetComponent<SpriteRenderer>();
-        if (null != sprite && null == sprite.GetComponentInParent<SortingGroup>(true))
+        if (_transform.TryGetComponent(out SpriteRenderer sprite) && null == sprite.GetComponentInParent<SortingGroup>(true))
         {
             Part ownPart = RentPart();
             ownPart.transform = _transform;

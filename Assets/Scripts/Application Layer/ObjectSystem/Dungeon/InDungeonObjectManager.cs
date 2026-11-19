@@ -3717,6 +3717,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         return points;
     }
 
+    // 지진 피해 탐색에서 나무 위치(transform)와 충돌 격자에 등록된 중심(위치 + 충돌 오프셋, 0.2 이하)의 차이로 넉넉히 잡은 값.
+    private const float QuakeScanPositionSlack = 0.5f;
+
     // 진원 기준 등각 타원 띠(_inner 초과 ~ _outer 이하, 바닥 평면 거리) 가운데 _strikeRect(화면 전체 피해 범위) 안의 나무를 때린다.
     // _range는 앞머리가 가는 거리 전체(쓰러진 나무가 튀어 오르는 높이를 진원 거리로 정할 때만 쓴다).
     // 피해는 나무마다 맞는 순간의 최대 체력 × _maxHpRatio다.
@@ -3729,7 +3732,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         TreeTileWriteBatch.Begin();
         try
         {
-            CollisionSystem.Instance.GetCollidablesInRadius(_origin, _outer, treeLayerForExplosion.value, scanResults);
+            // 이미 지나간 안쪽·띠 바깥·피해 범위 밖 셀은 아래 판정에서 모두 버려지므로 훑지 않는다(남는 나무와 순서는 같다).
+            CollisionSystem.Instance.GetCollidablesInRadiusEllipseBand(_origin, _outer, treeLayerForExplosion.value, scanResults,
+                _strikeRect, _origin, 2f, _inner, _outer, QuakeScanPositionSlack);
 
             float innerSq = _inner < 0f ? -1f : _inner * _inner;
             float outerSq = _outer * _outer;

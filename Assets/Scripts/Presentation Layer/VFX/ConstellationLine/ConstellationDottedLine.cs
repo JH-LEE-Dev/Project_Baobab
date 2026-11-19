@@ -210,6 +210,9 @@ public class ConstellationDottedLine : MonoBehaviour
 
     private void LateUpdate()
     {
+        // 예고 맥동·푸른빛 전환·타겟 추적이 모두 없으면 아래는 아무것도 바꾸지 않으므로 시간도 읽지 않고 끝낸다.
+        if (false == bLastStarWarning && 0.0f >= lastStarWeight && false == bBlendMaybePending && false == bHasDynamicTargets) return;
+
         // 마지막 별 예고 맥동(켜져 있거나 꺼지는 중일 때만 일한다). 메쉬는 다시 만들지 않고 셰이더 값만 바꾼다.
         UpdateLastStarWarning(Time.deltaTime);
 
