@@ -37,11 +37,7 @@ public class SkillNode
 
     private static long EvaluateCost(ProgressionCurve _curve, int _targetLevel)
     {
-        float value = _curve.Evaluate(_targetLevel);
-        if (float.IsNaN(value) || float.IsInfinity(value))
-            return 0L;
-
-        return (long)Math.Round(value, MidpointRounding.AwayFromZero);
+        return MoneyMath.RoundToLong(_curve.EvaluateDecimal(_targetLevel), MidpointRounding.AwayFromZero);
     }
 }
 

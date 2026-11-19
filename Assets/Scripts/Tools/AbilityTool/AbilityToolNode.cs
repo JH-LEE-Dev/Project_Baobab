@@ -235,8 +235,8 @@ public class AbilityToolNode : MonoBehaviour, IPointerEnterHandler, IPointerExit
             type = _curve.type,
             baseValue = _curve.baseValue,
             manualValues = _curve.manualValues != null
-                ? new List<float>(_curve.manualValues)
-                : new List<float>()
+                ? new List<double>(_curve.manualValues)
+                : new List<double>()
         };
     }
 

@@ -233,7 +233,7 @@ public static class LogValue
             {
                 // 표에 없는 등급(Destoyed/Damaged - 풀 리셋 값이라 드랍되지 않는다)은 1로 둔다.
                 float multiplier = dataBase.GetStateMultiplier((LogState)state);
-                unitValueCache[tree * LOG_STATE_COUNT + state] = (long)Math.Round(baseValue * (double)multiplier);
+                unitValueCache[tree * LOG_STATE_COUNT + state] = MoneyMath.MultiplyRound(baseValue, multiplier);
             }
         }
 

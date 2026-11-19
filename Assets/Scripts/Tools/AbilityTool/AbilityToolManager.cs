@@ -371,7 +371,7 @@ public class AbilityToolManager : MonoBehaviour
 
     private string BuildToolTipCostText(AbilityToolNode _node, out MoneyType _costMoneyType)
     {
-        long moneyCost = AbilityNumberFormatter.RoundToLong(_node.MoneyCurve.Evaluate(1));
+        long moneyCost = MoneyMath.RoundToLong(_node.MoneyCurve.EvaluateDecimal(1), System.MidpointRounding.AwayFromZero);
         _costMoneyType = MoneyType.None;
 
         if (moneyCost > 0)
@@ -1231,8 +1231,8 @@ public class AbilityToolManager : MonoBehaviour
             type = _curve.type,
             baseValue = _curve.baseValue,
             manualValues = _curve.manualValues != null
-                ? new List<float>(_curve.manualValues)
-                : new List<float>()
+                ? new List<double>(_curve.manualValues)
+                : new List<double>()
         };
     }
 
@@ -1242,7 +1242,7 @@ public class AbilityToolManager : MonoBehaviour
         {
             type = ProgressionType.Constant,
             baseValue = 0f,
-            manualValues = new List<float>()
+            manualValues = new List<double>()
         };
     }
 
