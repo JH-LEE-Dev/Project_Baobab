@@ -28,8 +28,8 @@ public struct SYSTEM_VAR
     /// </summary>
     public static readonly bool GEM_ORE_SYSTEM_ENABLED = false;
 
-    public const int MAX_INVENTORY_CNT = 10;
-    public const int MAX_STORAGE_CNT = 10;
+    public const int MAX_INVENTORY_CNT = 12;
+    public const int MAX_STORAGE_CNT = 12;
     public const int MAX_TREE_CNT = 3000;
 
     public const int MAX_ANIMAL_CNT = 100;
