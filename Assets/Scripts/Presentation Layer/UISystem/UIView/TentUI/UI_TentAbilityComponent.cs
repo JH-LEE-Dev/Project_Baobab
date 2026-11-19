@@ -57,6 +57,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private LocalizationManager localizationManager;
     private Canvas rootCanvas;
     private bool hasDraggedCurrentPress;
+    private bool moneyVisualRefreshPending;
     private bool hasZoomFocus;
     private bool hasPreviousMousePosition;
     private Vector2 previousMousePosition;
@@ -1430,6 +1431,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         SetCircleMaskActive(false);
         SetCircleRevealDimActive(false);
+    }
+
+    // 동전 여러 개나 중복 재화 알림은 LateUpdate에서 한 번으로 합친다.
+    public void RequestMoneyVisualRefresh()
+    {
+        moneyVisualRefreshPending = true;
     }
 
     public void Refresh()
@@ -2934,6 +2941,14 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (moneyVisualRefreshPending && hasBuiltNodes && !isCloseFading &&
+            abilityBackground != null && abilityBackground.gameObject.activeInHierarchy)
+        {
+            RefreshNodeAvailabilityVisuals();
+            if (currentToolTipNode != null)
+                ShowToolTip(currentToolTipNode);
+        }
+
         if (false == IsMouseKeyboardControlMode)
             return;
 
@@ -4351,6 +4366,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
     // 현재 보이는 노드를 순회하며 찍기 가능 여부를 확인하고 테두리/배경 색을 갱신한다.
     private void RefreshNodeAvailabilityVisuals()
     {
+        // 창 열기나 구매로 즉시 갱신했다면 예약된 재화 갱신도 처리한 것으로 본다.
+        moneyVisualRefreshPending = false;
         for (int i = 0; i < spawnedNodes.Count; i++)
         {
             AbilityNode node = spawnedNodes[i];
