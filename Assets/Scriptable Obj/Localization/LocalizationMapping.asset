@@ -569,3 +569,23 @@ MonoBehaviour:
     enumValueName: IncreaseJackPotAmount
     enumIntValue: 51
     compositeKey: 4203496
+  - enumTypeName: SkillCommandType
+    enumValueName: SpeciesImprovement
+    enumIntValue: 118
+    compositeKey: 4203497
+  - enumTypeName: SkillCommandType
+    enumValueName: EmberEverywhere
+    enumIntValue: 125
+    compositeKey: 4203498
+  - enumTypeName: SkillCommandType
+    enumValueName: OverheatMaxIncrease
+    enumIntValue: 126
+    compositeKey: 4203499
+  - enumTypeName: SkillCommandType
+    enumValueName: OverheatEfficiency
+    enumIntValue: 109
+    compositeKey: 4203500
+  - enumTypeName: SkillCommandType
+    enumValueName: PicnicBasket
+    enumIntValue: 128
+    compositeKey: 4203501

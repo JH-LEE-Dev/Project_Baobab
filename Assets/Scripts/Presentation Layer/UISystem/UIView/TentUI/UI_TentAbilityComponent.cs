@@ -1876,6 +1876,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
             case SkillCommandType.RemoteDeposit:
             case SkillCommandType.IncreaseJackPotAmount:
             case SkillCommandType.FinalAttack:
+            case SkillCommandType.EmberEverywhere:
+            case SkillCommandType.BoomerangOverheatBoost:
+            case SkillCommandType.DroneOverheatBoost:
 
                 return true;
             default:

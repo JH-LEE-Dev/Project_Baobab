@@ -124,7 +124,7 @@
         {
             "skillType": "WideGreenForestOvergrowth",
             "nameLocId": 121,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": 7,
             "gridY": 2,
@@ -268,7 +268,7 @@
         {
             "skillType": "PowerSupply",
             "nameLocId": 139,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": 9,
             "gridY": -2,
@@ -316,7 +316,7 @@
         {
             "skillType": "GoldTreeChance",
             "nameLocId": 145,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": 9,
             "gridY": 2,

@@ -56,7 +56,17 @@ public class AbilityToolNode : MonoBehaviour, IPointerEnterHandler, IPointerExit
     public SkillType SkillType => skillType;
     public int NameLocId => nameLocId;
     public string DisplayName => displayName;
-    public AbilityLevelBadgeType LevelBadge => levelBadge;
+    public AbilityLevelBadgeType LevelBadge
+    {
+        get
+        {
+            string plainName = System.Text.RegularExpressions.Regex.Replace(
+                displayName ?? string.Empty, "<[^>]+>", string.Empty).Trim();
+            bool hasGrade = System.Text.RegularExpressions.Regex.IsMatch(
+                plainName, @"(?:^|\s)(?:I|II|III|IV|V|VI|VII|VIII|IX|X|M)$");
+            return hasGrade ? levelBadge : AbilityLevelBadgeType.None;
+        }
+    }
     public int RequiredPrestigeLevel => Mathf.Max(requiredPrestigeLevel, 0);
     public int MaxLevel => maxLevel;
     public ProgressionCurve MoneyCurve => moneyCurve;
@@ -290,6 +300,7 @@ public class AbilityToolNode : MonoBehaviour, IPointerEnterHandler, IPointerExit
 
     private void OnValidate()
     {
+        levelBadge = LevelBadge;
         owner?.RefreshNodeLevelBadge(this);
     }
 
