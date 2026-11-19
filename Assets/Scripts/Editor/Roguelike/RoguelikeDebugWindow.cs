@@ -1,3 +1,4 @@
+using System;
 using UnityEditor;
 using UnityEngine;
 
@@ -10,8 +11,10 @@ public class RoguelikeDebugWindow : EditorWindow
     private int nextWave = 8;
     private int treesToKill = 10;
     private float staminaDamage = 10f;
-    private CardDefinitionSO cardToGrant;
     private Vector2 scroll;
+    private string cardSearch = string.Empty;
+    private bool[] kindFoldouts = { true, true, true, true }; // ECardKind 순서(Active, Passive, Ruby, Prism)
+    private static readonly string[] KindLabels = { "액티브", "패시브", "계약(루비)", "프리즘" };
 
     [MenuItem("Tools/Roguelike/Debug Window")]
     public static void Open()
@@ -182,12 +185,60 @@ public class RoguelikeDebugWindow : EditorWindow
         if (GUILayout.Button("다음 웨이브 번호 지정")) _system.DebugSetNextWave(nextWave);
         EditorGUILayout.EndHorizontal();
 
-        EditorGUILayout.BeginHorizontal();
-        cardToGrant = (CardDefinitionSO)EditorGUILayout.ObjectField(cardToGrant, typeof(CardDefinitionSO), false);
-        using (new EditorGUI.DisabledScope(null == cardToGrant))
+        DrawCardPicker(_system);
+    }
+
+    /// <summary>카드 DB 전체를 종류별로 보여 주고 +1 / MAX로 바로 지급한다(영상 촬영용). 제거·레벨 낮추기는 없다.</summary>
+    private void DrawCardPicker(RoguelikeSystem _system)
+    {
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("카드 지급", EditorStyles.boldLabel);
+        EditorGUILayout.HelpBox("제거·레벨 낮추기는 없습니다(다시 도전으로 초기화). 지급마다 선택 횟수 +1.", MessageType.None);
+
+        CardDatabaseSO db = _system.CardDatabase;
+        if (null == db)
         {
-            if (GUILayout.Button("카드 1단계 지급", GUILayout.Width(110))) _system.DebugGrantCard(cardToGrant);
+            EditorGUILayout.HelpBox("카드 DB 없음", MessageType.Warning);
+            return;
         }
-        EditorGUILayout.EndHorizontal();
+
+        RunBuildState build = _system.Build;
+        cardSearch = EditorGUILayout.TextField("검색", cardSearch);
+
+        for (int k = 0; k < KindLabels.Length; k++)
+        {
+            kindFoldouts[k] = EditorGUILayout.Foldout(kindFoldouts[k], KindLabels[k], true);
+            if (false == kindFoldouts[k]) continue;
+
+            for (int i = 0; i < db.cards.Count; i++)
+            {
+                CardDefinitionSO card = db.cards[i];
+                if (null == card || k != (int)card.kind) continue;
+                if (0 < cardSearch.Length && 0 > card.name.IndexOf(cardSearch, StringComparison.OrdinalIgnoreCase)) continue;
+
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField(card.name);
+                EditorGUILayout.LabelField($"Lv {build.GetLevel(card)}/{card.EffectiveMaxLevel}", GUILayout.Width(60));
+                if (build.IsExcluded(card))
+                {
+                    EditorGUILayout.LabelField("제외됨", GUILayout.Width(104));
+                }
+                else
+                {
+                    using (new EditorGUI.DisabledScope(build.IsMax(card)))
+                    {
+                        if (GUILayout.Button("+1", GUILayout.Width(40))) _system.DebugGrantCard(card);
+                        if (GUILayout.Button("MAX", GUILayout.Width(60))) GrantToMax(_system, card);
+                    }
+                }
+                EditorGUILayout.EndHorizontal();
+            }
+        }
+    }
+
+    private static void GrantToMax(RoguelikeSystem _system, CardDefinitionSO _card)
+    {
+        int guard = _card.EffectiveMaxLevel;
+        for (int i = 0; i < guard && false == _system.Build.IsMax(_card); i++) _system.DebugGrantCard(_card);
     }
 }
