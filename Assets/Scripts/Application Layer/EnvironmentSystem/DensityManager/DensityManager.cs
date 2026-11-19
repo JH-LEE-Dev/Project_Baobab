@@ -19,6 +19,8 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
     private int animalStartCnt;
 
     private Dictionary<MapType, float> treeDensityMultipliers = new Dictionary<MapType, float>();
+    // 과밀 배율을 float에 바로 더하면 +30%를 10번 올렸을 때 4.0이 아니라 3.9999995가 된다. 합만 double로 모은다.
+    private Dictionary<MapType, PercentAccumulator> treeDensityAccums = new Dictionary<MapType, PercentAccumulator>();
     private float rabbitDensityMultiplier = 1.0f;
     private PercentAccumulator rabbitDensityAccum;
 
@@ -194,8 +196,19 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
     public bool CanCreateTree(MapType _mapType)
     {
         float currentTreeMultiplier = GetTreeDensityMultiplier(_mapType);
-        int maxCnt = (int)(grassTileCnt * currentDensityData.treeMaxDensityRatio * currentTreeMultiplier);
+        int maxCnt = ToTreeCount(grassTileCnt, currentDensityData.treeMaxDensityRatio, currentTreeMultiplier);
         return treeCnt < maxCnt;
+    }
+
+    // 칸 수 × 밀도 비율 × 배율을 나무 개수로 바꾼다. float로 곱해 (int)로 자르면 0.06이 0.0599999로,
+    // 4.0배가 3.9999995로 들어가 240그루가 239.99999 → 239가 됐다. 입력값 그대로의 십진수(float 유효숫자
+    // 7자리)로 되돌려 곱한 뒤 소수점 아래를 버린다(버리는 규칙은 예전과 같다).
+    private static int ToTreeCount(int _tileCnt, float _ratio, float _multiplier)
+    {
+        decimal count = _tileCnt * MoneyMath.ToDecimal(_ratio) * MoneyMath.ToDecimal(_multiplier);
+        if (count <= 0m) return 0;
+        if (count >= int.MaxValue) return int.MaxValue;
+        return (int)decimal.Truncate(count);
     }
 
     public void UpdateAnimalCnt(bool _up)
@@ -233,11 +246,11 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
         float currentTreeMultiplier = GetTreeDensityMultiplier(_mapType);
         if (applyToStartCnt)
         {
-            return (int)(grassTileCnt * currentDensityData.treeStartDensityRatio * currentTreeMultiplier);
+            return ToTreeCount(grassTileCnt, currentDensityData.treeStartDensityRatio, currentTreeMultiplier);
         }
         else
         {
-            return (int)(grassTileCnt * currentDensityData.treeStartDensityRatio);
+            return ToTreeCount(grassTileCnt, currentDensityData.treeStartDensityRatio, 1f);
         }
     }
 
@@ -273,7 +286,9 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
     {
         // _amount는 0보다 큰 퍼센트 (예: 10.0f는 10% 증가)
         float currentMultiplier = GetTreeDensityMultiplier(_mapType);
-        float newMultiplier = currentMultiplier + (_amount / 100.0f);
+        treeDensityAccums.TryGetValue(_mapType, out PercentAccumulator accum);
+        float newMultiplier = accum.Add(currentMultiplier, _amount);
+        treeDensityAccums[_mapType] = accum; // 구조체라 꺼낸 사본을 다시 넣는다
 
         treeDensityMultipliers[_mapType] = newMultiplier;
     }
