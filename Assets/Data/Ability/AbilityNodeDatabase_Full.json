@@ -396,7 +396,7 @@
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
             "gridX": -15,
-            "gridY": -8,
+            "gridY": -6,
             "parents": [
                 {
                     "skillType": "PickupRange3",
@@ -706,7 +706,7 @@
             "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": -15,
-            "gridY": -4,
+            "gridY": -2,
             "parents": [
                 {
                     "skillType": "AutoLoadInRestArea",
@@ -722,10 +722,10 @@
             "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": -15,
-            "gridY": -2,
+            "gridY": 2,
             "parents": [
                 {
-                    "skillType": "AutoLoadInRestArea",
+                    "skillType": "RecoveryPower1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -738,7 +738,7 @@
             "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": -15,
-            "gridY": -6,
+            "gridY": -4,
             "parents": [
                 {
                     "skillType": "Repair1",
@@ -786,7 +786,7 @@
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
             "gridX": -15,
-            "gridY": -10,
+            "gridY": -8,
             "parents": [
                 {
                     "skillType": "InventoryExpansion2",

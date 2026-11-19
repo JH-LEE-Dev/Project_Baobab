@@ -1879,6 +1879,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
             case SkillCommandType.EmberEverywhere:
             case SkillCommandType.BoomerangOverheatBoost:
             case SkillCommandType.DroneOverheatBoost:
+            case SkillCommandType.SpeciesImprovement:
+            case SkillCommandType.PicnicBasket:
 
                 return true;
             default:

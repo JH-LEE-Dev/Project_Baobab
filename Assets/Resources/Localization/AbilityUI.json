@@ -7684,7 +7684,7 @@
         {
             "id": 9193,
             "key": "AbilityDescription_SpeciesImprovement",
-            "kr": "",
+            "kr": "획득하는 COLOR=ff5d8f>모든 원목</COLOR>이 해당 지역에서\n<COLOR=54D86A>가장 가치 높은 종류의 원목</COLOR>으로 변환됩니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -7708,7 +7708,7 @@
         {
             "id": 9194,
             "key": "AbilityDescription_EmberEverywhere",
-            "kr": "",
+            "kr": "이제 다른 숲에서도\n<COLOR=ff5d8f>불씨</COLOR>를 <COLOR=54D86A>획득</COLOR>할 수 있습니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -7732,7 +7732,7 @@
         {
             "id": 9195,
             "key": "AbilityDescription_OverheatMaxIncrease",
-            "kr": "",
+            "kr": "<COLOR=ff5d8f>과열 최대치</COLOR>가 <COLOR=54D86A>{0}</COLOR> 증가합니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -7756,7 +7756,7 @@
         {
             "id": 9196,
             "key": "AbilityDescription_OverheatEfficiency",
-            "kr": "",
+            "kr": "과열로 증가하는 <COLOR=ff5d8f>데미지와 공격 속도</COLOR>가\n<COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",
@@ -7780,7 +7780,7 @@
         {
             "id": 9197,
             "key": "AbilityDescription_PicnicBasket",
-            "kr": "",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>소풍</Wave></COLOR>을 갑니다.",
             "en": "",
             "zhHans": "",
             "zhHant": "",
