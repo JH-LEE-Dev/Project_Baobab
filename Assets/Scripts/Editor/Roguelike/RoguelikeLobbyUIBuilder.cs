@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using PresentationLayer.VFX;
 using TMPro;
 using UnityEditor;
@@ -8,7 +8,7 @@ using UnityEngine.UI;
 /// <summary>
 /// 로비 폐지(시안 v3)에 따른 UI 프리팹 구성기. 여러 번 실행해도 같은 결과로 덮어쓴다.
 ///   LumberBoy/UI/Build Roguelike Result     UIView_RoguelikeResult.prefab  결과 화면(딤 · 판 · 제목 명판 · 웨이브 · 행 · 카드 칸 · 버튼 2개 · 키 안내)
-///   LumberBoy/UI/Build Roguelike Records    UIView_RoguelikeRecords.prefab 기록 창(딤 · 판 · 화살표 · 탭 · 화살표 명판(옵션 화살표 그림 · 패드 LB/RB 아이콘) · 점 3개 · 행 템플릿 · 뒤로 버튼(옵션 BTN_Close 복제))
+///   LumberBoy/UI/Build Roguelike Records    UIView_RoguelikeRecords.prefab 기록 창 - 나이테 기록판(딤 · 판 · 탭 명판(옵션 화살표 · 패드 LB/RB) · 점 3개 · 스포트라이트 · 순위 줄 견본 · 카드 보관함 · 입자 · 뒤로 버튼). 그림은 Graphics/Roguelike/records/
 ///   LumberBoy/UI/Build Roguelike Challenges UIView_RoguelikeChallenges.prefab 도전과제 창(기록 창과 같은 판 · 명판 · 스크롤바 · 뒤로 버튼 + 본문 위쪽 머리줄 30 + 칸 목록 뷰포트 220, 칸 템플릿 1개 = 시안 B 리본). 프리팹이 없으면 새로 만든다.
 ///   LumberBoy/UI/Build Roguelike Main Menu  UI_MainMenu.prefab에 로그라이크 하위 메뉴(명판 + 버튼 4개 + 최고 기록판), UIView_MainMenu.prefab에 기록 창 · 도전과제 창 · 카드 DB 연결
 ///   LumberBoy/UI/Build Roguelike Lobby UI (All)  위 셋을 차례로
@@ -28,11 +28,13 @@ public static class RoguelikeLobbyUIBuilder
     private const string MainMenuPrefabPath = "Assets/Prefabs/UI/MainMenu/UI_MainMenu.prefab";
     private const string MainMenuViewPrefabPath = "Assets/Prefabs/UI/MainMenu/UIView_MainMenu.prefab";
     private const string FontPath = "Assets/TextMesh Pro/Fonts/Galmuri11_Optimum.asset";
+    // 기록 창 숫자 값 전용(언어별 폰트 교체 제외 - LocalizationFontTable.excludedFonts). 정적 아틀라스: 0~9 : , + × W -
     private const string OptionPrefabPath = "Assets/Prefabs/UI/Option/UI_Option.prefab";
     private const string KeyIconDatabasePath = "Assets/Prefabs/UI/Option/KeyIconDatabase.asset";
     private const string CardDatabasePath = "Assets/Data/Roguelike/RoguelikeCardDatabase_Draft.asset";
     private const string OwnedDir = "Assets/Graphics/Roguelike/owned/";
     private const string HudDir = "Assets/Graphics/Roguelike/hud/";
+    private const string RecordsDir = "Assets/Graphics/Roguelike/records/";
     private const string BasicButtonPath = "Assets/Graphics/HUD/Button/BasicButton.png";
     // 옵션 창 선택기(UI_OptionSelector)와 같은 화살표 그림 - 기록 창 탭 명판의 ◀ ▶를 이것으로 통일한다.
     private const string OptionArrowLeftPath = "Assets/Graphics/HUD/Option/Chevron-Arrow-Left-export.png";
@@ -62,8 +64,6 @@ public static class RoguelikeLobbyUIBuilder
     private static readonly Color ScrollTrackColor = new Color32(0x3A, 0x26, 0x1C, 255);
     private static readonly Color ScrollThumbColor = new Color32(0xCA, 0x8F, 0x73, 255);
     private const float ScrollbarThickness = 3f;
-    // 카드 띠 연결선(주황 단색 2개)
-    private static readonly Color StripLinkColor = new Color32(0xFF, 0x9D, 0x2E, 255);
 
     private static readonly Color DimColor = new Color(0.02f, 0.03f, 0.06f, 0.6f);
     private static readonly Color CreamColor = new Color(0.95f, 0.89f, 0.77f, 1f);
@@ -202,13 +202,16 @@ public static class RoguelikeLobbyUIBuilder
         }
     }
 
-    // // 기록 창
+    // // 기록 창 (나이테 기록판 - Docs/Roguelike/_Work/RecordUI_Redesign/RecordUI_Implementation_Plan.md)
 
     [MenuItem("LumberBoy/UI/Build Roguelike Records")]
     public static void BuildRecords()
     {
         Assets a = LoadAssets();
         if (null == a) return;
+
+        RecordArt r = LoadRecordArt();
+        if (null == r) return;
 
         GameObject root = PrefabUtility.LoadPrefabContents(RecordsPrefabPath);
         try
@@ -225,7 +228,7 @@ public static class RoguelikeLobbyUIBuilder
             dimButton.transition = Selectable.Transition.None;
             dimButton.navigation = new Navigation { mode = Navigation.Mode.None };
 
-            // 판 360 x 282: 탭 명판(위 가장자리에 걸침) · 점 3개 · 본문 250(행 5줄 46 + 4). 하단 키 안내 줄은 없다. 카드 띠가 열려도 판은 늘리지 않는다(본문이 세로로 스크롤된다).
+            // 판 360 x 282: 탭 명판(위 가장자리에 걸침) · 점 3개 · 본문 340 x 249(스포트라이트 109 + 간격 4 + 줄 5개 24 · 간격 4, 계획서 11장).
             const float panelWidth = 360f;
             const float panelHeight = UIView_RoguelikeRecords.PanelHeight;
             RectTransform panel = Centered("Panel", rootRect, panelWidth, panelHeight);
@@ -263,67 +266,26 @@ public static class RoguelikeLobbyUIBuilder
             dotCursor.sizeDelta = new Vector2(5f, 5f);
             dotCursor.anchoredPosition = Vector2.zero;
 
-            // 본문 340 x 250: 세로 ScrollRect(마스크). Rows(줄 + 카드 띠)가 content이고, 내용이 250을 넘을 때만 스크립트가 스크롤 · 스크롤바를 켠다.
-            const float bodyHeight = 5f * 50f;
-            RectTransform bodyViewport = TopLeft("Body", panel, panelWidth - 20f, bodyHeight);
-            bodyViewport.anchoredPosition = new Vector2(10f, -(Mathf.Ceil(PlateHeight * 0.5f) + 12f));
-            bodyViewport.gameObject.AddComponent<RectMask2D>();
-            Image bodyCatch = bodyViewport.gameObject.AddComponent<Image>();
-            bodyCatch.color = new Color(0f, 0f, 0f, 0f);
-            bodyCatch.raycastTarget = true;
-            RectTransform rowRoot = TopLeft("Rows", bodyViewport, panelWidth - 20f, bodyHeight);
-            rowRoot.anchoredPosition = Vector2.zero;
+            // 본문: 판 안쪽(테두리 4 안, 명판 아래)을 스텐실 마스크로 잘라 탭 전환 때 12px 밀려도 판 밖으로 나가지 않게 한다. 본문 원점은 판 (10, 25).
+            const float bodyWidth = panelWidth - 20f;
+            const float bodyHeight = 249f;
+            float bodyTop = Mathf.Ceil(PlateHeight * 0.5f) + 12f;
+            RectTransform bodyClip = TopLeft("BodyClip", panel, panelWidth - 8f, panelHeight - 4f - (bodyTop - 4f));
+            bodyClip.anchoredPosition = new Vector2(4f, -(bodyTop - 4f));
+            AddStencilMask(bodyClip);
+            RectTransform content = TopLeft("Body", bodyClip, bodyWidth, bodyHeight);
+            content.anchoredPosition = new Vector2(6f, -4f);
+            CanvasGroup contentGroup = content.gameObject.AddComponent<CanvasGroup>();
 
-            UI_RoguelikeRecordRow rowTemplate = CreateRecordRow(rowRoot, a, panelWidth - 20f);
+            UI_RoguelikeRecordSpotlight spotlight = CreateSpotlight(content, a, r, out RectTransform strip, out UI_RoguelikeStripScroll stripScroll,
+                out RectTransform stripViewport, out RectTransform stripContent, out UI_RoguelikeCardIconSlot stripSlotTemplate, out Image stripArrowLeft, out Image stripArrowRight);
 
-            // 카드 띠 연결선(주황 단색 Image 2개): 열린 줄 왼쪽 아래 -> 띠 왼쪽. 위치 · 크기는 화면 스크립트가 정한다. 평소에는 끄고 마우스를 받지 않는다.
-            RectTransform linkVertical = TopLeft("StripLinkV", rowRoot, 2f, 2f);
-            Image linkVerticalImage = linkVertical.gameObject.AddComponent<Image>();
-            linkVerticalImage.color = StripLinkColor;
-            linkVerticalImage.raycastTarget = false;
-            linkVertical.gameObject.SetActive(false);
-            RectTransform linkHorizontal = TopLeft("StripLinkH", rowRoot, 2f, 2f);
-            Image linkHorizontalImage = linkHorizontal.gameObject.AddComponent<Image>();
-            linkHorizontalImage.color = StripLinkColor;
-            linkHorizontalImage.raycastTarget = false;
-            linkHorizontal.gameObject.SetActive(false);
-            ScrollRect bodyScroll = bodyViewport.gameObject.AddComponent<ScrollRect>();
-            bodyScroll.viewport = bodyViewport;
-            bodyScroll.content = rowRoot;
-            bodyScroll.horizontal = false;
-            bodyScroll.vertical = true;
-            bodyScroll.movementType = ScrollRect.MovementType.Clamped;
-            bodyScroll.inertia = true;
+            RectTransform rowRoot = TopLeft("Rows", content, bodyWidth, bodyHeight);
+            UI_RoguelikeRecordRow rowTemplate = CreateRecordRow(rowRoot, a, r, bodyWidth);
 
-            // 세로 스크롤바: 본문 오른쪽 여백(본문과 1px 띄움, x 351 ~ 354), 판 색감의 단색.
-            UI_RoguelikeScrollbar bodyBar = CreateScrollbar("ScrollTrack", panel, ScrollbarThickness, bodyHeight, false);
-            ((RectTransform)bodyBar.transform).anchoredPosition = new Vector2(10f + (panelWidth - 20f) + 1f, -(Mathf.Ceil(PlateHeight * 0.5f) + 12f));
-
-            // 카드 띠(줄 아래에 열린다): 가로 스크롤(UI_RoguelikeStripScroll) + 마스크 + 칸 견본(선택 대상) + 아래 가로 스크롤바(카드 8장 초과일 때만). 평소에는 꺼 둔다.
-            // 띠는 줄보다 14px 들여 놓는다(폭 302: 8칸이 딱 보이고, 칸이 더 있으면 스크롤). 위치 · 폭은 화면 스크립트가 다시 정한다.
-            float stripWidth = 302f;
-            RectTransform strip = TopLeft("Strip", rowRoot, stripWidth, 36f);
-            RectTransform stripViewport = TopLeft("Viewport", strip, stripWidth, 36f);
-            stripViewport.gameObject.AddComponent<RectMask2D>();
-            Image stripCatch = stripViewport.gameObject.AddComponent<Image>();
-            stripCatch.color = new Color(0f, 0f, 0f, 0f);
-            stripCatch.raycastTarget = true;
-            RectTransform stripContent = TopLeft("Content", stripViewport, stripWidth, 36f);
-            UI_RoguelikeCardIconSlot stripSlotTemplate = CreateIconSlot(stripContent, a, true);
-            stripSlotTemplate.name = "StripSlotTemplate";
-            UI_RoguelikeScrollbar stripBar = CreateScrollbar("StripBar", strip, stripWidth, ScrollbarThickness, true);
-            ((RectTransform)stripBar.transform).anchoredPosition = new Vector2(0f, -38f);
-            UI_RoguelikeStripScroll stripScroll = strip.gameObject.AddComponent<UI_RoguelikeStripScroll>();
-            stripScroll.viewport = stripViewport;
-            stripScroll.content = stripContent;
-            stripScroll.horizontal = true;
-            stripScroll.vertical = false;
-            stripScroll.movementType = ScrollRect.MovementType.Clamped;
-            stripScroll.inertia = true;
-            strip.gameObject.SetActive(false);
-
-            TMP_Text empty = Text("Empty", panel, a.font, TextAlignmentOptions.Midline, MutedColor);
-            SetTop(empty.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, -120f), new Vector2(panelWidth - 20f, SmallLineHeight));
+            UI_RoguelikeRecordCardGrid cardGrid = CreateRecordCardGrid(content, a, r);
+            UI_RoguelikeRecordFx fx = CreateRecordFx(content, r, bodyWidth, bodyHeight);
+            SetSerialized(spotlight, "fx", fx);
 
             // 뒤로 버튼: 옵션 창 BTN_Close를 그대로 복제(스프라이트 · 32x32 · UI_OptionButton 설정). 판 아래 테두리 바깥, 판 왼쪽 끝에 맞춘다.
             UI_OptionButton backButton = CreateBackButton(panel, a, out UI_KeyboardImage backKey);
@@ -341,20 +303,20 @@ public static class RoguelikeLobbyUIBuilder
             Set(so, "nextArrowIcon", nextArrow);
             SetArray(so, "tabDots", dots[0], dots[1], dots[2]);
             Set(so, "tabDotCursor", dotCursor);
+            Set(so, "contentRoot", content);
+            Set(so, "contentGroup", contentGroup);
+            Set(so, "spotlight", spotlight);
             Set(so, "rowRoot", rowRoot);
             Set(so, "rowTemplate", rowTemplate);
+            Set(so, "cardGrid", cardGrid);
+            Set(so, "fx", fx);
             Set(so, "stripRoot", strip);
             Set(so, "stripScroll", stripScroll);
             Set(so, "stripViewport", stripViewport);
             Set(so, "stripContent", stripContent);
             Set(so, "stripSlotTemplate", stripSlotTemplate);
-            Set(so, "stripBar", stripBar);
-            Set(so, "stripLinkVertical", linkVertical);
-            Set(so, "stripLinkHorizontal", linkHorizontal);
-            Set(so, "bodyScroll", bodyScroll);
-            Set(so, "bodyViewport", bodyViewport);
-            Set(so, "bodyBar", bodyBar);
-            Set(so, "emptyText", empty);
+            Set(so, "stripArrowLeft", stripArrowLeft);
+            Set(so, "stripArrowRight", stripArrowRight);
             Set(so, "backButton", backButton);
             SetArray(so, "padOnlyItems", prevKey.transform, nextKey.transform, backKey.transform);
             SetArray(so, "keyGuideImages", prevKey, nextKey, backKey);
@@ -367,6 +329,571 @@ public static class RoguelikeLobbyUIBuilder
         {
             PrefabUtility.UnloadPrefabContents(root);
         }
+    }
+
+    /// <summary>
+    /// 스텐실 마스크(Mask + 보이지 않는 흰 Image). RectMask2D는 UI 셰이더가 잘린 경계를 화면 1픽셀만큼 부드럽게 섞어(안티에일리어싱)
+    /// 그림 가장자리와 겹치면 반투명 줄(서브 픽셀 섞임)이 생긴다. 스텐실은 정점 경계 그대로 칼같이 자른다.
+    /// 마스크 그림의 알파가 0이면 전부 잘리므로 흰색(알파 1)으로 두고 showMaskGraphic만 끈다.
+    /// </summary>
+    private static Image AddStencilMask(RectTransform _rect)
+    {
+        Image image = _rect.GetComponent<Image>();
+        if (null == image) image = _rect.gameObject.AddComponent<Image>();
+        image.sprite = null;
+        image.color = Color.white;
+        image.raycastTarget = false;
+        Mask mask = _rect.gameObject.AddComponent<Mask>();
+        mask.showMaskGraphic = false;
+        return image;
+    }
+
+    /// <summary>기록 창 전용 그림(Assets/Graphics/Roguelike/records/, 계획서 5-2 · 11장). 모두 Point · PPU 32 · 압축 없음.</summary>
+    private class RecordArt
+    {
+        public Sprite[] frames;          // 금 · 은 · 동 · 나무 · 빈칸 (Panel_Info 계열 9-슬라이스)
+        public Sprite tile;
+        public Sprite spotRings;
+        public Sprite[] medals28;
+        public Sprite medal28Empty;
+        public Sprite medal28Stump;
+        public Sprite[] medals19;
+        public Sprite medal19Empty;
+        public Sprite[] keyIcons;        // 금 깃발 · 빨강 깃발 · 흰 깃발 · ∞ (16)
+        public Sprite hudTree;
+        public Sprite clock16;
+        public Sprite clock8;
+        public Sprite card16;
+        public Sprite card8;
+        public Sprite tree8;
+        public Sprite[] smallKeys;       // 금 · 빨강 · 흰 깃발 10 · ∞ 민트 10x8
+        public Sprite slotMax;
+        public Sprite badgeNew;
+        public Sprite[] stamps;          // CLEAR · GAME OVER · RETIRE
+        public Sprite[] pips8;           // off · gold · red · white · head (8x7)
+        public Sprite[] pips8Tall;       // off · gold · red · white · head (8x9)
+        public Sprite[] pips4;           // off · gold · red · white · mint (4x5)
+        public Sprite track;
+        public Sprite shutterTile;
+        public Sprite[] digits;          // 큰 숫자: 금 · 흰색 · 민트 · 빨강 x 12
+        public Sprite[] smallDigits;     // 작은 숫자: 크림 · 금 · 빨강 · 민트 · 흐린 크림 x 14
+        public Sprite[] fxShapes;
+        public Sprite arrowLeft;
+        public Sprite arrowRight;
+    }
+
+    private static RecordArt LoadRecordArt()
+    {
+        RecordArt r = new RecordArt
+        {
+            frames = new[] { AssetDatabase.LoadAssetAtPath<Sprite>(OwnedDir + "Panel_Info_Gold.png"), R("Panel_Info_Silver"), R("Panel_Info_Bronze"),
+                AssetDatabase.LoadAssetAtPath<Sprite>(OwnedDir + "Panel_Info.png"), R("Panel_Info_Empty") },
+            tile = R("Panel_Info_Tile"),
+            spotRings = R("SpotRings"),
+            medals28 = new[] { R("Medal28_1"), R("Medal28_2"), R("Medal28_3"), R("Medal28_4"), R("Medal28_5") },
+            medal28Empty = R("Medal28_Empty"),
+            medal28Stump = R("Medal28_Stump"),
+            medals19 = new[] { R("Medal19_1"), R("Medal19_2"), R("Medal19_3"), R("Medal19_4"), R("Medal19_5") },
+            medal19Empty = R("Medal19_Empty"),
+            keyIcons = new[] { AssetDatabase.LoadAssetAtPath<Sprite>(HudDir + "HudIconFlagGold.png"), AssetDatabase.LoadAssetAtPath<Sprite>(HudDir + "HudIconFlag.png"),
+                AssetDatabase.LoadAssetAtPath<Sprite>(HudDir + "HudIconFlagWhite.png"), AssetDatabase.LoadAssetAtPath<Sprite>(HudDir + "HudIconInfinity.png") },
+            hudTree = AssetDatabase.LoadAssetAtPath<Sprite>(HudDir + "HudIconTree.png"),
+            clock16 = R("IconClock16"),
+            clock8 = R("IconClock8"),
+            card16 = R("IconCard16"),
+            card8 = R("IconCard8"),
+            tree8 = R("IconTree8_Green"),
+            smallKeys = new[] { R("IconFlag10_Gold"), R("IconFlag10_Red"), R("IconFlag10_White"), R("IconInfinity10_Mint") },
+            slotMax = AssetDatabase.LoadAssetAtPath<Sprite>(OwnedDir + "SlotLevel_MAX.png"),
+            badgeNew = R("BadgeNew"),
+            stamps = new[] { R("Stamp_Clear"), R("Stamp_GameOver"), R("Stamp_Retire") },
+            pips8 = new[] { R("Pip8_off"), R("Pip8_gold"), R("Pip8_red"), R("Pip8_white"), R("Pip8_head") },
+            pips8Tall = new[] { R("Pip8Tall_off"), R("Pip8Tall_gold"), R("Pip8Tall_red"), R("Pip8Tall_white"), R("Pip8Tall_head") },
+            pips4 = new[] { R("Pip4_off"), R("Pip4_gold"), R("Pip4_red"), R("Pip4_white"), R("Pip4_mint") },
+            track = R("Track9"),
+            shutterTile = R("ShutterTile"),
+            digits = new Sprite[UI_RoguelikeBigNumber.GlyphsPerPalette * 4],
+            smallDigits = new Sprite[UI_RoguelikeSmallNumber.GlyphsPerPalette * 5],
+            fxShapes = new[] { R("Fx_Dot1"), R("Fx_Dot2"), R("Fx_Plus3"), R("Fx_X3"), R("Fx_Diamond3") },
+            arrowLeft = R("StripArrow_L"),
+            arrowRight = R("StripArrow_R"),
+        };
+
+        // 큰 숫자: 팔레트(금 · 흰색 · 민트 · 빨강)마다 12칸(0~9, colon, comma)으로 자른 스프라이트
+        LoadSheet("BigDigits_", new[] { "gold", "white", "mint", "red" },
+            new[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "colon", "comma" }, r.digits);
+        // 작은 숫자: 팔레트(크림 · 금 · 빨강 · 민트 · 흐린 크림)마다 14칸(0~9, colon, comma, times, W)
+        LoadSheet("SmallDigits_", new[] { "cream", "gold", "red", "mint", "muted" },
+            new[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "colon", "comma", "times", "W" }, r.smallDigits);
+
+        bool bMissing = 0 <= System.Array.IndexOf(r.frames, null) || 0 <= System.Array.IndexOf(r.medals28, null) || 0 <= System.Array.IndexOf(r.medals19, null)
+            || 0 <= System.Array.IndexOf(r.keyIcons, null) || 0 <= System.Array.IndexOf(r.smallKeys, null) || 0 <= System.Array.IndexOf(r.stamps, null)
+            || 0 <= System.Array.IndexOf(r.pips8, null) || 0 <= System.Array.IndexOf(r.pips8Tall, null) || 0 <= System.Array.IndexOf(r.pips4, null)
+            || 0 <= System.Array.IndexOf(r.digits, null) || 0 <= System.Array.IndexOf(r.smallDigits, null) || 0 <= System.Array.IndexOf(r.fxShapes, null)
+            || null == r.tile || null == r.spotRings || null == r.medal28Empty || null == r.medal28Stump || null == r.medal19Empty || null == r.hudTree
+            || null == r.clock16 || null == r.clock8 || null == r.card16 || null == r.card8 || null == r.tree8 || null == r.slotMax || null == r.badgeNew
+            || null == r.track || null == r.shutterTile || null == r.arrowLeft || null == r.arrowRight;
+        if (true == bMissing)
+        {
+            Debug.LogError("[RoguelikeLobbyUIBuilder] 기록 창 그림을 찾지 못했습니다: " + RecordsDir + " (Docs/Roguelike/_Work/RecordUI_Redesign/art/art_v2.py로 만든 그림)");
+            return null;
+        }
+        return r;
+    }
+
+    /// <summary>여러 장으로 자른 글자 시트(_prefix + 팔레트 + .png, 하위 이름 _prefix + 팔레트 + _ + 글자)를 팔레트 순 x 글자 순으로 _into에 채운다.</summary>
+    private static void LoadSheet(string _prefix, string[] _palettes, string[] _glyphs, Sprite[] _into)
+    {
+        for (int p = 0; _palettes.Length > p; p++)
+        {
+            UnityEngine.Object[] subs = AssetDatabase.LoadAllAssetRepresentationsAtPath(RecordsDir + _prefix + _palettes[p] + ".png");
+            for (int g = 0; _glyphs.Length > g; g++)
+            {
+                string name = _prefix + _palettes[p] + "_" + _glyphs[g];
+                for (int s = 0; subs.Length > s; s++)
+                {
+                    if (subs[s] is Sprite sprite && sprite.name == name) _into[p * _glyphs.Length + g] = sprite;
+                }
+            }
+        }
+    }
+
+    private static Sprite R(string _name)
+    {
+        return AssetDatabase.LoadAssetAtPath<Sprite>(RecordsDir + _name + ".png");
+    }
+
+    /// <summary>원본 크기 그대로 왼쪽 위 기준에 놓는 그림(팻 픽셀 방지: 크기 = 스프라이트 원본).</summary>
+    private static Image PixelImage(string _name, RectTransform _parent, Sprite _sprite, float _x, float _y)
+    {
+        RectTransform rect = TopLeft(_name, _parent, null != _sprite ? _sprite.rect.width : 1f, null != _sprite ? _sprite.rect.height : 1f);
+        rect.anchoredPosition = new Vector2(_x, -_y);
+        Image image = rect.gameObject.AddComponent<Image>();
+        image.sprite = _sprite;
+        image.raycastTarget = false;
+        image.preserveAspect = false;
+        return image;
+    }
+
+    /// <summary>9-슬라이스 그림(테두리 원본 크기, 가운데만 늘어난다).</summary>
+    private static Image SlicedImage(string _name, RectTransform _parent, Sprite _sprite, float _x, float _y, float _width, float _height)
+    {
+        RectTransform rect = TopLeft(_name, _parent, _width, _height);
+        rect.anchoredPosition = new Vector2(_x, -_y);
+        Image image = rect.gameObject.AddComponent<Image>();
+        image.sprite = _sprite;
+        image.type = Image.Type.Sliced;
+        image.pixelsPerUnitMultiplier = 1f;
+        image.raycastTarget = false;
+        return image;
+    }
+
+    /// <summary>
+    /// 문구 글자(12px, 세로 가운데 = _centerY, 왼쪽 정렬). 언어별 폰트 교체를 따른다(빈 기록 안내 문구 전용 - 숫자는 모두 작은 숫자 그림 글꼴).
+    /// 세로는 위쪽 정렬 + UI_RoguelikePixelText가 기준선을 정수 픽셀에 맞춘다(Midline 정렬은 폰트 메트릭 평균이라 반 픽셀이 될 수 있다).
+    /// </summary>
+    private static TMP_Text ValueText(string _name, RectTransform _parent, TMP_FontAsset _font, Color _color, float _x, float _centerY, float _width)
+    {
+        TMP_Text text = Text(_name, _parent, _font, TextAlignmentOptions.TopLeft, _color);
+        text.rectTransform.sizeDelta = new Vector2(_width, SmallLineHeight);
+        text.rectTransform.anchoredPosition = new Vector2(_x, -(_centerY - SmallLineHeight * 0.5f));
+        UI_RoguelikePixelText pixel = text.gameObject.AddComponent<UI_RoguelikePixelText>();
+        SerializedObject so = new SerializedObject(pixel);
+        Set(so, "text", text);
+        so.FindProperty("centerY").floatValue = _centerY;
+        so.ApplyModifiedPropertiesWithoutUndo();
+        pixel.Apply();
+        return text;
+    }
+
+    /// <summary>
+    /// 작은 숫자(그림 글꼴 칸 7x9): 상자 (_x, _y) 폭 _width x 높이 9, 글자 Image 10개(크기 · 위치는 스크립트가 정수로 정한다).
+    /// _bRight가 참이면 상자 오른쪽 끝(_x + _width)에 외곽선 끝을 맞춘다.
+    /// </summary>
+    private static UI_RoguelikeSmallNumber CreateSmallNumber(string _name, RectTransform _parent, RecordArt _r, float _x, float _y, float _width, bool _bRight)
+    {
+        RectTransform root = TopLeft(_name, _parent, _width, 9f);
+        root.anchoredPosition = new Vector2(_x, -_y);
+        Image[] glyphs = new Image[UI_RoguelikeSmallNumber.MaxChars];
+        for (int i = 0; UI_RoguelikeSmallNumber.MaxChars > i; i++)
+        {
+            glyphs[i] = PixelImage("G" + i, root, _r.smallDigits[0], 0f, 0f);
+            glyphs[i].gameObject.SetActive(false);
+        }
+
+        UI_RoguelikeSmallNumber comp = root.gameObject.AddComponent<UI_RoguelikeSmallNumber>();
+        SerializedObject so = new SerializedObject(comp);
+        SetArray(so, "glyphs", glyphs);
+        SetArray(so, "sprites", _r.smallDigits);
+        so.FindProperty("bRightAlign").boolValue = _bRight;
+        so.ApplyModifiedPropertiesWithoutUndo();
+        return comp;
+    }
+
+    private static void SetSerialized(UnityEngine.Object _target, string _property, UnityEngine.Object _value)
+    {
+        SerializedObject so = new SerializedObject(_target);
+        Set(so, _property, _value);
+        so.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    /// <summary>
+    /// 스포트라이트(340x109, 최근 탭은 스크립트가 65로 줄인다 - 계획서 11장): 틀 · 나이테 무늬 · 메달 · 기준 아이콘 + 큰 숫자 · 칩 2x2 · 큰 길 · 끝 깃발 · ∞+n · 카드 띠 · 넘침 화살표 · 도장 · 빈 기록 문구 · 덧문.
+    /// 가로 안쪽 여백 12(내용 x 12~328), 위 여백 12. 좌표는 모두 스포트라이트 왼쪽 위 기준 정수 픽셀.
+    /// 틀 · 아래 덧문은 높이가 바뀌어도 따라가도록 늘어남 / 아래 붙음 앵커를 쓴다.
+    /// </summary>
+    private static UI_RoguelikeRecordSpotlight CreateSpotlight(RectTransform _parent, Assets _a, RecordArt _r, out RectTransform _strip, out UI_RoguelikeStripScroll _stripScroll,
+        out RectTransform _stripViewport, out RectTransform _stripContent, out UI_RoguelikeCardIconSlot _stripSlotTemplate, out Image _arrowLeft, out Image _arrowRight)
+    {
+        const float height = UI_RoguelikeRecordSpotlight.RankingHeight;
+        RectTransform spot = TopLeft("Spotlight", _parent, 340f, height);
+        CanvasGroup group = spot.gameObject.AddComponent<CanvasGroup>();
+        Image frame = SlicedImage("Frame", spot, _r.frames[0], 0f, 0f, 340f, height);
+        RectTransform frameRect = frame.rectTransform;
+        frameRect.anchorMin = Vector2.zero;
+        frameRect.anchorMax = Vector2.one;
+        frameRect.offsetMin = Vector2.zero;
+        frameRect.offsetMax = Vector2.zero;
+        Image rings = PixelImage("Rings", spot, _r.spotRings, 150f, 5f);
+
+        RectTransform medal = TopLeft("Medal", spot, 28f, 28f);
+        medal.anchoredPosition = new Vector2(12f, -14f);
+        Image medalImage = medal.gameObject.AddComponent<Image>();
+        medalImage.sprite = _r.medals28[0];
+        medalImage.raycastTarget = false;
+
+        // 머리 줄(y 12~44): 기준 아이콘 16 (46, 20) + 큰 숫자 (65, 20) - 아이콘 끝 62에서 3px.
+        RectTransform key = TopLeft("Key", spot, 200f, 44f);
+        CanvasGroup keyGroup = key.gameObject.AddComponent<CanvasGroup>();
+        Image keyIcon = PixelImage("KeyIcon", key, _r.keyIcons[0], 46f, 20f);
+        UI_RoguelikeBigNumber bigNumber = CreateBigNumber(key, _r, 65f, 20f);
+
+        // 칩 2x2: 열 x 212 / 276, 줄 y 12 / 28. 아이콘 16 칸 + 3 + 값(왼쪽 정렬, 세로 y+3).
+        RectTransform[] chipRects = new RectTransform[UI_RoguelikeRecordSpotlight.ChipCount];
+        CanvasGroup[] chipGroups = new CanvasGroup[UI_RoguelikeRecordSpotlight.ChipCount];
+        Image[] chipIcons = new Image[UI_RoguelikeRecordSpotlight.ChipCount];
+        UI_RoguelikeSmallNumber[] chipNumbers = new UI_RoguelikeSmallNumber[UI_RoguelikeRecordSpotlight.ChipCount];
+        for (int i = 0; UI_RoguelikeRecordSpotlight.ChipCount > i; i++)
+        {
+            RectTransform chip = TopLeft("Chip" + i, spot, 60f, 16f);
+            chip.anchoredPosition = new Vector2(212f + 64f * (i % 2), -(12f + 16f * (i / 2)));
+            chipRects[i] = chip;
+            chipGroups[i] = chip.gameObject.AddComponent<CanvasGroup>();
+            chipIcons[i] = PixelImage("Icon", chip, _r.hudTree, 0f, 0f);
+            chipNumbers[i] = CreateSmallNumber("Value", chip, _r, 19f, 3f, 41f, false);
+        }
+
+        // 웨이브 길(y 47~57): 칸 8x7 간격 1(x 12~280) + 끝 깃발 10 (284, 47).
+        UI_RoguelikeWaveTrail trail = CreateWaveTrail(spot, _r, 12f, 50f, true);
+        Image flag = PixelImage("EndFlag", spot, _r.smallKeys[0], 284f, 47f);
+        CanvasGroup flagGroup = flag.gameObject.AddComponent<CanvasGroup>();
+
+        // ∞ + 단계: 숫자 상자 오른쪽 끝 329(외곽선 끝 = 내용 끝선), ∞ 위치는 스크립트가 숫자 폭으로 정한다.
+        RectTransform unlimit = TopLeft("Unlimit", spot, 340f, 60f);
+        CanvasGroup unlimitGroup = unlimit.gameObject.AddComponent<CanvasGroup>();
+        Image unlimitIcon = PixelImage("Icon", unlimit, _r.smallKeys[3], 300f, 50f);
+        UI_RoguelikeSmallNumber unlimitNumber = CreateSmallNumber("Value", unlimit, _r, 269f, 49f, 60f, true);
+
+        // 카드 띠(랭킹 탭): (12, 61) 316x36 = 8칸 x 40 - 4. 가로 스크롤 + 스텐실 마스크 + 칸 견본(선택 대상 + CanvasGroup).
+        _strip = TopLeft("Strip", spot, 316f, 36f);
+        _strip.anchoredPosition = new Vector2(12f, -61f);
+        _stripViewport = TopLeft("Viewport", _strip, 316f, 36f);
+        Image stripCatch = AddStencilMask(_stripViewport);
+        stripCatch.raycastTarget = true;
+        _stripContent = TopLeft("Content", _stripViewport, 316f, 36f);
+        _stripSlotTemplate = CreateIconSlot(_stripContent, _a, true);
+        _stripSlotTemplate.name = "StripSlotTemplate";
+        _stripSlotTemplate.gameObject.AddComponent<CanvasGroup>();
+        _stripScroll = _strip.gameObject.AddComponent<UI_RoguelikeStripScroll>();
+        _stripScroll.viewport = _stripViewport;
+        _stripScroll.content = _stripContent;
+        _stripScroll.horizontal = true;
+        _stripScroll.vertical = false;
+        _stripScroll.movementType = ScrollRect.MovementType.Clamped;
+        _stripScroll.inertia = true;
+        _strip.gameObject.SetActive(false);
+        // 넘침 화살표 3x5: 띠 양옆 여백(4 ~ 12, 328 ~ 336)의 가운데, 띠 세로 가운데(61 + 18 - 3).
+        _arrowLeft = PixelImage("StripArrowL", spot, _r.arrowLeft, 6f, 76f);
+        _arrowRight = PixelImage("StripArrowR", spot, _r.arrowRight, 331f, 76f);
+        _arrowLeft.gameObject.SetActive(false);
+        _arrowRight.gameObject.SetActive(false);
+
+        // 도장: 위치는 스크립트가 큰 숫자 최종 폭으로 정한다.
+        Image stamp = PixelImage("Stamp", spot, _r.stamps[0], 120f, 17f);
+        stamp.gameObject.SetActive(false);
+
+        TMP_Text empty = ValueText("Empty", spot, _a.font, MutedColor, 0f, 28f, 340f);
+        empty.gameObject.SetActive(false);
+
+        // 덧문: 고정 크기 타일(332x51 = 안쪽 101의 위쪽 절반)을 스텐실 마스크 안에 두고 스크립트가 마스크 높이만 정수로 바꾼다(무늬가 밀리지 않는다).
+        const float shutterTileHeight = 51f;
+        RectTransform shutterTop = TopLeft("ShutterTop", spot, 332f, 0f);
+        shutterTop.anchoredPosition = new Vector2(4f, -4f);
+        AddStencilMask(shutterTop);
+        Image topTile = TiledImage("Tile", shutterTop, _r.shutterTile, 332f, shutterTileHeight);
+        topTile.rectTransform.anchoredPosition = Vector2.zero;
+        RectTransform shutterBottom = NewRect("ShutterBottom", spot);
+        shutterBottom.anchorMin = Vector2.zero;
+        shutterBottom.anchorMax = Vector2.zero;
+        shutterBottom.pivot = Vector2.zero;
+        shutterBottom.sizeDelta = new Vector2(332f, 0f);
+        shutterBottom.anchoredPosition = new Vector2(4f, 4f);
+        AddStencilMask(shutterBottom);
+        Image bottomTile = TiledImage("Tile", shutterBottom, _r.shutterTile, 332f, shutterTileHeight);
+        RectTransform bottomTileRect = bottomTile.rectTransform;
+        bottomTileRect.anchorMin = Vector2.zero;
+        bottomTileRect.anchorMax = Vector2.zero;
+        bottomTileRect.pivot = Vector2.zero;
+        bottomTileRect.anchoredPosition = Vector2.zero;
+        shutterTop.gameObject.SetActive(false);
+        shutterBottom.gameObject.SetActive(false);
+        RectTransform seamTop = TopLeft("SeamTop", spot, 332f, 1f);
+        Image seamTopImage = seamTop.gameObject.AddComponent<Image>();
+        seamTopImage.raycastTarget = false;
+        seamTop.gameObject.SetActive(false);
+        RectTransform seamBottom = TopLeft("SeamBottom", spot, 332f, 1f);
+        Image seamBottomImage = seamBottom.gameObject.AddComponent<Image>();
+        seamBottomImage.raycastTarget = false;
+        seamBottom.gameObject.SetActive(false);
+
+        UI_RoguelikeRecordSpotlight comp = spot.gameObject.AddComponent<UI_RoguelikeRecordSpotlight>();
+        SerializedObject so = new SerializedObject(comp);
+        Set(so, "group", group);
+        Set(so, "frameImage", frame);
+        SetArray(so, "frameSprites", _r.frames);
+        Set(so, "ringPattern", rings.gameObject);
+        Set(so, "medalRect", medal);
+        Set(so, "medalImage", medalImage);
+        SetArray(so, "medalSprites", _r.medals28);
+        Set(so, "medalEmptySprite", _r.medal28Empty);
+        Set(so, "medalStumpSprite", _r.medal28Stump);
+        Set(so, "keyGroup", keyGroup);
+        Set(so, "keyIconImage", keyIcon);
+        SetArray(so, "keyIconSprites", _r.keyIcons);
+        Set(so, "bigNumber", bigNumber);
+        Set(so, "stampRect", stamp.rectTransform);
+        Set(so, "stampImage", stamp);
+        SetArray(so, "stampSprites", _r.stamps);
+        SetArray(so, "chipRects", chipRects);
+        SetArray(so, "chipGroups", chipGroups);
+        SetArray(so, "chipIcons", chipIcons);
+        SetArray(so, "chipNumbers", chipNumbers);
+        Set(so, "treeSprite", _r.hudTree);
+        Set(so, "cardSprite", _r.card16);
+        Set(so, "clockSprite", _r.clock16);
+        Set(so, "clearTimeSprite", _r.keyIcons[0]);
+        Set(so, "maxSprite", _r.slotMax);
+        Set(so, "trail", trail);
+        Set(so, "flagRect", flag.rectTransform);
+        Set(so, "flagGroup", flagGroup);
+        Set(so, "flagImage", flag);
+        SetArray(so, "flagSprites", _r.smallKeys[0], _r.smallKeys[1], _r.smallKeys[2]);
+        Set(so, "unlimitGroup", unlimitGroup);
+        Set(so, "unlimitIcon", unlimitIcon.rectTransform);
+        Set(so, "unlimitNumber", unlimitNumber);
+        Set(so, "shutterTop", shutterTop);
+        Set(so, "shutterBottom", shutterBottom);
+        Set(so, "seamTop", seamTopImage);
+        Set(so, "seamBottom", seamBottomImage);
+        Set(so, "emptyText", empty);
+        so.ApplyModifiedPropertiesWithoutUndo();
+        return comp;
+    }
+
+    private static Image TiledImage(string _name, RectTransform _parent, Sprite _sprite, float _width, float _height)
+    {
+        RectTransform rect = TopLeft(_name, _parent, _width, _height);
+        Image image = rect.gameObject.AddComponent<Image>();
+        image.sprite = _sprite;
+        image.type = Image.Type.Tiled;
+        image.pixelsPerUnitMultiplier = 1f;
+        image.raycastTarget = false;
+        return image;
+    }
+
+    /// <summary>큰 숫자 자리 8칸: 자리마다 스텐실 마스크(10x15) 안에 지금 숫자 · 다음 숫자 Image. 위치 · 크기는 스크립트가 정수로 정한다.</summary>
+    private static UI_RoguelikeBigNumber CreateBigNumber(RectTransform _parent, RecordArt _r, float _x, float _y)
+    {
+        RectTransform root = TopLeft("BigNumber", _parent, 80f, 15f);
+        root.anchoredPosition = new Vector2(_x, -_y);
+        RectTransform[] cells = new RectTransform[UI_RoguelikeBigNumber.MaxChars];
+        Image[] glyphs = new Image[UI_RoguelikeBigNumber.MaxChars];
+        Image[] nexts = new Image[UI_RoguelikeBigNumber.MaxChars];
+        for (int i = 0; UI_RoguelikeBigNumber.MaxChars > i; i++)
+        {
+            cells[i] = TopLeft("Cell" + i, root, 10f, 15f);
+            AddStencilMask(cells[i]);
+            glyphs[i] = PixelImage("Glyph", cells[i], _r.digits[0], 0f, 0f);
+            nexts[i] = PixelImage("Next", cells[i], _r.digits[1], 0f, 14f);
+            nexts[i].gameObject.SetActive(false);
+            cells[i].gameObject.SetActive(false);
+        }
+
+        UI_RoguelikeBigNumber comp = root.gameObject.AddComponent<UI_RoguelikeBigNumber>();
+        SerializedObject so = new SerializedObject(comp);
+        SetArray(so, "cells", cells);
+        SetArray(so, "glyphs", glyphs);
+        SetArray(so, "nextGlyphs", nexts);
+        SetArray(so, "sprites", _r.digits);
+        so.ApplyModifiedPropertiesWithoutUndo();
+        return comp;
+    }
+
+    /// <summary>
+    /// 웨이브 길 30칸(계획서 11장). 큰 길: 칸 8x7 · 간격 1(폭 269), 10단위 칸 8x9(위로 2), 바탕 홈(Track9 9-슬라이스 271x9) + 10단위 칸 위 홈 조각 10x3.
+    /// 작은 길: 칸 4x5 · 간격 1(폭 149), 홈 151x7. 위치는 부모 왼쪽 위 기준 (_x, _y) 정수 픽셀.
+    /// </summary>
+    private static UI_RoguelikeWaveTrail CreateWaveTrail(RectTransform _parent, RecordArt _r, float _x, float _y, bool _bBig)
+    {
+        int pipWidth = true == _bBig ? 8 : 4;
+        int pipHeight = true == _bBig ? 7 : 5;
+        int step = pipWidth + 1;
+        int total = UI_RoguelikeWaveTrail.PipCount * step - 1;
+
+        RectTransform root = TopLeft("Trail", _parent, total, pipHeight);
+        root.anchoredPosition = new Vector2(_x, -_y);
+        CanvasGroup group = root.gameObject.AddComponent<CanvasGroup>();
+        SlicedImage("Track", root, _r.track, -1f, -1f, total + 2f, pipHeight + 2f);
+
+        Sprite[] pips = true == _bBig ? _r.pips8 : _r.pips4;
+        Image[] images = new Image[UI_RoguelikeWaveTrail.PipCount];
+        for (int i = 0; UI_RoguelikeWaveTrail.PipCount > i; i++)
+        {
+            bool bTall = true == _bBig && 9 == i % 10;
+            if (true == bTall) SlicedImage("TrackBump" + i, root, _r.track, i * step - 1f, -3f, pipWidth + 2f, 3f);
+            images[i] = PixelImage("Pip" + i, root, true == bTall ? _r.pips8Tall[0] : pips[0], i * step, true == bTall ? -2f : 0f);
+        }
+
+        UI_RoguelikeWaveTrail comp = root.gameObject.AddComponent<UI_RoguelikeWaveTrail>();
+        SerializedObject so = new SerializedObject(comp);
+        SetArray(so, "pips", images);
+        Set(so, "offSprite", pips[0]);
+        Set(so, "goldSprite", pips[1]);
+        Set(so, "redSprite", pips[2]);
+        Set(so, "whiteSprite", pips[3]);
+        Set(so, "mintSprite", true == _bBig ? _r.pips8[1] : _r.pips4[4]);
+        Set(so, "headSprite", true == _bBig ? _r.pips8[4] : null);
+        Set(so, "offTallSprite", true == _bBig ? _r.pips8Tall[0] : null);
+        Set(so, "goldTallSprite", true == _bBig ? _r.pips8Tall[1] : null);
+        Set(so, "redTallSprite", true == _bBig ? _r.pips8Tall[2] : null);
+        Set(so, "whiteTallSprite", true == _bBig ? _r.pips8Tall[3] : null);
+        Set(so, "headTallSprite", true == _bBig ? _r.pips8Tall[4] : null);
+        Set(so, "group", group);
+        so.ApplyModifiedPropertiesWithoutUndo();
+        return comp;
+    }
+
+    /// <summary>
+    /// 순위 줄 견본(340x24, 계획서 11장): 바탕 Panel_Info · 메달 19 (12, 2) · 결과 깃발 10 / ∞ (34) + 기준값 (47) · 작은 길 30칸 (91, 9) ·
+    /// 카드 아이콘 (251, 8) + 장수(오른쪽 끝 273) · 나무 / 시계 아이콘 (282) + 값(오른쪽 끝 329) · NEW 딱지 (22, -4). 숫자는 모두 작은 숫자 그림 글꼴.
+    /// 줄 전체가 선택 · 클릭 대상이다(탐색은 화면 스크립트가 기록이 있는 줄끼리 위 / 아래로 Explicit으로 잇는다). 포커스 표시는 커서 상자가 하므로 색 전환은 없다.
+    /// </summary>
+    private static UI_RoguelikeRecordRow CreateRecordRow(RectTransform _parent, Assets _a, RecordArt _r, float _width)
+    {
+        RectTransform row = TopLeft("RowTemplate", _parent, _width, 24f);
+        Image bg = row.gameObject.AddComponent<Image>();
+        bg.sprite = _a.infoPanel;
+        bg.type = Image.Type.Sliced;
+        bg.raycastTarget = true;
+        CanvasGroup group = row.gameObject.AddComponent<CanvasGroup>();
+
+        Button button = row.gameObject.AddComponent<Button>();
+        button.transition = Selectable.Transition.None;
+        button.targetGraphic = bg;
+        button.navigation = new Navigation { mode = Navigation.Mode.Explicit };
+
+        Image medal = PixelImage("Medal", row, _r.medals19[0], 12f, 2f);
+        Image keyIcon = PixelImage("KeyIcon", row, _r.smallKeys[0], 34f, 7f);
+        UI_RoguelikeSmallNumber keyNumber = CreateSmallNumber("KeyNumber", row, _r, 47f, 7f, 40f, false);
+        UI_RoguelikeWaveTrail trail = CreateWaveTrail(row, _r, 91f, 9f, false);
+        Image cardIcon = PixelImage("CardIcon", row, _r.card8, 251f, 8f);
+        UI_RoguelikeSmallNumber cardCount = CreateSmallNumber("CardCount", row, _r, 260f, 7f, 13f, true);
+        Image rightIcon = PixelImage("RightIcon", row, _r.tree8, 282f, 8f);
+        UI_RoguelikeSmallNumber rightNumber = CreateSmallNumber("RightNumber", row, _r, 292f, 7f, 37f, true);
+        Image badge = PixelImage("New", row, _r.badgeNew, 22f, -4f);
+        badge.gameObject.SetActive(false);
+
+        UI_RoguelikeRecordRow comp = row.gameObject.AddComponent<UI_RoguelikeRecordRow>();
+        SerializedObject so = new SerializedObject(comp);
+        Set(so, "button", button);
+        Set(so, "background", bg);
+        Set(so, "openSprite", _a.infoPanelGold);
+        Set(so, "emptySprite", _r.frames[4]);
+        Set(so, "group", group);
+        Set(so, "medalImage", medal);
+        SetArray(so, "medalSprites", _r.medals19);
+        Set(so, "medalEmptySprite", _r.medal19Empty);
+        Set(so, "keyIconImage", keyIcon);
+        Set(so, "flagClearSprite", _r.smallKeys[0]);
+        Set(so, "flagOverSprite", _r.smallKeys[1]);
+        Set(so, "flagRetireSprite", _r.smallKeys[2]);
+        Set(so, "unlimitSprite", _r.smallKeys[3]);
+        Set(so, "keyNumber", keyNumber);
+        Set(so, "trail", trail);
+        Set(so, "cardIcon", cardIcon.gameObject);
+        Set(so, "cardCountNumber", cardCount);
+        Set(so, "rightIconImage", rightIcon);
+        Set(so, "treeSprite", _r.tree8);
+        Set(so, "clockSprite", _r.clock8);
+        Set(so, "rightNumber", rightNumber);
+        Set(so, "newBadge", badge.rectTransform);
+        so.ApplyModifiedPropertiesWithoutUndo();
+        return comp;
+    }
+
+    /// <summary>
+    /// 최근 기록 탭의 카드 보관함(계획서 11장): 받침(0, 69) 340x180 = 스포트라이트(65) 아래 4px, 빈 홈 32개 + 카드 칸 32개(선택 대상 + CanvasGroup),
+    /// 칸 (12 + 40 · 열, 81 + 40 · 줄) - 받침 안쪽 여백 사방 12, 칸 간격 4.
+    /// </summary>
+    private static UI_RoguelikeRecordCardGrid CreateRecordCardGrid(RectTransform _parent, Assets _a, RecordArt _r)
+    {
+        RectTransform root = TopLeft("CardGrid", _parent, 340f, 249f);
+        RectTransform tray = TopLeft("Tray", root, 340f, 249f);
+        CanvasGroup trayGroup = tray.gameObject.AddComponent<CanvasGroup>();
+        SlicedImage("Base", tray, _r.tile, 0f, 69f, 340f, 180f);
+
+        UI_RoguelikeCardIconSlot[] slots = new UI_RoguelikeCardIconSlot[UI_RoguelikeRecordCardGrid.Capacity];
+        for (int i = 0; UI_RoguelikeRecordCardGrid.Capacity > i; i++)
+        {
+            float x = 12f + 40f * (i % UI_RoguelikeRecordCardGrid.Columns);
+            float y = 81f + 40f * (i / UI_RoguelikeRecordCardGrid.Columns);
+            SlicedImage("Socket" + i, tray, _r.frames[4], x, y, UI_RoguelikeCardIconSlot.SlotSize, UI_RoguelikeCardIconSlot.SlotSize);
+        }
+        for (int i = 0; UI_RoguelikeRecordCardGrid.Capacity > i; i++)
+        {
+            slots[i] = CreateIconSlot(root, _a, true);
+            slots[i].name = "Slot" + i;
+            slots[i].gameObject.AddComponent<CanvasGroup>();
+            slots[i].Rect.anchoredPosition = new Vector2(12f + 40f * (i % UI_RoguelikeRecordCardGrid.Columns), -(81f + 40f * (i / UI_RoguelikeRecordCardGrid.Columns)));
+            slots[i].gameObject.SetActive(false);
+        }
+
+        UI_RoguelikeRecordCardGrid comp = root.gameObject.AddComponent<UI_RoguelikeRecordCardGrid>();
+        SerializedObject so = new SerializedObject(comp);
+        SetArray(so, "slots", slots);
+        Set(so, "trayGroup", trayGroup);
+        so.ApplyModifiedPropertiesWithoutUndo();
+        root.gameObject.SetActive(false);
+        return comp;
+    }
+
+    /// <summary>입자 풀(24개, 본문 맨 위에 그린다). 크기 · 위치 · 색은 스크립트가 정한다.</summary>
+    private static UI_RoguelikeRecordFx CreateRecordFx(RectTransform _parent, RecordArt _r, float _width, float _height)
+    {
+        RectTransform root = TopLeft("Fx", _parent, _width, _height);
+        Image[] images = new Image[UI_RoguelikeRecordFx.PoolSize];
+        for (int i = 0; UI_RoguelikeRecordFx.PoolSize > i; i++)
+        {
+            images[i] = PixelImage("P" + i, root, _r.fxShapes[0], 0f, 0f);
+            images[i].gameObject.SetActive(false);
+        }
+
+        UI_RoguelikeRecordFx comp = root.gameObject.AddComponent<UI_RoguelikeRecordFx>();
+        SerializedObject so = new SerializedObject(comp);
+        SetArray(so, "images", images);
+        SetArray(so, "shapeSprites", _r.fxShapes);
+        so.ApplyModifiedPropertiesWithoutUndo();
+        return comp;
     }
 
     // // 도전과제 창
@@ -958,60 +1485,6 @@ public static class RoguelikeLobbyUIBuilder
         Set(so, "prismFrameSprite", _a.infoPanelPrism);
         Set(so, "rubyFrameSprite", _a.infoPanelRuby);
         Set(so, "selectable", selectable);
-        so.ApplyModifiedPropertiesWithoutUndo();
-        return comp;
-    }
-
-    private static UI_RoguelikeRecordRow CreateRecordRow(RectTransform _parent, Assets _a, float _width)
-    {
-        RectTransform row = TopLeft("RowTemplate", _parent, _width, 46f);
-        Image bg = row.gameObject.AddComponent<Image>();
-        bg.sprite = _a.infoPanel;
-        bg.type = Image.Type.Sliced;
-        bg.raycastTarget = true;
-
-        // 줄 전체가 선택 · 클릭 대상이다(탐색은 화면 스크립트가 보이는 줄끼리 위 / 아래로 Explicit으로 잇는다). 포커스 표시는 커서 상자가 하므로 색 전환은 없다.
-        Button button = row.gameObject.AddComponent<Button>();
-        button.transition = Selectable.Transition.None;
-        button.targetGraphic = bg;
-        button.navigation = new Navigation { mode = Navigation.Mode.Explicit };
-
-        TMP_Text rank = Text("Rank", row, _a.font, TextAlignmentOptions.Midline, GoldColor);
-        SetLeft(rank.rectTransform, 8f, 20f);
-        TMP_Text wave = Text("Wave", row, _a.font, TextAlignmentOptions.MidlineLeft, CreamColor);
-        SetLeft(wave.rectTransform, 34f, 90f);
-        TMP_Text time = Text("Time", row, _a.font, TextAlignmentOptions.MidlineLeft, MutedColor);
-        SetLeft(time.rectTransform, 128f, 56f);
-
-        UI_RoguelikeCardIconSlot[] slots = new UI_RoguelikeCardIconSlot[UI_RoguelikeRecordRow.SlotCount];
-        for (int i = 0; UI_RoguelikeRecordRow.SlotCount > i; i++)
-        {
-            slots[i] = CreateIconSlot(row, _a, false);
-            slots[i].name = "Slot" + i;
-            RectTransform rect = slots[i].Rect;
-            rect.anchorMin = new Vector2(1f, 0.5f);
-            rect.anchorMax = new Vector2(1f, 0.5f);
-            rect.pivot = new Vector2(1f, 0.5f);
-            rect.anchoredPosition = new Vector2(-(30f + (UI_RoguelikeRecordRow.SlotCount - 1 - i) * 38f), 0f);
-        }
-
-        TMP_Text more = Text("More", row, _a.font, TextAlignmentOptions.MidlineRight, MutedColor);
-        more.rectTransform.anchorMin = new Vector2(1f, 0.5f);
-        more.rectTransform.anchorMax = new Vector2(1f, 0.5f);
-        more.rectTransform.pivot = new Vector2(1f, 0.5f);
-        more.rectTransform.sizeDelta = new Vector2(24f, SmallLineHeight);
-        more.rectTransform.anchoredPosition = new Vector2(-4f, 0f);
-
-        UI_RoguelikeRecordRow comp = row.gameObject.AddComponent<UI_RoguelikeRecordRow>();
-        SerializedObject so = new SerializedObject(comp);
-        Set(so, "rankText", rank);
-        Set(so, "waveText", wave);
-        Set(so, "timeText", time);
-        Set(so, "moreText", more);
-        Set(so, "button", button);
-        Set(so, "background", bg);
-        Set(so, "openSprite", _a.infoPanelGold);
-        SetArray(so, "slots", slots);
         so.ApplyModifiedPropertiesWithoutUndo();
         return comp;
     }

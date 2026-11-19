@@ -85,5 +85,7 @@ public struct RoguelikeRecordViewData
     public float rankingTimeSeconds;
     public bool bAbandoned;
     public long recordedAtUtcTicks;
+    /// <summary>그 판에 부순 나무 수(저장 데이터 RunRecordEntry.treesFelled).</summary>
+    public int treesFelled;
     public List<RoguelikeOwnedCardViewData> cards;
 }
