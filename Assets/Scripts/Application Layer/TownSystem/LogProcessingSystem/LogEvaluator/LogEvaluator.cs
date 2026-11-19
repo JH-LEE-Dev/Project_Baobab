@@ -82,7 +82,7 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
             return;
         }
 
-        float baseValue = valueData.value;
+        long baseValue = valueData.value;
 
         // 등급 배율은 LogItemValueDataBase가 단일 출처다(교체 시스템의 환율과 같은 표). 이 프리팹의
         // 사본(logItemStateValueDatas)은 DB에 표가 없는 예전 에셋을 위한 폴백으로만 남긴다.
@@ -106,7 +106,9 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
         // 본편 기준으로 흑요목(기본가 3천만) x Perfect(x20) = 6억이고 여기에 logValueMultiplier가
         // 최대 x111까지 곱해져 int 범위(약 21억)를 한참 넘는다. float/int로는 그 시점에
         // 값이 정의되지 않은 음수로 튀어 "수금하면 소지금이 마이너스가 되는" 상태가 됐다.
-        long finalPrice = (long)System.Math.Round((double)baseValue * stateMultiplier * logValueMultiplier);
+        // 배율은 float라 1.3이 1.29999995로 들어가 큰 금액에서 몇십 원씩 어긋났으므로, 입력값 그대로의
+        // 십진수로 되돌려 decimal로 곱한다(MoneyMath).
+        long finalPrice = MoneyMath.MultiplyRound(baseValue, stateMultiplier, logValueMultiplier);
 
         // 확률적으로 최종 가격 2배 책정. 커터에서 미리 굴린 원목은 그 결과를 쓰고,
         // 미리 굴리지 않은 원목(세이브에서 복원된 벨트 원목 등)은 예전처럼 여기서 굴린다.

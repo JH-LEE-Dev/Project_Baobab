@@ -202,6 +202,20 @@ public class EHealthComponent : EComponent, IHealthComponent
         return Mathf.Max(GetMaxHealth(), 1f) * deathThresholdRatio;
     }
 
+    /// <summary>
+    /// 남은 체력이 최대 체력의 _ratio 이하인가(최후의 일격 10%, 약점 50%).
+    /// float 체력을 최대 체력으로 나눠 비교하면 데미지 반올림 오차 때문에 정확히 10%가 남아야 할 때
+    /// 10.0000016%가 되어 한 대 늦게 붙었다(자작나무 다이아 17대 → 18대). 사망 판정과 같은 기준으로,
+    /// 데미지 누계(double)와 같은 여유값(최대 체력의 1e-6)으로 판정한다.
+    /// </summary>
+    public bool IsHealthRatioAtOrBelow(float _ratio)
+    {
+        float maxHp = GetMaxHealth();
+        if (maxHp <= 0f) return false;
+
+        return (maxHp - totalDamageTaken) <= (double)maxHp * _ratio + GetDeathThreshold();
+    }
+
     // 나무 등급별 셰이더 단계 전환용: 실제로 죽이지 않고 체력을 되살린다.
     // _maxHealthMultiplier는 그 나무의 일반 상태 최대 체력에 곱해지는 배율로, 보석 단계마다 다르다
     // (황금 2배, 다이아 3배, 프리즘 3.5배). 배율은 누적되지 않고 항상 기준값에 다시 곱해진다.
