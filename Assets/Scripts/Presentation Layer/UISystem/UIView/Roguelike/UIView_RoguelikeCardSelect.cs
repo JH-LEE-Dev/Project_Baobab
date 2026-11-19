@@ -42,7 +42,7 @@ using UnityEngine.UI;
 ///   트레이 숫자는 시스템이 PlayPurchase보다 먼저 새 값으로 보낸다 - PlayPurchase가 직전 값으로 되돌려 잡아 두었다가(HoldPreviousCount) 도착 순간 푼다.
 ///   storeDrop · dimImage가 연결되어 있지 않으면 기존 퇴장(Exit)으로 닫는다.
 ///
-/// [아직 없는 것] 카드 뒷면 리소스(지금은 프레임을 어둡게 쓰는 임시 뒷면), 보관함 쇼케이스 칸 보관(레어 케이스를 쇼케이스 칸으로 옮기고 접는 것), 카드 착지 · 보관 도착 효과음(호출 지점만 UI_RoguelikeCardSlot.StartLanding · UI_RoguelikeOwnedCardTray.ReleaseCountWithEffect 주석).
+/// [아직 없는 것] 보관함 쇼케이스 칸 보관(레어 케이스를 쇼케이스 칸으로 옮기고 접는 것), 카드 착지 · 보관 도착 효과음(호출 지점만 UI_RoguelikeCardSlot.StartLanding · UI_RoguelikeOwnedCardTray.ReleaseCountWithEffect 주석).
 /// </summary>
 public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 {
