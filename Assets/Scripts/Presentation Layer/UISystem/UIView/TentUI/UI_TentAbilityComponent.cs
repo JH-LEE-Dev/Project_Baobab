@@ -3844,7 +3844,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
             _currentHUDState.PrestigeLevel > _previousHUDState.PrestigeLevel;
 
         // 해금되는 순간임
-        if ((wasLockedByLevel && node.IsUnlockedByLevel()) || prestigeIncreased)
+        bool picnicUnlocked = _currentHUDState.IsValid && _previousHUDState.IsValid &&
+            IsPicnicBasketVisible(_currentHUDState.PrestigeLevel, _currentHUDState.Experience) &&
+            !IsPicnicBasketVisible(_previousHUDState.PrestigeLevel, _previousHUDState.Experience);
+        if ((wasLockedByLevel && node.IsUnlockedByLevel()) || prestigeIncreased || picnicUnlocked)
             RefreshNodeVisibility(true);
         else
             RefreshLines();
@@ -4402,6 +4405,18 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (_node == null)
             return false;
 
+        if (_node.SkillType == SkillType.PicnicBasket)
+        {
+            if (skillSystemProvider == null)
+                return false;
+
+            // 기존 세이브에서 이미 습득한 소풍은 숨기지 않는다.
+            bool alreadyAcquired = skillSystemProvider.IsApplied(_node.SkillType, out int level) && level > 0;
+            if (!alreadyAcquired && !IsPicnicBasketVisible(
+                skillSystemProvider.GetCurrentPrestigeLevel(), skillSystemProvider.GetCurrentPrestigeExp()))
+                return false;
+        }
+
         if (SatisfiesPrestigeRequirement(_node) == false)
             return false;
 
@@ -4409,6 +4424,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return ShouldShowNodeByProvider(_node);
 
         return ShouldShowNodeByVisualConnection(_node);
+    }
+
+    // 소풍의 등장은 TentUI에서만 제한하고, 구매 판정은 기존 스킬 시스템에 맡긴다.
+    private static bool IsPicnicBasketVisible(int _prestigeLevel, int _experience)
+    {
+        return _prestigeLevel > 11 || (_prestigeLevel == 11 && _experience >= 149);
     }
 
     private bool SatisfiesPrestigeRequirement(AbilityNode _node)
