@@ -298,6 +298,7 @@ namespace Diagnostics.TownGolden
 
         private static void InstallHooks()
         {
+            LockDeviceInput(true);
             PlayerLoopSystem loop = PlayerLoop.GetCurrentPlayerLoop();
             RemoveHooks(ref loop);
             for (int i = 0; i < loop.subSystemList.Length; i++)
@@ -364,9 +365,62 @@ namespace Diagnostics.TownGolden
 
         private static void UninstallHooks()
         {
+            LockDeviceInput(false);
             PlayerLoopSystem loop = PlayerLoop.GetCurrentPlayerLoop();
             RemoveHooks(ref loop);
             PlayerLoop.SetPlayerLoop(loop);
+        }
+
+        // 장치 입력 잠금: 골든이 도는 동안 실제 마우스·키보드·패드 이벤트를 입력 시스템이 처리하기 전에 버린다(handled).
+        // 사용자가 그동안 컴퓨터를 써도 게임에 입력이 들어가지 않는다. 마우스 위치는 MouseTick이 InputState.Change로 넣는 고정값만 남고,
+        // 시나리오 조작은 InputReader 이벤트로만 하므로 장치 이벤트를 버려도 진행은 그대로다.
+        private static bool bDeviceInputLocked;
+        private static int blockedDeviceEvents;
+
+        private static void LockDeviceInput(bool _bLock)
+        {
+            if (_bLock == bDeviceInputLocked) return;
+            bDeviceInputLocked = _bLock;
+            UnityEngine.InputSystem.InputSettings settings = UnityEngine.InputSystem.InputSystem.settings;
+            if (_bLock)
+            {
+                blockedDeviceEvents = 0;
+                unfocusedFrames = 0;
+                UnityEngine.InputSystem.InputSystem.onEvent += BlockDeviceEvent;
+                // 포커스 무시: 기본값(ResetAndDisableNonBackgroundDevices, PointersAndKeyboardsRespectGameViewFocus)이면 에디터가 포커스를 잃는 동안
+                // 입력 시스템이 InputState.Change를 에디터용 버퍼에 써서(defaultUpdateType = Editor) MouseTick이 넣는 고정 위치가 게임 액션에 들어가지 않는다
+                // (실측: 포커스 잃은 실행은 MouseMoveEvent가 화면 중앙 960,540에 머묾). IgnoreFocus + AllDeviceInputAlwaysGoesToGameView면 gameHasFocus가 늘 참이 된다.
+                // 사용자가 다른 창을 쓰면 실행마다 조준·캐릭터 방향이 달라지므로, 골든 동안은 포커스와 상관없이 입력이 게임으로 가게 한다.
+                // 실제 장치 이벤트는 위 잠금이 버리므로 고정값만 들어간다. 설정 에셋이 없는 기본 인스턴스라 디스크에 남지 않고, 끝나면 되돌린다.
+                savedBackgroundBehavior = settings.backgroundBehavior;
+                savedEditorInputBehavior = settings.editorInputBehaviorInPlayMode;
+                settings.backgroundBehavior = UnityEngine.InputSystem.InputSettings.BackgroundBehavior.IgnoreFocus;
+                appliedBackgroundBehavior = settings.backgroundBehavior + "/" + UnityEngine.InputSystem.InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
+                settings.editorInputBehaviorInPlayMode = UnityEngine.InputSystem.InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
+                UnityEngine.InputSystem.Mouse mouse = UnityEngine.InputSystem.Mouse.current;
+                if (null != mouse && false == mouse.enabled) UnityEngine.InputSystem.InputSystem.EnableDevice(mouse);
+            }
+            else
+            {
+                UnityEngine.InputSystem.InputSystem.onEvent -= BlockDeviceEvent;
+                settings.backgroundBehavior = savedBackgroundBehavior;
+                settings.editorInputBehaviorInPlayMode = savedEditorInputBehavior;
+            }
+        }
+
+        private static UnityEngine.InputSystem.InputSettings.BackgroundBehavior savedBackgroundBehavior;
+        private static UnityEngine.InputSystem.InputSettings.EditorInputBehaviorInPlayMode savedEditorInputBehavior;
+        private static int unfocusedFrames;
+        private static string appliedBackgroundBehavior = "none";
+
+        private static void BlockDeviceEvent(UnityEngine.InputSystem.LowLevel.InputEventPtr _event, UnityEngine.InputSystem.InputDevice _device)
+        {
+            if (_device is UnityEngine.InputSystem.Pointer || _device is UnityEngine.InputSystem.Keyboard
+                || _device is UnityEngine.InputSystem.Gamepad || _device is UnityEngine.InputSystem.Joystick)
+            {
+                _event.handled = true;
+                blockedDeviceEvents++;
+            }
         }
 
         private static void PaceTick()
@@ -439,6 +493,7 @@ namespace Diagnostics.TownGolden
             UnityEngine.InputSystem.Mouse mouse = UnityEngine.InputSystem.Mouse.current;
             if (null == mouse) return;
             Vector2 pin = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f) + mousePinOffset;
+            if (false == Application.isFocused) unfocusedFrames++;
             if (mouse.position.ReadValue() != pin) UnityEngine.InputSystem.LowLevel.InputState.Change(mouse.position, pin);
         }
 
@@ -1260,7 +1315,7 @@ namespace Diagnostics.TownGolden
                 + "\nframes boot " + bootFrame + " go " + goFrame + " loaded " + loadedFrame + " control " + controlFrame
                 + (bDungeon ? " ride " + rideFrame + " menu " + menuFrame + " depart " + departFrame + " dloaded " + dungeonLoadedFrame + " dunlock " + dungeonUnlockFrame + " dcontrol " + dungeonControlFrame : string.Empty)
                 + "\npace period " + FramePeriodSec.ToString("F3") + "s heavy " + HeavyPeriodSec.ToString("F1") + "s frames " + paceFrames + " overruns " + paceOverruns + " worst " + (paceWorstSec * 1000.0).ToString("F1") + "ms maxNormal " + (paceMaxNormalSec * 1000.0).ToString("F1") + "ms tight " + paceTight + "\noverrun frames " + paceOverrunFrames.ToString() + (0 < debugFlags.Length ? "\ndebug " + debugFlags : string.Empty)
-                + "\n" + setupLog + (null != error ? "error " + error.Replace('\n', ' ') + "\n" : string.Empty) + "--\n";
+                + "\n" + setupLog + "device input locked " + bDeviceInputLocked + ", blocked events " + blockedDeviceEvents + ", unfocused frames " + unfocusedFrames + ", input background " + appliedBackgroundBehavior + "\n" + (null != error ? "error " + error.Replace('\n', ' ') + "\n" : string.Empty) + "--\n";
         }
 
         private void Finish()
