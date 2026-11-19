@@ -413,7 +413,17 @@ public class ShockWaveVisualRunner : MonoBehaviour
     {
         float visualDuration = GetVisualDuration();
         if (IsFxActive == false) return visualDuration;
-        return Mathf.Max(visualDuration, data.Duration + FxTailSeconds, data.Duration * 0.95f + 0.38f);
+        return Max3(visualDuration, data.Duration + FxTailSeconds, data.Duration * 0.95f + 0.38f);
+    }
+
+    // Mathf.Max(params float[])와 같은 순서로 비교한다(첫 값에서 시작해 더 큰 값만 바꿈). 매 프레임 불려
+    // params 배열 할당만 생기던 것을 없앤 것이고, 같은 값·NaN·부호 있는 0에서도 결과가 같다.
+    private static float Max3(float _a, float _b, float _c)
+    {
+        float _m = _a;
+        if (_b > _m) _m = _b;
+        if (_c > _m) _m = _c;
+        return _m;
     }
 
     private float GetAlpha()
