@@ -187,7 +187,9 @@ namespace LocalizationQA
                 MonoBehaviour _ability = FindBehaviour(_instance, "UI_TentAbilityComponent");
                 return LocQAAbilityTooltip.Plan(_ability, _tipComponent, null != _entry ? _entry.id : null, _table);
             }
-            return null;
+
+            // 로그라이크 화면: 게임 코드로 문구 · 배치를 채운다. (LocQARoguelike)
+            return LocQARoguelike.Plan(_instance, _target, _entry);
         }
 
         // 옵션 창은 고른 탭의 패널만 켜져 있다. 프리팹에는 여러 패널이 켜진 채 저장되어 있다.
@@ -292,6 +294,16 @@ namespace LocalizationQA
         public Func<Language, object[]> tooltipContent;   // AbilityToolTip.SetContent 인자 (언어별)
         public Color? tooltipBackground;
 
+        // 게임 코드로 화면을 채우는 계획 (로그라이크 화면)
+        public Action<Language> onLanguage;     // 그 언어로 문구를 넣고 배치한다
+        public Action onAfterLayout;            // 레이아웃 계산 뒤 다시 배치한다
+        public Action onRestore;                // 이 칸을 다 그린 뒤 바꾼 화면 상태를 되돌린다
+        // true면 검수 중인 칸의 문구도 게임 코드가 넣는다. (가공된 문구: 카드 설명의 색 표시 등) 비어 있으면 툴이 넣는다.
+        public bool ownsText;
+        // 칸이 템플릿이라 실제로는 게임이 복제한 다른 칸에 그 문구가 나올 때, 그 칸을 돌려준다. (첫 언어로 채운 뒤)
+        public Func<Language, TMP_Text> retarget;
+        private bool warned;
+
         /// <summary>그 언어의 문구가 다 들어간 뒤, 레이아웃 계산 전</summary>
         public void ApplyLanguage(Language _lang)
         {
@@ -300,6 +312,7 @@ namespace LocalizationQA
                 if (true == tooltipBackground.HasValue) Invoke(tooltip, "SetBackgroundColor", new[] { typeof(Color) }, tooltipBackground.Value);
                 Invoke(tooltip, "SetContent", new[] { typeof(string), typeof(string), typeof(string), typeof(string), typeof(string), typeof(MoneyType) }, tooltipContent(_lang));
             }
+            if (null != onLanguage) Safe(() => onLanguage(_lang));
         }
 
         /// <summary>레이아웃 계산 뒤 — 크기에 따라 정해지는 위치</summary>
@@ -307,6 +320,26 @@ namespace LocalizationQA
         {
             if (null != bubble) Invoke(bubble, "UpdateLayout", Type.EmptyTypes);
             if (null != tooltip) LocQAAbilityTooltip.Place(ability, tooltip);
+            if (null != onAfterLayout) Safe(onAfterLayout);
+        }
+
+        /// <summary>다음 칸을 그리기 전에 부른다.</summary>
+        public void Restore()
+        {
+            if (null != onRestore) Safe(onRestore);
+            onRestore = null;
+        }
+
+        // 게임 코드가 실패해도 그리기는 계속한다. 같은 칸에서 언어마다 반복되므로 경고는 한 번만 낸다.
+        private void Safe(Action _action)
+        {
+            try { _action(); }
+            catch (Exception _e)
+            {
+                if (true == warned) return;
+                warned = true;
+                Debug.LogWarning($"[LocalizationQA] 게임 코드로 화면 채우기 실패: {LocQARoguelike.Unwrap(_e)}");
+            }
         }
 
         private static void Invoke(MonoBehaviour _target, string _method, Type[] _types, params object[] _args)

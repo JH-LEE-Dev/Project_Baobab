@@ -125,6 +125,8 @@ namespace LocalizationQA
         {
             // 동의 토글 두 개의 폭·높이를 레이블 문구의 preferred 크기로 맞춘다.
             ("UI_InitialSetupPopup", "SnapConsentTogglesPixelPerfect"),
+            // 픽셀 글자 1px 그림자: 원본 글자의 문구 · 폰트 · 크기 · 배치를 따라간다. (게임은 LateUpdate마다)
+            ("UI_TextShadowFollower", "Sync"),
         };
 
         // 화면을 띄운 직후 한 번만 실행해, 등장 연출이 끝난 상태로 맞춘다. (순서대로 실행)
@@ -134,6 +136,8 @@ namespace LocalizationQA
             // 특성 화면(TentUI): 원형으로 열리는 연출의 검은 가림막(CircleMask·CircleRevealDim)을 연출 종료 상태로.
             ("UI_TentAbilityComponent", "BeginCircleReveal"),
             ("UI_TentAbilityComponent", "EndCircleRevealImmediately"),
+            // 그림자 글자가 자기 TMP를 잡아 둔다. (Awake — 에디터에서 띄운 화면은 Awake가 돌지 않는다)
+            ("UI_TextShadowFollower", "Awake"),
         };
 
         // 앞 창이 열려 있으면 게임이 감추는 뒤 창. 칸이 앞 창 안에 있을 때만 뒤 창을 감춘다.

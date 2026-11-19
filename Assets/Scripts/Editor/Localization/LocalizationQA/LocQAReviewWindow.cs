@@ -161,6 +161,7 @@ namespace LocalizationQA
         [NonSerialized] private string builtSignature;
         [NonSerialized] private int seenAssetVersion;
         [NonSerialized] private int unconnectedEntries;
+        [NonSerialized] private int staleKeys;
         [NonSerialized] private Language? pendingCellLanguage;
 
         // 문구별 비교: 고른 문구 하나의 언어별 그림
@@ -276,10 +277,11 @@ namespace LocalizationQA
                     {
                         LocQAScreenIndex.Invalidate();
                         string _pruned = PruneMissing();
-                        LocQAReviewCollector.CollectFromPrefabs(settings);
+                        string _synced = LocQAReviewCollector.CollectFromPrefabs(settings);
                         LocQAScreenIndex.Invalidate();
                         ResetCaches();
-                        if (null != _pruned) ShowNotification(new GUIContent(_pruned));
+                        string _note = null != _pruned && null != _synced ? _pruned + "\n" + _synced : _pruned ?? _synced;
+                        if (null != _note) ShowNotification(new GUIContent(_note));
                         GUIUtility.ExitGUI();
                     }
                 }
@@ -344,6 +346,10 @@ namespace LocalizationQA
                 if (GUILayout.Button(new GUIContent($"어느 칸에도 연결 안 된 문구 {unconnectedEntries}개", "어떤 UI 칸에서도 검수 대상이 아닌 문구입니다. (게임에서 쓰지 않는 문구로 표시한 것은 제외) 칸을 고른 뒤 이 목록에서 연결하세요."), EditorStyles.toolbarButton))
                 {
                     OpenKeyPicker(true);
+                }
+                if (staleKeys > 0 && GUILayout.Button($"없어진 키 {staleKeys}개", EditorStyles.toolbarButton))
+                {
+                    LocQAStaleKeysWindow.Open();
                 }
 
                 GUILayout.Space(10f);
@@ -1467,6 +1473,7 @@ namespace LocalizationQA
                 string _id = table.Entries[i].id;
                 if (false == _referenced.Contains(_id) && null == _data.UnusedReason(_id)) unconnectedEntries++;
             }
+            staleKeys = LocQAStaleKeysWindow.Count(table);
 
             BuildRows(_data);
         }
