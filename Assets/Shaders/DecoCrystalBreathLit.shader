@@ -69,7 +69,15 @@ Shader "Custom/2D/DecoCrystalBreathLit"
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/Lit2DCommon.hlsl"
 
-            float4 _MainTex_TexelSize;
+            // SRP Batcher가 이 셰이더를 묶을 수 있도록 _MainTex_TexelSize(재질 상수 버퍼 밖 값)를 선언하지 않고 텍스처에서 크기를 직접 읽는다.
+            // 이 셰이더는 zw(텍스처 크기)만 써서 크기가 2의 거듭제곱이 아니어도 값이 정확히 같다.
+            float4 MainTexTexelSize()
+            {
+                uint width;
+                uint height;
+                _MainTex.GetDimensions(width, height);
+                return float4(1.0 / (float)width, 1.0 / (float)height, (float)width, (float)height);
+            }
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _Color;
@@ -89,7 +97,7 @@ Shader "Custom/2D/DecoCrystalBreathLit"
                 o.color = input.color * _Color * unity_SpriteColor;
                 // 타일 그림은 회전·확대 없이 텍스처 픽셀 하나가 월드 1/PPU라, 월드 위치에서 UV만큼 되돌리면 그림 한 장 안에서 같은 값이 된다.
                 float2 positionWS = TransformObjectToWorld(input.positionOS).xy;
-                o.tileAnchorWS = positionWS - input.uv * _MainTex_TexelSize.zw / StageAmbiencePixelsPerUnit();
+                o.tileAnchorWS = positionWS - input.uv * MainTexTexelSize().zw / StageAmbiencePixelsPerUnit();
 
                 return o;
             }

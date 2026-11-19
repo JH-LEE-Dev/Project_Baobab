@@ -394,6 +394,7 @@ public class VFXComponent : MonoBehaviour
         VFXPoolInstanceHelper _helper = GetHelper(_effect);
         Transform _target = (null != _helper && null != _helper.TargetTransform) ? _helper.TargetTransform : _effect.transform;
 
+        ResetUIParentBeforePlay(_helper, _target);
         _target.SetParent(_parent);
         RestoreLocalScaleIfDetached(_helper, _target, _parent);
         _target.position = _position;
@@ -420,6 +421,7 @@ public class VFXComponent : MonoBehaviour
         VFXPoolInstanceHelper _helper = GetHelper(_effect);
         Transform _target = (null != _helper && null != _helper.TargetTransform) ? _helper.TargetTransform : _effect.transform;
 
+        ResetUIParentBeforePlay(_helper, _target);
         _target.SetParent(_settings.Parent);
         RestoreLocalScaleIfDetached(_helper, _target, _settings.Parent);
         _target.position = _settings.Position;
@@ -870,6 +872,35 @@ public class VFXComponent : MonoBehaviour
     }
 
     /// <summary>
+    /// UI 풀 인스턴스(UIParticle이 붙은 _UIParent)를 재생하기 직전에, 처음 생성됐을 때와 같은 상태(원래 대기 부모 밑,
+    /// 프리팹 원본 로컬 스케일)로 되돌립니다. 이어지는 SetParent(worldPositionStays)가 매번 첫 재생과 같은 스케일을 내게 한다.
+    ///
+    /// UIParticle(AutoScalingMode.Transform)은 켜진 뒤 첫 갱신 때 그 순간의 localScale을 저장하고, 꺼질 때(OnDisable) 그 값을
+    /// 되돌려 넣는다. 재생 시 SetParent가 localScale을 "대기 부모 스케일 / 새 부모 스케일"배로 다시 계산하므로 저장값에 이 배율이
+    /// 들어가고, 반납(ReturnToPool)이 부모를 먼저 되돌린 뒤 끄기 때문에 그 저장값이 대기 상태로 남는다. 손대지 않으면 재생할
+    /// 때마다 이 배율이 곱해져(특성 창 노드 이펙트는 1/줌배) 결국 무한대가 되고, 그 사이 파티클 경계 상자도 깨진다.
+    /// 켜져 있는 동안의 크기는 UIParticle이 덮어쓰므로 화면에 보이는 크기는 달라지지 않는다.
+    /// </summary>
+    private static void ResetUIParentBeforePlay(VFXPoolInstanceHelper _helper, Transform _target)
+    {
+        if (null == _helper || null == _target)
+            return;
+
+        // 일반(월드) 인스턴스는 대상이 헬퍼 자신이다. 래퍼가 따로 있는 UI 인스턴스만 다룬다.
+        if (_target == _helper.transform)
+            return;
+
+        if (false == _helper.TryGetOriginalLocalScale(out Vector3 _originalLocalScale))
+            return;
+
+        Transform _originalParent = _helper.OriginalParent;
+        if (null != _originalParent && _target.parent != _originalParent)
+            _target.SetParent(_originalParent, false);
+
+        _target.localScale = _originalLocalScale;
+    }
+
+    /// <summary>
     /// 이펙트 및 하위 자식들의 모든 렌더러 소팅 레이어 이름과 순서를 설정합니다.
     /// </summary>
     private void ApplySortingSettings(ParticleSystem _effect, string _layerName, int _order)
@@ -1277,6 +1308,9 @@ public class VFXPoolInstanceHelper : MonoBehaviour
     }
 
     public Transform TargetTransform => targetTransform;
+
+    /// <summary>풀에서 대기할 때의 부모(VFXComponent 자신).</summary>
+    public Transform OriginalParent => originalParent;
 
     /// <summary>
     /// 비활성 반납 시 예약해둔 지연 재부모화를 취소합니다.

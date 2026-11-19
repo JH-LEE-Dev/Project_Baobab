@@ -795,6 +795,13 @@ public class AttackComponent : PComponent
         runAxeTargetDistSq.Clear();
     }
 
+    // 나무 체력은 데미지 누계로 정확히 판정한다(EHealthComponent.IsHealthRatioAtOrBelow). 그 밖의 체력은 예전 방식 그대로.
+    private static bool IsHealthRatioAtOrBelow(IBaseHealthComponent _health, float _currentHp, float _maxHp, float _ratio)
+    {
+        if (_health is IHealthComponent enemyHealth) return enemyHealth.IsHealthRatioAtOrBelow(_ratio);
+        return (_currentHp / _maxHp) <= _ratio;
+    }
+
     private void ProcessAxeHit(IDamageable damageable, Vector3 centerPos, float _damageScale = 1f)
     {
         // 이 타격으로 쓰러지는 나무는 플레이어 공격으로 벌목된 것이다(PlayerAttackDamageScope 참고).
@@ -807,7 +814,7 @@ public class AttackComponent : PComponent
             float currentHp = damageable.health.GetCurrentHealth();
             float maxHp = damageable.health.GetMaxHealth();
 
-            if (damageable is TreeObj && maxHp > 0f && (currentHp / maxHp) <= ctx.characterStat.finalAttackHealthPercent)
+            if (damageable is TreeObj && maxHp > 0f && IsHealthRatioAtOrBelow(damageable.health, currentHp, maxHp, ctx.characterStat.finalAttackHealthPercent))
             {
                 damage = currentHp;
             }
@@ -822,7 +829,7 @@ public class AttackComponent : PComponent
                     if (ctx.characterStat.helloDamageMul > 0f) axeAccent |= TreeObj.AxeAccentHello;
                 }
 
-                if (maxHp > 0f && (currentHp / maxHp) <= 0.5f)
+                if (maxHp > 0f && IsHealthRatioAtOrBelow(damageable.health, currentHp, maxHp, 0.5f))
                 {
                     extraDamage += damage * ctx.characterStat.weakPointDamageMul;
                     if (ctx.characterStat.weakPointDamageMul > 0f) axeAccent |= TreeObj.AxeAccentWeakPoint;

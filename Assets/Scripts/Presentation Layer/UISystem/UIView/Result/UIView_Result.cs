@@ -381,6 +381,8 @@ public class UIView_Result : UIView
     private CanvasGroup resultLogContentCanvasGroup;
     private Vector2 sectionTitleStartPosition;
     private Vector2 sectionButtonStartPosition;
+    // 운반상자 칸이 기본 2줄보다 늘어난 만큼 버튼 섹션을 내리는 양(12칸 4x3이면 한 줄).
+    private float sectionButtonExtraRowsOffsetY;
     private Vector2 sectionKillCountStartPosition;
     private Vector2 sectionAcquiredLogsStartPosition;
     private Vector2 sectionContainerStartPosition;
@@ -649,7 +651,7 @@ public class UIView_Result : UIView
             resultOpenSequence.Join(blackBG.DOFade(blackBGTargetAlpha, resultOpenDuration));
 
         JoinSectionOpenTween(sectionTitle, sectionTitleCanvasGroup, sectionTitleStartPosition);
-        JoinSectionOpenTween(sectionButton, sectionButtonCanvasGroup, sectionButtonStartPosition);
+        JoinSectionOpenTween(sectionButton, sectionButtonCanvasGroup, GetSectionButtonPosition());
         PrepareContainerDisplayProduction();
 
         resultOpenSequence.InsertCallback(resultOpenDuration, () =>
@@ -680,7 +682,7 @@ public class UIView_Result : UIView
         }
 
         SetSectionHidden(sectionTitle, sectionTitleCanvasGroup, sectionTitleStartPosition);
-        SetSectionHidden(sectionButton, sectionButtonCanvasGroup, sectionButtonStartPosition);
+        SetSectionHidden(sectionButton, sectionButtonCanvasGroup, GetSectionButtonPosition());
         SetSectionInvisibleAtStart(sectionKillCount, sectionKillCountCanvasGroup, sectionKillCountStartPosition);
         SetSectionInvisibleAtStart(sectionAcquiredLogs, sectionAcquiredLogsCanvasGroup, sectionAcquiredLogsStartPosition);
         SetSectionInvisibleAtStart(sectionContainer, sectionContainerCanvasGroup, sectionContainerStartPosition);
@@ -790,7 +792,7 @@ public class UIView_Result : UIView
         JoinSectionCloseTween(sectionKillCount, sectionKillCountCanvasGroup, sectionKillCountStartPosition);
         JoinSectionCloseTween(sectionAcquiredLogs, sectionAcquiredLogsCanvasGroup, sectionAcquiredLogsStartPosition);
         JoinSectionCloseTween(sectionContainer, sectionContainerCanvasGroup, sectionContainerStartPosition);
-        JoinSectionCloseTween(sectionButton, sectionButtonCanvasGroup, sectionButtonStartPosition);
+        JoinSectionCloseTween(sectionButton, sectionButtonCanvasGroup, GetSectionButtonPosition());
 
         pendingCloseCompletedEvent = completedEvent;
         resultCloseSequence.OnComplete(OnResultCloseProductionComplete);
@@ -2027,14 +2029,30 @@ public class UIView_Result : UIView
         if (gridLayout == null || rootRect == null)
             return;
 
-        // 운반상자 UI_Storage와 동일하게 8칸은 가로 4칸, 세로 2칸으로 배치한다.
-        gridLayout.constraint = 8 == _activeCount
+        // 운반상자 UI_Storage와 동일하게 8칸은 가로 4칸·세로 2칸, 12칸은 가로 4칸·세로 3칸으로 배치한다.
+        bool _bFourColumns = 8 == _activeCount || 12 == _activeCount;
+        gridLayout.constraint = _bFourColumns
             ? GridLayoutGroup.Constraint.FixedColumnCount
             : GridLayoutGroup.Constraint.Flexible;
-        if (8 == _activeCount)
+        if (true == _bFourColumns)
             gridLayout.constraintCount = 4;
 
         rootRect.anchoredPosition = new Vector2(0f, Mathf.Round(containerTopY));
+
+        // 칸 묶음은 위쪽 끝이 고정이고 아래로 자라므로, 기본 2줄(8칸 4x2)을 넘는 줄 수만큼 버튼을 내려
+        // 칸과 버튼 사이 간격을 2줄일 때와 같게 유지한다. 2줄 이하는 프리팹 위치 그대로다.
+        // 열 수는 GridLayoutGroup이 쓰는 값과 같다(Flexible은 ContentSizeFitter가 √n 올림 열로 폭을 잡는다).
+        int _columns = GridLayoutGroup.Constraint.FixedColumnCount == gridLayout.constraint
+            ? gridLayout.constraintCount
+            : Mathf.CeilToInt(Mathf.Sqrt(_activeCount));
+        int _rows = 0 < _activeCount && 0 < _columns ? (_activeCount + _columns - 1) / _columns : 0;
+        int _extraRows = Mathf.Max(0, _rows - 2);
+        sectionButtonExtraRowsOffsetY = _extraRows * (gridLayout.cellSize.y + gridLayout.spacing.y);
+    }
+
+    private Vector2 GetSectionButtonPosition()
+    {
+        return sectionButtonStartPosition + new Vector2(0f, -sectionButtonExtraRowsOffsetY);
     }
 
 }

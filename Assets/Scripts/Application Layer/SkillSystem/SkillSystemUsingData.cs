@@ -14,30 +14,58 @@ public enum ProgressionType
 public struct ProgressionCurve
 {
     public ProgressionType type;
-    public float baseValue;
-    public List<float> manualValues; // Manual 타입일 때 사용 (인덱스 0이 1레벨)
+    // double로 저장: float는 1천만 단위를 넘으면 정확히 못 담아 1e+12가 999,999,995,904로 바뀜(비용 표기 1000B)
+    public double baseValue;
+    public List<double> manualValues; // Manual 타입일 때 사용 (인덱스 0이 1레벨)
 
+    // 스킬 수치용. 예전 float 필드일 때와 같은 결과가 나오도록 float로 내려서 같은 식으로 계산
     public float Evaluate(int _targetLevel)
     {
         if (_targetLevel <= 0) return 0;
+
+        float floatBase = (float)baseValue;
+        switch (type)
+        {
+            case ProgressionType.Manual:
+                if (manualValues != null && manualValues.Count >= _targetLevel)
+                    return (float)manualValues[_targetLevel - 1];
+                return 0;
+            case ProgressionType.BasePlusLevelBase:
+                // 값 + (레벨 * 값)
+                return floatBase + (_targetLevel * floatBase);
+            case ProgressionType.BaseTimesLevel:
+                // 값 * 레벨
+                return floatBase * _targetLevel;
+            case ProgressionType.Constant:
+                // 레벨에 관계없이 고정 값
+                return floatBase;
+            default:
+                return 0;
+        }
+    }
+
+    // 재화 비용용. 입력값(유효숫자 15자리)을 그대로 살려 decimal로 계산해 큰 금액도 1원까지 정확
+    public decimal EvaluateDecimal(int _targetLevel)
+    {
+        if (_targetLevel <= 0) return 0m;
 
         switch (type)
         {
             case ProgressionType.Manual:
                 if (manualValues != null && manualValues.Count >= _targetLevel)
-                    return manualValues[_targetLevel - 1];
-                return 0;
+                    return MoneyMath.ToDecimal(manualValues[_targetLevel - 1]);
+                return 0m;
             case ProgressionType.BasePlusLevelBase:
-                // 값 + (레벨 * 값)
-                return baseValue + (_targetLevel * baseValue);
+            {
+                decimal decimalBase = MoneyMath.ToDecimal(baseValue);
+                return decimalBase + (_targetLevel * decimalBase);
+            }
             case ProgressionType.BaseTimesLevel:
-                // 값 * 레벨
-                return baseValue * _targetLevel;
+                return MoneyMath.ToDecimal(baseValue) * _targetLevel;
             case ProgressionType.Constant:
-                // 레벨에 관계없이 고정 값
-                return baseValue;
+                return MoneyMath.ToDecimal(baseValue);
             default:
-                return 0;
+                return 0m;
         }
     }
 }

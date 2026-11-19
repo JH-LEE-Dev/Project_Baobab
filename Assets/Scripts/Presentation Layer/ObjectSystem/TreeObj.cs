@@ -924,8 +924,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         }
 
         // 약점 노출 연출용: 맞기 전 HP 비율(도끼의 약점 타격 판정과 같은 HP 기준).
-        float maxHpBeforeHit = healthComponent.GetMaxHealth();
-        float hpRatioBeforeHit = maxHpBeforeHit > 0f ? healthComponent.GetCurrentHealth() / maxHpBeforeHit : 0f;
+        bool bAboveHalfHpBeforeHit = healthComponent.GetMaxHealth() > 0f && false == healthComponent.IsHealthRatioAtOrBelow(0.5f);
 
         healthComponent.DecreaseHealth(_damage);
 
@@ -985,10 +984,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         // 이번 피격이 치명타였는지를 피격 이벤트 동안에만 알린다(InDungeonObjectManager.OnTreeHit가 치명타 임팩트를 고를 때 읽는다).
         // 약점 노출: 절반 위에서 절반 이하로 처음 내려왔을 때만. 쓰러졌거나 보석 단계가 바뀌어(HP가 새 단계로 바뀜) 비율이 이어지지 않으면 뺀다.
         bool bCrossedHalfHp = false;
-        if (false == bDead && gemStageBeforeHit == currentGemStage && hpRatioBeforeHit > 0.5f)
+        if (false == bDead && gemStageBeforeHit == currentGemStage && bAboveHalfHpBeforeHit)
         {
-            float maxHpAfterHit = healthComponent.GetMaxHealth();
-            bCrossedHalfHp = maxHpAfterHit > 0f && healthComponent.GetCurrentHealth() / maxHpAfterHit <= 0.5f;
+            bCrossedHalfHp = healthComponent.GetMaxHealth() > 0f && healthComponent.IsHealthRatioAtOrBelow(0.5f);
         }
 
         bCriticalHitInProgress = _bCritical;

@@ -47,6 +47,16 @@ public struct BuffHudSignal
         return _s;
     }
 
+    // 상태형: 켜져 있는 동안만 보인다(값·자동 만료 없음). 끌 때는 Dispel/Remove.
+    public static BuffHudSignal AddStatus(EBuffHudId _id)
+    {
+        BuffHudSignal _s = new BuffHudSignal();
+        _s.id = _id;
+        _s.op = EBuffHudOp.Add;
+        _s.kind = BuffGaugeKind.Status;
+        return _s;
+    }
+
     public static BuffHudSignal SetValue(EBuffHudId _id, float _value)
     {
         BuffHudSignal _s = new BuffHudSignal();

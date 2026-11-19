@@ -60,7 +60,15 @@ Shader "Custom/2D/GroundForestBreathLit"
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/Lit2DCommon.hlsl"
 
-            float4 _MainTex_TexelSize;
+            // SRP Batcher가 이 셰이더를 묶을 수 있도록 _MainTex_TexelSize(재질 상수 버퍼 밖 값)를 선언하지 않고 텍스처에서 크기를 직접 읽는다.
+            // 이 셰이더는 zw(텍스처 크기)만 써서 크기가 2의 거듭제곱이 아니어도 값이 정확히 같다.
+            float4 MainTexTexelSize()
+            {
+                uint width;
+                uint height;
+                _MainTex.GetDimensions(width, height);
+                return float4(1.0 / (float)width, 1.0 / (float)height, (float)width, (float)height);
+            }
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _Color;
@@ -104,7 +112,7 @@ Shader "Custom/2D/GroundForestBreathLit"
                 if (IsForestBreathActive() && main.a > 0.5h)
                 {
                     float ppu = StageAmbiencePixelsPerUnit();
-                    float2 centerWS = StageAmbienceTexelCenterWS(input.breathPositionWS, input.uv, _MainTex_TexelSize);
+                    float2 centerWS = StageAmbienceTexelCenterWS(input.breathPositionWS, input.uv, MainTexTexelSize());
                     // 땅 전체가 물결을 따라 아주 옅게 물든다.
                     result.rgb += (half3)(_ForestBreathColor.rgb * (SampleForestBreath(centerWS) * _ForestBreathE.z));
                     // 물결 앞머리를 따라 이슬 반짝임

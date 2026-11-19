@@ -16,20 +16,6 @@ public class SkillNode
 
     public bool bApplied => currentLevel > 0;
 
-    // 엔딩 특성처럼 프레스티지 경험치를 주지 않는 노드인지. 노드가 가진 커맨드 종류로 판단한다.
-    public bool bGrantsNoPrestigeExp
-    {
-        get
-        {
-            if (commands == null) return false;
-            for (int i = 0; i < commands.Count; i++)
-            {
-                if (commands[i].skillCommandType == SkillCommandType.PicnicBasket) return true;
-            }
-            return false;
-        }
-    }
-
     public SkillNode(SkillType _type, int _maxLevel, SkillCost _cost, List<SkillCommandInfo> _commands)
     {
         skillType = _type;
@@ -51,11 +37,7 @@ public class SkillNode
 
     private static long EvaluateCost(ProgressionCurve _curve, int _targetLevel)
     {
-        float value = _curve.Evaluate(_targetLevel);
-        if (float.IsNaN(value) || float.IsInfinity(value))
-            return 0L;
-
-        return (long)Math.Round(value, MidpointRounding.AwayFromZero);
+        return MoneyMath.RoundToLong(_curve.EvaluateDecimal(_targetLevel), MidpointRounding.AwayFromZero);
     }
 }
 
@@ -194,9 +176,9 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
         // 특성을 찍는 순간 (가벼운 진동)
         Rumble.Play(EHapticEvent.SkillPoint);
 
-        // 경험치 증가 및 프레스티지 레벨업 처리. 엔딩 특성(소풍 바구니)은 경험치를 주지 않는다.
-        if (!node.bGrantsNoPrestigeExp) skillExperience++;
-        if (!node.bGrantsNoPrestigeExp && skillExperience >= GetPrestigeExpLimit())
+        // 경험치 증가 및 프레스티지 레벨업 처리
+        skillExperience++;
+        if (skillExperience >= GetPrestigeExpLimit())
         {
             skillExperience = 0;
             prestigeLevel++;
@@ -304,9 +286,9 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
         // 특성을 찍는 순간 (가벼운 진동)
         Rumble.Play(EHapticEvent.SkillPoint);
 
-        // 경험치 증가 및 프레스티지 레벨업 처리. 엔딩 특성(소풍 바구니)은 경험치를 주지 않는다.
-        if (!node.bGrantsNoPrestigeExp) skillExperience++;
-        if (!node.bGrantsNoPrestigeExp && skillExperience >= GetPrestigeExpLimit())
+        // 경험치 증가 및 프레스티지 레벨업 처리
+        skillExperience++;
+        if (skillExperience >= GetPrestigeExpLimit())
         {
             skillExperience = 0;
             prestigeLevel++;

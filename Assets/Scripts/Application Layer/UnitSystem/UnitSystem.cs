@@ -414,6 +414,17 @@ public class UnitSystem
     private void RestAreaStateChanged(bool _bInRestArea)
     {
         signalHub.Publish(new StaminaInvincibleStateChangedSignal(EStaminaInvincibleSource.RestArea, _bInRestArea));
+
+        // 휴식: 상태형(Status). 휴식 구역 안에 있는 동안만 켜 두고, 나가면(사망·특성 해제 포함) 퇴장 연출로 내린다.
+        // 마을 차량의 휴식 구역에서도 오지만 HUD가 마을에서는 띄우지 않는다.
+        if (_bInRestArea)
+        {
+            signalHub.Publish(BuffHudSignal.AddStatus(EBuffHudId.StaminaRecover));
+        }
+        else
+        {
+            signalHub.Publish(BuffHudSignal.Of(EBuffHudId.StaminaRecover, EBuffHudOp.Dispel));
+        }
     }
 
     // 벌목 리듬: 타수 중첩(StackHits). 3초간 공격이 없으면 한 번에 0이 되므로 HUD 자동 감소는 쓰지 않고 값을 그대로 내린다.

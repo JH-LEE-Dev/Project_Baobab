@@ -224,7 +224,7 @@ public class BlastFurnaceManager : MonoBehaviour, IBlastFurnaceCH
     {
         float multiplier = logProcessingManager != null ? logProcessingManager.LogValueMultiplier : 1f;
 
-        return (long)System.Math.Round((double)_recipe.ingotValue * multiplier);
+        return MoneyMath.MultiplyRound(_recipe.ingotValue, multiplier);
     }
 
     /// <summary>

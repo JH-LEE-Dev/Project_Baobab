@@ -148,6 +148,8 @@ public struct LogProcessingSaveData
 {
     public InventorySaveData containerInventoryData;
     public long shopMoney;
+    // shopMoney에 쌓인 원목 수. 자동 입금 정산 때 이 수만큼(최대 50개) 금화가 날아간다. 이 필드가 없던 세이브는 0(금화 1개).
+    public int shopStoredLogCount;
     public bool bFirstTimeEarnMoney;
     public bool bStop;
     public float transferInterval;

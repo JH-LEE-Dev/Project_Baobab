@@ -67,7 +67,15 @@ Shader "Custom/WaterTilemapShader"
             #include "Include/WaterDepth.hlsl"
             #include "Include/TileFrameAnimation.hlsl"
 
-            float4 _MainTex_TexelSize;
+            // SRP Batcher가 이 셰이더를 묶을 수 있도록 _MainTex_TexelSize(재질 상수 버퍼 밖 값)를 선언하지 않고 텍스처에서 크기를 직접 읽는다.
+            // 이 셰이더는 zw(텍스처 크기)만 써서 크기가 2의 거듭제곱이 아니어도 값이 정확히 같다.
+            float4 MainTexTexelSize()
+            {
+                uint width;
+                uint height;
+                _MainTex.GetDimensions(width, height);
+                return float4(1.0 / (float)width, 1.0 / (float)height, (float)width, (float)height);
+            }
 
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
@@ -110,7 +118,7 @@ Shader "Custom/WaterTilemapShader"
                     float3 texColor = texel.rgb;
                     // 텍셀 중심 월드 위치와 텍셀 번호는 깊이·반짝임·포자가 같이 쓰므로 한 번만 구한다.
                     // 타일 텍셀 중심은 (정수 + 0.5) / ppu에 놓이므로 내림하면 텍셀 하나가 한 번호를 갖는다.
-                    float2 centerWS = StageAmbienceTexelCenterWS(input.shimmerPositionWS, input.uv, _MainTex_TexelSize);
+                    float2 centerWS = StageAmbienceTexelCenterWS(input.shimmerPositionWS, input.uv, MainTexTexelSize());
                     float2 texelId = floor(centerWS * StageAmbiencePixelsPerUnit());
 
                     // 물 깊이(꺼진 스테이지는 그대로). 반짝임·포자가 위에 그려지도록 먼저 칠한다.
@@ -138,14 +146,14 @@ Shader "Custom/WaterTilemapShader"
                     bool onCrust = false;
                     if (magmaOn)
                     {
-                        float4 magma = ComputeWaterMagma(input.uv, input.shimmerPositionWS, _MainTex_TexelSize, texColor, onCrust);
+                        float4 magma = ComputeWaterMagma(input.uv, input.shimmerPositionWS, MainTexTexelSize(), texColor, onCrust);
                         color.rgb = lerp(color.rgb, magma.rgb, magma.a);
                     }
 
                     // 물(용암) 위 거품(꺼진 스테이지는 그대로)
                     if (bubblesOn && false == onCrust)
                     {
-                        float4 bubbles = ComputeWaterBubbles(input.uv, input.shimmerPositionWS, _MainTex_TexelSize, texColor);
+                        float4 bubbles = ComputeWaterBubbles(input.uv, input.shimmerPositionWS, MainTexTexelSize(), texColor);
                         color.rgb = lerp(color.rgb, bubbles.rgb, bubbles.a);
                     }
                 }

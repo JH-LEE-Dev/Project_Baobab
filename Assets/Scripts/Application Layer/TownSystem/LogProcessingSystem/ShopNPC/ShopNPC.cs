@@ -11,12 +11,14 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
     {
         public Coin coin;
         public long value;
+        public int logs;         // 자동 입금 금화가 싣고 가는 돈의 원목 수(저장 때 되돌려 적는 데만 쓴다)
         public float trailTimer; // 비행 꼬리 금가루를 다음에 뿌릴 때까지 남은 시간(연출 전용)
 
-        public FlyingCoin(Coin _coin, long _value)
+        public FlyingCoin(Coin _coin, long _value, int _logs = 0)
         {
             coin = _coin;
             value = _value;
+            logs = _logs;
             trailTimer = 0f;
         }
     }
@@ -28,6 +30,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         public Coin coin;
         public bool bRemoteDeposit;
         public long remoteMoney;
+        public int remoteLogs;
         public float trailTimer;
     }
 
@@ -39,6 +42,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         public bool bTopgrade;
         public bool bRemoteDeposit;
         public long remoteMoney;
+        public int remoteLogs;
     }
 
     private struct CoinSpawnInfo
@@ -93,6 +97,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
     // 코인은 개별적으로 날아가 보이지만, 실제 재화 지급은 연출과 무관하게 첫 번째 코인이
     // 캐릭터에 도착하는 순간 전액 한 번에 처리한다(뒤이어 도착하는 코인들은 시각 연출일 뿐).
     private long pendingBatchMoney = 0;
+    private int pendingBatchLogCount = 0; // pendingBatchMoney의 원목 수(저장 때 되돌려 적는 데만 쓴다)
     private bool bAwaitingFirstArrival = false;
 
     // 자동 입금: 원목 하나의 돈은 그 원목의 금화(평가기 -> 상점 -> 캐릭터)가 싣고 가서 캐릭터에 닿을 때 들어간다.
@@ -102,7 +107,24 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
     // 금화를 띄우거나 이어 던지지 못하면 그 금화에 실린 돈도 바로 넣는다.
     private long pendingRemoteDepositMoney = 0;
     private long unassignedRemoteDepositMoney = 0;
+    // 위 두 돈의 원목 수. 돈과 같이 늘고 같이 줄며, 저장 때 상점 잔액에 되돌려 적는 돈의 원목 수로 쓴다(GetPendingLogCount).
+    private int pendingRemoteLogCount = 0;
+    private int unassignedRemoteLogCount = 0;
     private readonly List<FlyingCoin> remoteCoins = new List<FlyingCoin>(16);
+
+    // 상점 잔액(money)에 쌓인 원목 수. 자동 입금이 시작되며 쌓인 돈이 한꺼번에 캐릭터에게 갈 때(ClearMoneyToPlayer)
+    // 이 수만큼(최대 RemoteBurstMaxCoins개) 금화가 상점에서 캐릭터로 우르르 날아간다. 수금하면 0으로 돌아간다.
+    // 원목이 아닌 돈(용광로 주괴 등)은 세지 않는다.
+    private const int RemoteBurstMaxCoins = 50;
+    private int storedLogCount = 0;
+
+    // 쌓인 돈 정산 금화 중 아직 출발하지 않은 것. 돈은 pendingRemoteDepositMoney에 먼저 넣어 두고(저장 대비),
+    // 금화마다 나눠 실어 닿을 때 들어간다. 원목 수(burstLogsRemaining)도 금화마다 나눠 실어, 저장 때 미지급 원목 수로 쓴다.
+    private int burstCoinsRemaining = 0;
+    private long burstMoneyRemaining = 0;
+    private int burstLogsRemaining = 0;
+    private float burstTimer = 0f;
+    private float burstInterval = 0f;
 
     // 상호작용 키는 Input System 콜백(해당 프레임의 모든 Update()보다 먼저 실행됨)에서 바로 들어온다.
     // 원목 가공 완료로 인한 InsertMoney()는 LogInBelt 등의 Update() 체인 안에서 일어나므로, 여기서
@@ -243,6 +265,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         flyingCoins = new List<FlyingCoin>(32);
 
         money = 0;
+        storedLogCount = 0;
 
         frameWait = new WaitForSeconds(frameTime);
 
@@ -300,6 +323,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
             if (null != remoteCoins[i].coin) coinItemPoolingManager.ReturnCoin(remoteCoins[i].coin);
         }
         remoteCoins.Clear();
+        ClearRemoteBurst();
         if (null != moneyVfx) moneyVfx.ClearAll();
     }
 
@@ -320,13 +344,16 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         {
             // 바로 앞에서 QueueRemoteDepositMoney로 넣은 원목 값은 이번 평가의 첫 금화가 싣고 간다.
             long remoteMoney = 0;
+            int remoteLogs = 0;
             if (bRemoteDepositRunning && 0 == i)
             {
                 remoteMoney = unassignedRemoteDepositMoney;
+                remoteLogs = unassignedRemoteLogCount;
                 unassignedRemoteDepositMoney = 0;
+                unassignedRemoteLogCount = 0;
             }
 
-            pendingDeposits.Add(new PendingDeposit { from = from, delay = baseDelay + depositStagger * i, bTopgrade = _bTopgrade, bRemoteDeposit = bRemoteDepositRunning, remoteMoney = remoteMoney });
+            pendingDeposits.Add(new PendingDeposit { from = from, delay = baseDelay + depositStagger * i, bTopgrade = _bTopgrade, bRemoteDeposit = bRemoteDepositRunning, remoteMoney = remoteMoney, remoteLogs = remoteLogs });
         }
 
         if (false == bRemoteDepositLocked) pendingDepositHeat += count;
@@ -352,13 +379,36 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
             return;
         }
 
-        money += _money;
+        money = MoneyLimit.Add(money, _money);
         ShopMoneyChangedEvent?.Invoke();
+    }
+
+    /// <summary>원목 하나가 평가된 돈을 상점에 쌓는다. 쌓인 원목 수도 함께 센다(자동 입금 정산 금화 수).</summary>
+    public void InsertLogMoney(long _money)
+    {
+        bool bStored = !bRemoteDepositRunning && 0 < _money;
+        InsertMoney(_money);
+        if (bStored) ++storedLogCount;
     }
 
     public long GetMoney()
     {
         return money;
+    }
+
+    /// <summary>상점 잔액에 쌓인 원목 수(저장용).</summary>
+    public int GetStoredLogCount()
+    {
+        return storedLogCount;
+    }
+
+    /// <summary>
+    /// GetPendingBatchMoney 돈의 원목 수(수금 금화·자동 입금 금화·정산 금화가 아직 캐릭터에 닿지 않은 것, 출발 전 포함).
+    /// 그 돈은 저장 때 상점 잔액에 되돌려 적히므로 원목 수도 함께 되돌려 적는다(LogProcessingManager.AppendTransitToSaveData).
+    /// </summary>
+    public int GetPendingLogCount()
+    {
+        return pendingBatchLogCount + pendingRemoteLogCount;
     }
 
     /// <summary>
@@ -379,6 +429,8 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         if (0 >= _money) return;
         pendingRemoteDepositMoney += _money;
         unassignedRemoteDepositMoney += _money;
+        ++pendingRemoteLogCount;
+        ++unassignedRemoteLogCount;
     }
 
     public void SetRemoteDepositRunning(bool _bRunning)
@@ -386,9 +438,10 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         bRemoteDepositRunning = _bRunning;
     }
 
-    public void LoadSaveData(long _money, bool _bFirstTime)
+    public void LoadSaveData(long _money, bool _bFirstTime, int _storedLogCount)
     {
-        money = _money;
+        money = MoneyLimit.Clamp(_money);
+        storedLogCount = Mathf.Max(0, _storedLogCount);
         bFirstTimeEarnMoney = _bFirstTime;
         ShopMoneyChangedEvent?.Invoke();
     }
@@ -442,16 +495,86 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         RemoteDepositModeChangedEvent?.Invoke(_bLocked);
     }
 
+    /// <summary>
+    /// 자동 입금이 시작되는 순간 상점에 쌓여 있던 돈을 캐릭터에게 보낸다. 쌓인 원목 수만큼(최대 RemoteBurstMaxCoins개)
+    /// 금화가 상점에서 캐릭터로 우르르 날아가고, 돈은 금화마다 나눠 실려 닿을 때 들어간다.
+    /// 금화를 띄울 수 없으면(마을이 아님 등) 예전처럼 바로 넣는다.
+    /// </summary>
     public void ClearMoneyToPlayer()
     {
         long leftover = money;
+        int logCount = storedLogCount;
         money = 0;
+        storedLogCount = 0;
         ShopMoneyChangedEvent?.Invoke();
 
-        if (0 < leftover)
+        if (0 >= leftover) return;
+
+        if (false == IsMoneyVfxVisible() || null == characterTransform)
         {
             EarnMoneyEvent?.Invoke(leftover);
+            return;
         }
+
+        StartRemoteBurst(leftover, logCount);
+    }
+
+    private void StartRemoteBurst(long _money, int _logCount)
+    {
+        pendingRemoteDepositMoney += _money;
+        pendingRemoteLogCount += _logCount;
+        burstMoneyRemaining += _money;
+        burstLogsRemaining += _logCount;
+
+        // 원목 수만큼, 단 최소 1개·최대 RemoteBurstMaxCoins개. 금화 하나에 최소 1원은 실리게 돈보다 많이 띄우지 않는다.
+        long coins = Math.Min(RemoteBurstMaxCoins, burstCoinsRemaining + (long)Mathf.Max(1, _logCount));
+        coins = Math.Min(coins, burstMoneyRemaining);
+        burstCoinsRemaining = (int)Math.Max(1L, coins);
+
+        // 출발 간격은 상점 수금 금화(CoThrowCoins)와 같은 규칙: 0.09초, 많으면 전부 0.9초 안에 나가도록 좁힌다.
+        burstInterval = Mathf.Min(0.09f, 0.9f / burstCoinsRemaining);
+        burstTimer = 0f;
+    }
+
+    // 정산 금화를 출발 간격마다 하나씩 상점에서 캐릭터로 던진다. 그사이 입금이 멈췄으면(마을을 떠나는 중) 남은 돈을 바로 넣는다.
+    private void UpdateRemoteBurst(float _deltaTime)
+    {
+        if (0 >= burstCoinsRemaining) return;
+
+        if (false == bRemoteDepositRunning)
+        {
+            long amount = burstMoneyRemaining;
+            int amountLogs = burstLogsRemaining;
+            ClearRemoteBurst();
+            PayRemoteDepositMoney(amount, amountLogs);
+            return;
+        }
+
+        burstTimer -= _deltaTime;
+        while (burstTimer <= 0f && 0 < burstCoinsRemaining)
+        {
+            long share = burstMoneyRemaining / burstCoinsRemaining;
+            int logs = burstLogsRemaining / burstCoinsRemaining;
+            burstMoneyRemaining -= share;
+            burstLogsRemaining -= logs;
+            --burstCoinsRemaining;
+
+            Vector3 start = null != coinThrowTransform ? coinThrowTransform.position : transform.position;
+            Sound.Play(SoundID.CoinOut, start, GetSoundVolume(), pitchOverride: GetRandomCoinPitch(1f));
+            LaunchRemoteDepositCoin(share, logs);
+
+            burstTimer += burstInterval;
+        }
+
+        if (0 >= burstCoinsRemaining) ClearRemoteBurst();
+    }
+
+    private void ClearRemoteBurst()
+    {
+        burstCoinsRemaining = 0;
+        burstMoneyRemaining = 0;
+        burstLogsRemaining = 0;
+        burstTimer = 0f;
     }
 
     private void OnTriggerEnter2D(Collider2D _other)
@@ -514,6 +637,8 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
         long tempMoney = money;
         money = 0;
+        pendingBatchLogCount += storedLogCount;
+        storedLogCount = 0;
         ShopMoneyChangedEvent?.Invoke();
 
         pendingBatchMoney += tempMoney;
@@ -654,6 +779,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         UpdateBounce(Time.deltaTime);
         UpdateFlyingCoins(Time.deltaTime);
         UpdateDepositCoins(Time.deltaTime);
+        UpdateRemoteBurst(Time.deltaTime);
         UpdateRemoteDepositCoins(Time.deltaTime);
         UpdateShopTwinkle(Time.deltaTime);
     }
@@ -670,7 +796,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
             {
                 if (IsMoneyVfxVisible()) moneyVfx.PlayCoinArrive(fc.coin.transform.position, false, false);
 
-                PayRemoteDepositMoney(fc.value);
+                PayRemoteDepositMoney(fc.value, fc.logs);
 
                 character?.PlayItemAcquireBounce();
                 character?.PlayItemAcquireFlash();
@@ -691,13 +817,19 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         if (0 < unassignedRemoteDepositMoney)
         {
             long amount = unassignedRemoteDepositMoney;
+            int amountLogs = unassignedRemoteLogCount;
             unassignedRemoteDepositMoney = 0;
-            PayRemoteDepositMoney(amount);
+            unassignedRemoteLogCount = 0;
+            PayRemoteDepositMoney(amount, amountLogs);
         }
     }
 
-    private void PayRemoteDepositMoney(long _amount)
+    // 자동 입금 돈을 캐릭터에게 넣는다. _logs는 그 돈의 원목 수로, 미지급 원목 수(pendingRemoteLogCount)에서 함께 뺀다.
+    private void PayRemoteDepositMoney(long _amount, int _logs)
     {
+        pendingRemoteLogCount -= _logs;
+        if (pendingRemoteLogCount < 0) pendingRemoteLogCount = 0;
+
         if (0 >= _amount) return;
 
         pendingRemoteDepositMoney -= _amount;
@@ -705,8 +837,8 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
     }
 
     // 상점(수금 금화가 나가는 자리)에서 캐릭터로 자동 입금 금화를 던진다. 캐릭터는 마을 어디에나 있을 수 있어 거리에 맞춰 늘린다.
-    // 던지지 못하면 실린 돈을 바로 넣는다.
-    private void LaunchRemoteDepositCoin(long _money)
+    // 던지지 못하면 실린 돈을 바로 넣는다. _logs는 실린 돈의 원목 수(주괴 등 원목이 아닌 돈은 0).
+    private void LaunchRemoteDepositCoin(long _money, int _logs = 0)
     {
         Coin coin = null;
         if (IsMoneyVfxVisible() && null != characterTransform)
@@ -720,11 +852,11 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
         if (null == coin)
         {
-            PayRemoteDepositMoney(_money);
+            PayRemoteDepositMoney(_money, _logs);
             return;
         }
 
-        remoteCoins.Add(new FlyingCoin(coin, _money));
+        remoteCoins.Add(new FlyingCoin(coin, _money, _logs));
     }
 
     // 입금 금화 출발·비행·도착. 자동 입금이면 금화가 원목 값을 싣고 상점을 거쳐 캐릭터로 간다.
@@ -741,7 +873,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
             }
 
             pendingDeposits.RemoveAt(i);
-            LaunchDepositCoin(pending.from, pending.bTopgrade, pending.bRemoteDeposit, pending.remoteMoney);
+            LaunchDepositCoin(pending.from, pending.bTopgrade, pending.bRemoteDeposit, pending.remoteMoney, pending.remoteLogs);
         }
 
         for (int i = depositCoins.Count - 1; i >= 0; i--)
@@ -757,8 +889,8 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
                 // 더 던지지 않고 실린 돈만 바로 넣는다.
                 if (dc.bRemoteDeposit)
                 {
-                    if (bRemoteDepositRunning) LaunchRemoteDepositCoin(dc.remoteMoney);
-                    else PayRemoteDepositMoney(dc.remoteMoney);
+                    if (bRemoteDepositRunning) LaunchRemoteDepositCoin(dc.remoteMoney, dc.remoteLogs);
+                    else PayRemoteDepositMoney(dc.remoteMoney, dc.remoteLogs);
                 }
 
                 coinItemPoolingManager.ReturnCoin(dc.coin);
@@ -771,7 +903,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         }
     }
 
-    private void LaunchDepositCoin(Vector3 _from, bool _bTopgrade, bool _bRemoteDeposit, long _remoteMoney)
+    private void LaunchDepositCoin(Vector3 _from, bool _bTopgrade, bool _bRemoteDeposit, long _remoteMoney, int _remoteLogs)
     {
         Coin coin = null;
         if (IsMoneyVfxVisible() && null != depositLandPoint)
@@ -780,11 +912,11 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         if (null == coin)
         {
             // 금화를 못 띄웠으면 실린 자동 입금 돈은 바로 넣는다.
-            PayRemoteDepositMoney(_remoteMoney);
+            PayRemoteDepositMoney(_remoteMoney, _remoteLogs);
             return;
         }
 
-        depositCoins.Add(new DepositCoin { coin = coin, bRemoteDeposit = _bRemoteDeposit, remoteMoney = _remoteMoney, trailTimer = 0f });
+        depositCoins.Add(new DepositCoin { coin = coin, bRemoteDeposit = _bRemoteDeposit, remoteMoney = _remoteMoney, remoteLogs = _remoteLogs, trailTimer = 0f });
 
         moneyVfx.PlayDepositPop(_from, _bTopgrade);
     }
@@ -871,6 +1003,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
                 {
                     EarnMoneyEvent?.Invoke(pendingBatchMoney);
                     pendingBatchMoney = 0;
+                    pendingBatchLogCount = 0;
                     bAwaitingFirstArrival = false;
                 }
 

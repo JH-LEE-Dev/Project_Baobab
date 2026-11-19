@@ -357,9 +357,7 @@ namespace LocalizationQA
         // SkillNode.EvaluateCost
         private static long Cost(ProgressionCurve _curve, int _level)
         {
-            float _value = _curve.Evaluate(_level);
-            if (float.IsNaN(_value) || float.IsInfinity(_value)) return 0L;
-            return (long)Math.Round(_value, MidpointRounding.AwayFromZero);
+            return MoneyMath.RoundToLong(_curve.EvaluateDecimal(_level), MidpointRounding.AwayFromZero);
         }
 
         private static string Text(LocQAStringTable _table, string _id, Language _lang)
