@@ -352,7 +352,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
             return;
         }
 
-        money += _money;
+        money = MoneyLimit.Add(money, _money);
         ShopMoneyChangedEvent?.Invoke();
     }
 
@@ -388,7 +388,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
 
     public void LoadSaveData(long _money, bool _bFirstTime)
     {
-        money = _money;
+        money = MoneyLimit.Clamp(_money);
         bFirstTimeEarnMoney = _bFirstTime;
         ShopMoneyChangedEvent?.Invoke();
     }
