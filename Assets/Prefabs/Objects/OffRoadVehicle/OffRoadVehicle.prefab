@@ -4047,6 +4047,7 @@ MonoBehaviour:
   groundMeshRenderer: {fileID: 5120461539378098725}
   groundSortingLayerName: ShockWave
   groundSortingOrder: 0
+  groundOffsetPx: 16
 --- !u!1 &5342050969949659668
 GameObject:
   m_ObjectHideFlags: 0
