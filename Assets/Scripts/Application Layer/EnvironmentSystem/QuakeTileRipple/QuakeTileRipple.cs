@@ -1127,19 +1127,38 @@ public sealed class QuakeTileRipple
         return _pool[slot] ??= new T[1 << slot];
     }
 
+    // SetTiles는 넘긴 배열 전체를 쓰고 개수를 받는 오버로드가 없다. 배열 길이를 2의 거듭제곱으로 올려 남는 자리를 마지막 항목으로
+    // 채우면 그만큼(평균 약 1/3) 같은 칸을 다시 쓰게 되므로, 개수를 2의 거듭제곱 조각(큰 것부터)으로 나눠 조각마다 꼭 맞는 재사용
+    // 배열로 순서대로 쓴다. 쓰는 칸과 순서가 같아 결과는 같다(같은 칸을 두 번 쓰면 뒤의 것이 남는 것도 같다).
     private static void SetTiles(Tilemap _lift, List<Vector3Int> _positions, List<TileBase> _tiles)
     {
         int count = _positions.Count;
-        Vector3Int[] positions = Batch(positionBatches, count);
-        TileBase[] tiles = Batch(tileBatches, count);
-        for (int i = 0; i < positions.Length; i++)
-        {
-            int k = i < count ? i : count - 1;
-            positions[i] = _positions[k];
-            tiles[i] = _tiles[k];
-        }
+        if (0 == count) return;
 
-        _lift.SetTiles(positions, tiles);
+        int start = 0;
+        while (start < count)
+        {
+            int size = ChunkSize(count - start);
+            Vector3Int[] positions = Batch(positionBatches, size);
+            TileBase[] tiles = Batch(tileBatches, size);
+            for (int i = 0; i < size; i++)
+            {
+                positions[i] = _positions[start + i];
+                tiles[i] = _tiles[start + i];
+            }
+
+            _lift.SetTiles(positions, tiles);
+            start += size;
+        }
+    }
+
+    /// <summary>_remaining 이하인 가장 큰 2의 거듭제곱(재사용 배열이 없는 크기면 _remaining 그대로, Batch가 꼭 맞게 새로 만든다).</summary>
+    private static int ChunkSize(int _remaining)
+    {
+        int slot = 0;
+        while (slot + 1 < positionBatches.Length && (1 << (slot + 1)) <= _remaining) slot++;
+        if (slot + 1 >= positionBatches.Length && (1 << slot) < _remaining) return _remaining;
+        return 1 << slot;
     }
 
     /// <summary>이번 프레임에 모아 둔 칸 변경을 복제층마다 한 번에 쓴다.</summary>
@@ -1156,10 +1175,18 @@ public sealed class QuakeTileRipple
         int count = _changes.Count;
         if (0 == count) return;
 
-        TileChangeData[] batch = Batch(changeBatches, count);
-        for (int i = 0; i < batch.Length; i++) batch[i] = _changes[i < count ? i : count - 1];
+        // 위 SetTiles와 같은 이유로 2의 거듭제곱 조각으로 나눠 꼭 맞게 쓴다.
+        int start = 0;
+        while (start < count)
+        {
+            int size = ChunkSize(count - start);
+            TileChangeData[] batch = Batch(changeBatches, size);
+            for (int i = 0; i < size; i++) batch[i] = _changes[start + i];
 
-        _lift.SetTiles(batch, true);
+            _lift.SetTiles(batch, true);
+            start += size;
+        }
+
         _changes.Clear();
     }
 

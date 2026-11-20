@@ -182,10 +182,21 @@ namespace PresentationLayer.VFX
             }
 
             meshRenderer.enabled = false;
+
+            // 쉬는 동안 꺼 둔 LateUpdate를 다시 켠다.
+            enabled = true;
         }
 
         /// <summary>재생 중인 것을 바로 끝낸다(던전 이탈 등).</summary>
         public void StopImmediate()
+        {
+            StopInternal();
+
+            // 쉬는 동안에는 LateUpdate가 불리지 않게 꺼 둔다(미리 만들어 둔·끝난 인스턴스가 매 프레임 빈 호출을 받지 않게).
+            if (enabled) enabled = false;
+        }
+
+        private void StopInternal()
         {
             bPlaying = false;
             for (int i = 0; i < DustCapacity; i++) dusts[i].bActive = false;
@@ -231,6 +242,9 @@ namespace PresentationLayer.VFX
             meshRenderer.enabled = false;
 
             randomState = unchecked((uint)Random.Range(1, int.MaxValue) * 2654435761u) | 1u;
+
+            // 재생(Play) 전까지 LateUpdate를 돌리지 않는다.
+            enabled = false;
         }
 
         private static void BuildPalette()
@@ -563,7 +577,8 @@ namespace PresentationLayer.VFX
 
         private void OnDisable()
         {
-            StopImmediate();
+            // 스스로 꺼질 때(StopImmediate)도 불리므로 여기서는 enabled를 건드리지 않는다.
+            StopInternal();
         }
 
         private void OnDestroy()
