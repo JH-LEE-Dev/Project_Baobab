@@ -243,7 +243,9 @@ namespace PresentationLayer.VFX
         private Mesh groundMesh;
         private ParticleSystemRenderer rootParticleRenderer;
 
-        private readonly CloudParticle[] cloud = new CloudParticle[CloudCapacity];
+        // 구름 입자 배열은 SetupCloud가 이번 폭발에 쓸 개수(CloudCapacity 이하)만큼만 잡고, 더 큰 폭발이 오면 그때 늘린다.
+        // 입자는 [0, cloudCount)만 읽고 FillCloud가 모든 필드를 쓰므로 배열 크기와 결과는 무관하다(처음부터 4800칸이면 약 350KB).
+        private CloudParticle[] cloud = System.Array.Empty<CloudParticle>();
         private InhaleParticle[] inhale = new InhaleParticle[InhaleCapacity];
         private readonly RayData[] rays = new RayData[RayCount];
         private readonly float[] ringGapCenter = new float[10];
@@ -588,6 +590,11 @@ namespace PresentationLayer.VFX
             int column = Mathf.RoundToInt(BaseColumn * _scale);
             int sparkle = Mathf.RoundToInt(BaseSparkle * _scale);
             int blast = Mathf.RoundToInt(BaseBlast * _scale);
+
+            // 아래 네 반복이 채울 수 있는 최대 개수(CloudCapacity에서 멈춘다). 음수 개수는 반복을 돌지 않는다.
+            long needed = (long)CloudGroupCount * groupParticles + Mathf.Max(0, column) + Mathf.Max(0, sparkle) + Mathf.Max(0, blast);
+            int capacity = (int)System.Math.Min(CloudCapacity, needed);
+            if (cloud.Length < capacity) cloud = new CloudParticle[capacity];
 
             int index = 0;
             float baseAngle = RandRange(0.0f, TwoPi);

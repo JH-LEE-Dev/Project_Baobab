@@ -646,7 +646,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         //    힙이 아니라 스택에 잡는다. 이 판정은 바닥의 원목 하나당 초당 5회(Character의 아이템
         //    감지 틱) 돌고 그게 반경 안의 원목 수만큼 곱해지므로, 매번 배열을 새로 잡으면 가방이
         //    꽉 찬 채 원목 더미 위에 서 있는 동안 계속 쓰레기가 쌓인다.
-        //    슬롯은 SYSTEM_VAR.MAX_INVENTORY_CNT개가 상한이라 최악이어도 20B * 10 = 200B다.
+        //    슬롯은 SYSTEM_VAR.MAX_INVENTORY_CNT개가 상한이라 최악이어도 20B * 12 = 240B다.
         //    (감지 틱은 이제 묶음 경로를 타므로, 여기는 교체 직후의 즉시 흡입 같은 단건 호출만 온다)
         int slotCount = Mathf.Min(currentSlotCount, inventorySlots.Count);
         Span<VirtualSlot> virtualSlots = stackalloc VirtualSlot[slotCount];

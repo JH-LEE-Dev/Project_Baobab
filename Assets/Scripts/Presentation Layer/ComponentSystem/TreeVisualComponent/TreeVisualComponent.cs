@@ -1757,52 +1757,94 @@ public class TreeVisualComponent : MonoBehaviour
     private static readonly Dictionary<Sprite, KeyValuePair<Vector2[], ushort[]>> spriteMeshCache = new Dictionary<Sprite, KeyValuePair<Vector2[], ushort[]>>();
 
     /// <summary>
-    /// 수관·밑동 그림이 _occludee(그 렌더러)보다 앞에 그려지면서 월드 좌표 _worldPoint를 덮는지.
+    /// 수관·밑동 그림이 _occludee(그 렌더러)보다 앞에 그려지면서 월드 좌표 _origin + _offsets[i] 중 하나라도 덮는지.
     /// 덮음 판정은 스프라이트의 실제 메시(그림 둘레를 따라 잘린 메시) 안인지로 하므로 그림 사각형의 투명 여백은 거의 걸리지 않는다.
+    /// 렌더러 상태(켜짐·정렬 순서·뒤집기·스프라이트 경계)는 점마다 바뀌지 않으므로 렌더러마다 한 번만 읽는다.
     /// </summary>
-    public bool CoversWorldPoint(Vector2 _worldPoint, Renderer _occludee)
+    public bool CoversAnyWorldPoint(Vector2 _origin, Vector2[] _offsets, Renderer _occludee)
     {
-        return IsRendererCoveringPoint(topRenderer, _worldPoint, _occludee)
-            || IsRendererCoveringPoint(bottomRenderer, _worldPoint, _occludee);
-    }
-
-    private static bool IsRendererCoveringPoint(SpriteRenderer _renderer, Vector2 _worldPoint, Renderer _occludee)
-    {
-        if (_renderer == null || false == _renderer.enabled || false == _renderer.gameObject.activeInHierarchy) return false;
-        Sprite sprite = _renderer.sprite;
-        if (sprite == null) return false;
-        if (_occludee != null && false == IsDrawnAfter(_renderer, _occludee)) return false;
-
-        Vector3 local = _renderer.transform.InverseTransformPoint(new Vector3(_worldPoint.x, _worldPoint.y, _renderer.transform.position.z));
-        if (_renderer.flipX) local.x = -local.x;
-        if (_renderer.flipY) local.y = -local.y;
-
-        Bounds bounds = sprite.bounds;
-        if (local.x < bounds.min.x || local.x > bounds.max.x || local.y < bounds.min.y || local.y > bounds.max.y) return false;
-
-        if (false == spriteMeshCache.TryGetValue(sprite, out KeyValuePair<Vector2[], ushort[]> mesh))
+        int occludeeLayer = 0;
+        int occludeeOrder = 0;
+        if (_occludee != null)
         {
-            mesh = new KeyValuePair<Vector2[], ushort[]>(sprite.vertices, sprite.triangles);
-            spriteMeshCache[sprite] = mesh;
+            occludeeLayer = SortingLayer.GetLayerValueFromID(_occludee.sortingLayerID);
+            occludeeOrder = _occludee.sortingOrder;
         }
 
-        Vector2[] vertices = mesh.Key;
-        ushort[] triangles = mesh.Value;
-        Vector2 p = local;
-        for (int i = 0; i + 2 < triangles.Length; i += 3)
+        CoverProbe top = CoverProbe.Prepare(topRenderer, _occludee != null, occludeeLayer, occludeeOrder);
+        CoverProbe bottom = CoverProbe.Prepare(bottomRenderer, _occludee != null, occludeeLayer, occludeeOrder);
+        if (false == top.bValid && false == bottom.bValid) return false;
+
+        for (int i = 0; i < _offsets.Length; i++)
         {
-            if (IsPointInTriangle(p, vertices[triangles[i]], vertices[triangles[i + 1]], vertices[triangles[i + 2]])) return true;
+            Vector2 worldPoint = _origin + _offsets[i];
+            if (top.bValid && top.Covers(worldPoint)) return true;
+            if (bottom.bValid && bottom.Covers(worldPoint)) return true;
         }
         return false;
     }
 
-    // _front가 _back보다 나중에(위에) 그려지는지. 정렬 레이어 → 정렬 순서로 비교한다(같으면 앞이라고 보지 않는다).
-    private static bool IsDrawnAfter(Renderer _front, Renderer _back)
+    // 렌더러 하나의 점과 무관한 부분(유효성·정렬·변환·경계)을 미리 읽어 두고 점마다 덮음을 판정한다.
+    private struct CoverProbe
     {
-        int frontLayer = SortingLayer.GetLayerValueFromID(_front.sortingLayerID);
-        int backLayer = SortingLayer.GetLayerValueFromID(_back.sortingLayerID);
-        if (frontLayer != backLayer) return frontLayer > backLayer;
-        return _front.sortingOrder > _back.sortingOrder;
+        public bool bValid;
+        private Transform transform;
+        private float z;
+        private bool bFlipX;
+        private bool bFlipY;
+        private float minX, maxX, minY, maxY;
+        private Sprite sprite;
+
+        public static CoverProbe Prepare(SpriteRenderer _renderer, bool _bHasOccludee, int _occludeeLayer, int _occludeeOrder)
+        {
+            CoverProbe probe = default;
+            if (_renderer == null || false == _renderer.enabled || false == _renderer.gameObject.activeInHierarchy) return probe;
+            Sprite sprite = _renderer.sprite;
+            if (sprite == null) return probe;
+            if (_bHasOccludee)
+            {
+                int frontLayer = SortingLayer.GetLayerValueFromID(_renderer.sortingLayerID);
+                bool bDrawnAfter = frontLayer != _occludeeLayer ? frontLayer > _occludeeLayer : _renderer.sortingOrder > _occludeeOrder;
+                if (false == bDrawnAfter) return probe;
+            }
+
+            probe.bValid = true;
+            probe.sprite = sprite;
+            probe.transform = _renderer.transform;
+            probe.z = probe.transform.position.z;
+            probe.bFlipX = _renderer.flipX;
+            probe.bFlipY = _renderer.flipY;
+            Bounds bounds = sprite.bounds;
+            Vector3 min = bounds.min;
+            Vector3 max = bounds.max;
+            probe.minX = min.x; probe.maxX = max.x;
+            probe.minY = min.y; probe.maxY = max.y;
+            return probe;
+        }
+
+        public bool Covers(Vector2 _worldPoint)
+        {
+            Vector3 local = transform.InverseTransformPoint(new Vector3(_worldPoint.x, _worldPoint.y, z));
+            if (bFlipX) local.x = -local.x;
+            if (bFlipY) local.y = -local.y;
+
+            if (local.x < minX || local.x > maxX || local.y < minY || local.y > maxY) return false;
+
+            if (false == spriteMeshCache.TryGetValue(sprite, out KeyValuePair<Vector2[], ushort[]> mesh))
+            {
+                mesh = new KeyValuePair<Vector2[], ushort[]>(sprite.vertices, sprite.triangles);
+                spriteMeshCache[sprite] = mesh;
+            }
+
+            Vector2[] vertices = mesh.Key;
+            ushort[] triangles = mesh.Value;
+            Vector2 p = local;
+            for (int i = 0; i + 2 < triangles.Length; i += 3)
+            {
+                if (IsPointInTriangle(p, vertices[triangles[i]], vertices[triangles[i + 1]], vertices[triangles[i + 2]])) return true;
+            }
+            return false;
+        }
     }
 
     private static bool IsPointInTriangle(Vector2 _p, Vector2 _a, Vector2 _b, Vector2 _c)

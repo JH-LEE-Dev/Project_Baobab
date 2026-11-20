@@ -24,6 +24,7 @@ namespace PresentationLayer.VFX
     /// 깔린 타일과 어긋남이 없도록 두 값을 측정해 정한 것이다. 차선에 속한 칸은 칸 윗면 중심에서 차선 직선(_from~_to를 지나는 무한 직선)까지의
     /// 화면 거리가 반폭 이하이고, 칸 진행 번호(격자 축 기준)가 출발 쪽 startExtendUnits(+0.25칸)부터 도착 쪽 끝(+0.25칸)까지인 칸이다.
     /// 끝을 둥글게 자르지 않아 양 끝이 타일 줄에 맞춰 반듯하다. 끝 모서리 칸과 출발점 뒤 줄은 빛은 켜지지만 차량이 치지 않는 칸이다.
+    /// 입력 _from/_to는 ITilemapDataProvider.CellToWorld 기준(타일 그림 피벗 + 반 칸 = 윗면 중심)이라 칸 윗면 중심과 그대로 비교한다.
     /// Application Layer를 건드리지 않고 Begin으로 받은 월드 좌표와 인스펙터 값만 쓴다.
     ///
     /// 수명: Begin -> (유지) -> Fire -> 걷힘이 끝나면 스스로 루트 ParticleSystem을 멈춰 풀에 반환한다. 웨이브/런 종료는 Cancel로 즉시 회수한다.
@@ -466,9 +467,7 @@ namespace PresentationLayer.VFX
             originPxX = Mathf.RoundToInt(gridOrigin.x * PixelsPerUnit);
             originPxY = Mathf.RoundToInt((gridOrigin.y + tileTopOffsetY) * PixelsPerUnit);
 
-            // 차선(_from~_to)과 나무 위치는 칸 중심(타일 그림 피벗) 기준이고 빛은 윗면에 그리므로, 선분을 윗면 높이만큼 올려 윗면 중심과 비교한다
-            _fromY += tileTopOffsetY;
-            _toY += tileTopOffsetY;
+            // 차선(_from~_to)과 나무 위치는 ITilemapDataProvider.CellToWorld 기준(그림 피벗 + 반 칸 = 윗면 중심)이라 칸 윗면 중심과 그대로 비교한다
 
             float fromI;
             float fromJ;
@@ -568,9 +567,9 @@ namespace PresentationLayer.VFX
                         : Mathf.Sqrt((cellX - _fromX) * (cellX - _fromX) + (cellY - _fromY) * (cellY - _fromY));
                     if (_halfWidth < distance) continue;
 
-                    // 물 위 칸은 켜지 않는다. cellX/cellY는 윗면 중심이라, 차선 · 나무와 같은 기준(칸 그림 피벗 = 윗면 - tileTopOffsetY)으로 되돌려 타일 칸을 찾는다
+                    // 물 위 칸은 켜지 않는다. cellX/cellY(윗면 중심)는 차선 · 나무와 같은 기준이라 그대로 타일 칸을 찾는다
                     // (OffroadLanes.TryGetRowLandTile이 차선 위 점을 WorldToCell -> IsWaterTile로 판정하는 것과 같은 좌표계).
-                    if (null != _tiles && true == _tiles.IsWaterTile(_tiles.WorldToCell(new Vector3(cellX, cellY - tileTopOffsetY, 0.0f)))) continue;
+                    if (null != _tiles && true == _tiles.IsWaterTile(_tiles.WorldToCell(new Vector3(cellX, cellY, 0.0f)))) continue;
 
                     // 진행 번호가 출발 쪽 연장(섬 가장자리 줄까지)보다 뒤이거나 도착 쪽 끝을 넘은 칸은 켜지 않는다(양 끝이 타일 줄에 맞춰 반듯하게 잘린다)
                     float along = (i - fromI) * laneStepI + (j - fromJ) * laneStepJ;

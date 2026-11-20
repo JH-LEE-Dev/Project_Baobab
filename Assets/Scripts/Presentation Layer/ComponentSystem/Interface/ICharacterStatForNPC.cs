@@ -20,4 +20,5 @@ public interface ICharacterStatForNPC
     public float GetOverheatBurnRatio(int _overheatLevel);
     public float criticalChance { get; }
     public float ciriticalDamageMul { get; }
+    public float finalAttackHealthPercent { get; }
 }

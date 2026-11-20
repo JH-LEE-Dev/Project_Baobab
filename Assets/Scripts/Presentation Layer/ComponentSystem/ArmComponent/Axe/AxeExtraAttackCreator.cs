@@ -151,6 +151,7 @@ public class AxeExtraAttackCreator : MonoBehaviour, IShockWaveCreator
         _shockWave.SetEnforced(stat.bShockWaveEnforcement);
         _shockWave.SetOverheat(_bIsOverheat, burnRatio, stat.overheatBurnTickCount, stat.overheatBurnTickInterval);
         _shockWave.SetCritical(bCritical);
+        _shockWave.SetFinalAttack(stat.finalAttackHealthPercent, bCritical ? stat.ciriticalDamageMul : 1f);
     }
 
     private void OnReleaseShockWave(ShockWave _shockWave)

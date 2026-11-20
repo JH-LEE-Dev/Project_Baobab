@@ -63,7 +63,7 @@ public class UI_Storage : MonoBehaviour
     private GridLayoutGroup slotGrid;
     private GridLayoutGroup.Constraint defaultGridConstraint;
     private int defaultGridConstraintCount;
-    private bool isFourByTwo = false;
+    private bool isFourColumns = false; // 가로 4칸 고정 배치(8칸 4x2, 12칸 4x3) 중인지
 
 
     // //퍼블릭 초기화 및 제어 메서드
@@ -516,20 +516,22 @@ public class UI_Storage : MonoBehaviour
     }
 
     /// <summary>
-    /// 8칸일 때만 4x2로 고정하고, 그 외에는 프리팹 원래 배치로 되돌립니다. 배치가 바뀌었으면 true.
+    /// 12칸이면 4x3, 8칸이면(useFourByTwoAtEightSlots일 때) 4x2로 가로 4칸 고정하고,
+    /// 그 외에는 프리팹 원래 배치로 되돌립니다. 배치가 바뀌었으면 true.
     /// </summary>
     private bool ApplySlotLayout(int _activeCount)
     {
-        if (false == useFourByTwoAtEightSlots || null == slotGrid)
+        if (null == slotGrid)
             return false;
 
-        bool _bFourByTwo = 8 == _activeCount;
-        if (_bFourByTwo == isFourByTwo)
+        bool _bFourColumns = 12 == _activeCount
+            || (true == useFourByTwoAtEightSlots && 8 == _activeCount);
+        if (_bFourColumns == isFourColumns)
             return false;
 
-        isFourByTwo = _bFourByTwo;
+        isFourColumns = _bFourColumns;
 
-        if (true == isFourByTwo)
+        if (true == isFourColumns)
         {
             slotGrid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
             slotGrid.constraintCount = 4;
@@ -567,8 +569,8 @@ public class UI_Storage : MonoBehaviour
         Vector3 _storagePos = storage.GetTransform().position;
         float _targetOffsetX = offset.x;
 
-        // 4x2 보정. 가로 보정은 고정 위치일 때만 쓰인다(동적 배치는 아래에서 X를 새로 계산).
-        if (true == isFourByTwo)
+        // 가로 4칸 배치(4x2·4x3) 보정. 가로 보정은 고정 위치일 때만 쓰인다(동적 배치는 아래에서 X를 새로 계산).
+        if (true == isFourColumns)
             _targetOffsetX += fourByTwoOffset.x;
 
         if (true == useDynamicPositioning && null != playerTransform)
@@ -595,7 +597,7 @@ public class UI_Storage : MonoBehaviour
         _targetPos.x += _targetOffsetX;
         _targetPos.y += offset.y;
 
-        if (true == isFourByTwo)
+        if (true == isFourColumns)
             _targetPos.y += fourByTwoOffset.y;
 
         return _targetPos;

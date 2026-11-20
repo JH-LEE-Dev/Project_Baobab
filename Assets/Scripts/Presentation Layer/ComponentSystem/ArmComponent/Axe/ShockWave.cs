@@ -23,6 +23,9 @@ public class ShockWave : MonoBehaviour
     private int overheatBurnTickCount;
     private float overheatBurnTickInterval;
     private bool bIsCritical = false;
+    // 마무리 벌목 특성: 남은 체력이 이 비율 이하인 나무는 남은 체력 전부에 이 배율(치명타면 치명타 배율)을 곱해 받는다(비율 0이면 꺼짐).
+    private float finalAttackHealthRatio = 0f;
+    private float finalAttackDamageMul = 1f;
     private float maxEffectiveDistance = 0f;
 
     // 이 충격파가 처음으로 나무를 맞췄을 때 한 번만 호출된다. 풀에서 재사용되므로 Reset에서 비운다.
@@ -115,6 +118,13 @@ public class ShockWave : MonoBehaviour
         bIsCritical = _bIsCritical;
     }
 
+    /// <summary>마무리 벌목 특성 비율(StatComponent.finalAttackHealthPercent, 0~1)과 이번 충격파의 치명타 배율(치명타가 아니면 1).</summary>
+    public void SetFinalAttack(float _healthRatio, float _damageMul)
+    {
+        finalAttackHealthRatio = _healthRatio;
+        finalAttackDamageMul = _damageMul;
+    }
+
     public void SetDirection(Vector3 _dir)
     {
         moveDirection = _dir.normalized;
@@ -138,6 +148,8 @@ public class ShockWave : MonoBehaviour
         bIsEnforced = false;
         bIsOverheat = false;
         bIsCritical = false;
+        finalAttackHealthRatio = 0f;
+        finalAttackDamageMul = 1f;
         firstTreeHitCallback = null;
 
         // 리셋 시 스케일과 범위를 초기 상태로 복구
@@ -253,6 +265,9 @@ public class ShockWave : MonoBehaviour
 
                     // [로그라이크] 포자 충격파(포자 수류탄 + 충격파): 맞은 나무 자리를 알린다(이 타격으로 풀에 돌아가기 전에). 본편은 구독자가 없어 지나간다.
                     if (RunCombatHooks.HasShockWaveHitTreeListener) RunCombatHooks.NotifyShockWaveHitTree(treeObj.Position);
+
+                    // 마무리 벌목: 체력이 기준 이하인 나무는 남은 체력 전부(치명타 배율 포함)를 받는다.
+                    finalDamage = FinalAttackRule.ApplyToSkillDamage(treeObj, finalDamage, finalAttackHealthRatio, finalAttackDamageMul);
 
                     treeObj.TakeDamage(finalDamage, true, bIsCritical);
                     hitTargets.Add(target);

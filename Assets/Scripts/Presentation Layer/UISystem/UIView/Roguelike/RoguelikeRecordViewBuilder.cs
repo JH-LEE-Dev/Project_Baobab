@@ -101,6 +101,7 @@ public static class RoguelikeRecordViewBuilder
             rankingTimeSeconds = _entry.ClearRankingTime,
             bAbandoned = _entry.bAbandoned,
             recordedAtUtcTicks = _entry.recordedAtUtcTicks,
+            treesFelled = _entry.treesFelled,
             cards = cards,
         };
     }

@@ -38,7 +38,7 @@ using UnityEngine.UI;
 ///   이펙트      UI_RoguelikeCardAura가 등급별 . + x 입자(별가루·불씨·모서리 글린트)를 그린다. 호버로 늘어난다.
 ///   공개        PlayGradeReveal은 앞면이 드러나는 순간 대각 광택 띠가 왼쪽 위에서 오른쪽 아래로 지나가며 일반 프레임이 레어로 바뀌게 한다(0.5초, 와이프). 띠 위에서 입자가 흩날린다.
 ///               Image.color의 R 채널 = 공개 진행도(1이면 완전히 레어), G 채널 = 밝기(어두워짐). 공개가 끝나기 전에는 원래 프레임을 켜 둔다(아직 안 지나간 자리가 보여야 한다).
-/// [뒷면] SetFaceDown(true)면 프레임만 어둡게 보인다(임시 뒷면 - 뒷면 리소스가 생기면 backSprite에 넣는다). 뒷면에서는 등급 층이 보이지 않는다.
+/// [뒷면] SetFaceDown(true)면 프레임 자리에 정식 뒷면 그림(backSprite = Card_Back.png)을 틴트 없이 그린다. backSprite가 비어 있을 때만 기본 프레임을 어둡게(BackTint) 해서 대신 쓴다. 뒷면에서는 등급 층이 보이지 않는다.
 /// </summary>
 public class UI_RoguelikeCard : MonoBehaviour
 {
@@ -97,7 +97,7 @@ public class UI_RoguelikeCard : MonoBehaviour
     [SerializeField] private Sprite rubyBadgeSprite;
     [Tooltip("희귀 등급의 프레임 팔레트 스왑 머티리얼. 순서: 에메랄드(실버), 프리즘, 루비. 비어 있는 칸은 그 등급의 층을 끈다.")]
     [SerializeField] private Material[] gradeFrameMaterials = new Material[3];
-    [Tooltip("뒷면 스프라이트. 비어 있으면 기본 프레임을 어둡게 해서 뒷면으로 쓴다.")]
+    [Tooltip("정식 뒷면 스프라이트(Card_Back.png). 비어 있으면 기본 프레임을 어둡게 해서 뒷면으로 쓴다.")]
     [SerializeField] private Sprite backSprite;
 
     [Header("배치 (프레임 왼쪽 아래 기준 정수 픽셀)")]
@@ -247,7 +247,7 @@ public class UI_RoguelikeCard : MonoBehaviour
         ApplyVisualPosition();
     }
 
-    /// <summary>뒷면(true)이면 프레임만 어둡게 보이고 프로필·아이콘·레벨은 숨긴다.</summary>
+    /// <summary>뒷면(true)이면 뒷면 그림(backSprite, 비어 있으면 어둡게 한 기본 프레임)을 보이고 프로필·아이콘·레벨은 숨긴다.</summary>
     public void SetFaceDown(bool _bFaceDown)
     {
         bFaceDown = _bFaceDown;

@@ -1371,10 +1371,10 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         }
     }
 
-    /// <summary>수관·밑동 그림이 _occludee보다 앞에 그려지면서 _worldPoint를 덮는지(TreeVisualComponent.CoversWorldPoint).</summary>
-    public bool CoversWorldPoint(Vector2 _worldPoint, Renderer _occludee)
+    /// <summary>수관·밑동 그림이 _occludee보다 앞에 그려지면서 _origin + _offsets[i] 중 하나라도 덮는지(TreeVisualComponent.CoversAnyWorldPoint).</summary>
+    public bool CoversAnyWorldPoint(Vector2 _origin, Vector2[] _offsets, Renderer _occludee)
     {
-        return treeVisualComponent != null && treeVisualComponent.CoversWorldPoint(_worldPoint, _occludee);
+        return treeVisualComponent != null && treeVisualComponent.CoversAnyWorldPoint(_origin, _offsets, _occludee);
     }
 
     public void SetOnWaterObjectState(bool _isWaterNearby)

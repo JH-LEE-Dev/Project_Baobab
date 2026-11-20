@@ -23,6 +23,17 @@ public struct DecalreDungeonTypeSignal
     }
 }
 
+// 숲에 들어갈 때(DecalreDungeonTypeSignal 직전) 과열 게이지가 4스테이지가 아닌 숲에서도 필요한지 알린다.
+// "산불 조심"(불씨가 모든 숲에서 나옴)이나 "예열"(모든 숲에서 과열 수치를 받고 시작)을 찍었으면 true다.
+public struct OverheatGaugeRequiredSignal
+{
+    public bool bRequired;
+    public OverheatGaugeRequiredSignal(bool _bRequired)
+    {
+        bRequired = _bRequired;
+    }
+}
+
 // MainMenu → Dungeon 튜토리얼: 카메라 하강 완료 시점에 던전 BGM만 재생하라는 신호.
 // (이 경로에서는 ActivateCharacterSignal이 아직 발행되지 않아 BGM 재생 지점이 없다)
 public struct DungeonBGMStartSignal { }

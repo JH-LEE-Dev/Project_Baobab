@@ -41,10 +41,12 @@ namespace PresentationLayer.VFX
         // 내부 의존성
         private readonly Point[] points = new Point[HistoryCapacity];
         // 빛 꼬리 쿼드 배열은 넘치면 함께 두 배로 늘리므로 readonly가 아니다(QuadCapacity는 처음 크기)
-        private Vector3[] vertices = new Vector3[QuadCapacity * 4];
-        private Color32[] colors = new Color32[QuadCapacity * 4];
-        private Vector2[] uvs = new Vector2[QuadCapacity * 4];
-        private int[] triangles = new int[QuadCapacity * 6];
+        // BuildRibbon이 부를 때마다 정점·색을 [0, 쿼드 수)까지 다시 채워 같은 호출 안에서 메쉬에 올리고(UV·인덱스는 쿼드마다 고정값),
+        // 다른 때는 읽지 않으므로 모든 꼬리가 한 벌을 같이 쓴다(불씨마다 만들면 생성 때마다 약 23KB를 할당한다).
+        private static Vector3[] vertices = new Vector3[QuadCapacity * 4];
+        private static Color32[] colors = new Color32[QuadCapacity * 4];
+        private static Vector2[] uvs = new Vector2[QuadCapacity * 4];
+        private static int[] triangles = new int[QuadCapacity * 6];
         private readonly Color32[] ribbonColors = new Color32[4];
 
         // 상태 변수
@@ -56,13 +58,13 @@ namespace PresentationLayer.VFX
 
         // 퍼블릭 초기화 및 제어 메서드
 
-        public OverheatEmberTrail()
+        static OverheatEmberTrail()
         {
             FillQuadTemplate(0, QuadCapacity);
         }
 
         // [_from, _to) 쿼드의 인덱스와 UV를 채운다(정점 위치·색과 달리 쿼드마다 고정값)
-        private void FillQuadTemplate(int _from, int _to)
+        private static void FillQuadTemplate(int _from, int _to)
         {
             for (int q = _from; q < _to; q++)
             {
@@ -98,7 +100,7 @@ namespace PresentationLayer.VFX
         }
 
         // 빛 꼬리 쿼드가 꽉 차면 원판을 버리지 않고 정점·색·UV·인덱스 배열을 함께 두 배로 늘린다
-        private void GrowQuads()
+        private static void GrowQuads()
         {
             int oldQuads = vertices.Length / 4;
             int newQuads = oldQuads * 2;

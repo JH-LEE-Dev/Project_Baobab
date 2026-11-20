@@ -76,7 +76,8 @@ namespace PresentationLayer.VFX
 
         // 내부 의존성
         private readonly float[] heat = new float[Width * Height];
-        private readonly float[] nextHeat = new float[Width * Height];
+        // 다음 열 격자. StepOnce가 모든 칸을 다시 쓴 뒤 heat로 옮기고 다른 때는 읽지 않으므로 모든 불덩이가 한 벌을 같이 쓴다.
+        private static readonly float[] nextHeat = new float[Width * Height];
 
         // 상태 변수
         private float accumulator;
@@ -93,7 +94,6 @@ namespace PresentationLayer.VFX
         public void Reset(uint _seed)
         {
             System.Array.Clear(heat, 0, heat.Length);
-            System.Array.Clear(nextHeat, 0, nextHeat.Length);
             accumulator = 0.0f;
             randomState = 0u == _seed ? 1u : _seed;
         }

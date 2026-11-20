@@ -795,11 +795,10 @@ public class AttackComponent : PComponent
         runAxeTargetDistSq.Clear();
     }
 
-    // 나무 체력은 데미지 누계로 정확히 판정한다(EHealthComponent.IsHealthRatioAtOrBelow). 그 밖의 체력은 예전 방식 그대로.
+    // 판정은 부메랑·드론·충격파의 마무리 벌목과 같은 함수를 쓴다(FinalAttackRule).
     private static bool IsHealthRatioAtOrBelow(IBaseHealthComponent _health, float _currentHp, float _maxHp, float _ratio)
     {
-        if (_health is IHealthComponent enemyHealth) return enemyHealth.IsHealthRatioAtOrBelow(_ratio);
-        return (_currentHp / _maxHp) <= _ratio;
+        return FinalAttackRule.IsHealthRatioAtOrBelow(_health, _currentHp, _maxHp, _ratio);
     }
 
     private void ProcessAxeHit(IDamageable damageable, Vector3 centerPos, float _damageScale = 1f)

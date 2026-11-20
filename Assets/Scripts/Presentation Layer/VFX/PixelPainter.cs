@@ -72,10 +72,11 @@ namespace PresentationLayer.VFX
 
         // 내부 의존성
         private PixelQuadBuffer buffer;
-        private int[] spacedMinX = new int[SpacedCapacity];
-        private int[] spacedMinY = new int[SpacedCapacity];
-        private int[] spacedMaxX = new int[SpacedCapacity];
-        private int[] spacedMaxY = new int[SpacedCapacity];
+        // SpacedShape를 처음 쓸 때 만든다(쓰지 않는 그리개는 만들지 않는다).
+        private int[] spacedMinX;
+        private int[] spacedMinY;
+        private int[] spacedMaxX;
+        private int[] spacedMaxY;
 
         // 상태 변수
         private int spacedCount;
@@ -703,8 +704,15 @@ namespace PresentationLayer.VFX
                 if (x0 <= spacedMaxX[i] + 1 && spacedMinX[i] - 1 <= x1 && y0 <= spacedMaxY[i] + 1 && spacedMinY[i] - 1 <= y1) return false;
             }
 
+            if (null == spacedMinX)
+            {
+                spacedMinX = new int[SpacedCapacity];
+                spacedMinY = new int[SpacedCapacity];
+                spacedMaxX = new int[SpacedCapacity];
+                spacedMaxY = new int[SpacedCapacity];
+            }
             // 기록 상자가 꽉 차면 입자를 버리지 않고 네 배열을 함께 두 배로 늘린다
-            if (spacedMinX.Length <= spacedCount)
+            else if (spacedMinX.Length <= spacedCount)
             {
                 int grown = spacedMinX.Length * 2;
                 System.Array.Resize(ref spacedMinX, grown);

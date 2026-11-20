@@ -281,9 +281,10 @@ namespace LocalizationQA
         {
             Set(_view, "currentTab", Mathf.Max(0, Array.IndexOf(RecordTabKeys, _key)));
 
-            // 행 · 카드 띠 템플릿은 Initialize에서 꺼 둔다. (에디터에서 띄운 화면은 Initialize가 돌지 않는다)
-            List<GameObject> _templates = new List<GameObject>(3);
-            string[] _templateFields = { "rowTemplate", "stripSlotTemplate", "stripRoot" };
+            // 행 · 카드 띠 칸 견본은 Initialize에서 꺼 둔다. (에디터에서 띄운 화면은 Initialize가 돌지 않는다)
+            // 카드 띠(stripRoot)는 나이테 기록판에서 스포트라이트 안에 늘 있고 RefreshTab이 켜고 끄므로 여기서 숨기지 않는다.
+            List<GameObject> _templates = new List<GameObject>(2);
+            string[] _templateFields = { "rowTemplate", "stripSlotTemplate" };
             for (int i = 0; i < _templateFields.Length; i++)
             {
                 if (Get(_view, _templateFields[i]) is Component _template && null != _template && true == _template.gameObject.activeSelf)

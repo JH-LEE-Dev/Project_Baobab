@@ -217,6 +217,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private int quakeStackPerEmberMin = 2;
     [SerializeField, Tooltip("불씨 하나를 주울 때 오르는 지진 스택 최대값(포함). 불씨 관련 특성 배율과 무관하다")]
     private int quakeStackPerEmberMax = 3;
+    [SerializeField, Tooltip("지진 쿨타임(초, 게임 시간). 지진이 발동한 순간부터 센다. 스택이 가득 차도 쿨타임이 끝나야 발동한다(숲 방문 시작 때는 바로 발동 가능)")]
+    [Min(0f)] private float quakeCooldown = 15f;
     // III(나무) 범위는 화면 전체다. 해상도·화면비마다 보이는 넓이가 달라도 똑같이 맞도록 기준 화면(1920×1080) 크기로 고정한다.
     // I(씨앗) 범위는 진원 둘레 등각 타원(quakeTier1Radius)이고, 바닥 물결·나무 떨림 연출도 그 타원 끝에서 멈춘다(연출 범위 = 피해 범위).
     [SerializeField, Tooltip("흑요 부적 I(씨앗) 지진 범위(바닥 평면 거리 - 세로 차이를 두 배로 편 거리, 가로로 이만큼·세로로 절반). " +
@@ -234,6 +236,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private int obsidianCharmTierThisRun;
     // 지진 스택(0~quakeMaxStack). 숲 방문마다 비운다.
     private int quakeStack;
+    // 남은 지진 쿨타임(초). 발동할 때 quakeCooldown으로 채우고 Update에서 줄인다. 숲 방문마다 0으로 비운다.
+    private float quakeCooldownRemaining;
     // 던전 정리 때 올라간다. 퍼지던 지진이 다음 맵의 나무를 때리지 않게 한다.
     private int quakeVersion = 0;
     // 지진에 쓰러진 나무가 공중으로 튀어 올랐다 터지는 연출(렌더링 전용 - QuakeTreeLaunch). 처음 쓸 때 만든다.
@@ -2472,6 +2476,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         quakeTreeLaunch?.Tick(Time.deltaTime);
+
+        TickQuakeCooldown();
     }
 
     private void OnDestroy()
@@ -2796,12 +2802,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     /// <summary>
     /// "예열" 특성 - 캐릭터가 움직일 수 있게 된 순간(InDungeonSystem의 ActivateCharacterSignal) 과열 수치를 올린다.
-    /// 불씨가 나오는 원정에서만, 원정마다 한 번만 적용한다. 과열 리셋(Character.SetWhereIsCharacter)보다 늦은 시점이라 지워지지 않는다.
+    /// "산불 조심" 없이도 모든 숲에서 원정마다 한 번 적용한다(로그라이크는 스테이지 기믹을 꺼서 예전처럼 적용하지 않는다).
+    /// 과열 리셋(Character.SetWhereIsCharacter)보다 늦은 시점이라 지워지지 않는다.
     /// </summary>
     public void ApplyPreheat()
     {
         if (bPreheatAppliedThisRun || character == null) return;
-        if (itemManager == null || itemManager.emberItemController == null || false == itemManager.emberItemController.bEnabled) return;
+        if (null != runTreeRules && runTreeRules.bDisableStageGimmicks) return;
 
         bPreheatAppliedThisRun = true;
         if (character.PreheatAmount > 0f)
@@ -3544,6 +3551,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     // 불씨를 하나 주울 때마다 지진 스택이 무작위(최소~최대, 둘 다 포함)로 오르고, 최대치에 닿으면 지진이 발동한다.
     // 불씨 관련 특성(획득량·효율 배율)은 곱하지 않는다. 넘친 몫은 버린다(발동하면 0부터 다시 찬다).
+    // 가득 찼어도 쿨타임(quakeCooldown)이 남아 있으면 가득 찬 채로 기다렸다가 쿨타임이 끝나는 순간 발동한다(TickQuakeCooldown).
     private void ChargeQuake()
     {
         int maxStack = GetQuakeMaxStack();
@@ -3556,20 +3564,41 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         QuakeChargeChangedEvent?.Invoke(maxStack, maxStack);
+        if (0f < quakeCooldownRemaining) return;
+
         TriggerQuake(obsidianCharmTierThisRun);
     }
 
-    // 지진 게이지가 가득 찼을 때 지진을 일으킨다. 게이지를 비우고 캐릭터 자리에서 지진(바닥 물결 + 피해)을 시작한다.
+    // 쿨타임을 줄이고, 스택이 가득 찬 채 기다리던 지진을 쿨타임이 끝나면 발동한다.
+    // 귀환 절차 중(경고창·탑승 연출)이나 쓰러진 뒤에는 발동하지 않고 계속 기다린다(그때는 불씨를 주워 발동할 수도 없다).
+    private void TickQuakeCooldown()
+    {
+        if (0f < quakeCooldownRemaining)
+        {
+            quakeCooldownRemaining -= Time.deltaTime;
+            if (0f < quakeCooldownRemaining) return;
+            quakeCooldownRemaining = 0f;
+        }
+
+        if (0 >= obsidianCharmTierThisRun || quakeStack < GetQuakeMaxStack()) return;
+        if (bStarGazeSuspendedByGameEnd || character == null || character.bDead) return;
+
+        TriggerQuake(obsidianCharmTierThisRun);
+    }
+
+    // 지진 게이지가 가득 찼을 때 지진을 일으킨다. 게이지를 비우고 쿨타임을 시작한 뒤 캐릭터 자리에서 지진(바닥 물결 + 피해)을 시작한다.
     private void TriggerQuake(int _tier)
     {
         quakeStack = 0;
+        quakeCooldownRemaining = Mathf.Max(0f, quakeCooldown);
         StartCoroutine(QuakeRoutine(_tier));
     }
 
-    // 숲 방문 초기화. 이전 방문에서 차던 지진 게이지 버프 HUD도 함께 내린다.
+    // 숲 방문 초기화. 이전 방문에서 차던 지진 게이지 버프 HUD도 함께 내린다. 쿨타임도 비워 첫 지진은 가득 차면 바로 발동한다.
     private void ResetQuakeCharge()
     {
         quakeStack = 0;
+        quakeCooldownRemaining = 0f;
         QuakeChargeChangedEvent?.Invoke(0, GetQuakeMaxStack());
     }
 
@@ -3717,6 +3746,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         return points;
     }
 
+    // 지진 피해 탐색에서 나무 위치(transform)와 충돌 격자에 등록된 중심(위치 + 충돌 오프셋, 0.2 이하)의 차이로 넉넉히 잡은 값.
+    private const float QuakeScanPositionSlack = 0.5f;
+
     // 진원 기준 등각 타원 띠(_inner 초과 ~ _outer 이하, 바닥 평면 거리) 가운데 _strikeRect(화면 전체 피해 범위) 안의 나무를 때린다.
     // _range는 앞머리가 가는 거리 전체(쓰러진 나무가 튀어 오르는 높이를 진원 거리로 정할 때만 쓴다).
     // 피해는 나무마다 맞는 순간의 최대 체력 × _maxHpRatio다.
@@ -3729,7 +3761,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         TreeTileWriteBatch.Begin();
         try
         {
-            CollisionSystem.Instance.GetCollidablesInRadius(_origin, _outer, treeLayerForExplosion.value, scanResults);
+            // 이미 지나간 안쪽·띠 바깥·피해 범위 밖 셀은 아래 판정에서 모두 버려지므로 훑지 않는다(남는 나무와 순서는 같다).
+            CollisionSystem.Instance.GetCollidablesInRadiusEllipseBand(_origin, _outer, treeLayerForExplosion.value, scanResults,
+                _strikeRect, _origin, 2f, _inner, _outer, QuakeScanPositionSlack);
 
             float innerSq = _inner < 0f ? -1f : _inner * _inner;
             float outerSq = _outer * _outer;

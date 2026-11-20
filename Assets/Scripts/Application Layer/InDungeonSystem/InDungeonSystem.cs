@@ -357,6 +357,8 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Publish(new DungeonStartSignal(inDungeonObjectManager.GetPlayerStartPos()));
         inDungeonUnitSpawner.SpawnNPC();
 
+        // "산불 조심"·"예열" 중 하나라도 찍었으면 다른 숲에서도 과열 게이지를 띄운다(맵 선언보다 먼저 알려, HUD가 올라올 때 함께 나오게 한다).
+        signalHub.Publish(new OverheatGaugeRequiredSignal(character.bEmberEverywhere || character.PreheatAmount > 0f));
         signalHub.Publish(new DecalreDungeonTypeSignal(currentMapType, currentForestType));
 
         character.gameObject.SetActive(true);

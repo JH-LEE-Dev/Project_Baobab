@@ -394,6 +394,56 @@ public class CollisionSystem : MonoBehaviour
     }
 
     /// <summary>
+    /// GetCollidablesInRadius(_center, _radius, _layerMask)의 결과 가운데, 호출자가 "위치가 _keepRect 밖이거나
+    /// _ellipseCenter 기준 등각 타원 거리(dx, dy × _yScale)가 (_keepInner, _keepOuter] 밖이면 버린다"는 판정으로
+    /// 버릴 것이 확실한 셀만 건너뛴 결과를 담는다. 남는 물체의 내용과 순서는 GetCollidablesInRadius 뒤에 그 판정을 한 것과 같다
+    /// (셀을 같은 x → y 순으로 돌고, 셀마다 같은 체인을 같은 거리식으로 담는다).
+    /// 셀을 건너뛸지는 셀 사각형을 (_positionSlack + 셀 경계 반올림 여유)만큼 넓힌 영역 전체로 판단한다. _positionSlack은 호출자가 판정에 쓰는
+    /// 위치와 격자에 등록된 중심(Position + Offset)의 차이보다 커야 한다. _keepInner가 음수면 안쪽은 건너뛰지 않는다.
+    /// </summary>
+    public void GetCollidablesInRadiusEllipseBand(Vector2 _center, float _radius, int _layerMask, List<IStaticCollidable> _results,
+        Rect _keepRect, Vector2 _ellipseCenter, float _yScale, float _keepInner, float _keepOuter, float _positionSlack)
+    {
+        _results.Clear();
+
+        GetRadiusCellRange(_center, _radius, out int _minX, out int _maxX, out int _minY, out int _maxY);
+
+        // 셀 배정(FloorToInt)이 경계에서 float 오차로 옆 칸이 될 수 있는 만큼의 여유를 더한다.
+        double _slack = (double)_positionSlack + cellSize * 0.01;
+        double _innerSq = _keepInner < 0f ? -1.0 : (double)_keepInner * _keepInner;
+        double _outerSq = (double)_keepOuter * _keepOuter;
+
+        for (int x = _minX; x <= _maxX; x++)
+        {
+            double _x0 = gridOrigin.x + (double)x * cellSize - _slack;
+            double _x1 = gridOrigin.x + (double)(x + 1) * cellSize + _slack;
+            if (_x1 < _keepRect.xMin || _x0 > _keepRect.xMax) continue;
+
+            double _dxNear = _ellipseCenter.x < _x0 ? _x0 - _ellipseCenter.x : (_ellipseCenter.x > _x1 ? _ellipseCenter.x - _x1 : 0.0);
+            double _dxFar = System.Math.Max(System.Math.Abs(_x0 - _ellipseCenter.x), System.Math.Abs(_x1 - _ellipseCenter.x));
+
+            for (int y = _minY; y <= _maxY; y++)
+            {
+                double _y0 = gridOrigin.y + (double)y * cellSize - _slack;
+                double _y1 = gridOrigin.y + (double)(y + 1) * cellSize + _slack;
+                if (_y1 < _keepRect.yMin || _y0 > _keepRect.yMax) continue;
+
+                // 타원 거리는 가로·세로를 따로 늘린 거리라, 사각형 안 최솟값은 중심을 사각형에 붙인 점, 최댓값은 가장 먼 모서리다.
+                double _dyNear = (_ellipseCenter.y < _y0 ? _y0 - _ellipseCenter.y : (_ellipseCenter.y > _y1 ? _ellipseCenter.y - _y1 : 0.0)) * _yScale;
+                if (_dxNear * _dxNear + _dyNear * _dyNear > _outerSq) continue;
+
+                double _dyFar = System.Math.Max(System.Math.Abs(_y0 - _ellipseCenter.y), System.Math.Abs(_y1 - _ellipseCenter.y)) * _yScale;
+                if (_dxFar * _dxFar + _dyFar * _dyFar < _innerSq) continue;
+
+                int _index = x + y * gridCount.x;
+
+                InternalCollect(staticHeads[_index], _center, _radius, _layerMask, _results);
+                InternalCollect(dynamicHeads[_index], _center, _radius, _layerMask, _results);
+            }
+        }
+    }
+
+    /// <summary>
     /// GetCollidablesInRadius를 서로 다른 두 원에 대해 각각 부른 것과 같은 결과(내용과 순서 모두)를,
     /// 겹치는 셀의 체인을 한 번만 훑어서 만든다.
     ///
