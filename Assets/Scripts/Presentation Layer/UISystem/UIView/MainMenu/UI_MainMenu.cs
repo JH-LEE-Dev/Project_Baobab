@@ -34,7 +34,7 @@ public class UI_MainMenu : MonoBehaviour
         [InspectorName("해금 조건 (엔딩 + 모든 특성)")] UnlockCondition,
     }
     [SerializeField, Tooltip("메인 메뉴 로그라이크 버튼 표시 방식. 해금 조건 = 세이브의 로그라이크 해금 여부(모든 특성 최대 레벨로 엔딩을 봤을 때 기록됨)를 따른다.")]
-    private ERoguelikeButtonMode roguelikeButtonMode = ERoguelikeButtonMode.Locked;
+    private ERoguelikeButtonMode roguelikeButtonMode = ERoguelikeButtonMode.AlwaysShow;
 
     [Header("Sub Views")]
     [SerializeField] private UI_MainMenuButton optionButton;
