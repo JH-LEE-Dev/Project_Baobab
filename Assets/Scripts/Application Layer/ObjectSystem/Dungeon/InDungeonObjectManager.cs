@@ -1201,6 +1201,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 원정 종료 상태도 같은 지점에서 끝난다(재도전은 카메라 상승 완료, 귀환은 마을 셋업).
         ResetRunEnd();
 
+        // 쿨타임 대기로 가득 찬 채 기다리던 지진("흑요 부적")을 버린다. 이 매니저는 마을에서도 Update가 돌아서,
+        // 비워 두지 않으면 바로 위 ResetRunEnd로 귀환 대기가 풀린 뒤 쿨타임이 끝나는 순간 마을에서 지진이 발동하고
+        // 용암 숲 분출(용암 나무 사망 폭발 이펙트)이 마을에 터졌다. 다음 숲 방문은 어차피 ResetQuakeCharge로 0부터 시작한다.
+        // HUD는 지금처럼 다음 숲 방문의 ResetQuakeCharge가 내린다(여기서는 이벤트를 보내지 않는다).
+        quakeStack = 0;
+        quakeCooldownRemaining = 0f;
+
         if (offroadVehicle != null)
         {
             offroadVehicle.SetVisualActive(false);
