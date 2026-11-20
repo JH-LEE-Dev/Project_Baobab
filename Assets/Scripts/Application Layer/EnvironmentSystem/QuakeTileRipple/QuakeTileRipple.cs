@@ -402,6 +402,9 @@ public sealed class QuakeTileRipple
     // 진원 꺼짐(slamDepth)이 닿는 칸 수(cells 앞쪽 - 진원 거리 순). 꺼짐이 끝난 뒤 한 번 더 제자리로 맞추면 bSlamSettled.
     private int slamCellCount;
     private bool bSlamSettled;
+    // 이번 Tick의 진원 꺼짐 시간 몫(되튐 코사인·잦아듦 지수). 칸마다 같은 값이라 Tick마다 한 번만 구한다(꺼짐 중에만 유효).
+    private float slamBounce;
+    private float slamDecay;
     // 전조: 떠는 칸 수(cells 앞쪽 - 진원 거리 buildUpRadius 안), 지난 시간, 지금 떨림 차례(바뀔 때만 칸을 다시 쓴다).
     private int buildUpCellCount;
     private bool bBuildingUp;
@@ -603,6 +606,12 @@ public sealed class QuakeTileRipple
         {
             poseEnd = Mathf.Max(nextCell, slamCellCount);
             if (elapsed >= SlamEndSeconds) bSlamSettled = true;
+        }
+
+        if (settings.slamDepth > 0f && elapsed < SlamEndSeconds)
+        {
+            slamBounce = Mathf.Cos(Mathf.PI * elapsed / Mathf.Max(0.02f, settings.slamBounceSeconds));
+            slamDecay = Mathf.Exp(-elapsed / Mathf.Max(0.02f, settings.slamDecaySeconds));
         }
 
         for (int i = doneCell; i < poseEnd; i++)
@@ -1561,8 +1570,7 @@ public sealed class QuakeTileRipple
         if (settings.slamDepth <= 0f || _key >= settings.slamRadius || elapsed >= SlamEndSeconds) return 0f;
 
         float bowl = 0.5f + 0.5f * Mathf.Cos(Mathf.PI * _key / Mathf.Max(0.5f, settings.slamRadius));
-        float bounce = Mathf.Cos(Mathf.PI * elapsed / Mathf.Max(0.02f, settings.slamBounceSeconds));
-        return -settings.slamDepth * bowl * Mathf.Exp(-elapsed / Mathf.Max(0.02f, settings.slamDecaySeconds)) * bounce;
+        return -settings.slamDepth * bowl * slamDecay * slamBounce;
     }
 
     // 진원 꺼짐이 끝나는 시각(물결 시간). 잦아드는 시간의 네 배면 남은 높이가 2% 아래라 0으로 돌려도 픽셀이 튀지 않는다.
