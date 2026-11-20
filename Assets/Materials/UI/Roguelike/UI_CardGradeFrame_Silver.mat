@@ -29,13 +29,20 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _AuroraBandScale: 2.6
+    - _AuroraRainbow: 0
+    - _AuroraSpeed: 0.55
     - _ColorMask: 15
     - _CornerSparkle: 1
     - _GlintDuration: 0.3
     - _GlintPeriod: 3.6
     - _GlintWidth: 5
-    - _HatchStrength: 0.16
+    - _GradeChannels: 1
+    - _HatchStrength: 0
     - _HueSpeed: 0.2
+    - _KeepGold: 1
+    - _LegacyMotion: 0
+    - _PaletteSwap: 1
     - _PulseSpeed: 1.8
     - _Rainbow: 0
     - _RainbowSaturation: 0.6
@@ -49,6 +56,9 @@ Material:
     - _StencilReadMask: 255
     - _StencilWriteMask: 255
     m_Colors:
+    - _AuroraColor0: {r: 0.5, g: 0.55, b: 0.63, a: 1}
+    - _AuroraColor1: {r: 0.74, g: 0.79, b: 0.86, a: 1}
+    - _AuroraMix: {r: 0.22, g: 0.12, b: 0.12, a: 0.06}
     - _ClipRect: {r: -32767, g: -32767, b: 32767, a: 32767}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _LineHalf: {r: 22.5, g: 38, b: 0, a: 0}

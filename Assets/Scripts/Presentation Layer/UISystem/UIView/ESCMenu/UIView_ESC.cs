@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
 /// ESC 메뉴의 최상위 UIView 컴포넌트입니다.
 /// 유니티 기본 Button 대신 UI_EscapeMenu 컴포넌트와 연동하여 애니메이션 및 이벤트를 중계하며,
 /// 옵션 버튼 클릭 시 되감기 역모션 후 UI_Option을 열고, 옵션 창이 닫히면 ESC 메뉴를 다시 복원합니다.
+/// [로그라이크 전용] 도전과제 버튼도 같은 흐름이다 - 되감기 후 도전과제 창(UIView_RoguelikeChallenges)을 열고, 창이 닫히면 ESC 메뉴를 복원합니다.
 /// </summary>
 public class UIView_ESC : UIView
 {
@@ -18,6 +20,8 @@ public class UIView_ESC : UIView
     /// 연출 재생 중 키보드 동작(ESC 등) 잠금/해제 요청 이벤트 (true = 잠금, false = 해제)
     /// </summary>
     public event Action<bool> UIInputLockChangedEvent;
+    // 도전과제 창 표시 통지(true = 열림, false = 닫힘). 카드 선택 화면이 보유 카드 창과 같은 연출로 가라앉고 돌아오게 하는 데 쓴다.
+    public event Action<bool> ChallengesViewVisibilityChangedEvent;
 
     [Header("UI References")]
     [SerializeField] private Transform uiRoot;
@@ -27,6 +31,8 @@ public class UIView_ESC : UIView
     [Header("Sub Views")]
     [SerializeField] private UI_Option optionUI; // 인스펙터 바인딩 지원
     [SerializeField] private UI_WarningPopup warningPopup;
+    [SerializeField, Tooltip("도전과제 창 프리팹(UIView_RoguelikeChallenges). 처음 열 때 이 화면 아래에 만든다.")]
+    private UIView_RoguelikeChallenges roguelikeChallengesPrefab;
 
     [Header("Input Lock Settings")]
     [SerializeField, Tooltip("1. ESC 메뉴 패널 등장 연출 중 키보드 입력 Lock 여부")]
@@ -43,9 +49,19 @@ public class UIView_ESC : UIView
     private Action cachedOptionClosed;
     private Action cachedMenuAppearCompleted;
     private Action cachedReturnFromOptionCompleted;
+    private Action cachedChallengesMenuCloseCompleted;
+    private Action cachedChallengesViewClosed;
+    private Action cachedReturnFromChallengesCompleted;
 
     private bool isClosing = false;
     private bool isOpeningOption = false;
+
+    // [로그라이크 전용] 도전과제 창. 처음 열 때 한 번 만들어 계속 쓴다.
+    private UIView_RoguelikeChallenges roguelikeChallengesView;
+    private readonly List<RoguelikeChallengeViewData> roguelikeChallengeBuffer = new List<RoguelikeChallengeViewData>(24);
+    private bool isOpeningChallenges = false;
+    // ESC 메뉴가 시스템 경로(Hide · HideImmediately)로 닫히며 도전과제 창을 함께 닫는 동안 true. 창이 닫히며 ESC 메뉴를 다시 열지 않게 한다.
+    private bool bSuppressChallengesReturn = false;
 
     // 지금 이 뷰가 입력 잠금을 쥐고 있는지.
     //
@@ -70,7 +86,9 @@ public class UIView_ESC : UIView
     // 실제로 탈진 사망 결과창에서 그 경로가 열려 있었다.
     private EInputMode inputModeBeforeShow = EInputMode.Gameplay;
 
-    public bool IsOptionOpen => (null != optionUI && true == optionUI.gameObject.activeInHierarchy) || true == isOpeningOption;
+    // 옵션 · 도전과제 하위 창이 열려 있거나 열리는 중인가(이름은 코디네이터가 참조하므로 유지).
+    public bool IsOptionOpen => (null != optionUI && true == optionUI.gameObject.activeInHierarchy) || true == isOpeningOption
+        || true == isOpeningChallenges || (null != roguelikeChallengesView && true == roguelikeChallengesView.IsVisible);
 
     public override void Initialize(UIViewContext _ctx)
     {
@@ -131,7 +149,8 @@ public class UIView_ESC : UIView
                 OnGoToMainMenuButtonClicked,
                 OnExitButtonClicked,
                 warningPopup,
-                _ctx?.inputManager);
+                _ctx?.inputManager,
+                OnChallengesButtonClicked);
         }
 
         if (null != optionUI)
@@ -152,12 +171,21 @@ public class UIView_ESC : UIView
         ExitButtonClickedEvent = null;
         SaveGameButtonClickedEvent = null;
         UIInputLockChangedEvent = null;
+        ChallengesViewVisibilityChangedEvent = null;
+
+        if (null != roguelikeChallengesView && null != cachedChallengesViewClosed)
+        {
+            roguelikeChallengesView.HiddenEvent -= cachedChallengesViewClosed;
+        }
 
         cachedCloseProductionFinished = null;
         cachedOptionMenuCloseCompleted = null;
         cachedOptionClosed = null;
         cachedMenuAppearCompleted = null;
         cachedReturnFromOptionCompleted = null;
+        cachedChallengesMenuCloseCompleted = null;
+        cachedChallengesViewClosed = null;
+        cachedReturnFromChallengesCompleted = null;
 
         if (null != warningPopup)
         {
@@ -174,6 +202,7 @@ public class UIView_ESC : UIView
 
         isClosing = false;
         isOpeningOption = false;
+        isOpeningChallenges = false;
 
         // Overlay 루트에는 로그라이크 카드 선택 · 보유 카드 · 결과 창이 ESC보다 나중에 생성되어 형제 순서상 앞에 그려진다.
         // ESC 메뉴는 항상 그 위에 보여야 하므로 열릴 때마다 Overlay 루트의 마지막 형제(= 가장 앞)로 올린다.
@@ -194,7 +223,7 @@ public class UIView_ESC : UIView
 
     public override void Hide()
     {
-        if (false == IsVisible || true == isClosing || true == isOpeningOption) return;
+        if (false == IsVisible || true == isClosing || true == isOpeningOption || true == isOpeningChallenges) return;
 
         // 아래 PlayCloseProduction()이 아직 재생 중인 등장 연출을 죽이면서 그 완료 콜백(=잠금 해제)을
         // 함께 없앤다. 그러기 전에 여기서 확실히 반납한다.
@@ -204,6 +233,8 @@ public class UIView_ESC : UIView
         {
             optionUI.Hide();
         }
+
+        CloseChallengesViewWithoutReturn();
 
         if (null != warningPopup && true == warningPopup.IsActive)
         {
@@ -231,11 +262,14 @@ public class UIView_ESC : UIView
 
         isClosing = false;
         isOpeningOption = false;
+        isOpeningChallenges = false;
 
         if (null != optionUI && true == optionUI.gameObject.activeInHierarchy)
         {
             optionUI.Hide();
         }
+
+        CloseChallengesViewWithoutReturn();
 
         if (null != warningPopup && true == warningPopup.IsActive)
         {
@@ -362,7 +396,7 @@ public class UIView_ESC : UIView
 
     public void CloseOption()
     {
-        if (true == isOpeningOption) return;
+        if (true == isOpeningOption || true == isOpeningChallenges) return;
 
         if (null != optionUI && true == optionUI.gameObject.activeInHierarchy)
         {
@@ -427,6 +461,130 @@ public class UIView_ESC : UIView
         {
             escapeMenu.SelectOptionButton();
         }
+    }
+
+    /// <summary>
+    /// [로그라이크 전용] 도전과제 버튼. 옵션 버튼과 같은 흐름 - ESC 메뉴를 되감기 역모션으로 닫은 뒤 도전과제 창을 연다.
+    /// 창이 닫히면(OnChallengesViewClosed) ESC 메뉴가 다시 등장한다.
+    /// </summary>
+    public void OnChallengesButtonClicked()
+    {
+        if (true == isClosing || true == isOpeningOption || true == isOpeningChallenges || null == roguelikeChallengesPrefab) return;
+
+        isOpeningChallenges = true;
+
+        // ESC 메뉴 -> 도전과제 전환 연출 시작 시 Lock (옵션 전환과 같은 플래그를 쓴다)
+        if (true == lockOnTransitionToOption)
+        {
+            DispatchInputLock(true);
+        }
+
+        if (null != escapeMenu)
+        {
+            if (null == cachedChallengesMenuCloseCompleted)
+                cachedChallengesMenuCloseCompleted = OnChallengesMenuCloseCompleted;
+
+            escapeMenu.PlayCloseProduction(cachedChallengesMenuCloseCompleted);
+        }
+        else
+        {
+            OnChallengesMenuCloseCompleted();
+        }
+    }
+
+    private void OnChallengesMenuCloseCompleted()
+    {
+        isOpeningChallenges = false;
+
+        if (null == roguelikeChallengesView)
+        {
+            roguelikeChallengesView = Instantiate(roguelikeChallengesPrefab, transform);
+            RectTransform _rect = roguelikeChallengesView.transform as RectTransform;
+            if (null != _rect)
+            {
+                _rect.anchorMin = Vector2.zero;
+                _rect.anchorMax = Vector2.one;
+                _rect.offsetMin = Vector2.zero;
+                _rect.offsetMax = Vector2.zero;
+            }
+
+            roguelikeChallengesView.Initialize(viewCtx);
+            // 인게임은 깊이 관리(UIDepthController)가 ESC/B를 받아 이 창을 먼저 닫는다. 창이 직접 ESC를 받지 않는다.
+            roguelikeChallengesView.SetStandaloneClose(false);
+
+            // 닫힘 통지는 HiddenEvent를 쓴다. ClosedEvent는 모달 입력 정리(RoguelikeModalInput.NotifyClosed)보다 먼저 오지만 HiddenEvent는 그 뒤에 와서,
+            // 복귀할 때 입력 모드를 ESC 메뉴 기준(UI)으로 다시 맞출 수 있다.
+            if (null == cachedChallengesViewClosed)
+                cachedChallengesViewClosed = OnChallengesViewClosed;
+
+            roguelikeChallengesView.HiddenEvent += cachedChallengesViewClosed;
+            roguelikeChallengesView.gameObject.SetActive(false);
+        }
+
+        roguelikeChallengesView.transform.SetAsLastSibling();
+
+        // 달성 기록은 달성 순간 저장되므로 열 때마다 파일을 읽으면 런 도중에도 최신 상태다.
+        roguelikeChallengeBuffer.Clear();
+        RoguelikeChallenges.FillViewData(RoguelikeRecordRepository.Load(), viewCtx?.localizationManager, roguelikeChallengeBuffer);
+
+        // 카드 선택 화면이 공용 커서 박스를 숨기는 것이 도전과제 창이 커서를 띄우기 전에 끝나도록 열기 직전에 알린다.
+        ChallengesViewVisibilityChangedEvent?.Invoke(true);
+        roguelikeChallengesView.OpenChallenges(roguelikeChallengeBuffer);
+
+        // 도전과제 창 등장 시작 -> 전환 잠금 해제 (옵션 창 등장 완료 시 Unlock과 같은 시점)
+        if (true == lockOnTransitionToOption)
+        {
+            DispatchInputLock(false);
+        }
+    }
+
+    private void OnChallengesViewClosed()
+    {
+        // 시스템 경로로 닫혀 아래 가드에 걸려도 카드 선택 화면이 덮인 채 남지 않도록 가드보다 먼저 알린다.
+        ChallengesViewVisibilityChangedEvent?.Invoke(false);
+
+        if (false == IsVisible || true == bSuppressChallengesReturn) return;
+
+        // 도전과제 창은 로그라이크 모달이라 닫히며 입력 모드를 "시스템이 원하는 상태"(전투 단계면 Gameplay)로 돌려놓는다.
+        // ESC 메뉴가 떠 있는 동안은 UI 모드여야 하므로 복귀 전에 다시 맞춘다(원래 모드는 ESC 메뉴가 닫힐 때 OnHide가 복원한다).
+        viewCtx?.inputManager?.SetInputMode(EInputMode.UI);
+
+        if (null != escapeMenu)
+        {
+            // 도전과제 -> ESC 메뉴 복귀 연출 시작 시 Lock (옵션 복귀와 같은 플래그를 쓴다)
+            if (true == lockOnTransitionFromOption)
+            {
+                DispatchInputLock(true);
+            }
+
+            if (null == cachedReturnFromChallengesCompleted)
+                cachedReturnFromChallengesCompleted = OnReturnFromChallengesCompleted;
+
+            escapeMenu.PlayOpenProduction(cachedReturnFromChallengesCompleted);
+        }
+    }
+
+    private void OnReturnFromChallengesCompleted()
+    {
+        if (true == lockOnTransitionFromOption)
+        {
+            DispatchInputLock(false);
+        }
+
+        if (null != escapeMenu)
+        {
+            escapeMenu.SelectChallengesButton();
+        }
+    }
+
+    /// <summary>ESC 메뉴가 시스템 경로(Hide · HideImmediately)로 닫힐 때 떠 있는 도전과제 창을 함께 닫는다. 창이 닫히며 ESC 메뉴가 다시 열리지 않게 한다.</summary>
+    private void CloseChallengesViewWithoutReturn()
+    {
+        if (null == roguelikeChallengesView || false == roguelikeChallengesView.IsVisible) return;
+
+        bSuppressChallengesReturn = true;
+        roguelikeChallengesView.Hide();
+        bSuppressChallengesReturn = false;
     }
 
     private void DispatchInputLock(bool _isLocked)

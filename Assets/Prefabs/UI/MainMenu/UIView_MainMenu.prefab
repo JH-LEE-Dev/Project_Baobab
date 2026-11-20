@@ -6818,6 +6818,7 @@ MonoBehaviour:
   roguelikeRecordsPrefab: {fileID: 1145271225478838375, guid: b1626051da8aa744fb17c1a0462a209a, type: 3}
   roguelikeCardDatabase: {fileID: 11400000, guid: 0dd50fc80e34b704fbea1b8f1b0b1ed4, type: 2}
   roguelikeChallengesPrefab: {fileID: 8134248757388896367, guid: 6f2e8a47f6edbdd438ff41d52d88ac01, type: 3}
+  roguelikeCollectionPrefab: {fileID: 6770716823343353152, guid: 5f510277642735d4e9ad99bb90ff4db5, type: 3}
   creditUI: {fileID: 2020525936145470140}
   initialSetupPopup: {fileID: 8489015403838556601}
   bForceShowInitialSetupPopup: 0

@@ -34,6 +34,8 @@ public class UI_EscapeMenu : MonoBehaviour
     [Header("Button Container & Buttons")]
     [SerializeField] private RectTransform buttonContainer;
     [SerializeField] private UI_EscapeMenuButton resumeButton;
+    [Tooltip("[로그라이크 전용] 도전과제 버튼. 로그라이크 런 도중(SetLobbyMode(true))에만 계속하기 바로 아래에 보인다.")]
+    [SerializeField] private UI_EscapeMenuButton challengesButton;
     [SerializeField] private UI_EscapeMenuButton optionButton;
     [SerializeField] private UI_EscapeMenuButton mainMenuButton;
     [SerializeField] private UI_EscapeMenuButton exitButton;
@@ -60,9 +62,16 @@ public class UI_EscapeMenu : MonoBehaviour
     [Tooltip("로그라이크 런 도중 메인메뉴 버튼 자리에 쓰는 '로비' 문구와 확인 문구(기획서 3-7 '런 중도 나가기').")]
     [SerializeField] private int lobbyTextId = 7;
     [SerializeField] private string lobbyWarningKey = "LobbyWarning";
+    [Tooltip("도전과제 버튼 문구 키. 메인메뉴 로그라이크 메뉴의 도전과제와 같은 문구를 쓴다.")]
+    [SerializeField] private string challengesTextKey = "Roguelike_Menu_Challenges";
+
+    // 버튼은 최대 5개(계속하기 · 도전과제 · 옵션 · 로비 · 게임 종료)다. 등장 효과음 콜백 캐시 크기.
+    private const int MaxButtonCount = 5;
 
     // 로그라이크 런 도중에만 true. 본편에서는 아무도 켜지 않아 기존 문구 그대로다.
     private bool bLobbyMode = false;
+    // 활성 버튼 구성(로비 모드)이 바뀌어 버튼 배열 · 내비게이션 · BG 띠를 다시 맞춰야 하면 true.
+    private bool bButtonLayoutDirty = true;
 
     private LocalizationManager localizationManager;
     private Action cachedRefreshLocalizedTexts;
@@ -73,6 +82,7 @@ public class UI_EscapeMenu : MonoBehaviour
     private InputManager inputManager;
 
     private Action onResumeCallback;
+    private Action onChallengesCallback;
     private Action onOptionCallback;
     private Action onMainMenuCallback;
     private Action onExitCallback;
@@ -89,9 +99,15 @@ public class UI_EscapeMenu : MonoBehaviour
     private CanvasGroup menuCanvasGroup;
     private CanvasGroup bgCanvasGroup;
     private CanvasGroup buttonContainerCanvasGroup;
+    // 연출에 쓰는 활성 BG 띠(위 -> 아래). 버튼 수에 맞춰 bgPiecePool에서 필요한 만큼만 담는다.
     private EscapeMenuBGPiece[] bgPieces = Array.Empty<EscapeMenuBGPiece>();
+    // 만들어 둔 모든 BG 띠(위 -> 아래). 모자라면 마지막 띠를 복제해 늘리고, 남는 띠는 꺼 둔다.
+    private readonly List<EscapeMenuBGPiece> bgPiecePool = new List<EscapeMenuBGPiece>(8);
+    private float bgStripHeight;
 
     private UI_EscapeMenuButton[] allButtons = Array.Empty<UI_EscapeMenuButton>();
+    private readonly List<UI_EscapeMenuButton> activeButtonBuffer = new List<UI_EscapeMenuButton>(MaxButtonCount);
+    private readonly TweenCallback[] buttonSoundCallbackCache = new TweenCallback[MaxButtonCount];
     private TweenCallback[] buttonAppearCallbacks = Array.Empty<TweenCallback>();
     private TweenCallback[] buttonAppearSoundCallbacks = Array.Empty<TweenCallback>();
     private TweenCallback[] buttonDisappearCallbacks = Array.Empty<TweenCallback>();
@@ -123,7 +139,7 @@ public class UI_EscapeMenu : MonoBehaviour
 
         CacheCanvasGroups();
         CacheBGPieces();
-        CacheButtons();
+        RebuildButtonLayout();
     }
 
     private void OnDisable()
@@ -147,6 +163,7 @@ public class UI_EscapeMenu : MonoBehaviour
         }
 
         onResumeCallback = null;
+        onChallengesCallback = null;
         onOptionCallback = null;
         onMainMenuCallback = null;
         onExitCallback = null;
@@ -178,10 +195,12 @@ public class UI_EscapeMenu : MonoBehaviour
         Action _onMainMenu,
         Action _onExit,
         UI_WarningPopup _warningPopup = null,
-        InputManager _inputManager = null)
+        InputManager _inputManager = null,
+        Action _onChallenges = null)
     {
         localizationManager = _localizationManager;
         onResumeCallback = _onResume;
+        onChallengesCallback = _onChallenges;
         onOptionCallback = _onOption;
         onMainMenuCallback = _onMainMenu;
         onExitCallback = _onExit;
@@ -219,24 +238,13 @@ public class UI_EscapeMenu : MonoBehaviour
         cachedCancelWarningAndRestoreMenu = CancelWarningAndRestoreMenu;
 
         if (null != resumeButton) resumeButton.Initialize(OnResumeButtonClicked, inputManager);
+        if (null != challengesButton) challengesButton.Initialize(OnChallengesButtonClicked, inputManager);
         if (null != optionButton) optionButton.Initialize(OnOptionButtonClicked, inputManager);
         if (null != mainMenuButton) mainMenuButton.Initialize(OnMainMenuButtonClicked, inputManager);
         if (null != exitButton) exitButton.Initialize(OnExitButtonClicked, inputManager);
 
-        List<UI_EscapeMenuButton> _activeButtons = new List<UI_EscapeMenuButton>();
-        if (null != resumeButton) _activeButtons.Add(resumeButton);
-        if (null != optionButton) _activeButtons.Add(optionButton);
-        if (null != mainMenuButton) _activeButtons.Add(mainMenuButton);
-        if (null != exitButton) _activeButtons.Add(exitButton);
-
-        for (int i = 0; _activeButtons.Count > i; i++)
-        {
-            Navigation _nav = new Navigation();
-            _nav.mode = Navigation.Mode.Explicit;
-            _nav.selectOnUp = _activeButtons[(i - 1 + _activeButtons.Count) % _activeButtons.Count];
-            _nav.selectOnDown = _activeButtons[(i + 1) % _activeButtons.Count];
-            _activeButtons[i].navigation = _nav;
-        }
+        // 활성 버튼 순서대로 배열 · 위아래 순환 내비게이션 · BG 띠를 맞춘다.
+        RebuildButtonLayout();
 
         if (null != localizationManager)
         {
@@ -256,7 +264,138 @@ public class UI_EscapeMenu : MonoBehaviour
         if (bLobbyMode == _bLobbyMode) return;
 
         bLobbyMode = _bLobbyMode;
+        bButtonLayoutDirty = true;
         RefreshLocalizedTexts();
+
+        // 메뉴가 열려 있지도 연출 중이지도 않으면 바로 맞춘다. 그렇지 않으면 다음 PlayOpenProduction이 맞춘다.
+        if (false == isMenuOpen && null == openSequence && null == closeSequence)
+        {
+            RebuildButtonLayout();
+        }
+    }
+
+    /// <summary>
+    /// 지금 모드에서 보여 줄 버튼(계속하기 · [도전과제] · 옵션 · 메인메뉴/로비 · 종료)만 표시 순서대로 모아
+    /// 버튼 배열 · 등장/퇴장/효과음 콜백 · 위아래 순환 내비게이션 · 버튼 영역 위치 · BG 띠를 다시 맞춘다.
+    /// 효과음은 활성 순서 번호로 묶는다(본편 4개 = Dot00~03, 로그라이크 5개 = Dot00~04). 모드가 바뀔 때만 불린다.
+    /// </summary>
+    private void RebuildButtonLayout()
+    {
+        if (null != challengesButton) challengesButton.gameObject.SetActive(bLobbyMode);
+
+        activeButtonBuffer.Clear();
+        if (null != resumeButton) activeButtonBuffer.Add(resumeButton);
+        if (null != challengesButton && true == bLobbyMode) activeButtonBuffer.Add(challengesButton);
+        if (null != optionButton) activeButtonBuffer.Add(optionButton);
+        if (null != mainMenuButton) activeButtonBuffer.Add(mainMenuButton);
+        if (null != exitButton) activeButtonBuffer.Add(exitButton);
+
+        int _count = activeButtonBuffer.Count;
+        allButtons = new UI_EscapeMenuButton[_count];
+        buttonAppearCallbacks = new TweenCallback[_count];
+        buttonAppearSoundCallbacks = new TweenCallback[_count];
+        buttonDisappearCallbacks = new TweenCallback[_count];
+
+        float _contentHeight = 0f;
+        for (int i = 0; _count > i; i++)
+        {
+            UI_EscapeMenuButton _btn = activeButtonBuffer[i];
+            allButtons[i] = _btn;
+            buttonAppearCallbacks[i] = _btn.PlayAppearAnimation;
+            buttonDisappearCallbacks[i] = _btn.PlayDisappearAnimation;
+            buttonAppearSoundCallbacks[i] = GetButtonSoundCallback(i);
+            _contentHeight += _btn.RectTransform.rect.height;
+
+            Navigation _nav = new Navigation();
+            _nav.mode = Navigation.Mode.Explicit;
+            _nav.selectOnUp = activeButtonBuffer[(i - 1 + _count) % _count];
+            _nav.selectOnDown = activeButtonBuffer[(i + 1) % _count];
+            _btn.navigation = _nav;
+        }
+
+        if (null != buttonContainer)
+        {
+            // 버튼이 25px라 개수가 홀수면 위아래 끝이 .5px에 걸린다. 홀수일 때 0.5px 올려 모든 경계를 정수 픽셀에 맞춘다.
+            float _offsetY = 1 == (_count & 1) ? 0.5f : 0f;
+            buttonContainer.anchoredPosition = new Vector2(buttonContainer.anchoredPosition.x, _offsetY);
+
+            // 꺼진 계층에서는 레이아웃이 계산되지 않는다. 그 경우는 켜질 때(PlayOpenProduction) 다시 맞춘다.
+            if (true == gameObject.activeInHierarchy)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(buttonContainer);
+            }
+        }
+
+        LayoutBGStrips(_contentHeight);
+
+        bButtonLayoutDirty = false == gameObject.activeInHierarchy;
+    }
+
+    /// <summary>등장 효과음 콜백. 활성 순서 번호별로 한 번만 만들어 재사용한다.</summary>
+    private TweenCallback GetButtonSoundCallback(int _buttonIndex)
+    {
+        if (0 > _buttonIndex || buttonSoundCallbackCache.Length <= _buttonIndex) return null;
+
+        if (null == buttonSoundCallbackCache[_buttonIndex])
+        {
+            int _index = _buttonIndex;
+            buttonSoundCallbackCache[_buttonIndex] = () => PlayButtonAppearSound(_index);
+        }
+
+        return buttonSoundCallbackCache[_buttonIndex];
+    }
+
+    /// <summary>
+    /// 버튼 영역 높이에 맞춰 BG 띠 수와 위치를 정한다. 띠 높이는 BG_0 기준이다.
+    /// 본편 100px = 5줄(y 40 ~ -40, 기존과 같음), 로그라이크 125px = 7줄(y 60 ~ -60). 모자라면 마지막 띠를 복제해 늘리고 남는 띠는 끈다.
+    /// </summary>
+    private void LayoutBGStrips(float _contentHeight)
+    {
+        if (0 >= bgPiecePool.Count || 0f >= bgStripHeight) return;
+
+        int _count = Mathf.Max(1, Mathf.CeilToInt(_contentHeight / bgStripHeight));
+        while (bgPiecePool.Count < _count)
+        {
+            AppendBGStrip();
+        }
+
+        if (bgPieces.Length != _count)
+        {
+            bgPieces = new EscapeMenuBGPiece[_count];
+        }
+
+        float _topY = (_count - 1) * 0.5f * bgStripHeight;
+        for (int i = 0; bgPiecePool.Count > i; i++)
+        {
+            EscapeMenuBGPiece _piece = bgPiecePool[i];
+            bool _bActive = _count > i;
+            if (_piece.rectTransform.gameObject.activeSelf != _bActive)
+            {
+                _piece.rectTransform.gameObject.SetActive(_bActive);
+            }
+
+            if (false == _bActive) continue;
+
+            bgPieces[i] = _piece;
+            Vector2 _pos = _piece.rectTransform.anchoredPosition;
+            _piece.rectTransform.anchoredPosition = new Vector2(_pos.x, _topY - i * bgStripHeight);
+        }
+    }
+
+    /// <summary>마지막 BG 띠를 복제해 풀 끝에 붙인다(이름 BG_n). 한 번 만들면 계속 재사용한다.</summary>
+    private void AppendBGStrip()
+    {
+        EscapeMenuBGPiece _source = bgPiecePool[bgPiecePool.Count - 1];
+        RectTransform _rect = Instantiate(_source.rectTransform, bgRoot);
+        _rect.name = "BG_" + bgPiecePool.Count;
+
+        bgPiecePool.Add(new EscapeMenuBGPiece
+        {
+            rectTransform = _rect,
+            graphic = _rect.GetComponent<Graphic>(),
+            targetWidth = _source.targetWidth,
+            targetAlpha = _source.targetAlpha
+        });
     }
 
     public void RefreshLocalizedTexts()
@@ -267,6 +406,12 @@ public class UI_EscapeMenu : MonoBehaviour
         {
             string _text = localizationManager.GetText(localizationJsonId, resumeTextId);
             if (false == string.IsNullOrEmpty(_text)) resumeButton.SetText(_text);
+        }
+
+        if (null != challengesButton)
+        {
+            string _text = localizationManager.GetText(challengesTextKey);
+            if (false == string.IsNullOrEmpty(_text)) challengesButton.SetText(_text);
         }
 
         if (null != optionButton)
@@ -291,6 +436,13 @@ public class UI_EscapeMenu : MonoBehaviour
     public void PlayOpenProduction(Action _onComplete = null)
     {
         KillProductionSequences();
+
+        // 로비 모드가 바뀐 뒤 처음 여는 것이면 버튼 구성 · BG 띠를 먼저 맞춘다.
+        if (true == bButtonLayoutDirty)
+        {
+            RebuildButtonLayout();
+        }
+
         isClosing = false;
         isButtonClicked = false;
         LockAllButtonsClick();
@@ -466,6 +618,38 @@ public class UI_EscapeMenu : MonoBehaviour
             else
             {
                 EventSystem.current.SetSelectedGameObject(_targetBtn.gameObject);
+            }
+        }
+    }
+
+    public void SelectChallengesButton()
+    {
+        if (null == inputManager || false == inputManager.IsGamepadMode) return;
+
+        if (null != allButtons)
+        {
+            for (int i = 0; allButtons.Length > i; i++)
+            {
+                UI_EscapeMenuButton _btn = allButtons[i];
+                if (null != _btn && _btn != challengesButton)
+                {
+                    _btn.ForceUnhover();
+                }
+            }
+        }
+
+        if (null != challengesButton && true == challengesButton.gameObject.activeInHierarchy)
+        {
+            if (null != EventSystem.current)
+            {
+                if (EventSystem.current.currentSelectedGameObject == challengesButton.gameObject)
+                {
+                    challengesButton.ForceHover();
+                }
+                else
+                {
+                    EventSystem.current.SetSelectedGameObject(challengesButton.gameObject);
+                }
             }
         }
     }
@@ -723,10 +907,11 @@ public class UI_EscapeMenu : MonoBehaviour
     private void CacheBGPieces()
     {
         bgPieces = Array.Empty<EscapeMenuBGPiece>();
+        bgPiecePool.Clear();
         if (null == bgRoot) return;
 
         RectTransform[] _rects = bgRoot.GetComponentsInChildren<RectTransform>(true);
-        List<EscapeMenuBGPiece> _list = new List<EscapeMenuBGPiece>();
+        List<EscapeMenuBGPiece> _list = bgPiecePool;
 
         for (int i = 0; i < _rects.Length; i++)
         {
@@ -757,6 +942,13 @@ public class UI_EscapeMenu : MonoBehaviour
 
         bgPieces = _list.ToArray();
 
+        // 띠 높이는 BG_0 기준이다(LayoutBGStrips가 버튼 영역 높이에 맞는 띠 수를 정할 때 쓴다).
+        if (bgPieces.Length > 0)
+        {
+            RectTransform _firstRect = bgPieces[0].rectTransform;
+            bgStripHeight = _firstRect.rect.height > 0f ? _firstRect.rect.height : _firstRect.sizeDelta.y;
+        }
+
         if (bgPieces.Length > 0 && bgTargetWidth <= 0f)
         {
             bgTargetWidth = bgPieces[0].targetWidth;
@@ -764,26 +956,6 @@ public class UI_EscapeMenu : MonoBehaviour
         else if (null != bgRoot && bgTargetWidth <= 0f)
         {
             bgTargetWidth = bgRoot.rect.width;
-        }
-    }
-
-    private void CacheButtons()
-    {
-        allButtons = new[] { resumeButton, optionButton, mainMenuButton, exitButton };
-        buttonAppearCallbacks = new TweenCallback[allButtons.Length];
-        buttonAppearSoundCallbacks = new TweenCallback[allButtons.Length];
-        buttonDisappearCallbacks = new TweenCallback[allButtons.Length];
-
-        for (int i = 0; i < allButtons.Length; i++)
-        {
-            int _buttonIndex = i;
-            buttonAppearSoundCallbacks[i] = () => PlayButtonAppearSound(_buttonIndex);
-
-            if (null != allButtons[i])
-            {
-                buttonAppearCallbacks[i] = allButtons[i].PlayAppearAnimation;
-                buttonDisappearCallbacks[i] = allButtons[i].PlayDisappearAnimation;
-            }
         }
     }
 
@@ -802,6 +974,7 @@ public class UI_EscapeMenu : MonoBehaviour
             case 1: Sound.PlayUI(SoundID.MainMenuDot01); break;
             case 2: Sound.PlayUI(SoundID.MainMenuDot02); break;
             case 3: Sound.PlayUI(SoundID.MainMenuDot03); break;
+            case 4: Sound.PlayUI(SoundID.MainMenuDot04); break;
         }
     }
 
@@ -1110,6 +1283,14 @@ public class UI_EscapeMenu : MonoBehaviour
         isButtonClicked = true;
         LockAllButtonsClick();
         if (null != onResumeCallback) onResumeCallback.Invoke();
+    }
+
+    private void OnChallengesButtonClicked()
+    {
+        if (false == isMenuOpen || true == isClosing || true == isButtonClicked) return;
+        isButtonClicked = true;
+        LockAllButtonsClick();
+        if (null != onChallengesCallback) onChallengesCallback.Invoke();
     }
 
     private void OnOptionButtonClicked()

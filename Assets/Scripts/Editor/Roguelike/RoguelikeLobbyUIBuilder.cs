@@ -10,7 +10,8 @@ using UnityEngine.UI;
 ///   LumberBoy/UI/Build Roguelike Result     UIView_RoguelikeResult.prefab  결과 화면(딤 · 판 · 제목 명판 · 웨이브 · 행 · 카드 칸 · 버튼 2개 · 키 안내)
 ///   LumberBoy/UI/Build Roguelike Records    UIView_RoguelikeRecords.prefab 기록 창 - 나이테 기록판(딤 · 판 · 탭 명판(옵션 화살표 · 패드 LB/RB) · 점 3개 · 스포트라이트 · 순위 줄 견본 · 카드 보관함 · 입자 · 뒤로 버튼). 그림은 Graphics/Roguelike/records/
 ///   LumberBoy/UI/Build Roguelike Challenges UIView_RoguelikeChallenges.prefab 도전과제 창(기록 창과 같은 판 · 명판 · 스크롤바 · 뒤로 버튼 + 본문 위쪽 머리줄 30 + 칸 목록 뷰포트 220, 칸 템플릿 1개 = 시안 B 리본). 프리팹이 없으면 새로 만든다.
-///   LumberBoy/UI/Build Roguelike Main Menu  UI_MainMenu.prefab에 로그라이크 하위 메뉴(명판 + 버튼 4개 + 최고 기록판), UIView_MainMenu.prefab에 기록 창 · 도전과제 창 · 카드 DB 연결
+///   LumberBoy/UI/Build Roguelike Collection UIView_RoguelikeCollection.prefab 카드 도감 창(RoguelikeLobbyUIBuilder.Collection.cs)
+///   LumberBoy/UI/Build Roguelike Main Menu  UI_MainMenu.prefab에 로그라이크 하위 메뉴(명판 + 버튼 6개 + 최고 기록판), UIView_MainMenu.prefab에 기록 창 · 도전과제 창 · 카드 도감 창 · 카드 DB 연결
 ///   LumberBoy/UI/Build Roguelike Lobby UI (All)  위 셋을 차례로
 ///
 /// [그림] 보관함과 같은 9-슬라이스(Assets/Graphics/Roguelike/owned/Panel_Book · Panel_Info · Title_Plate), 버튼 바탕은 본편 BasicButton,
@@ -20,7 +21,7 @@ using UnityEngine.UI;
 /// [크기 - 18개 언어 규격] 줄 높이는 언어별 폰트 중 가장 큰 글자 높이 + 위아래 여백 2px 기준이다(시안 v3 측정). 폭은 화면 스크립트가 열릴 때
 ///   18개 언어 최소 폭(Spec*)과 현재 언어 폭 중 큰 값으로 다시 잡는다. 검수는 Localization QA 툴(목록 갱신 → 자동 검사).
 /// </summary>
-public static class RoguelikeLobbyUIBuilder
+public static partial class RoguelikeLobbyUIBuilder
 {
     private const string ResultPrefabPath = "Assets/Prefabs/Roguelike/UI/UIView_RoguelikeResult.prefab";
     private const string RecordsPrefabPath = "Assets/Prefabs/Roguelike/UI/UIView_RoguelikeRecords.prefab";
@@ -80,6 +81,10 @@ public static class RoguelikeLobbyUIBuilder
         public Sprite infoPanel;
         public Sprite infoPanelPrism;
         public Sprite infoPanelRuby;
+        public Sprite cardSlotNormal;
+        public Sprite cardSlotMax;
+        public Sprite cardSlotPrism;
+        public Sprite cardSlotRuby;
         public Sprite[] slotLevels;
         public Sprite slotLevelMax;
         public Sprite slotLevelRuby;
@@ -100,6 +105,7 @@ public static class RoguelikeLobbyUIBuilder
         BuildResult();
         BuildRecords();
         BuildChallenges();
+        BuildCollection();
         BuildMainMenu();
     }
 
@@ -1325,6 +1331,7 @@ public static class RoguelikeLobbyUIBuilder
             UI_MainMenuButton start = CloneMenuButton(sourceButton, menuRoot, "BTN_RL_Start");
             UI_MainMenuButton records = CloneMenuButton(sourceButton, menuRoot, "BTN_RL_Records");
             UI_MainMenuButton challenges = CloneMenuButton(sourceButton, menuRoot, "BTN_RL_Challenges");
+            UI_MainMenuButton collection = CloneMenuButton(sourceButton, menuRoot, "BTN_RL_Collection");
             UI_MainMenuButton option = CloneMenuButton(sourceButton, menuRoot, "BTN_RL_Option");
             UI_MainMenuButton back = CloneMenuButton(sourceButton, menuRoot, "BTN_RL_Back");
 
@@ -1395,6 +1402,7 @@ public static class RoguelikeLobbyUIBuilder
             Set(ms, "roguelikeStartButton", start);
             Set(ms, "roguelikeRecordsButton", records);
             Set(ms, "roguelikeChallengesButton", challenges);
+            Set(ms, "roguelikeCollectionButton", collection);
             Set(ms, "roguelikeOptionButton", option);
             Set(ms, "roguelikeBackButton", back);
             Set(ms, "roguelikeRecordPanel", recordPanel);
@@ -1424,6 +1432,9 @@ public static class RoguelikeLobbyUIBuilder
                 UIView_RoguelikeChallenges challengesPrefab = AssetDatabase.LoadAssetAtPath<UIView_RoguelikeChallenges>(ChallengesPrefabPath);
                 if (null == challengesPrefab) Debug.LogWarning("[RoguelikeLobbyUIBuilder] 도전과제 창 프리팹이 없습니다. Build Roguelike Challenges를 먼저 실행하십시오: " + ChallengesPrefabPath);
                 Set(vs, "roguelikeChallengesPrefab", challengesPrefab);
+                UIView_RoguelikeCollection collectionPrefab = AssetDatabase.LoadAssetAtPath<UIView_RoguelikeCollection>(CollectionPrefabPath);
+                if (null == collectionPrefab) Debug.LogWarning("[RoguelikeLobbyUIBuilder] 카드 도감 창 프리팹이 없습니다. Build Roguelike Collection을 먼저 실행하십시오: " + CollectionPrefabPath);
+                Set(vs, "roguelikeCollectionPrefab", collectionPrefab);
                 Set(vs, "roguelikeCardDatabase", AssetDatabase.LoadAssetAtPath<CardDatabaseSO>(CardDatabasePath));
                 vs.ApplyModifiedPropertiesWithoutUndo();
                 PrefabUtility.SaveAsPrefabAsset(viewRoot, MainMenuViewPrefabPath);
@@ -1457,7 +1468,7 @@ public static class RoguelikeLobbyUIBuilder
     {
         RectTransform slot = TopLeft("SlotTemplate", _parent, UI_RoguelikeCardIconSlot.SlotSize, UI_RoguelikeCardIconSlot.SlotSize);
         Image bg = slot.gameObject.AddComponent<Image>();
-        bg.sprite = _a.infoPanel;
+        bg.sprite = _a.cardSlotNormal;
         bg.type = Image.Type.Sliced;
         bg.raycastTarget = _bSelectable;
 
@@ -1482,8 +1493,8 @@ public static class RoguelikeLobbyUIBuilder
         SetArray(so, "levelSprites", _a.slotLevels);
         Set(so, "maxLevelSprite", _a.slotLevelMax);
         Set(so, "rubyLevelSprite", _a.slotLevelRuby);
-        Set(so, "prismFrameSprite", _a.infoPanelPrism);
-        Set(so, "rubyFrameSprite", _a.infoPanelRuby);
+        Set(so, "prismFrameSprite", _a.cardSlotPrism);
+        Set(so, "rubyFrameSprite", _a.cardSlotRuby);
         Set(so, "selectable", selectable);
         so.ApplyModifiedPropertiesWithoutUndo();
         return comp;
@@ -1601,6 +1612,10 @@ public static class RoguelikeLobbyUIBuilder
             infoPanel = AssetDatabase.LoadAssetAtPath<Sprite>(OwnedDir + "Panel_Info.png"),
             infoPanelPrism = AssetDatabase.LoadAssetAtPath<Sprite>(OwnedDir + "Panel_Info_Prism.png"),
             infoPanelRuby = AssetDatabase.LoadAssetAtPath<Sprite>(OwnedDir + "Panel_Info_Ruby.png"),
+            cardSlotNormal = AssetDatabase.LoadAssetAtPath<Sprite>(OwnedDir + "CardSlot_Normal.png"),
+            cardSlotMax = AssetDatabase.LoadAssetAtPath<Sprite>(OwnedDir + "CardSlot_Max.png"),
+            cardSlotPrism = AssetDatabase.LoadAssetAtPath<Sprite>(OwnedDir + "CardSlot_Prism.png"),
+            cardSlotRuby = AssetDatabase.LoadAssetAtPath<Sprite>(OwnedDir + "CardSlot_Ruby.png"),
             slotLevels = new Sprite[SlotLevelNames.Length],
             slotLevelMax = AssetDatabase.LoadAssetAtPath<Sprite>(OwnedDir + "SlotLevel_MAX.png"),
             slotLevelRuby = AssetDatabase.LoadAssetAtPath<Sprite>(OwnedDir + "SlotLevel_Ruby.png"),
@@ -1620,6 +1635,12 @@ public static class RoguelikeLobbyUIBuilder
         if (null == a.infoPanelPrism || null == a.infoPanelRuby || null == a.slotLevelMax || null == a.slotLevelRuby || 0 <= System.Array.IndexOf(a.slotLevels, null))
         {
             Debug.LogError("[RoguelikeLobbyUIBuilder] 칸 그림(Panel_Info_Prism · Panel_Info_Ruby · SlotLevel_*)을 찾지 못했습니다: " + OwnedDir);
+            return null;
+        }
+
+        if (null == a.cardSlotNormal || null == a.cardSlotMax || null == a.cardSlotPrism || null == a.cardSlotRuby)
+        {
+            Debug.LogError("[RoguelikeLobbyUIBuilder] 카드 칸 그림(CardSlot_Normal · CardSlot_Max · CardSlot_Prism · CardSlot_Ruby)을 찾지 못했습니다: " + OwnedDir);
             return null;
         }
 

@@ -60,6 +60,7 @@ namespace LocalizationQA
                 if (null != (_view = Owner(_target, "UIView_RoguelikeOwnedCards"))) return OwnedCards(_view, _target, _key);
                 if (null != (_view = Owner(_target, "UIView_RoguelikeRecords"))) return Records(_view, _key);
                 if (null != (_view = Owner(_target, "UIView_RoguelikeChallenges"))) return Challenges(_view, _target, _key);
+                if (null != (_view = Owner(_target, "UIView_RoguelikeCollection"))) return Collection(_view);
                 if (null != (_view = Owner(_target, "UI_MainMenu"))) return MainMenu(_view, _target, _key);
             }
             catch (Exception _e)
@@ -386,6 +387,21 @@ namespace LocalizationQA
             };
         }
 
+        // UIView_RoguelikeCollection.OnLanguageChanged: ApplyStaticTexts → LayoutAll (칸 데이터가 없는 에디터 화면이라 분류 머리줄 · 진행도 글자 자리만 새 언어로 다시 잡는다. 제목판 글자는 열 때 RenderPlate가 채운다)
+        private static LocQAHostPlan Collection(MonoBehaviour _view)
+        {
+            return new LocQAHostPlan
+            {
+                ownsText = true,
+                onLanguage = _lang =>
+                {
+                    Set(_view, "localizationManager", Localization(_lang));
+                    Call(_view, "ApplyStaticTexts");
+                    Call(_view, "LayoutAll");
+                },
+            };
+        }
+
         // 형식 문구("{0} 그루 베기")로 만든 문자열인지. {0} 앞뒤가 같으면 같은 문구로 본다.
         private static bool MatchesFormat(string _text, string _format)
         {
@@ -500,7 +516,7 @@ namespace LocalizationQA
         }
 
         // UI_MainMenu.InitializeRoguelikeMenu의 roguelikeButtons 순서
-        private static readonly string[] RoguelikeButtonFields = { "roguelikeStartButton", "roguelikeRecordsButton", "roguelikeChallengesButton", "roguelikeOptionButton", "roguelikeBackButton" };
+        private static readonly string[] RoguelikeButtonFields = { "roguelikeStartButton", "roguelikeRecordsButton", "roguelikeChallengesButton", "roguelikeCollectionButton", "roguelikeOptionButton", "roguelikeBackButton" };
 
         private static void Show(Transform _t, List<GameObject> _shown)
         {

@@ -58,6 +58,9 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     }
 
     private const float IntroIntervalSeconds = 0.13f;
+    // 희귀 카드 등장 연출의 순서(⓪): 일반 카드를 먼저 뒤집고, 마지막 일반 카드 시작 + 0.3초에 희귀 카드를 시작한다. 희귀가 여럿이면 앞 희귀 시작 + 0.9초씩.
+    private const float RareAfterNormalSeconds = 0.3f;
+    private const float RareIntervalSeconds = 0.9f;
     private const float FadeSeconds = 0.3f;
     private const float ExclusiveFadeSeconds = 0.15f;
     private const float MoveSeconds = 0.3f;
@@ -66,6 +69,10 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     private const float ExitSeconds = 0.18f;
     private const float DimFadeSeconds = 0.18f;
     private const int ExitLiftPixels = 4;
+    // 보유 카드 창이 열리는 동안 이 화면이 가라앉으며 사라지는(Out) / 창이 닫히면 떠오르며 돌아오는(In) 연출.
+    private const float CoverOutSeconds = 0.15f;
+    private const float CoverInSeconds = 0.18f;
+    private const int CoverSinkPixels = 6;
     private const float ShakeStepSeconds = 0.03f;
     private const float DisabledButtonAlpha = 0.4f;
     private const float RerollFocusSeconds = 0.1f;
@@ -138,6 +145,9 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     private Action pendingComplete;
     private bool bLocked;
     private bool bRarePurchase;
+    // 희귀 카드의 두근 ~ 유지 시작 사이(그 카드를 뺀 나머지를 어둡게). 없으면 null.
+    private UI_RoguelikeCardSlot rareSpotlightSlot;
+    private float[] introDelays = new float[0];
     private LocalizationManager localizationManager;
     private Action languageChangedHandler;
     private Action rareCaseDoneHandler;
@@ -149,6 +159,10 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     private float contentDefaultY;
     private float exitDuration;
     private float exitBaseY;
+    // 보유 카드 창에 덮이는 상태. coverAmount 0 = 보임, 1 = 완전히 사라짐. coverBaseY = 덮이기 직전 Content 위치.
+    private bool bCovered;
+    private float coverAmount;
+    private float coverBaseY;
     private bool bWaveSet;
     private Action<EInputDeviceType> deviceChangedHandler;
     private readonly System.Text.StringBuilder waveBuilder = new System.Text.StringBuilder(16);
@@ -166,6 +180,12 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 
     /// <summary>이번 선택 단계에서 리롤을 쓸 수 있는가(선택 단계마다 1회).</summary>
     public bool bCanReroll { get; private set; }
+
+    /// <summary>보유 카드 창 · ESC 도전과제 창으로 덮을 수 있는 상태인가(고를 수 있는 상태: 화면이 떠 있고 Idle · 잠금 아님 · 구매/퇴장 연출 아님). 코디네이터의 인벤토리 키 통과 판정에 쓴다.</summary>
+    public bool CanBeCoveredByOwnedCards => true == IsVisible && EPhase.Idle == phase && false == bLocked;
+
+    // 덮이는 중이거나 덮여 있는가(복귀 연출 중 포함).
+    private bool IsCoverActive => true == bCovered || 0f < coverAmount;
 
     /// <summary>
     /// [시스템 연결 지점] 왼쪽 위 WAVE 배지. 언리밋이면 Unlimit-N. 한 번도 부르지 않으면 배지를 숨긴다(기획서 v3.2 C-2).
@@ -276,6 +296,75 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         StartButtonShake(rerollButton);
     }
 
+    /// <summary>
+    /// 보유 카드 창 · ESC 도전과제 창이 열리고 닫히는 동안 이 화면을 가라앉혀 숨기거나(true) 떠올려 되돌린다(false). 코디네이터가 두 창의 열기/닫힘에 맞춰 부른다.
+    /// 덮여 있는 동안에는 입력을 받지 않는다. 복귀가 끝나면 이전 포커스 카드에 커서를 다시 띄우고, 패드 모드이며 이 화면 위에 뜬 UI(ESC 메뉴 등)가 선택을 쥐고 있지 않으면 그 카드를 다시 선택한다(마우스 모드는 선택하지 않는다).
+    /// 고를 수 있는 상태(Idle)가 아니면 덮지 않는다(퇴장 · 구매 연출의 화면 투명도와 겹치지 않게).
+    /// </summary>
+    public void SetCoveredByOwnedCards(bool _bCovered)
+    {
+        if (_bCovered == bCovered) return;
+
+        if (true == _bCovered)
+        {
+            if (false == CanBeCoveredByOwnedCards) return;
+
+            if (0f >= coverAmount) coverBaseY = contentRoot.anchoredPosition.y;
+            bCovered = true;
+            HideCursor();
+            SetCoverInputBlocked(true);
+            return;
+        }
+
+        bCovered = false;
+    }
+
+    /// <summary>덮임 입력 차단. 덮여 있는 동안 화면 안의 카드 · 리롤이 마우스 · 제출을 받지 않게 한다.</summary>
+    private void SetCoverInputBlocked(bool _bBlocked)
+    {
+        if (null == screenGroup) return;
+
+        screenGroup.blocksRaycasts = false == _bBlocked;
+        screenGroup.interactable = false == _bBlocked;
+    }
+
+    /// <summary>덮임 연출 진행(unscaled). Out은 EaseIn(t²)로 가라앉고, In은 같은 곡선을 거꾸로 되짚어 EaseOut으로 떠오른다. Content는 정수 픽셀로만 움직인다.</summary>
+    private void UpdateCover()
+    {
+        if (false == IsCoverActive) return;
+
+        float target = true == bCovered ? 1f : 0f;
+        float duration = true == bCovered ? CoverOutSeconds : CoverInSeconds;
+        coverAmount = Mathf.MoveTowards(coverAmount, target, Time.unscaledDeltaTime / duration);
+
+        float eased = coverAmount * coverAmount;
+        if (null != screenGroup) screenGroup.alpha = 1f - eased;
+        contentRoot.anchoredPosition = new Vector2(contentRoot.anchoredPosition.x, coverBaseY - Mathf.Round(CoverSinkPixels * eased));
+
+        if (true == bCovered || 0f < coverAmount) return;
+
+        // 복귀 완료: 입력을 되살리고 이전 포커스 카드에 커서를 다시 띄운다.
+        // 투명도 · Content 위치는 위에서 이미 원래 값(eased = 0)이 됐다. 이 시점은 bCovered = false, coverAmount = 0이라
+        // ResetCoverState의 가드(IsCoverActive)에 걸리므로 입력 차단만 직접 푼다.
+        SetCoverInputBlocked(false);
+        if (null == focusedRelay) return;
+
+        ShowCursor(focusedRelay);
+        if (null != viewCtx && null != viewCtx.inputManager && true == viewCtx.inputManager.IsGamepadMode && true == CanRestoreSelection(EventSystem.current)) SelectInEventSystem(focusedRelay);
+    }
+
+    /// <summary>덮임 상태를 처음으로 돌린다(투명도 · Content 위치 · 입력). 덮인 채 강제로 닫혀도 다음 열기에 남지 않게 열기/닫기/복귀 완료에서 부른다.</summary>
+    private void ResetCoverState()
+    {
+        if (false == IsCoverActive) return;
+
+        bCovered = false;
+        coverAmount = 0f;
+        if (null != screenGroup) screenGroup.alpha = 1f;
+        contentRoot.anchoredPosition = new Vector2(contentRoot.anchoredPosition.x, coverBaseY);
+        SetCoverInputBlocked(false);
+    }
+
     /// <summary>카드가 처음 제시되거나(_bReroll=false) 리롤로 바뀌었을 때(_bReroll=true) 카드를 다시 놓고 순차로 뒤집는다.</summary>
     protected virtual void OnOffersPresented(bool _bReroll)
     {
@@ -326,6 +415,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         float slotWidth = 0 < slots.Length && null != slots[0] ? ((RectTransform)slots[0].transform).rect.width : 0f;
         float totalWidth = 0 < _count ? _count * slotWidth + (_count - 1) * slotGap : 0f;
         float left = Mathf.Floor(-totalWidth * 0.5f);
+        ComputeIntroDelays(_count);
 
         for (int i = 0; i < slots.Length; i++)
         {
@@ -338,7 +428,53 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 
             slot.Bind(i, offers[i]);
             slot.SetPosition(new Vector2(left + Mathf.Round(i * (slotWidth + slotGap)), cardRowY));
-            slot.PlayIntro(i * IntroIntervalSeconds);
+            slot.PlayIntro(introDelays[i], CardRarity.IsRare(offers[i].displayGrade));
+        }
+    }
+
+    /// <summary>
+    /// 카드별 뒤집기 시작 지연(초). 희귀 카드가 없으면 예전과 같은 i * 0.13초다.
+    /// 희귀 카드가 있으면 일반 카드를 제시 순서대로 0, 0.13, 0.26... 초에 먼저 시작하고(희귀 칸은 건너뜀), 희귀 카드는 마지막 일반 카드 시작 + 0.3초에 시작한다(일반 카드가 없으면 0).
+    /// 희귀가 여러 장이면 두 번째부터 앞 희귀 시작 + 0.9초.
+    /// </summary>
+    private void ComputeIntroDelays(int _count)
+    {
+        if (introDelays.Length < _count) introDelays = new float[_count];
+
+        bool bAnyRare = false;
+        for (int i = 0; i < _count; i++)
+        {
+            if (true == CardRarity.IsRare(offers[i].displayGrade))
+            {
+                bAnyRare = true;
+                break;
+            }
+        }
+
+        if (false == bAnyRare)
+        {
+            for (int i = 0; i < _count; i++) introDelays[i] = i * IntroIntervalSeconds;
+            return;
+        }
+
+        int normalCount = 0;
+        float lastNormal = 0f;
+        for (int i = 0; i < _count; i++)
+        {
+            if (true == CardRarity.IsRare(offers[i].displayGrade)) continue;
+
+            introDelays[i] = normalCount * IntroIntervalSeconds;
+            lastNormal = introDelays[i];
+            normalCount++;
+        }
+
+        float rareStart = 0 < normalCount ? lastNormal + RareAfterNormalSeconds : 0f;
+        for (int i = 0; i < _count; i++)
+        {
+            if (false == CardRarity.IsRare(offers[i].displayGrade)) continue;
+
+            introDelays[i] = rareStart;
+            rareStart += RareIntervalSeconds;
         }
     }
 
@@ -513,6 +649,13 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     /// <summary>카드가 선택 중이면 나머지 카드를 어둡게 해 밝기로도 선택 중인 카드를 구분한다. 리롤 버튼에 포커스가 있거나 포커스가 없으면 모두 원래 밝기.</summary>
     private void ApplyDimming(UI_RoguelikeCardSlot _focusedSlot)
     {
+        // 희귀 카드의 두근 ~ 유지 시작 사이에는 그 카드를 뺀 나머지를 어둡게 한다(희귀 등장 연출의 스포트라이트).
+        if (null != rareSpotlightSlot)
+        {
+            for (int i = 0; i < slotCount; i++) slots[i].SetDimmed(slots[i] != rareSpotlightSlot);
+            return;
+        }
+
         for (int i = 0; i < slotCount; i++) slots[i].SetDimmed(null != _focusedSlot && slots[i] != _focusedSlot);
     }
 
@@ -637,6 +780,14 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         if (null != focusedRelay && _slot.Relay == focusedRelay) ShowCursor(focusedRelay);
     }
 
+    private void OnSlotRareSpotlight(UI_RoguelikeCardSlot _slot, bool _bOn)
+    {
+        if (true == _bOn) rareSpotlightSlot = _slot;
+        else if (_slot == rareSpotlightSlot) rareSpotlightSlot = null;
+
+        ApplyDimming(FindSlotByRelay(focusedRelay));
+    }
+
     private void OnRerollClicked()
     {
         if (bLocked) return;
@@ -749,6 +900,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     /// <summary>퇴장 연출로 바뀐 Content 위치 · 화면 투명도를 원래대로 돌린다. phase를 바꾸기 전에 불러야 한다.</summary>
     private void RestoreExitState()
     {
+        ResetCoverState();
         if (EPhase.Exit == phase) contentRoot.anchoredPosition = new Vector2(contentRoot.anchoredPosition.x, exitBaseY);
         if (null != screenGroup) screenGroup.alpha = 1f;
         RestoreDim();
@@ -918,6 +1070,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
             if (null != padGuideImages[i]) padGuideImages[i].Initialize(input);
         }
 
+        ResetCoverState();
         if (null != screenGroup) screenGroup.alpha = 1f;
         RestoreDim();
         LayoutControls();
@@ -996,6 +1149,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
             slots[i].ClickedEvent += OnSlotClicked;
             slots[i].RevealedEvent += OnSlotRevealed;
             slots[i].LandedEvent += OnSlotLanded;
+            slots[i].RareSpotlightEvent += OnSlotRareSpotlight;
             slots[i].Relay.FocusedEvent += OnRelayFocused;
         }
 
@@ -1008,7 +1162,12 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         base.Update();
 
         UpdatePhase();
+        UpdateCover();
         UpdateButtonShake();
+
+        // 보유 카드 창에 덮여 있는 동안에는 리롤 포커스 갱신과 선택 복구를 하지 않는다(그 창이 선택을 쥐고 있다).
+        if (true == IsCoverActive) return;
+
         UpdateRerollFocus();
 
         // 선택 중이던 것이 비활성화되면 EventSystem 선택이 null이 되어 패드 조작이 먹통이 된다. 포커스가 있으면 되돌려 준다.

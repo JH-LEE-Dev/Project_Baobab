@@ -36,6 +36,7 @@ public sealed class RoguelikeUICoordinator
 
     private Action cardPresentationDoneHandler;
     private Action ownedCardsHiddenHandler;
+    private Action<bool> escChallengesVisibilityHandler;
 
     // 보유 카드 창이 건 일시정지(기획서 5-2 "전투 중에도 확인" → 여는 동안 정지). 열기 직전 timeScale을 기억했다가
     // 닫힐 때 되돌린다. ESC 메뉴는 닫을 때 timeScale을 1로 되돌리므로, 창이 열린 채 ESC 메뉴가 닫히면 Tick이 다시 건다.
@@ -89,6 +90,7 @@ public sealed class RoguelikeUICoordinator
 
         cardPresentationDoneHandler = OnCardPresentationDone;
         ownedCardsHiddenHandler = OnOwnedCardsHidden;
+        escChallengesVisibilityHandler = OnEscChallengesVisibilityChanged;
 
         SubscribeSignals();
         BindEvents();
@@ -226,6 +228,12 @@ public sealed class RoguelikeUICoordinator
             ownedCardsUI.HiddenEvent -= ownedCardsHiddenHandler;
             ownedCardsUI.HiddenEvent += ownedCardsHiddenHandler;
         }
+
+        if (null != escUI)
+        {
+            escUI.ChallengesViewVisibilityChangedEvent -= escChallengesVisibilityHandler;
+            escUI.ChallengesViewVisibilityChangedEvent += escChallengesVisibilityHandler;
+        }
     }
 
     private void ReleaseEvents()
@@ -242,6 +250,15 @@ public sealed class RoguelikeUICoordinator
             resultUI.MainMenuRequestedEvent -= ResultMainMenuRequested;
         }
         if (null != ownedCardsUI) ownedCardsUI.HiddenEvent -= ownedCardsHiddenHandler;
+        if (null != escUI) escUI.ChallengesViewVisibilityChangedEvent -= escChallengesVisibilityHandler;
+    }
+
+    /// <summary>ESC 메뉴에서 연 도전과제 창이 열리고 닫힐 때 카드 선택 화면을 보유 카드 창과 같은 연출로 숨기고 되돌린다.</summary>
+    private void OnEscChallengesVisibilityChanged(bool _bVisible)
+    {
+        if (null == cardSelectUI) return;
+        if (true == _bVisible && false == cardSelectUI.IsVisible) return;
+        cardSelectUI.SetCoveredByOwnedCards(_bVisible);
     }
 
     // // 시스템 → UI
@@ -535,6 +552,14 @@ public sealed class RoguelikeUICoordinator
         return null != ownedCardsUI && true == ownedCardsUI.IsVisible;
     }
 
+    /// <summary>인벤토리 키를 UI 모드에서도 통과시킬지. 보유 카드 창이 떠 있거나(같은 키로 닫기), 카드 선택 화면이 고를 수 있는 상태이고 ESC 메뉴가 닫혀 있을 때(같은 키로 열기).</summary>
+    public bool CanPassOwnedCardsKeyInUIMode()
+    {
+        if (true == IsOwnedCardsOpen()) return true;
+        if (null != escUI && true == escUI.IsVisible) return false;
+        return null != cardSelectUI && true == cardSelectUI.CanBeCoveredByOwnedCards;
+    }
+
     /// <summary>
     /// 보유 카드 창 토글. 로그라이크 세션 동안 인벤토리 키(Tab · 패드 LT)가 RoguelikeSystem의 리다이렉트를 거쳐 부른다.
     /// 닫혀 있으면 열고, 열려 있으면 닫는다(ESC · 패드 B · 딤 클릭의 닫기와 같은 Hide다 - 열리는 중이면 열기가 끝난 뒤, 닫히는 중이면 무시).
@@ -563,10 +588,19 @@ public sealed class RoguelikeUICoordinator
 
         // 여는 동안 일시정지(전투 중에 열어도 스폰·임계치 피해가 진행되지 않는다). 닫히면 OnOwnedCardsHidden이 푼다.
         PauseForOwnedCards();
+
+        // 카드 선택 화면이 떠 있으면 보유 카드 창이 열리는 동안 연출로 가라앉아 사라진다(닫히면 OnOwnedCardsHidden이 되돌린다).
+        if (null != cardSelectUI && true == cardSelectUI.IsVisible) cardSelectUI.SetCoveredByOwnedCards(true);
+
         ownedCardsUI.Show();
     }
 
-    private void OnOwnedCardsHidden() => ResumeFromOwnedCards();
+    private void OnOwnedCardsHidden()
+    {
+        ResumeFromOwnedCards();
+
+        if (null != cardSelectUI) cardSelectUI.SetCoveredByOwnedCards(false);
+    }
 
     /// <summary>
     /// 판이 끝났다(게임오버·포기). 결과 화면과 그 뒤 연출이 멈춘 시간 위에서 돌지 않게 보유 카드 창을 닫는다.
