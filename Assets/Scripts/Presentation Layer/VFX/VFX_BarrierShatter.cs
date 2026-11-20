@@ -126,8 +126,9 @@ namespace PresentationLayer.VFX
 
         private readonly Color32[] toneColors = new Color32[ToneCount];
         private readonly Shard[] shards = new Shard[ShardCapacity];
-        private readonly float[] shardX = new float[ShardCapacity * TableSamples];
-        private readonly float[] shardY = new float[ShardCapacity * TableSamples];
+        // 파편 궤적 표(파편 i의 표본 s는 i * TableSamples + s). 상한(ShardCapacity)이 아니라 이번 재생의 파편 수만큼만 잡고, 모자라면 그때 늘린다.
+        private float[] shardX;
+        private float[] shardY;
         private readonly Dust[] dusts = new Dust[DustCapacity];
         private readonly Streak[] streaks = new Streak[StreakCapacity];
 
@@ -223,6 +224,13 @@ namespace PresentationLayer.VFX
         private void SetupShards()
         {
             shardTotal = Mathf.Min(ShardCapacity, Mathf.RoundToInt(BaseShardCount * density));
+            int tableLength = shardTotal * TableSamples;
+            if (null == shardX || shardX.Length < tableLength)
+            {
+                shardX = new float[tableLength];
+                shardY = new float[tableLength];
+            }
+
             float rx = VFX_TreeBarrier.ShellRadiusXPx;
             float ry = VFX_TreeBarrier.ShellRadiusYPx;
             float cy = VFX_TreeBarrier.ShellCenterYPx;

@@ -118,6 +118,8 @@ namespace PresentationLayer.VFX
 
         // 해체: 바깥(반지름 1)부터 DissolveStart에 시작하고 안쪽은 DissolveSweep만큼 늦게 시작한다. 0.1초마다 팔레트 한 단계 꺼진다.
         private const float DissolveStart = 1.2f;
+        // 바닥 빛 세기가 일정해지는 시각(마법진 0.35초, 아레나 0.3초 중 늦은 쪽) - 이후 해체 시작까지 세기 식의 두 몫이 정확히 0이다
+        private const float GroundPlateauStart = 0.35f;
         private const float DissolveSweep = 0.4f;
 
         // 마법진 픽셀 그룹
@@ -386,6 +388,14 @@ namespace PresentationLayer.VFX
 
         private int groundSortingLayerId;
         private int appliedSoftFirstPart = -1;
+        // 바닥 빛만 남고 세기가 일정한 동안(식은 뒤 ~ 해체 전) 마지막으로 올린 바닥 빛의 입력. 모두 같으면 메쉬에 이미 같은 정점이 있어 다시 쓰고 올리지 않는다.
+        private bool bSoftGroundUploaded;
+        private float softGroundT;
+        private int softGroundCenterX;
+        private int softGroundCenterY;
+        private int softGroundPosXBits;
+        private int softGroundPosYBits;
+        private int softGroundRadius;
 
         // 마지막으로 메쉬 렌더러에 적용한 루트 소팅 값. 같으면 매 프레임 세터 호출을 건너뛴다(OnEnable에서 무효화).
         private int appliedRootSortingLayerID = int.MinValue;
@@ -513,6 +523,7 @@ namespace PresentationLayer.VFX
             skyVertexCount = -1;
             skyHash = 0UL;
             appliedSoftFirstPart = -1;
+            bSoftGroundUploaded = false;
 
             bArena = ENovaShape.ArenaDiamond == shape;
             arenaCenterOffsetPx = true == bArena ? Mathf.RoundToInt(arenaCenterOffsetY * PixelsPerUnit) : 0;
@@ -1626,6 +1637,20 @@ namespace PresentationLayer.VFX
             float groundOx = true == bArena ? centerX * PixelUnit - softPos.x : ox;
             float groundOy = true == bArena ? centerY * PixelUnit - softPos.y : oy;
 
+            // 바닥 빛만 남았고(빛 커튼이 끝난 뒤) 직전 업로드도 바닥 빛만이었으며 둘 다 세기가 일정한 구간(식은 뒤 ~ 해체 시작)이면
+            // 바닥 빛 정점은 같은 입력(중심 픽셀·메쉬 위치·반지름·모양)과 고정 표로만 정해진다. 입력이 모두 같으면 메쉬에 이미 같은 정점이 있다.
+            int groundPosXBits = System.BitConverter.SingleToInt32Bits(softPos.x);
+            int groundPosYBits = System.BitConverter.SingleToInt32Bits(softPos.y);
+            int groundRadius = true == bArena ? arenaA : ringRadiusX;
+            if (PartGround == first && PartGround == appliedSoftFirstPart && true == bSoftGroundUploaded
+                && GroundPlateauStart <= softGroundT && t <= DissolveStart
+                && centerX == softGroundCenterX && centerY == softGroundCenterY
+                && groundPosXBits == softGroundPosXBits && groundPosYBits == softGroundPosYBits && groundRadius == softGroundRadius)
+            {
+                if (false == softMeshRenderer.enabled) softMeshRenderer.enabled = true;
+                return;
+            }
+
             if (PartFlash >= first) UpdateFlash(t, ox, oy);
             if (PartPillar >= first) UpdatePillar(t, ox, oy);
             if (PartCurtain >= first) UpdateCurtain(t, groundOx, groundOy);
@@ -1634,6 +1659,13 @@ namespace PresentationLayer.VFX
             int vertexStart = PartVertexStart[first];
             int indexStart = PartIndexStart[first];
             softMesh.SetVertexBufferData(softScratch, vertexStart, vertexStart, SoftVertexTotal - vertexStart, 0, SoftUploadFlags);
+            bSoftGroundUploaded = true;
+            softGroundT = t;
+            softGroundCenterX = centerX;
+            softGroundCenterY = centerY;
+            softGroundPosXBits = groundPosXBits;
+            softGroundPosYBits = groundPosYBits;
+            softGroundRadius = groundRadius;
 
             // 살아 있는 부분이 바뀔 때만 그릴 인덱스 범위를 다시 정한다
             if (first != appliedSoftFirstPart)

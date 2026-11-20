@@ -95,6 +95,8 @@ public sealed class QuakeObjectRide
     private readonly List<Transform> scaled = new List<Transform>(2);
     private readonly List<Vector3> savedScale = new List<Vector3>(2);
     private static readonly List<Renderer> rendererBuffer = new List<Renderer>(16);
+    // HasLiftedRenderer 전용(rendererBuffer를 훑는 도중에 불리므로 따로 둔다). 부를 때마다 배열을 새로 만들지 않게 재사용한다.
+    private static readonly List<Renderer> liftedCheckBuffer = new List<Renderer>(16);
     private static readonly List<Transform> groundedBuffer = new List<Transform>(4);
     // 바닥에 남는 그림 층(그림자·범위 표시)과 날아가는 아이템 층.
     private static int[] groundLayerIds;
@@ -528,12 +530,19 @@ public sealed class QuakeObjectRide
 
     private static bool HasLiftedRenderer(Transform _transform)
     {
-        Renderer[] renderers = _transform.GetComponentsInChildren<Renderer>(true);
-        for (int i = 0; i < renderers.Length; i++)
+        _transform.GetComponentsInChildren(true, liftedCheckBuffer);
+        bool bLifted = false;
+        for (int i = 0; i < liftedCheckBuffer.Count; i++)
         {
-            if (false == IsGroundLayer(renderers[i].sortingLayerID)) return true;
+            if (false == IsGroundLayer(liftedCheckBuffer[i].sortingLayerID))
+            {
+                bLifted = true;
+                break;
+            }
         }
-        return false;
+
+        liftedCheckBuffer.Clear();
+        return bLifted;
     }
 
     private static void EnsureLayerIds()

@@ -115,6 +115,9 @@ namespace PresentationLayer.VFX
         //내부 의존성
         private MeshFilter meshFilter;
         private MeshRenderer meshRenderer;
+        // meshRenderer의 Transform(자식 오브젝트, 바뀌지 않는다)과 마지막으로 넣은 meshRenderer.enabled. 이 컴포넌트만 켜고 끈다.
+        private Transform meshTransform;
+        private bool bRendererOn;
         private Mesh mesh;
         private readonly Spark[] sparks = new Spark[SparkCapacity];
         private readonly Ember[] embers = new Ember[EmberCapacity];
@@ -143,6 +146,7 @@ namespace PresentationLayer.VFX
 
             meshFilter = child.AddComponent<MeshFilter>();
             meshRenderer = child.AddComponent<MeshRenderer>();
+            meshTransform = child.transform;
 
             mesh = new Mesh { name = "VFX_LaserHit" };
             mesh.MarkDynamic();
@@ -152,6 +156,7 @@ namespace PresentationLayer.VFX
             meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             meshRenderer.receiveShadows = false;
             meshRenderer.enabled = false;
+            bRendererOn = false;
         }
 
         private void Begin()
@@ -360,7 +365,6 @@ namespace PresentationLayer.VFX
             DrawSparks();
             DrawEmbers();
 
-            Transform meshTransform = meshRenderer.transform;
             meshTransform.rotation = Quaternion.identity;
 
             if (null != rootParticleRenderer)
@@ -383,7 +387,11 @@ namespace PresentationLayer.VFX
                 bMeshHasGeometry = false == bEmpty;
             }
 
-            meshRenderer.enabled = true;
+            if (false == bRendererOn)
+            {
+                meshRenderer.enabled = true;
+                bRendererOn = true;
+            }
         }
 
         // 1. 중심 충격: 십자/X자 광선(길이가 도트 단위로 늘었다 줄어든다), 밝은 원판, 점선 충격파 고리
@@ -607,7 +615,11 @@ namespace PresentationLayer.VFX
 
         private void HideRenderer()
         {
-            if (null != meshRenderer) meshRenderer.enabled = false;
+            if (null != meshRenderer && true == bRendererOn)
+            {
+                meshRenderer.enabled = false;
+                bRendererOn = false;
+            }
         }
 
         private void Awake()
@@ -658,7 +670,6 @@ namespace PresentationLayer.VFX
             reach = Mathf.Max(reach, 4.0f + ringRadiusPx + 3.0f);
             reach = Mathf.Max(reach, boltLength * (1.0f + BranchLengthRatio) + Mathf.Abs(boltJitterPx) * 2.0f + 3.0f);
 
-            Transform meshTransform = meshRenderer.transform;
             Vector3 center = meshTransform.position;
             Vector3 scale = meshTransform.lossyScale;
             float unitsPerPixel = PixelUnitSize * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y));

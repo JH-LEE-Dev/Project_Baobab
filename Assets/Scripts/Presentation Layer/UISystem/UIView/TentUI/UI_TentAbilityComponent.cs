@@ -34,6 +34,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     /// </summary>
     private const float MinPadCursorSensitivity = 15f;
     private const float ToolTipSpacing = 32f;
+    private const float ToolTipHorizontalScreenPadding = 8f;
     private const float ToolTipVerticalScreenPadding = 16f;
     private const float UnlockRevealDuration = 0.1f;
     private const float UnlockRevealStaggerDelay = 0.025f;
@@ -1636,16 +1637,36 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         Vector2 nodeCenter = (localBottomLeft + localTopRight) * 0.5f;
         float nodeWidth = Mathf.Abs(localTopRight.x - localBottomLeft.x);
-        bool placeOnRight = ResolveToolTipPlaceOnRight(nodeCenter.x);
-        float direction = placeOnRight ? 1f : -1f;
-
-        float x = nodeCenter.x + direction * ((nodeWidth * 0.5f) + ToolTipSpacing + (toolTipSize.x * 0.5f));
+        float x = FitToolTipXToScreen(nodeCenter.x, nodeWidth, toolTipSize.x);
         float y = ClampToolTipYToScreen(nodeCenter.y, toolTipSize.y);
 
         toolTipInstance.SetAnchoredPosition(new Vector2(x, y));
 
         if (shouldPlayShowMotion)
             toolTipInstance.PlayShowMotion();
+    }
+
+    // 선호하는 쪽에 공간이 없으면 반대쪽을 시도한 뒤 화면 안으로 위치를 제한한다.
+    private float FitToolTipXToScreen(float _nodeX, float _nodeWidth, float _toolTipWidth)
+    {
+        Rect screenRect = abilityBackground.rect;
+        float halfWidth = Mathf.Max(_toolTipWidth, 0f) * 0.5f;
+        float minX = screenRect.xMin + halfWidth + ToolTipHorizontalScreenPadding;
+        float maxX = screenRect.xMax - halfWidth - ToolTipHorizontalScreenPadding;
+        if (minX > maxX)
+            return screenRect.center.x;
+
+        float offset = (_nodeWidth * 0.5f) + ToolTipSpacing + halfWidth;
+        float direction = ResolveToolTipPlaceOnRight(_nodeX) ? 1f : -1f;
+        float preferredX = _nodeX + direction * offset;
+        if (preferredX >= minX && preferredX <= maxX)
+            return preferredX;
+
+        float oppositeX = _nodeX - direction * offset;
+        if (oppositeX >= minX && oppositeX <= maxX)
+            return oppositeX;
+
+        return Mathf.Clamp(preferredX, minX, maxX);
     }
 
     // 툴팁의 실제 높이를 기준으로 화면 상하 경계 안에 위치를 제한한다.

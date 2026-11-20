@@ -149,6 +149,15 @@ public class GameInstaller : MonoBehaviour
     {
         saveManager.LoadGameData();
         townSystem.SetEndingSeen(saveManager.bEndingSeen);
+
+        // 엔딩 도전과제는 엔딩 출발 순간 한 번만 시도되고, 그 뒤로는 CanStartEnding이 막혀 다시 기회가 없다.
+        // 엔딩 시청 기록은 출발 순간 세이브에 남으므로, 그때 해금이 실패했으면(스팀 미실행·통계 미수신·서버 저장 실패)
+        // 이어하기로 이 세이브를 불러올 때 다시 시도한다. 이미 해금됐으면 아무 일도 없다.
+        if (true == saveManager.bEndingSeen)
+        {
+            SteamAchievementService.Unlock(AchievementID.EndingStarted);
+        }
+
         // 세이브 로드가 소지금을 덮어쓰므로, 캐릭터 프리팹의 디버그 소지금은 로드 후 한 번 더 적용해야 한다.
         unitSystem.ApplyDebugStartMoney();
         gameplayUIInstaller.Refresh();

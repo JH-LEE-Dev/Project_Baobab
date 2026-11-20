@@ -1853,18 +1853,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         environmentProvider.tilemapDataProvider.RestoreDecoTileForTree(treePos);
         environmentProvider.densityProvider.UpdateTreeCnt(false);
 
-        float dropMultiplier = 1f;
-        if (treeGradeStatMultiplierDatas != null)
-        {
-            for (int i = 0; i < treeGradeStatMultiplierDatas.Count; i++)
-            {
-                if (treeGradeStatMultiplierDatas[i].treeGrade == _treeObj.treeData.grade)
-                {
-                    dropMultiplier = treeGradeStatMultiplierDatas[i].dropMultiplier;
-                    break;
-                }
-            }
-        }
+        float dropMultiplier = GetTreeGradeDropMultiplier(_treeObj.treeData.grade);
 
         // 보석 단계를 거쳐 쓰러진 나무는 원목 대신 원석을 떨어뜨린다.
         // (원석은 인벤토리가 아니라 재화로 들어가므로, 원목 드랍과 배타적으로 처리한다)
@@ -1884,21 +1873,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         {
             itemManager.SpawnGemOre(_treeObj, dropMultiplier);
         }
-        else if (_treeObj.bIsGemStage)
-        {
-            // 보석 나무 원목은 단계가 높을수록 더 높이 튄다(비행 시간·착지 자리는 그대로). 다이아 이상은 튄 원목마다 잔광 꼬리가 붙는다.
-            int gemStage = _treeObj.gemStage;
-            gemLaunchedLogs.Clear();
-            itemManager.SpawnLogItem(_treeObj, dropMultiplier, GetGemLogHeightScale(gemStage), 2 <= gemStage ? gemLaunchedLogs : null);
-            if (0 < gemLaunchedLogs.Count)
-            {
-                inDungeonVFXManager?.PlayGemLogTrails(gemLaunchedLogs, gemStage);
-                gemLaunchedLogs.Clear();
-            }
-        }
         else
         {
-            itemManager.SpawnLogItem(_treeObj, dropMultiplier);
+            SpawnTreeStageLogs(_treeObj, _treeObj.gemStage, _treeObj.treeData.grade, dropMultiplier);
         }
 
         // 4스테이지 불씨 - 쓰러진 나무마다 튀어나온다(희귀나무는 등급이 바뀔 때도, OnTreeGemTransformed).
@@ -2347,9 +2324,47 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         return 1f;
     }
 
+    // 나무 등급별 원목 드랍 배율(treeGradeStatMultiplierDatas에 없는 등급은 1배).
+    private float GetTreeGradeDropMultiplier(TreeGrade _grade)
+    {
+        if (treeGradeStatMultiplierDatas != null)
+        {
+            for (int i = 0; i < treeGradeStatMultiplierDatas.Count; i++)
+            {
+                if (treeGradeStatMultiplierDatas[i].treeGrade == _grade)
+                {
+                    return treeGradeStatMultiplierDatas[i].dropMultiplier;
+                }
+            }
+        }
+
+        return 1f;
+    }
+
+    // 보석 단계 _gemStage(0 일반, 1 황금, 2 다이아, 3 무지개)의 나무가 쓰러질 때의 원목을 _grade 등급으로 떨어뜨린다.
+    // 쓰러질 때(OnTreeDead)와 다음 단계로 변할 때(OnTreeGemTransformed, 직전 단계 원목) 모두 이 길로 같은 원목을 뿌린다.
+    private void SpawnTreeStageLogs(TreeObj _treeObj, int _gemStage, TreeGrade _grade, float _dropMultiplier)
+    {
+        if (0 < _gemStage)
+        {
+            // 보석 나무 원목은 단계가 높을수록 더 높이 튄다(비행 시간·착지 자리는 그대로). 다이아 이상은 튄 원목마다 잔광 꼬리가 붙는다.
+            gemLaunchedLogs.Clear();
+            itemManager.SpawnLogItem(_treeObj, _dropMultiplier, GetGemLogHeightScale(_gemStage), 2 <= _gemStage ? gemLaunchedLogs : null, _grade);
+            if (0 < gemLaunchedLogs.Count)
+            {
+                inDungeonVFXManager?.PlayGemLogTrails(gemLaunchedLogs, _gemStage);
+                gemLaunchedLogs.Clear();
+            }
+        }
+        else
+        {
+            itemManager.SpawnLogItem(_treeObj, _dropMultiplier, 1f, null, _grade);
+        }
+    }
+
     // 나무가 보석 단계(황금/다이아/무지개)로 변할 때마다 전용 이펙트를 재생한다.
     // 변환 순간의 타격감은 예전엔 일반 사망 VFX를 함께 터뜨려 냈는데, 지금은 그 자리에 껍질이 갈라지며 보석 빛이 새어 나오는
-    // 단계별 연출(PlayGemTransformBurst)을 쓴다(실제로 죽는 것이 아니므로 드랍/킬 처리는 일어나지 않는다).
+    // 단계별 연출(PlayGemTransformBurst)을 쓴다(실제로 죽는 것이 아니므로 킬 처리는 일어나지 않는다).
     private void OnTreeGemTransformed(TreeObj _treeObj)
     {
         if (_treeObj == null) return;
@@ -2360,6 +2375,18 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             inDungeonVFXManager.PrewarmTreeDeadVFX(_treeObj.treeData.type, _treeObj.treeData.grade);
             inDungeonVFXManager.PlayGemTransformBurst(_treeObj.treeVisualComponent, _treeObj.gemStage);
             inDungeonVFXManager.PlayTreeTransformVFX(_treeObj.treeVisualComponent, _treeObj.gemStage);
+        }
+
+        // 변하기 직전 단계의 벌목 원목을 그 단계 나무가 쓰러질 때와 똑같이 떨어뜨린다
+        // (일반→황금이면 일반 원목, 황금→다이아면 황금 원목, 다이아→프리즘이면 다이아 원목. 마지막 단계 원목은 OnTreeDead).
+        // 이 이벤트 시점에는 gemStage가 이미 한 단계 올라가 있다. 단계 s의 원목 등급은 Normal + s다(TreeObj.GetMaxGemStage와 같은 대응).
+        // [로그라이크] 쓰러질 때와 마찬가지로 원목을 떨어뜨리지 않는다(본편은 runTreeRules가 null).
+        bool bSuppressDrops = null != runTreeRules && runTreeRules.bSuppressItemDrops;
+        int prevGemStage = _treeObj.gemStage - 1;
+        if (false == bSuppressDrops && itemManager != null && 0 <= prevGemStage)
+        {
+            TreeGrade prevGrade = (TreeGrade)((int)TreeGrade.Normal + prevGemStage);
+            SpawnTreeStageLogs(_treeObj, prevGemStage, prevGrade, GetTreeGradeDropMultiplier(prevGrade));
         }
 
         // 4스테이지 불씨 - 희귀나무는 등급이 바뀔 때마다 불씨를 떨어뜨린다(마지막 파괴는 OnTreeDead).

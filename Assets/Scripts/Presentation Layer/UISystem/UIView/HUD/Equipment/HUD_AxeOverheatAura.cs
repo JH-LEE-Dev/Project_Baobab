@@ -143,6 +143,18 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             public int[] distance;
             public int[] edgeCells;
             public int edgeCellCount;
+
+            // 칸마다 다시 계산하던 값의 캐시(처음 쓸 때 만든다). 같은 식을 같은 입력으로 계산한 값을 그대로 담는다.
+            // 불꽃 노이즈 n1·n2는 칸과 일렁임 시각(flickerTime)·스크롤 속도에만 달려 있어, 같은 일렁임 프레임 동안 다시 쓴다(noiseStamp == noiseEpoch인 칸만 유효).
+            public float[] noise1;
+            public float[] noise2;
+            public int[] noiseStamp;
+            public int noiseEpoch;
+            public float noiseFlickerTime;
+            public float noiseScroll;
+            // 불꽃 색 위상의 각도 값은 칸과 몸 중심(높이의 절반, 격자마다 고정)에만 달려 있다.
+            public float[] angle01;
+            public bool[] angleReady;
         }
 
         // 팔레트: 캐릭터 아우라와 같은 파랑 계열 3색 + 흰색, 포인트는 보라와 청록
@@ -776,6 +788,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
             AuraFrame frame = CreateAuraFrame(_flickerTime, _flickerFrame, _intensity);
             int halfWidth = field.width / 2;
+            PrepareNoiseCache(_flickerTime);
 
             for (int gy = 0; gy < field.height; gy++)
             {
@@ -805,6 +818,34 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                     }
                 }
             }
+        }
+
+        // 칸별 캐시 배열을 처음 쓸 때 만들고, 일렁임 시각이나 스크롤 속도가 바뀌면 노이즈 캐시를 통째로 무효로 만든다(세대 번호만 올린다).
+        private void PrepareNoiseCache(float _flickerTime)
+        {
+            if (null == field.noiseStamp)
+            {
+                int size = field.width * field.height;
+                field.noise1 = new float[size];
+                field.noise2 = new float[size];
+                field.noiseStamp = new int[size];
+                field.angle01 = new float[size];
+                field.angleReady = new bool[size];
+                field.noiseEpoch = 0;
+            }
+
+            if (0 != field.noiseEpoch && field.noiseFlickerTime == _flickerTime && field.noiseScroll == noiseScrollSpeed)
+                return;
+
+            if (int.MaxValue == field.noiseEpoch)
+            {
+                System.Array.Clear(field.noiseStamp, 0, field.noiseStamp.Length);
+                field.noiseEpoch = 0;
+            }
+
+            field.noiseEpoch++;
+            field.noiseFlickerTime = _flickerTime;
+            field.noiseScroll = noiseScrollSpeed;
         }
 
         private AuraFrame CreateAuraFrame(float _flickerTime, int _flickerFrame, float _intensity)
@@ -860,8 +901,21 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             int cx = _gx - _halfWidth;
             int cy = _gy;
 
-            float n1 = ValueNoise(cx * 0.34f, cy * 0.21f - _frame.flickerTime * noiseScrollSpeed);
-            float n2 = ValueNoise(cx * 0.75f + 31.0f, cy * 0.46f - _frame.flickerTime * noiseScrollSpeed * 2.0f);
+            float n1;
+            float n2;
+            if (field.noiseEpoch == field.noiseStamp[index])
+            {
+                n1 = field.noise1[index];
+                n2 = field.noise2[index];
+            }
+            else
+            {
+                n1 = ValueNoise(cx * 0.34f, cy * 0.21f - _frame.flickerTime * noiseScrollSpeed);
+                n2 = ValueNoise(cx * 0.75f + 31.0f, cy * 0.46f - _frame.flickerTime * noiseScrollSpeed * 2.0f);
+                field.noise1[index] = n1;
+                field.noise2[index] = n2;
+                field.noiseStamp[index] = field.noiseEpoch;
+            }
 
             // 가열은 박동 때 링/불꽃이 조금 두꺼워지고, 불꽃 높이가 단계 진행도를 따라 오른다
             bool bHeating = StageHeating == stage;
@@ -961,7 +1015,17 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             bool bDissolved = r2 > dissolve && Hash01(_index, _frame.flickerFrame) < (r2 - dissolve) / (1.0f - dissolve) * 1.1f;
             if (true == bDissolved) return false;
 
-            float angle01 = Mathf.Atan2(_cy - bodyCenterYPx, _cx) / TwoPi + 0.5f;
+            float angle01;
+            if (true == field.angleReady[_index])
+            {
+                angle01 = field.angle01[_index];
+            }
+            else
+            {
+                angle01 = Mathf.Atan2(_cy - bodyCenterYPx, _cx) / TwoPi + 0.5f;
+                field.angle01[_index] = angle01;
+                field.angleReady[_index] = true;
+            }
             float phaseValue = angle01 * gradientCycles + _frame.colorTime + (_n2 - 0.5f) * gradientNoise * 2.0f;
 
             float glow;

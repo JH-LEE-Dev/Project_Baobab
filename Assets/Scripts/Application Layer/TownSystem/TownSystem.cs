@@ -625,6 +625,9 @@ public class TownSystem : MonoBehaviour
 
         bEndingDeparture = true;
 
+        // 소풍 바구니로 바꾼 뒤 첫 차량 탑승 = 엔딩 연출의 시작.
+        SteamAchievementService.Unlock(AchievementID.EndingStarted);
+
         // 엔딩 출발은 되돌릴 수 없는 연출이라 ESC(메인메뉴 이탈 등)를 막는다. 엔딩 씬 → 메인메뉴에서 풀린다.
         inputManager.PauseESCKey(true);
 
