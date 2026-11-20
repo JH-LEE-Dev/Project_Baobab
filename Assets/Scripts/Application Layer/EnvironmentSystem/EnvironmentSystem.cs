@@ -298,7 +298,13 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 
         // 히트스톱·섬광을 걸고(섬광이 전조 어두워짐을 덮는다), 여진·충격파 왜곡을 이어 간다. 앞머리를 따라 흙먼지가 일고 위에서 잔돌이 떨어진다.
         quakeImpact.Play(quakeCenter, quakeStrikeRadius, bQuakeHitStop, quakeFlashScale);
-        if (bQuakeHitStop) quakeCharge.Burst(quakeCenter, quakeRipple);
+        // 나무 지진(히트스톱이 걸리는 지진)이면 진원에서 열기 물결(불 고리 + 닿는 나무가 달아오름)도 함께 퍼진다.
+        // 물결은 게임 시간으로 진행하므로 히트스톱 동안은 진원에 머물렀다가 풀리면서 퍼져 나간다.
+        if (bQuakeHitStop)
+        {
+            quakeCharge.Burst(quakeCenter, quakeRipple);
+            StageOverheatBurst.Play(quakeCenter);
+        }
         PostProcessSettingsApplier.Instance?.StopQuakeDarken();
         quakeDebris.Play(quakeRipple);
 

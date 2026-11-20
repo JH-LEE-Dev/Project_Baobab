@@ -1302,7 +1302,7 @@ namespace Diagnostics.VfxGolden
     // ─────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// InDungeonObjectManager의 과열 최대 순간: StageOverheatBurst.Play(캐릭터 발밑). 처음 쓸 때 만들어지는 "[StageOverheatBurst]" 오브젝트를
+    /// 나무 지진이 터지는 순간(EnvironmentSystem.PlayQuakeFeedback): StageOverheatBurst.Play(진원). 처음 쓸 때 만들어지는 "[StageOverheatBurst]" 오브젝트를
     /// 해시·정리 대상에 올린다(정리되면 OnDestroy가 전역값을 0으로 돌린다). 로그라이크 모드(GameModeContext.IsRoguelike)면 아무것도 그리지 않는다.
     /// </summary>
     public class SkillStageOverheatBurstCase : VfxGoldenCase

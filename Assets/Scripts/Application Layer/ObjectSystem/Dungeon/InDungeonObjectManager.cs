@@ -2822,14 +2822,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private const float OverheatFullSoundVolume = 1f;
     private const float OverheatFullSoundPitch = 0.72f;
 
-    // 과열이 가득 찬 순간: 캐릭터 발밑에서 열기 물결이 퍼지고(불 고리 + 닿는 나무가 달아오름), 화면이 흔들리고,
-    // 패드가 울리고, 나무 열기 폭발음을 낮게 깔아 "쿵" 하고 터진다. 전부 연출이며 게임 동작은 바꾸지 않는다.
+    // 과열이 가득 찬 순간: 화면이 흔들리고, 패드가 울리고, 나무 열기 폭발음을 낮게 깔아 "쿵" 하고 터진다.
+    // 전부 연출이며 게임 동작은 바꾸지 않는다. 열기 물결(StageOverheatBurst)은 나무 지진이 터질 때 낸다(EnvironmentSystem.PlayQuakeFeedback).
     private void PlayOverheatFullMoment()
     {
         if (character == null) return;
 
         Vector3 center = character.transform.position;
-        StageOverheatBurst.Play(center);
         CameraMoveController.Instance?.ShakeCamera(OverheatFullShakeIntensity, OverheatFullShakeSeconds);
         Rumble.Play(EHapticEvent.OverheatFull);
         Sound.Play(SoundID.TreeFireExplosion, center, OverheatFullSoundVolume, false, OverheatFullSoundPitch);
