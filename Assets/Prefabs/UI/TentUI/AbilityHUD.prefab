@@ -886,7 +886,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   fillImage: {fileID: 7556093624110330012}
   fontMakerForBar: {fileID: 2667846567939392531}
-  maxExperienceSprite: {fileID: 2067159354293362995, guid: 11986ca14e06ac74c8abfd8024abe6e1, type: 3}
+  maxExperienceSprite: {fileID: 21300000, guid: 11986ca14e06ac74c8abfd8024abe6e1, type: 3}
   fontMakerForFlowerStack: {fileID: 3869543332551439926}
   barFontMotionPlayer: {fileID: 7818384371705231086}
   levelUpSpriteEffectRoot: {fileID: 3009689682171308371}
