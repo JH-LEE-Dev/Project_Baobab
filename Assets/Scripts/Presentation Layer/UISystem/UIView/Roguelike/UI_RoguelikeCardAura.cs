@@ -133,6 +133,12 @@ public class UI_RoguelikeCardAura : MaskableGraphic
         if (previous < 1f && 1f <= revealProgress && grade >= 0) EmitBurst();
     }
 
+    /// <summary>공개를 와이프 없이 끝난 상태로 둔다(희귀 등장 연출). 진행 중이던 값을 1로 맞춰 두므로 이어지는 SetRevealProgress(1)이 버스트·띠 스파크를 내지 않는다.</summary>
+    public void SetRevealedImmediate()
+    {
+        revealProgress = 1f;
+    }
+
     /// <summary>입자·진행 상태를 모두 지운다(카드가 새로 채워질 때·꺼질 때).</summary>
     public void Clear()
     {

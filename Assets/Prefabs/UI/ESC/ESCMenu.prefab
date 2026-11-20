@@ -61,6 +61,7 @@ MonoBehaviour:
   escapeMenu: {fileID: 8248091534663188830}
   optionUI: {fileID: 2807482553132972473}
   warningPopup: {fileID: 0}
+  roguelikeChallengesPrefab: {fileID: 8134248757388896367, guid: 6f2e8a47f6edbdd438ff41d52d88ac01, type: 3}
   lockOnMenuAppear: 1
   lockOnTransitionToOption: 1
   lockOnTransitionFromOption: 1

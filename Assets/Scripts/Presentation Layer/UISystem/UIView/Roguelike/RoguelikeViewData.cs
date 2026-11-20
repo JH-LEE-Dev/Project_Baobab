@@ -89,3 +89,20 @@ public struct RoguelikeRecordViewData
     public int treesFelled;
     public List<RoguelikeOwnedCardViewData> cards;
 }
+
+/// <summary>카드 도감의 칸 한 장. 도감 순서(UIView_RoguelikeCollection.CollectionCardIds)대로 RoguelikeCollectionViewBuilder가 만든다.</summary>
+public struct RoguelikeCollectionViewData
+{
+    public string cardId;
+    public string nameKey;
+    public string descKey;
+    public Sprite icon;
+    public ECardKind kind;
+    /// <summary>한 번이라도 고른 카드(앞면). false면 뒷면 칸이다(히든 조합 규칙: 이름 · 재료를 보이지 않는다).</summary>
+    public bool bFound;
+    /// <summary>한 번이라도 MAX를 찍은 레벨 있는 카드(금 칸 + MAX 배지).</summary>
+    public bool bMaxed;
+    /// <summary>지난번 도감을 닫은 뒤 새로 고른 카드(뒤집힘 연출 + NEW 배지). Application Layer 필드(G-10) 전에는 항상 false다.</summary>
+    public bool bNew;
+}
+

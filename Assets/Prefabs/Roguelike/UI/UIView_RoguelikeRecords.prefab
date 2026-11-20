@@ -388,7 +388,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -463,8 +463,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 7541202784903846919}
 --- !u!225 &643305415000690339
 CanvasGroup:
@@ -980,7 +980,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1055,8 +1055,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 3729577435377757576}
 --- !u!225 &2495022849368907646
 CanvasGroup:
@@ -1711,7 +1711,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1786,8 +1786,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 1964904224727852126}
 --- !u!225 &7244806197892514689
 CanvasGroup:
@@ -6318,7 +6318,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -6393,8 +6393,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 663028428325053224}
 --- !u!225 &3159968144296150456
 CanvasGroup:
@@ -7453,7 +7453,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -7528,8 +7528,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 5856528393016597083}
 --- !u!225 &7110112136786920413
 CanvasGroup:
@@ -7910,7 +7910,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -7985,8 +7985,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 4156857816693982423}
 --- !u!225 &7337638565635692663
 CanvasGroup:
@@ -8983,7 +8983,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -9058,8 +9058,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 1696357357180710213}
 --- !u!225 &3500504270422901508
 CanvasGroup:
@@ -9293,7 +9293,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -9368,8 +9368,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 1095110507575492394}
 --- !u!225 &6133165122606446665
 CanvasGroup:
@@ -9744,7 +9744,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -9819,8 +9819,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 3290188970894090974}
 --- !u!225 &1287090444470559495
 CanvasGroup:
@@ -11304,7 +11304,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -11379,8 +11379,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 2564603903964160220}
 --- !u!225 &233882350807773625
 CanvasGroup:
@@ -13283,7 +13283,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -13358,8 +13358,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 8632937327084622325}
 --- !u!225 &3073588420974830010
 CanvasGroup:
@@ -14596,7 +14596,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -14671,8 +14671,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 765996006244867297}
 --- !u!225 &4891507565168921727
 CanvasGroup:
@@ -14831,7 +14831,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -14906,8 +14906,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 5891880166713473068}
 --- !u!225 &8499409302037942384
 CanvasGroup:
@@ -16199,7 +16199,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -16274,8 +16274,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 7826656839228931645}
 --- !u!225 &5166369170046882174
 CanvasGroup:
@@ -16584,7 +16584,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -16659,8 +16659,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 7727735665478882327}
 --- !u!225 &7850655464721714409
 CanvasGroup:
@@ -17442,7 +17442,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -17517,8 +17517,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 8501960157163906426}
 --- !u!225 &839969017631990757
 CanvasGroup:
@@ -20801,7 +20801,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -20876,8 +20876,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 4073982533938220923}
 --- !u!225 &8322562310783894544
 CanvasGroup:
@@ -21828,7 +21828,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -21903,8 +21903,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 676516238094979568}
 --- !u!225 &6791809354362482806
 CanvasGroup:
@@ -24351,7 +24351,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -24426,8 +24426,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 791059362912935484}
 --- !u!225 &8639424873983826456
 CanvasGroup:
@@ -24676,7 +24676,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -24751,8 +24751,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 7395735858966874055}
 --- !u!225 &2388811919376928980
 CanvasGroup:
@@ -25436,7 +25436,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -25511,8 +25511,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 2510227803260700199}
 --- !u!225 &6049664256499303729
 CanvasGroup:
@@ -26121,7 +26121,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -26196,8 +26196,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 7715121614154513284}
 --- !u!225 &676749652558414986
 CanvasGroup:
@@ -26781,7 +26781,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -26856,8 +26856,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 6971936970209217353}
 --- !u!225 &6823942660014074541
 CanvasGroup:
@@ -28447,7 +28447,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -28522,8 +28522,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 1112562577833364154}
 --- !u!225 &2857932500191434594
 CanvasGroup:
@@ -29637,7 +29637,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -29712,8 +29712,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 4339619771463897767}
 --- !u!225 &5137456770757300434
 CanvasGroup:
@@ -30397,7 +30397,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -30472,8 +30472,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 4412739333775330758}
 --- !u!225 &326390156832752629
 CanvasGroup:
@@ -31098,7 +31098,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -31173,8 +31173,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 776885826586088750}
 --- !u!225 &8497005339733200032
 CanvasGroup:
@@ -31608,7 +31608,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -31683,8 +31683,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 4979614688764614846}
 --- !u!225 &6007269537414040877
 CanvasGroup:
@@ -32404,7 +32404,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -32479,8 +32479,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 5290967828482382049}
 --- !u!225 &912513556440991258
 CanvasGroup:
@@ -33545,7 +33545,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -33620,8 +33620,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 6262579444774483644}
 --- !u!225 &1287802508961788638
 CanvasGroup:
@@ -33780,7 +33780,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -33855,8 +33855,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 1147142393038652277}
 --- !u!225 &3946160488225553992
 CanvasGroup:
@@ -34090,7 +34090,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -34165,8 +34165,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 4578572854700795124}
 --- !u!225 &5210380156174018716
 CanvasGroup:
@@ -34491,7 +34491,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -34566,8 +34566,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
   selectable: {fileID: 4192545486768725817}
 --- !u!225 &4115638745350881839
 CanvasGroup:

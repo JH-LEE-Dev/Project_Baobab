@@ -30,6 +30,7 @@ using UnityEngine.UI;
 /// [레벨] levelAfterPurchase를 I~VI로 그리고, maxLevel에 닿은 레벨은 MAX로 그린다(액티브 7레벨 = I~VI, MAX / 공통 패시브 5레벨 = I~IV, MAX).
 ///   루비(계약)·프리즘은 레벨이 없어 숨기고, 루비는 rubyBadgeSprite(±)가 있으면 그것을 그린다.
 ///   VI·MAX 이미지는 슬롯에 연결되어 있고, maxLevelSprite가 비어 있을 때만 MAX를 V로 대신 그리며, 레벨 이미지가 비어 있으면 레벨 표기를 숨긴다.
+///   레벨 표기가 없는 카드(프리즘, rubyBadgeSprite가 빈 루비)는 레벨 홈이 없는 프레임(noLevelFrameSprite / noLevelGradeFrameSprite)을 쓴다.
 /// [희귀 등급] 프레임 자체의 색을 등급 팔레트로 바꿔 그린다(셰이더 UI/CardGradeFrame, 팔레트 스왑). 프레임을 덮는 층이 아니다.
 ///   GradeFrame  프레임 스프라이트 복사본(Card_FrameFull)을 같은 자리에 그리는 층. 프레임의 5톤(안쪽 그림자·몸통·링 둘·하이라이트)을 등급 5톤으로 치환해
 ///               손으로 그린 명암·모서리가 그대로 남는다. 희귀 카드에서는 원래 프레임 이미지를 끄고 이 층이 대신 보인다. 일반 카드는 원래 프레임 그대로.
@@ -39,6 +40,7 @@ using UnityEngine.UI;
 ///   공개        PlayGradeReveal은 앞면이 드러나는 순간 대각 광택 띠가 왼쪽 위에서 오른쪽 아래로 지나가며 일반 프레임이 레어로 바뀌게 한다(0.5초, 와이프). 띠 위에서 입자가 흩날린다.
 ///               Image.color의 R 채널 = 공개 진행도(1이면 완전히 레어), G 채널 = 밝기(어두워짐). 공개가 끝나기 전에는 원래 프레임을 켜 둔다(아직 안 지나간 자리가 보여야 한다).
 /// [뒷면] SetFaceDown(true)면 프레임 자리에 정식 뒷면 그림(backSprite = Card_Back.png)을 틴트 없이 그린다. backSprite가 비어 있을 때만 기본 프레임을 어둡게(BackTint) 해서 대신 쓴다. 뒷면에서는 등급 층이 보이지 않는다.
+/// [오로라] 시드 = 카드마다 SetCard 때 무작위(정점 색 B), 시간 = 멈추지 않는 시간(_CardAuroraTime 전역).
 /// </summary>
 public class UI_RoguelikeCard : MonoBehaviour
 {
@@ -73,6 +75,8 @@ public class UI_RoguelikeCard : MonoBehaviour
     private const int ShadowPadRows = 1;
 
     private static readonly Color BackTint = new Color(0.55f, 0.55f, 0.55f, 1f);
+    // 오로라 시간 전역값(_CardAuroraTime = Time.unscaledTime). 카드가 여러 장이어도 프레임당 한 번만 넣는다.
+    private static readonly int CardAuroraTimeId = Shader.PropertyToID("_CardAuroraTime");
 
     //내부 의존성 (프리팹에서 연결)
     [SerializeField] private RectTransform visual;
@@ -99,13 +103,21 @@ public class UI_RoguelikeCard : MonoBehaviour
     [SerializeField] private Material[] gradeFrameMaterials = new Material[3];
     [Tooltip("정식 뒷면 스프라이트(Card_Back.png). 비어 있으면 기본 프레임을 어둡게 해서 뒷면으로 쓴다.")]
     [SerializeField] private Sprite backSprite;
+    [Tooltip("레벨 표기가 없는 카드(프리즘·루비)의 기본 프레임(64x96, 레벨 홈 없음). 비어 있으면 기본 프레임을 쓴다.")]
+    [SerializeField] private Sprite noLevelFrameSprite;
+    [Tooltip("레벨 표기가 없는 카드의 등급 층 프레임(50x82, Card_FrameFull_NoSlot). 비어 있으면 기본 등급 층 그림을 쓴다.")]
+    [SerializeField] private Sprite noLevelGradeFrameSprite;
+    [Tooltip("일반 앞면 프레임용 오로라 머티리얼(UI_CardFrame_Normal). 비어 있으면 머티리얼 없이 그린다.")]
+    [SerializeField] private Material normalFrameMaterial;
 
     [Header("배치 (프레임 왼쪽 아래 기준 정수 픽셀)")]
-    [SerializeField] private Vector2Int iconCenter = new Vector2Int(25, 55);
-    [SerializeField] private Vector2Int levelCenter = new Vector2Int(25, 21);
+    [SerializeField] private Vector2Int iconCenter = new Vector2Int(25, 54);
+    [SerializeField] private Vector2Int levelCenter = new Vector2Int(25, 20);
 
     //상태 변수
     private Sprite defaultFrameSprite;
+    // 프리팹의 GradeFrame 스프라이트(홈 있는 기본 등급 층 그림). 처음 한 번 읽어 둔다.
+    private Sprite defaultGradeFrameSprite;
     private int gradeIndex = -1;
     private float gradeRevealTime = -1f;
     private float gradeRevealProgress = 1f;
@@ -115,6 +127,8 @@ public class UI_RoguelikeCard : MonoBehaviour
     private bool bIconVisible;
     private bool bLevelVisible;
     private int shakeOffsetX;
+    // 희귀 등장 연출이 flashImage를 등급색 실루엣(덮기 머티리얼)으로 쓰는 중
+    private bool bSilhouette;
 
     private float liftPosition;
     private float liftVelocity;
@@ -135,8 +149,22 @@ public class UI_RoguelikeCard : MonoBehaviour
     private Vector2 frameBaseSize;
     private bool bFrameBaseCaptured;
     private Color tint = Color.white;
+    // 오로라 무늬 시드(0~1, 1/255 단위). SetCard 때 새로 뽑아 프레임 이미지 색의 B 채널로 셰이더에 넘긴다.
+    private float auroraSeed;
+    // 오로라 시간 전역값을 마지막으로 넣은 프레임(모든 카드가 공유)
+    private static int auroraTimeFrame = -1;
 
     public bool IsHovered => bHovered;
+
+    /// <summary>희귀 등급 칸(0 에메랄드 · 1 프리즘 · 2 루비). 일반 카드이거나 등급 머티리얼이 비어 있으면 -1.</summary>
+    public int GradeIndex => gradeIndex;
+
+    /// <summary>뒤집힘 연출이 정한 현재 폭(픽셀)과 뜀(픽셀, 음수면 눌림). 희귀 등장 연출이 카드 모양을 따라가는 데 쓴다.</summary>
+    public int FlipWidthPixels => null != flipRoot ? Mathf.RoundToInt(flipRoot.localScale.x * flipRoot.rect.width) : 0;
+    public int FlipLiftPixels => flipLift;
+
+    /// <summary>카드 그림이 화면에서 실제로 놓인 자리(x = 떨림, y = 뜀 + 호버 높이, 정수 픽셀).</summary>
+    public Vector2 VisualOffset => null != visual ? visual.anchoredPosition : Vector2.zero;
 
     /// <summary>카드 그림 영역(호버로 올라가는 부분). 커서 박스가 이 위치를 따라간다.</summary>
     public RectTransform VisualRect => visual;
@@ -148,6 +176,7 @@ public class UI_RoguelikeCard : MonoBehaviour
 
     public void SetCard(Sprite _icon, ECardKind _kind, ECardDisplayGrade _grade, int _level, int _maxLevel, bool _bRuby)
     {
+        auroraSeed = Mathf.Round(UnityEngine.Random.value * 255f) / 255f;
         ApplyFrame(_grade);
         ApplyIcon(_icon);
         ApplyLevel(_kind, _level, _maxLevel, _bRuby);
@@ -190,6 +219,8 @@ public class UI_RoguelikeCard : MonoBehaviour
     {
         if (null == flashImage) return;
 
+        if (true == bSilhouette) ReleaseSilhouette();
+
         flashPeak = _peakAlpha;
         flashTime = 0f;
         ApplyFrameRect(flashImage, frameImage.sprite);
@@ -203,12 +234,62 @@ public class UI_RoguelikeCard : MonoBehaviour
     /// </summary>
     public void PlayGradeReveal()
     {
+        PlayGradeReveal(false);
+    }
+
+    /// <summary>
+    /// _bInstant가 true면 와이프 없이 곧바로 레어 프레임으로 바꾼다(진행도 1, 오라 버스트·띠 스파크 없음). 희귀 등장 연출이 흰 실루엣으로 가린 채 부른다.
+    /// </summary>
+    public void PlayGradeReveal(bool _bInstant)
+    {
         if (gradeIndex < 0 || bFaceDown) return;
+
+        if (true == _bInstant)
+        {
+            gradeRevealTime = -1f;
+            gradeRevealProgress = 1f;
+            if (null != aura) aura.SetRevealedImmediate();
+            ApplyGradeLayers();
+            return;
+        }
 
         gradeRevealTime = 0f;
         gradeRevealProgress = 0f;
         ApplyGradeLayers();
         bMotionActive = true;
+    }
+
+    /// <summary>
+    /// 카드 위에 한 색(알파 포함)을 프레임 모양 그대로 덮는다. 희귀 등장 연출의 두근·공개 실루엣용이며 flashImage를 _material(덮기 머티리얼)로 바꿔 쓴다.
+    /// 알파가 0이면 끄고 flashImage를 되돌린다. 켜져 있는 동안 반짝 애니메이션(PlayFlash)의 색 갱신은 멈춘다.
+    /// </summary>
+    public void SetSilhouette(Color _color, Material _material)
+    {
+        if (null == flashImage) return;
+
+        if (0f >= _color.a)
+        {
+            if (true == bSilhouette) ReleaseSilhouette();
+            return;
+        }
+
+        if (false == bSilhouette)
+        {
+            bSilhouette = true;
+            flashImage.material = _material;
+            ApplyFrameRect(flashImage, frameImage.sprite);
+            flashImage.sprite = frameImage.sprite;
+        }
+
+        flashImage.color = _color;
+        flashImage.enabled = true;
+    }
+
+    private void ReleaseSilhouette()
+    {
+        bSilhouette = false;
+        flashImage.material = null;
+        flashImage.enabled = 0f <= flashTime;
     }
 
     /// <summary>호버·누름·밝기·반짝을 모두 처음 상태로 즉시 되돌린다(카드를 새로 채울 때, 꺼질 때).</summary>
@@ -227,6 +308,8 @@ public class UI_RoguelikeCard : MonoBehaviour
         gradeRevealTime = -1f;
         gradeRevealProgress = 1f;
         bMotionActive = false;
+        bSilhouette = false;
+        if (null != flashImage) flashImage.material = null;
 
         if (null != aura) aura.Clear();
 
@@ -356,12 +439,12 @@ public class UI_RoguelikeCard : MonoBehaviour
             if (FlashSeconds <= flashTime)
             {
                 flashTime = -1f;
-                flashImage.enabled = false;
+                if (false == bSilhouette) flashImage.enabled = false;
             }
             else
             {
                 float alpha = flashTime < FlashRiseSeconds ? flashTime / FlashRiseSeconds : 1f - (flashTime - FlashRiseSeconds) / (FlashSeconds - FlashRiseSeconds);
-                flashImage.color = new Color(1f, 1f, 1f, flashPeak * Mathf.Clamp01(alpha));
+                if (false == bSilhouette) flashImage.color = new Color(1f, 1f, 1f, flashPeak * Mathf.Clamp01(alpha));
                 bActive = true;
             }
         }
@@ -435,7 +518,7 @@ public class UI_RoguelikeCard : MonoBehaviour
 
     /// <summary>
     /// 등급 층의 표시와 색. 희귀 카드(앞면)에서는 이 층이 원래 프레임을 대신하지만, 공개 연출이 끝나기 전에는 원래 프레임도 켜 둔다(아직 안 지나간 자리).
-    /// 셰이더 약속: R = 공개 진행도(1이면 완전히 레어), G = 밝기(다른 카드가 선택 중일 때 어두워짐). 입자(Aura)도 같은 등급·어두워짐·진행도를 따른다.
+    /// 셰이더 약속: R = 공개 진행도(1이면 완전히 레어), G = 밝기(다른 카드가 선택 중일 때 어두워짐), B = 오로라 시드. 입자(Aura)도 같은 등급·어두워짐·진행도를 따른다.
     /// </summary>
     private void ApplyGradeLayers()
     {
@@ -446,7 +529,7 @@ public class UI_RoguelikeCard : MonoBehaviour
         {
             float brightness = Mathf.Lerp(1f, DimBrightness, dimAmount);
             gradeFrameImage.enabled = bShow;
-            gradeFrameImage.color = new Color(gradeRevealProgress, brightness, brightness, 1f);
+            gradeFrameImage.color = new Color(gradeRevealProgress, brightness, auroraSeed, 1f);
         }
 
         if (null != aura)
@@ -511,15 +594,28 @@ public class UI_RoguelikeCard : MonoBehaviour
 
             if (bFront)
             {
-                ApplyFrameRect(frameImage, defaultFrameSprite);
-                frameImage.sprite = defaultFrameSprite;
-                frameImage.color = tint;
+                // 레벨 표기가 없는 카드(프리즘·루비)는 레벨 홈이 없는 프레임을 쓴다(그림이 비어 있으면 기본 프레임).
+                bool bNoLevelFrame = false == bLevelVisible && null != noLevelFrameSprite;
+                Sprite frontSprite = true == bNoLevelFrame ? noLevelFrameSprite : defaultFrameSprite;
+                ApplyFrameRect(frameImage, frontSprite);
+                frameImage.sprite = frontSprite;
+                frameImage.material = normalFrameMaterial;
+                // 셰이더 약속(일반 앞면): G = 밝기(틴트는 항상 회색이라 g를 쓴다), B = 오로라 시드
+                frameImage.color = new Color(tint.g, tint.g, auroraSeed, tint.a);
+
+                if (null != gradeFrameImage)
+                {
+                    if (null == defaultGradeFrameSprite) defaultGradeFrameSprite = gradeFrameImage.sprite;
+                    gradeFrameImage.sprite = false == bLevelVisible && null != noLevelGradeFrameSprite ? noLevelGradeFrameSprite : defaultGradeFrameSprite;
+                }
             }
             else
             {
                 Sprite faceSprite = null != backSprite ? backSprite : defaultFrameSprite;
                 ApplyFrameRect(frameImage, faceSprite);
                 frameImage.sprite = faceSprite;
+                // 뒷면 그림에 오로라가 번지지 않게 기본 머티리얼로 되돌린다.
+                frameImage.material = null;
                 frameImage.color = (null != backSprite ? Color.white : BackTint) * tint;
             }
         }
@@ -563,7 +659,7 @@ public class UI_RoguelikeCard : MonoBehaviour
 
         if (false == bFrameBaseCaptured) return;
 
-        bool bBase = _sprite == defaultFrameSprite;
+        bool bBase = _sprite == defaultFrameSprite || (null != noLevelFrameSprite && _sprite == noLevelFrameSprite);
         _image.rectTransform.sizeDelta = true == bBase ? frameBaseSize : _sprite.rect.size;
         _image.rectTransform.anchoredPosition = true == bBase ? frameBasePosition : Vector2.zero;
     }
@@ -581,6 +677,13 @@ public class UI_RoguelikeCard : MonoBehaviour
 
     private void Update()
     {
+        // 오로라 시간(멈추지 않는 시간): 움직임이 없어도, 일시정지 중에도 프레임당 한 번 갱신한다.
+        if (Time.frameCount != auroraTimeFrame)
+        {
+            auroraTimeFrame = Time.frameCount;
+            Shader.SetGlobalFloat(CardAuroraTimeId, Time.unscaledTime);
+        }
+
         if (false == bMotionActive) return;
 
         bMotionActive = StepMotion(Mathf.Min(Time.unscaledDeltaTime, MaxFrameSeconds));

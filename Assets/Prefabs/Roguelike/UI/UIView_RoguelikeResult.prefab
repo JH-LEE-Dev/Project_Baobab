@@ -1962,7 +1962,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c75fcce2dcaf1f842a25316204b6a140, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9fe867976b554906bbad75c4f7156325, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1996,8 +1996,9 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 38ba2339bca2466f92cad328f39aa13b, type: 3}
   maxLevelSprite: {fileID: 21300000, guid: ec69e4d76bdc49ed9ba3530a09ff416b, type: 3}
   rubyLevelSprite: {fileID: 21300000, guid: 6455b45ba30049a69ffd7c0f0bfe2aa4, type: 3}
-  prismFrameSprite: {fileID: 21300000, guid: 0553bec7f54a49869caa228816d3715d, type: 3}
-  rubyFrameSprite: {fileID: 21300000, guid: 26fc3b47b11c4a9aa58d706d5f1d2289, type: 3}
+  prismFrameSprite: {fileID: 21300000, guid: e8cedef09309478091435a58284aa678, type: 3}
+  rubyFrameSprite: {fileID: 21300000, guid: 6d90a484b89e415f95b3c0b151d28ec3, type: 3}
+  selectable: {fileID: 0}
 --- !u!1 &4222287551612952344
 GameObject:
   m_ObjectHideFlags: 0

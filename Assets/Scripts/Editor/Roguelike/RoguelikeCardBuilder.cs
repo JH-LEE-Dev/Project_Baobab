@@ -14,7 +14,8 @@ using UnityEngine.UI;
 ///       └ FlipRoot 50x81  뒤집힘 연출 때 폭이 줄었다 느는 부분(피벗 가운데 아래)
 ///          ├ Frame   CardFrame 64x96 (-7, -9)  - 프레임 그림은 캔버스의 (7,9)-(50x81)이라 캔버스 왼쪽 아래가 이만큼 밖에 놓인다
 ///          ├ GradeFrame 50x82  프레임을 등급 색으로 바꿔 그리는 층(Card_FrameFull = 프레임 그림 복사본 + 위 투명 1행, 셰이더 UI/CardGradeFrame 팔레트 스왑). 희귀 카드에서만 켜지고 이때 Frame은 꺼진다
-///          ├ Profile CardProfile 64x96 (-7, -9)  - 프레임과 같은 64x96 캔버스라 같은 자리에 놓으면 프로필 칸이 프레임 안에 맞는다(캔버스 좌표 (15,47)-(34x34))
+///          │          레벨 표기가 없는 카드(프리즘·루비)는 레벨 홈 없는 그림으로 바뀐다: Frame = CardFrame_NoSlot(64x96), GradeFrame = Card_FrameFull_NoSlot(50x82) - 둘 다 구성기가 연결만 한다(그림은 미리 만들어 둔 파일)
+///          ├ Profile CardProfile 64x96 (-7, -9)  - 프레임과 같은 64x96 캔버스라 같은 자리에 놓으면 프로필 칸이 프레임 안에 맞는다(캔버스 왼쪽 아래 기준 (16,47)-(32x32) 단색 남색 사각형, 남색 테 없음 - 카드 프레임의 파인 홈 벽이 테 역할)
 ///          ├ Icon    스킬 아이콘 (스크립트가 프로필 칸 중앙에 배치)
 ///          ├ Level   I~VI, MAX 32x32 캔버스 (스크립트가 하단 중앙에 배치. 숫자 그림이 캔버스 가운데라 캔버스째 가운데 맞추면 된다)
 ///          └ Flash   선택·앞면 공개 순간 프레임 모양으로 하얗게 번쩍이는 층(평소에는 꺼져 있다)
@@ -30,6 +31,8 @@ public static class RoguelikeCardBuilder
     private const string ShadowPath = CardDir + "Card_Shadow.png";
     private const string BackPath = CardDir + "Card_Back.png";
     private const string FrameFullPath = CardDir + "Card_FrameFull.png";
+    private const string NoLevelFramePath = CardDir + "CardFrame_NoSlot.png";
+    private const string NoLevelGradeFramePath = CardDir + "Card_FrameFull_NoSlot.png";
     private const string MaterialDir = "Assets/Materials/UI/Roguelike";
     private const string FrameShaderPath = "Assets/Shaders/UI/UI_CardGradeFrame.shader";
     private const string EdgeStripPath = CardDir + "Fx_EdgeStrip.png";
@@ -55,6 +58,13 @@ public static class RoguelikeCardBuilder
 
     // 임포트 설정(사용자가 정한 값): Sprite, Single, PPU 32, Full Rect, Extrude 1, Pivot Center, Physics Shape on, Clamp, Point, 밉맵 끔, 알파 투명, 압축 없음, Max 2048.
     public const float PixelArtPixelsPerUnit = 32f;
+
+    // 프레임 오로라(은은한 마력색 띠) 값. 시뮬레이션 make_shader_sim_v3.py 의 세기 0(아주 은은): 섞는 비율(테두리 진한 띠, 테두리 옅은 띠, 몸통 진한 띠, 몸통 옅은 띠), 흐름 속도(T = t x 0.55).
+    private static readonly Vector4 AuroraMix = new Vector4(0.22f, 0.12f, 0.12f, 0.06f);
+    private const float AuroraSpeed = 0.55f;
+    // 띠 간격 계수(시뮬레이션 v4의 K). 민무늬 구간이 없도록 2.6.
+    private const float AuroraBandScale = 2.6f;
+    private const string NormalFrameMaterialPath = MaterialDir + "/UI_CardFrame_Normal.mat";
 
     [MenuItem("LumberBoy/UI/Build Roguelike Card")]
     public static void Build()
@@ -86,7 +96,11 @@ public static class RoguelikeCardBuilder
         // 프레임 그림은 64x96 캔버스의 (7, 9)-(50x81)이다. 복사본과 뒷면은 그 영역만 잘라 만든다(가로 세로가 홀수면 투명 1px이 붙는다).
         Sprite frameFull = EnsureSpriteFromPixels(FrameFullPath, ReadSpritePixels(frame, FrameArtX, FrameArtY, FrameWidth, FrameHeight), FrameWidth, FrameHeight);
         Material[] frameMaterials = BuildGradeFrameMaterials(Mathf.RoundToInt(frameFull.rect.width), Mathf.RoundToInt(frameFull.rect.height));
+        Material normalFrameMaterial = BuildNormalFrameMaterial(frame);
         Sprite back = EnsureSpriteFromPixels(BackPath, BuildBackPixels(frame), FrameWidth, FrameHeight);
+        // 레벨 표기가 없는 카드(프리즘·루비)용 홈 없는 프레임. 없으면 비워 두고 카드가 기본 프레임을 쓴다.
+        Sprite noLevelFrame = LoadOptionalSprite(NoLevelFramePath);
+        Sprite noLevelGradeFrame = LoadOptionalSprite(NoLevelGradeFramePath);
 
         GameObject root = new GameObject("UI_RoguelikeCard", typeof(RectTransform));
         root.layer = LayerMask.NameToLayer("UI");
@@ -172,7 +186,10 @@ public static class RoguelikeCardBuilder
         frameMaterialProperty.arraySize = frameMaterials.Length;
         for (int i = 0; i < frameMaterials.Length; i++) frameMaterialProperty.GetArrayElementAtIndex(i).objectReferenceValue = frameMaterials[i];
 
+        so.FindProperty("normalFrameMaterial").objectReferenceValue = normalFrameMaterial;
         so.FindProperty("backSprite").objectReferenceValue = back;
+        so.FindProperty("noLevelFrameSprite").objectReferenceValue = noLevelFrame;
+        so.FindProperty("noLevelGradeFrameSprite").objectReferenceValue = noLevelGradeFrame;
 
         SerializedProperty levelSprites = so.FindProperty("levelSprites");
         levelSprites.arraySize = levels.Length;
@@ -233,18 +250,61 @@ public static class RoguelikeCardBuilder
             all[i].SetVector("_PixelShift", new Vector4((_w - FrameWidth) * 0.5f, (_h - FrameHeight) * 0.5f, 0f, 0f));
             // 반짝은 링 모서리: 가장자리에서 2px 안쪽(그림 중심 기준 반폭 22.5, 반높이 38).
             all[i].SetVector("_LineHalf", new Vector4(FrameWidth * 0.5f - 2.5f, FrameHeight * 0.5f - 2.5f, 0f, 0f));
-            all[i].SetFloat("_Rainbow", 0f);
         }
 
         SetTones(emerald, new Color(0.04f, 0.16f, 0.10f), new Color(0.06f, 0.27f, 0.17f), new Color(0.12f, 0.52f, 0.32f), new Color(0.30f, 0.80f, 0.52f), new Color(0.75f, 1.00f, 0.82f));
         SetTones(ruby, new Color(0.20f, 0.03f, 0.06f), new Color(0.34f, 0.05f, 0.09f), new Color(0.58f, 0.09f, 0.14f), new Color(0.86f, 0.22f, 0.24f), new Color(1.00f, 0.62f, 0.56f));
         SetTones(prism, new Color(0.14f, 0.12f, 0.22f), new Color(0.22f, 0.19f, 0.34f), new Color(0.55f, 0.50f, 0.80f), new Color(0.75f, 0.70f, 0.95f), new Color(0.95f, 0.93f, 1.00f));
-        prism.SetFloat("_Rainbow", 1f);
         prism.SetFloat("_RainbowSaturation", 0.6f);
         prism.SetFloat("_RainbowSteps", 8f);
 
+        // 마력색(0 어두움 / 1 중간): 에메랄드 = 청록, 루비 = 자홍, 프리즘 = 마력색 대신 둘레 위치 + 시간의 8단계 무지개(_AuroraRainbow). 기존 움직임은 끄고 오로라만 돈다.
+        SetAurora(emerald, new Color32(0x1b, 0x6e, 0x62, 255), new Color32(0x3f, 0xe0, 0xc0, 255), false, true);
+        SetAurora(ruby, new Color32(0x6e, 0x0e, 0x3c, 255), new Color32(0xe0, 0x40, 0x8a, 255), false, true);
+        SetAurora(prism, new Color(0.55f, 0.50f, 0.80f), new Color(0.75f, 0.70f, 0.95f), true, true);
+
         for (int i = 0; i < all.Length; i++) EditorUtility.SetDirty(all[i]);
         return all;
+    }
+
+    /// <summary>
+    /// 일반 앞면 프레임용 오로라 머티리얼(UI_CardFrame_Normal). 5톤 치환 없이 원래 프레임 색에 호박 마력색을 섞고, Image.color 는 일반 틴트로 곱한다.
+    /// 프레임은 64x96 캔버스째라 _PixelSize 는 캔버스 크기, _PixelShift 는 셰이더의 픽셀 좌표 p 가 Card_FrameFull(50x82)과 같아지게 하는 값이다
+    /// (그림 중심이 캔버스 (7 + 25, 9 + 40.5) = (32, 49.5)에 있고 캔버스 중심은 (32, 48)이라 (0, -1.5)). 여러 번 실행해도 같은 에셋을 덮어쓴다.
+    /// </summary>
+    private static Material BuildNormalFrameMaterial(Sprite _frame)
+    {
+        Shader shader = AssetDatabase.LoadAssetAtPath<Shader>(FrameShaderPath);
+        Material normal = GetOrCreateMaterial(NormalFrameMaterialPath, shader);
+        if (null == normal) return null;
+
+        normal.SetVector("_PixelSize", new Vector4(_frame.rect.width, _frame.rect.height, 0f, 0f));
+        normal.SetVector("_PixelShift", new Vector4(_frame.rect.width * 0.5f - (FrameArtX + FrameWidth * 0.5f), _frame.rect.height * 0.5f - (FrameArtY + FrameHeight * 0.5f), 0f, 0f));
+        normal.SetVector("_LineHalf", new Vector4(FrameWidth * 0.5f - 2.5f, FrameHeight * 0.5f - 2.5f, 0f, 0f));
+        SetAurora(normal, new Color32(0x7a, 0x4a, 0x14, 255), new Color32(0xe0, 0x9a, 0x30, 255), false, false);
+
+        EditorUtility.SetDirty(normal);
+        return normal;
+    }
+
+    /// <summary>
+    /// 오로라 공통 값. _bGrade 가 참이면 등급 카드(5톤 치환 + Image.color R·G = 공개 진행도·밝기), 거짓이면 일반 카드(원래 색 유지 + 틴트 곱하기).
+    /// 금 덮개는 원래 색 그대로, 기존 움직임(링 맥동 · 광택 띠 · 모서리 반짝) · 해칭 · 무지개 링은 끈다.
+    /// </summary>
+    private static void SetAurora(Material _material, Color _color0, Color _color1, bool _bRainbow, bool _bGrade)
+    {
+        _material.SetFloat("_PaletteSwap", _bGrade ? 1f : 0f);
+        _material.SetFloat("_GradeChannels", _bGrade ? 1f : 0f);
+        _material.SetFloat("_KeepGold", 1f);
+        _material.SetFloat("_LegacyMotion", 0f);
+        _material.SetFloat("_HatchStrength", 0f);
+        _material.SetFloat("_Rainbow", 0f);
+        _material.SetFloat("_AuroraRainbow", _bRainbow ? 1f : 0f);
+        _material.SetFloat("_AuroraSpeed", AuroraSpeed);
+        _material.SetFloat("_AuroraBandScale", AuroraBandScale);
+        _material.SetVector("_AuroraMix", AuroraMix);
+        _material.SetColor("_AuroraColor0", _color0);
+        _material.SetColor("_AuroraColor1", _color1);
     }
 
     private static void SetTones(Material _material, Color _t0, Color _t1, Color _t2, Color _t3, Color _t4)

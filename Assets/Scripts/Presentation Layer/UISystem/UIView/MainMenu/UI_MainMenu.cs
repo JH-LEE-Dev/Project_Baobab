@@ -45,6 +45,7 @@ public class UI_MainMenu : MonoBehaviour
     [SerializeField] private UI_MainMenuButton roguelikeStartButton;
     [SerializeField] private UI_MainMenuButton roguelikeRecordsButton;
     [SerializeField] private UI_MainMenuButton roguelikeChallengesButton;
+    [SerializeField] private UI_MainMenuButton roguelikeCollectionButton;
     [SerializeField] private UI_MainMenuButton roguelikeOptionButton;
     [SerializeField] private UI_MainMenuButton roguelikeBackButton;
     [SerializeField] private UI_RoguelikeMenuRecordPanel roguelikeRecordPanel;
@@ -91,6 +92,7 @@ public class UI_MainMenu : MonoBehaviour
     private const string RoguelikeStartKey = "Roguelike_Menu_Start";
     private const string RoguelikeRecordsKey = "Roguelike_Menu_Records";
     private const string RoguelikeChallengesKey = "Roguelike_Menu_Challenges";
+    private const string RoguelikeCollectionKey = "Roguelike_Menu_Collection";
     private const string RoguelikeBackKey = "Roguelike_Menu_Back";
     private const float RoguelikeDisappearStagger = 0.03f;
     // 디스코드 아이콘이 빠질 때 아이콘 폭에 더하는 거리(px). 기록판과 같은 여유.
@@ -101,6 +103,7 @@ public class UI_MainMenu : MonoBehaviour
     private bool bRoguelikeMenuOpen;
     private bool bRoguelikeRecordsOpen;
     private bool bRoguelikeChallengesOpen;
+    private bool bRoguelikeCollectionOpen;
     private bool bRoguelikeCancelBound;
     private Vector2 roguelikePlateBasePosition;
     private bool bRoguelikePlateBaseCaptured;
@@ -110,6 +113,8 @@ public class UI_MainMenu : MonoBehaviour
     private int roguelikeRecordsClosedFrame = -1;
     // 도전과제 창도 기록 창과 같은 이유로 닫힌 프레임의 취소를 무시한다.
     private int roguelikeChallengesClosedFrame = -1;
+    // 카드 도감 창도 같은 이유로 닫힌 프레임의 취소를 무시한다.
+    private int roguelikeCollectionClosedFrame = -1;
     // 옵션 창이 열려 있는가 / 닫힌 프레임(기록 창과 같은 이유로 그 프레임의 취소는 무시한다).
     private bool bRoguelikeOptionOpen;
     private int roguelikeOptionClosedFrame = -1;
@@ -122,6 +127,9 @@ public class UI_MainMenu : MonoBehaviour
     private Action cachedOpenRoguelikeChallengesAfterExit;
     private TweenCallback cachedOpenRoguelikeChallengesAfterExitTween;
     private Action cachedOnRoguelikeChallengesClosed;
+    private Action cachedOpenRoguelikeCollectionAfterExit;
+    private TweenCallback cachedOpenRoguelikeCollectionAfterExitTween;
+    private Action cachedOnRoguelikeCollectionClosed;
     private TweenCallback cachedFinishRoguelikeMenuReturn;
     private Action cachedOnRoguelikeCancel;
     private Action cachedOnRoguelikeRecordsClosed;
@@ -812,12 +820,16 @@ public class UI_MainMenu : MonoBehaviour
         cachedOpenRoguelikeChallengesAfterExit = OpenRoguelikeChallengesAfterExit;
         cachedOpenRoguelikeChallengesAfterExitTween = OpenRoguelikeChallengesAfterExit;
         cachedOnRoguelikeChallengesClosed = OnRoguelikeChallengesClosed;
+        cachedOpenRoguelikeCollectionAfterExit = OpenRoguelikeCollectionAfterExit;
+        cachedOpenRoguelikeCollectionAfterExitTween = OpenRoguelikeCollectionAfterExit;
+        cachedOnRoguelikeCollectionClosed = OnRoguelikeCollectionClosed;
 
-        roguelikeButtons = new UI_MainMenuButton[] { roguelikeStartButton, roguelikeRecordsButton, roguelikeChallengesButton, roguelikeOptionButton, roguelikeBackButton };
+        roguelikeButtons = new UI_MainMenuButton[] { roguelikeStartButton, roguelikeRecordsButton, roguelikeChallengesButton, roguelikeCollectionButton, roguelikeOptionButton, roguelikeBackButton };
 
         if (null != roguelikeStartButton) roguelikeStartButton.Initialize(OnRoguelikeStartClicked, null, _inputMgr);
         if (null != roguelikeRecordsButton) roguelikeRecordsButton.Initialize(OnRoguelikeRecordsClicked, null, _inputMgr);
         if (null != roguelikeChallengesButton) roguelikeChallengesButton.Initialize(OnRoguelikeChallengesClicked, null, _inputMgr);
+        if (null != roguelikeCollectionButton) roguelikeCollectionButton.Initialize(OnRoguelikeCollectionClicked, null, _inputMgr);
         if (null != roguelikeOptionButton) roguelikeOptionButton.Initialize(OnRoguelikeOptionClicked, null, _inputMgr);
         if (null != roguelikeBackButton) roguelikeBackButton.Initialize(OnRoguelikeBackClicked, null, _inputMgr);
 
@@ -1019,6 +1031,7 @@ public class UI_MainMenu : MonoBehaviour
         bRoguelikeMenuOpen = false;
         bRoguelikeRecordsOpen = false;
         bRoguelikeChallengesOpen = false;
+        bRoguelikeCollectionOpen = false;
         bRoguelikeOptionOpen = false;
         SlideDiscordButton(true, false, 0f);
 
@@ -1163,6 +1176,57 @@ public class UI_MainMenu : MonoBehaviour
     }
 
     /// <summary>
+    /// 카드 도감: 도전과제와 같은 연출로 왼쪽 하위 메뉴 · 오른쪽 기록판이 빠진 뒤 카드 도감 창이 등장한다(연출 동안 입력 잠금).
+    /// </summary>
+    private void OnRoguelikeCollectionClicked()
+    {
+        if (true == isInputBlocked || false == bRoguelikeMenuOpen || null == parentView) return;
+
+        isInputBlocked = true;
+        bRoguelikeCollectionOpen = true;
+        roguelikeReturnButton = roguelikeCollectionButton;
+
+        // 도감 창이 떠 있는 동안 뒤쪽 버튼이 패드 선택으로 움직이지 않게 선택을 비운다. 닫히면 도감 버튼을 다시 고른다(FinishRoguelikeMenuReturn).
+        if (null != EventSystem.current) EventSystem.current.SetSelectedGameObject(null);
+        for (int i = 0; roguelikeButtons.Length > i; i++)
+        {
+            if (null != roguelikeButtons[i]) roguelikeButtons[i].ForceUnhover();
+        }
+
+        SlideRoguelikeMenu(false);
+
+        if (null != roguelikeRecordPanel) roguelikeRecordPanel.PlayHide(cachedOpenRoguelikeCollectionAfterExit);
+        else DOVirtual.DelayedCall(roguelikeMenuExitSeconds, cachedOpenRoguelikeCollectionAfterExitTween, true).SetId(this);
+    }
+
+    private void OpenRoguelikeCollectionAfterExit()
+    {
+        if (false == bRoguelikeMenuOpen || false == bRoguelikeCollectionOpen) return;
+
+        if (null != roguelikeCollectionButton)
+        {
+            roguelikeCollectionButton.ResetButtonState();
+            roguelikeCollectionButton.ForceUnhover();
+        }
+
+        bRoguelikeCollectionOpen = null != parentView && parentView.OpenRoguelikeCollection(cachedOnRoguelikeCollectionClosed);
+        if (false == bRoguelikeCollectionOpen)
+        {
+            // 열지 못하면 하위 메뉴를 되돌린다.
+            ReturnRoguelikeMenu();
+        }
+    }
+
+    private void OnRoguelikeCollectionClosed()
+    {
+        bRoguelikeCollectionOpen = false;
+        roguelikeCollectionClosedFrame = Time.frameCount;
+        if (false == bRoguelikeMenuOpen) return;
+
+        ReturnRoguelikeMenu();
+    }
+
+    /// <summary>
     /// 옵션: 기록과 같은 연출로 왼쪽 메뉴 · 오른쪽 기록판이 빠진 뒤 메인메뉴와 같은 공용 옵션 창이 열린다.
     /// 메인메뉴 옵션 버튼의 닫힘 처리(OnSubViewClosed)는 하위 메뉴를 닫아 버리므로 로그라이크 전용 닫힘 콜백을 쓴다.
     /// </summary>
@@ -1267,9 +1331,9 @@ public class UI_MainMenu : MonoBehaviour
 
     private void OnRoguelikeCancel()
     {
-        // 기록 · 도전과제 · 옵션 창이 열려 있으면 그 창이 먼저 닫힌다(같은 키로 두 단계가 한 번에 닫히지 않게).
-        if (true == bRoguelikeRecordsOpen || true == bRoguelikeChallengesOpen || true == bRoguelikeOptionOpen || true == isInputBlocked || false == bRoguelikeMenuOpen) return;
-        if (Time.frameCount == roguelikeRecordsClosedFrame || Time.frameCount == roguelikeChallengesClosedFrame || Time.frameCount == roguelikeOptionClosedFrame) return;
+        // 기록 · 도전과제 · 카드 도감 · 옵션 창이 열려 있으면 그 창이 먼저 닫힌다(같은 키로 두 단계가 한 번에 닫히지 않게).
+        if (true == bRoguelikeRecordsOpen || true == bRoguelikeChallengesOpen || true == bRoguelikeCollectionOpen || true == bRoguelikeOptionOpen || true == isInputBlocked || false == bRoguelikeMenuOpen) return;
+        if (Time.frameCount == roguelikeRecordsClosedFrame || Time.frameCount == roguelikeChallengesClosedFrame || Time.frameCount == roguelikeCollectionClosedFrame || Time.frameCount == roguelikeOptionClosedFrame) return;
         Sound.PlayUI(SoundID.MainClick);
         CloseRoguelikeMenu();
     }
@@ -1304,8 +1368,8 @@ public class UI_MainMenu : MonoBehaviour
 
     private void HandleRoguelikeDeviceChanged(EInputDeviceType _device)
     {
-        // 기록 · 도전과제 · 옵션 창이 위에 떠 있으면 그 창이 장치 전환을 처리한다(선택을 비우거나 뒤쪽 버튼을 고르지 않는다).
-        if (true == bRoguelikeRecordsOpen || true == bRoguelikeChallengesOpen || true == bRoguelikeOptionOpen) return;
+        // 기록 · 도전과제 · 카드 도감 · 옵션 창이 위에 떠 있으면 그 창이 장치 전환을 처리한다(선택을 비우거나 뒤쪽 버튼을 고르지 않는다).
+        if (true == bRoguelikeRecordsOpen || true == bRoguelikeChallengesOpen || true == bRoguelikeCollectionOpen || true == bRoguelikeOptionOpen) return;
 
         if (EInputDeviceType.Gamepad == _device)
         {
@@ -1341,6 +1405,7 @@ public class UI_MainMenu : MonoBehaviour
         SetRoguelikeButtonText(roguelikeStartButton, loc.GetText(RoguelikeStartKey), _dotText);
         SetRoguelikeButtonText(roguelikeRecordsButton, loc.GetText(RoguelikeRecordsKey), _dotText);
         SetRoguelikeButtonText(roguelikeChallengesButton, loc.GetText(RoguelikeChallengesKey), _dotText);
+        SetRoguelikeButtonText(roguelikeCollectionButton, loc.GetText(RoguelikeCollectionKey), _dotText);
         // 옵션은 메인메뉴 옵션 버튼과 같은 문구(MainMenuUI 3번)를 쓴다.
         SetRoguelikeButtonText(roguelikeOptionButton, loc.GetText(mainMenuUIJsonId, 3), _dotText);
         SetRoguelikeButtonText(roguelikeBackButton, loc.GetText(RoguelikeBackKey), _dotText);
@@ -1424,6 +1489,7 @@ public class UI_MainMenu : MonoBehaviour
         if (null != roguelikeStartButton) roguelikeStartButton.Release();
         if (null != roguelikeRecordsButton) roguelikeRecordsButton.Release();
         if (null != roguelikeChallengesButton) roguelikeChallengesButton.Release();
+        if (null != roguelikeCollectionButton) roguelikeCollectionButton.Release();
         if (null != roguelikeOptionButton) roguelikeOptionButton.Release();
         if (null != roguelikeBackButton) roguelikeBackButton.Release();
     }
