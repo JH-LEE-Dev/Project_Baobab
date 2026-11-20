@@ -59,9 +59,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // 한 번 보낸 뒤 게이지가 비워지고 유성우가 쏟아진다. 숲 방문 초기화 때는 (0, 최대)를 보낸다.
     public event Action<int, int> MeteorShowerChargeChangedEvent;
 
-    // "흑요 부적" 지진 게이지 - 버프 HUD용. (지금까지 주운 불씨 수, 가득 차는 불씨 수). 가득 찬 순간 (최대, 최대)를 한 번 보낸 뒤
-    // 게이지가 비워지고 지진이 발동한다. 숲 방문 초기화 때는 (0, 최대)를 보낸다.
+    // "흑요 부적" 지진 게이지 - 버프 HUD용. (지금까지 주운 불씨 수, 가득 차는 불씨 수). 가득 찬 순간 (최대, 최대)를 한 번 보내고,
+    // 지진이 실제로 발동할 때(쿨타임이 남아 있으면 끝나는 순간) QuakeTriggeredEvent를 보낸다. 숲 방문 초기화 때는 (0, 최대)를 보낸다.
     public event Action<int, int> QuakeChargeChangedEvent;
+    public event Action QuakeTriggeredEvent;
 
     // // 외부 의존성
     private IEnvironmentProvider environmentProvider;
@@ -3582,6 +3583,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private void ChargeQuake()
     {
         int maxStack = GetQuakeMaxStack();
+        // 쿨타임 대기로 이미 가득 찬 채였으면 게이지는 그대로라 HUD에 다시 보내지 않는다.
+        bool bWasFull = maxStack <= quakeStack;
         quakeStack = Mathf.Min(maxStack, quakeStack + RollStackGain(quakeStackPerEmberMin, quakeStackPerEmberMax));
 
         if (quakeStack < maxStack)
@@ -3590,7 +3593,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             return;
         }
 
-        QuakeChargeChangedEvent?.Invoke(maxStack, maxStack);
+        if (false == bWasFull) QuakeChargeChangedEvent?.Invoke(maxStack, maxStack);
         if (0f < quakeCooldownRemaining) return;
 
         TriggerQuake(obsidianCharmTierThisRun);
@@ -3618,6 +3621,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     {
         quakeStack = 0;
         quakeCooldownRemaining = Mathf.Max(0f, quakeCooldown);
+        QuakeTriggeredEvent?.Invoke();
         StartCoroutine(QuakeRoutine(_tier));
     }
 
