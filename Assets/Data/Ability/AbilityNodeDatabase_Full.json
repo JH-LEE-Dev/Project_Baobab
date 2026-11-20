@@ -1,6 +1,524 @@
 ﻿{
     "nodes": [
         {
+            "skillType": "AxeDamage7",
+            "nameLocId": 329,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": 0,
+            "gridY": 19,
+            "parents": [
+                {
+                    "skillType": "AxeDamage6",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "AxeAttackSpeed3",
+            "nameLocId": 330,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": -2,
+            "gridY": 19,
+            "parents": [
+                {
+                    "skillType": "AxeDamage7",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "SteelAxe5",
+            "nameLocId": 331,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": -4,
+            "gridY": 19,
+            "parents": [
+                {
+                    "skillType": "AxeAttackSpeed3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "SteelAxe4",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "ShockwaveDamage4",
+            "nameLocId": 332,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": -12,
+            "gridY": 11,
+            "parents": [
+                {
+                    "skillType": "ShockWaveOverheatBoost",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "BoomerangOverheatBoost",
+            "nameLocId": 333,
+            "levelBadge": "None",
+            "requiredPrestigeLevel": 0,
+            "gridX": -16,
+            "gridY": 13,
+            "parents": [
+                {
+                    "skillType": "ShockWaveOverheatBoost",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "Boomerang3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "BoomerangDamage4",
+            "nameLocId": 334,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": -16,
+            "gridY": 15,
+            "parents": [
+                {
+                    "skillType": "BoomerangOverheatBoost",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "BoomerangAttackSpeed2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "DroneOverheatBoost",
+            "nameLocId": 335,
+            "levelBadge": "None",
+            "requiredPrestigeLevel": 0,
+            "gridX": 14,
+            "gridY": 15,
+            "parents": [
+                {
+                    "skillType": "FinalAttack",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "DroneDamage3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "DroneDamage4",
+            "nameLocId": 336,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": 14,
+            "gridY": 17,
+            "parents": [
+                {
+                    "skillType": "DroneOverheatBoost",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "Drone3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "IncreaseJackPotChance2",
+            "nameLocId": 337,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": 15,
+            "gridY": 6,
+            "parents": [
+                {
+                    "skillType": "IncreaseJackPotChance1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "IncreaseJackPotAmount",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "LogValue6",
+            "nameLocId": 338,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": 13,
+            "gridY": 0,
+            "parents": [
+                {
+                    "skillType": "BountifulTree5",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "BountifulTree6",
+            "nameLocId": 339,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": 15,
+            "gridY": 2,
+            "parents": [
+                {
+                    "skillType": "LogValue6",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "TreeVitamin1",
+            "nameLocId": 201,
+            "levelBadge": "None",
+            "requiredPrestigeLevel": 0,
+            "gridX": 15,
+            "gridY": 0,
+            "parents": [
+                {
+                    "skillType": "BountifulTree6",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "SpeciesImprovement",
+            "nameLocId": 340,
+            "levelBadge": "None",
+            "requiredPrestigeLevel": 0,
+            "gridX": 13,
+            "gridY": 6,
+            "parents": [
+                {
+                    "skillType": "WoodenTransportBoxExpansion4",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "InventoryExpansion2",
+            "nameLocId": 341,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": -13,
+            "gridY": -8,
+            "parents": [
+                {
+                    "skillType": "MovementSpeed3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "SawmillLogStorageExpansion4",
+            "nameLocId": 342,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": 13,
+            "gridY": -6,
+            "parents": [
+                {
+                    "skillType": "SawmillLogStorageExpansion3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "WoodenTransportBoxExpansion4",
+            "nameLocId": 343,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": 11,
+            "gridY": 6,
+            "parents": [
+                {
+                    "skillType": "WoodenTransportBoxExpansion3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "LogCapacityIncrease4",
+            "nameLocId": 344,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": 13,
+            "gridY": 8,
+            "parents": [
+                {
+                    "skillType": "WoodenTransportBoxExpansion4",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "ConveyorSpeed3",
+            "nameLocId": 345,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": 13,
+            "gridY": -4,
+            "parents": [
+                {
+                    "skillType": "LogProcessingSpeed5",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "SawmillLogStorageExpansion3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "LogProcessingSpeed7",
+            "nameLocId": 346,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": 15,
+            "gridY": -8,
+            "parents": [
+                {
+                    "skillType": "LogProcessingSpeed6",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "LogProcessorSpeedUp",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "TopgradeAssessment2",
+            "nameLocId": 347,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": 15,
+            "gridY": -4,
+            "parents": [
+                {
+                    "skillType": "RainbowTreeChance",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "TopgradeAssessment1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "FatigueMaxIncrease7",
+            "nameLocId": 348,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": -15,
+            "gridY": 0,
+            "parents": [
+                {
+                    "skillType": "FatigueMaxIncrease6",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "PickupRange4",
+            "nameLocId": 349,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": -15,
+            "gridY": -6,
+            "parents": [
+                {
+                    "skillType": "PickupRange3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "EmberEverywhere",
+            "nameLocId": 350,
+            "levelBadge": "None",
+            "requiredPrestigeLevel": 0,
+            "gridX": 6,
+            "gridY": -15,
+            "parents": [
+                {
+                    "skillType": "Preheat1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "Preheat2",
+            "nameLocId": 351,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": 8,
+            "gridY": -15,
+            "parents": [
+                {
+                    "skillType": "Preheat1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "OverheatMaxIncrease",
+            "nameLocId": 352,
+            "levelBadge": "None",
+            "requiredPrestigeLevel": 0,
+            "gridX": 4,
+            "gridY": -15,
+            "parents": [
+                {
+                    "skillType": "EmberDropBonus2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "OverheatGainBonus3",
+            "nameLocId": 353,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": 10,
+            "gridY": -15,
+            "parents": [
+                {
+                    "skillType": "OverheatGainBonus2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "OverheatEfficiency",
+            "nameLocId": 354,
+            "levelBadge": "None",
+            "requiredPrestigeLevel": 0,
+            "gridX": 10,
+            "gridY": -13,
+            "parents": [
+                {
+                    "skillType": "OverheatGainBonus3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "TreeHeatResistance2",
+            "nameLocId": 355,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": 12,
+            "gridY": -15,
+            "parents": [
+                {
+                    "skillType": "OverheatGainBonus3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "PicnicBasket",
+            "nameLocId": 356,
+            "levelBadge": "None",
+            "requiredPrestigeLevel": 0,
+            "gridX": 0,
+            "gridY": -13,
+            "parents": [
+                {
+                    "skillType": "ShieldExplosionDamage1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
             "skillType": "Boomerang3",
             "nameLocId": 239,
             "levelBadge": "M",
@@ -67,7 +585,7 @@
         {
             "skillType": "DroneChainAttackRange1",
             "nameLocId": 308,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": 6,
             "gridY": 19,
@@ -105,7 +623,7 @@
         {
             "skillType": "ShockWaveOverheatBoost",
             "nameLocId": 310,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": -12,
             "gridY": 9,
@@ -169,19 +687,13 @@
         {
             "skillType": "FinalAttack",
             "nameLocId": 314,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
-            "gridX": 12,
+            "gridX": 14,
             "gridY": 11,
             "parents": [
                 {
                     "skillType": "WeakPointHit2",
-                    "usePivot": false,
-                    "pivotX": 0,
-                    "pivotY": 0
-                },
-                {
-                    "skillType": "AttackRythm2",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -191,23 +703,7 @@
         {
             "skillType": "Repair1",
             "nameLocId": 282,
-            "levelBadge": "M",
-            "requiredPrestigeLevel": 0,
-            "gridX": -15,
-            "gridY": -4,
-            "parents": [
-                {
-                    "skillType": "AutoLoadInRestArea",
-                    "usePivot": false,
-                    "pivotX": 0,
-                    "pivotY": 0
-                }
-            ]
-        },
-        {
-            "skillType": "RemoteDeposit",
-            "nameLocId": 315,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": -15,
             "gridY": -2,
@@ -221,12 +717,28 @@
             ]
         },
         {
-            "skillType": "IncreaseRepairEfficiency1",
-            "nameLocId": 316,
-            "levelBadge": "M",
+            "skillType": "RemoteDeposit",
+            "nameLocId": 315,
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": -15,
-            "gridY": -6,
+            "gridY": 2,
+            "parents": [
+                {
+                    "skillType": "RecoveryPower1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "IncreaseRepairEfficiency1",
+            "nameLocId": 316,
+            "levelBadge": "None",
+            "requiredPrestigeLevel": 0,
+            "gridX": -15,
+            "gridY": -4,
             "parents": [
                 {
                     "skillType": "Repair1",
@@ -261,7 +773,7 @@
             "gridY": -6,
             "parents": [
                 {
-                    "skillType": "MovementSpeed3",
+                    "skillType": "PickupRange2",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -271,13 +783,13 @@
         {
             "skillType": "ItemTransferSpeedUP2",
             "nameLocId": 319,
-            "levelBadge": "II",
+            "levelBadge": "M",
             "requiredPrestigeLevel": 0,
-            "gridX": -13,
+            "gridX": -15,
             "gridY": -8,
             "parents": [
                 {
-                    "skillType": "MovementSpeed3",
+                    "skillType": "InventoryExpansion2",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -303,7 +815,7 @@
         {
             "skillType": "RecoveryPower2",
             "nameLocId": 321,
-            "levelBadge": "II",
+            "levelBadge": "M",
             "requiredPrestigeLevel": 0,
             "gridX": -15,
             "gridY": 4,
@@ -325,7 +837,7 @@
             "gridY": -13,
             "parents": [
                 {
-                    "skillType": "OverheatGainBonus1",
+                    "skillType": "TreeHeatResistance1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -335,7 +847,7 @@
         {
             "skillType": "EmberDropBonus2",
             "nameLocId": 323,
-            "levelBadge": "II",
+            "levelBadge": "M",
             "requiredPrestigeLevel": 0,
             "gridX": 4,
             "gridY": -13,
@@ -369,11 +881,11 @@
             "nameLocId": 325,
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
-            "gridX": 10,
-            "gridY": -13,
+            "gridX": 6,
+            "gridY": -11,
             "parents": [
                 {
-                    "skillType": "OverheatGainBonus2",
+                    "skillType": "OverheatGainBonus1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -399,7 +911,7 @@
         {
             "skillType": "IncreaseJackPotAmount",
             "nameLocId": 327,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": 15,
             "gridY": 4,
@@ -482,7 +994,7 @@
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
             "gridX": 2,
-            "gridY": 17,
+            "gridY": 19,
             "parents": [
                 {
                     "skillType": "AxeCriticalChance3",
@@ -795,7 +1307,7 @@
         {
             "skillType": "DroneCritical",
             "nameLocId": 274,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": 6,
             "gridY": 17,
@@ -849,7 +1361,7 @@
         {
             "skillType": "Hello",
             "nameLocId": 277,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": 8,
             "gridY": 11,
@@ -887,7 +1399,7 @@
         {
             "skillType": "RainbowTreeChance",
             "nameLocId": 279,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": 11,
             "gridY": -4,
@@ -1045,7 +1557,7 @@
         {
             "skillType": "ConstellationAfterimage1",
             "nameLocId": 287,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": -10,
             "gridY": -15,
@@ -1207,7 +1719,7 @@
         {
             "skillType": "BoomerangCritical",
             "nameLocId": 224,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": -10,
             "gridY": 17,
@@ -1367,7 +1879,7 @@
         {
             "skillType": "WhirlWind",
             "nameLocId": 257,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": 0,
             "gridY": 13,
@@ -1542,7 +2054,7 @@
         {
             "skillType": "WideGreenForestOvergrowth",
             "nameLocId": 121,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": 5,
             "gridY": -2,
@@ -1686,7 +2198,7 @@
         {
             "skillType": "PowerSupply",
             "nameLocId": 139,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": 5,
             "gridY": -6,
@@ -1734,7 +2246,7 @@
         {
             "skillType": "GoldTreeChance",
             "nameLocId": 145,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": 7,
             "gridY": -2,
@@ -1964,7 +2476,7 @@
         {
             "skillType": "ShockwaveRange2",
             "nameLocId": 173,
-            "levelBadge": "II",
+            "levelBadge": "M",
             "requiredPrestigeLevel": 0,
             "gridX": -6,
             "gridY": 5,
@@ -2028,7 +2540,7 @@
         {
             "skillType": "ShockWaveEnforcement",
             "nameLocId": 182,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": -8,
             "gridY": 11,
@@ -2044,7 +2556,7 @@
         {
             "skillType": "ShockWaveCritical",
             "nameLocId": 183,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": -6,
             "gridY": 11,
@@ -2076,7 +2588,7 @@
         {
             "skillType": "ShockWaveMastery",
             "nameLocId": 185,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": -8,
             "gridY": 7,
@@ -2152,7 +2664,7 @@
         {
             "skillType": "MultiAttack",
             "nameLocId": 190,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": 4,
             "gridY": 9,
@@ -2302,7 +2814,7 @@
         {
             "skillType": "FluffySporeForestOverGrowth",
             "nameLocId": 199,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": 9,
             "gridY": -2,
@@ -2318,7 +2830,7 @@
         {
             "skillType": "DiamondTreeChance",
             "nameLocId": 200,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": 9,
             "gridY": -4,
@@ -2478,7 +2990,7 @@
         {
             "skillType": "ShieldExplosionUnlock",
             "nameLocId": 213,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": 0,
             "gridY": -5,
@@ -2500,7 +3012,7 @@
         {
             "skillType": "ShieldExplosionDamage1",
             "nameLocId": 214,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": 0,
             "gridY": -9,
@@ -2672,7 +3184,7 @@
         {
             "skillType": "StarrootForestOverGrowth",
             "nameLocId": 237,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": 11,
             "gridY": -2,
@@ -2774,7 +3286,7 @@
         {
             "skillType": "StaminaRecover",
             "nameLocId": 228,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": -11,
             "gridY": -2,
@@ -2854,7 +3366,7 @@
         {
             "skillType": "AutoLoadInRestArea",
             "nameLocId": 256,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": -13,
             "gridY": -2,

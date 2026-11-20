@@ -188,12 +188,16 @@ public class UIView_Tent : UIView
             return;
 
         RefreshMoneyTexts(true);
+        if (IsVisible)
+            abilityUIComponent?.RequestMoneyVisualRefresh();
     }
 
     // 캐릭터의 전체 재화 값이 바뀌었을 때 현재 재화 텍스트를 갱신한다.
     public void CharactersMoneyChanged()
     {
         RefreshMoneyTexts(true);
+        if (IsVisible)
+            abilityUIComponent?.RequestMoneyVisualRefresh();
     }
 
     // 현재 보유 중인 코인과 당근 수치를 텍스트로 갱신한다.

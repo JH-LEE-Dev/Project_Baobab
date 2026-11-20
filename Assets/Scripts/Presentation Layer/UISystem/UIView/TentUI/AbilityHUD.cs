@@ -15,6 +15,7 @@ public class AbilityHUD : MonoBehaviour
 {
     private const float DownTickMinimumInterval = 0.04f;
     private const float LevelUpParticleReferencePixelsPerUnit = 32.0f;
+    private const int MaxPrestigeLevel = 12;
     private enum EventSpriteEffectType
     {
         LevelUpSpark,
@@ -26,6 +27,7 @@ public class AbilityHUD : MonoBehaviour
     [Header("UI References")]
     [SerializeField] private Image fillImage;
     [SerializeField] private FontMaker fontMakerForBar;
+    [SerializeField] private Sprite maxExperienceSprite;
     [SerializeField] private FontMaker fontMakerForFlowerStack;
     [SerializeField] private ObjectMotionPlayer barFontMotionPlayer;
 
@@ -128,6 +130,8 @@ public class AbilityHUD : MonoBehaviour
     private bool playFlowerDangleAfterReset;
     private ParticleSystem[] levelUpParticleSystems;
     private bool deferCanvasSortingSettings;
+    private bool bMaxExperienceShown;
+    private Image maxExperienceImage;
 
     private void Awake()
     {
@@ -211,6 +215,7 @@ public class AbilityHUD : MonoBehaviour
         maxExperience = Mathf.Max(1, _maxExperience);
         currentExperience = ClampExperience(_currentExperience);
         flowerStack = Mathf.Max(0, _flowerStack);
+        bMaxExperienceShown = flowerStack >= MaxPrestigeLevel;
         Refresh();
     }
 
@@ -365,11 +370,47 @@ public class AbilityHUD : MonoBehaviour
             fillImage.type = Image.Type.Filled;
             fillImage.fillMethod = Image.FillMethod.Horizontal;
             fillImage.fillOrigin = 0;
-            fillImage.fillAmount = maxExperience <= 0 ? 0.0f : Mathf.Clamp01((float)currentExperience / maxExperience);
+            fillImage.fillAmount = bMaxExperienceShown ? 1f : Mathf.Clamp01((float)currentExperience / maxExperience);
         }
 
         if (null != fontMakerForBar)
-            fontMakerForBar.SetFraction(currentExperience, maxExperience);
+        {
+            if (bMaxExperienceShown && null != maxExperienceSprite)
+            {
+                EnsureMaxExperienceImage();
+                fontMakerForBar.Clear();
+                maxExperienceImage.gameObject.SetActive(true);
+            }
+            else
+            {
+                if (null != maxExperienceImage)
+                    maxExperienceImage.gameObject.SetActive(false);
+                fontMakerForBar.SetFraction(currentExperience, maxExperience);
+            }
+        }
+    }
+
+    private void EnsureMaxExperienceImage()
+    {
+        if (null != maxExperienceImage) return;
+
+        Transform existingMax = fontMakerForBar.transform.Find("MaxExperienceImage");
+        if (null != existingMax)
+        {
+            maxExperienceImage = existingMax.GetComponent<Image>();
+            if (null != maxExperienceImage) return;
+        }
+
+        GameObject maxObject = new GameObject("MaxExperienceImage", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        maxObject.layer = fontMakerForBar.gameObject.layer;
+        maxObject.transform.SetParent(fontMakerForBar.transform, false);
+        maxExperienceImage = maxObject.GetComponent<Image>();
+        maxExperienceImage.sprite = maxExperienceSprite;
+        maxExperienceImage.raycastTarget = false;
+        RectTransform maxRect = maxExperienceImage.rectTransform;
+        maxRect.anchorMin = maxRect.anchorMax = maxRect.pivot = new Vector2(0.5f, 0.5f);
+        maxRect.anchoredPosition = Vector2.zero;
+        maxRect.sizeDelta = maxExperienceSprite.rect.size;
     }
 
     private int ClampExperience(int _experience)
@@ -423,14 +464,27 @@ public class AbilityHUD : MonoBehaviour
         resetEffectSequence.Join(BuildResetSquashTween());
         resetEffectSequence.Join(BuildResetColorFlashTween());
         resetEffectSequence.AppendCallback(PlayFlowerStackGrowEffect);
-        resetEffectSequence.AppendCallback(PlayDownStartSound);
-        resetEffectSequence.Append(DOVirtual.Float(0.0f, 1.0f, Mathf.Max(0.0f, resetDrainDuration), UpdateResetDrain).SetEase(Ease.Linear));
+        if (resetTargetFlowerStack < MaxPrestigeLevel)
+        {
+            resetEffectSequence.AppendCallback(PlayDownStartSound);
+            resetEffectSequence.Append(DOVirtual.Float(0.0f, 1.0f, Mathf.Max(0.0f, resetDrainDuration), UpdateResetDrain).SetEase(Ease.Linear));
+        }
+        else
+        {
+            // 꽃 성장과 숫자 팝은 끝까지 재생하되, MAX 게이지는 가득 찬 상태로 유지한다.
+            resetEffectSequence.AppendInterval(Mathf.Max(flowerStackPopDuration, resetDrainDuration));
+        }
         resetEffectSequence.OnKill(RestoreResetExperienceEffectState);
         resetEffectSequence.OnComplete(CompleteResetEffect);
     }
 
     private void PlayResetStartEffects()
     {
+        if (resetTargetFlowerStack >= MaxPrestigeLevel)
+        {
+            bMaxExperienceShown = true;
+            RefreshAbilityBar();
+        }
         Sound.PlayUI(SoundID.AbilityHUDLevelUp);
         PlayLevelUpSpriteEffect();
         PlayLevelUpParticleEffect();
@@ -616,6 +670,8 @@ public class AbilityHUD : MonoBehaviour
     private void ApplyResetFlashColors(float _elapsedTime, float _whiteBlend)
     {
         fontMakerForBar?.SetGlyphColor(GetResetFontFlashColor(_elapsedTime, _whiteBlend));
+        if (null != maxExperienceImage)
+            maxExperienceImage.color = GetResetFontFlashColor(_elapsedTime, _whiteBlend);
 
         if (null != fillImage)
             fillImage.color = GetResetFillFlashColor(_elapsedTime, _whiteBlend);
@@ -701,6 +757,8 @@ public class AbilityHUD : MonoBehaviour
         StopFlowerVisualPresentationEffects();
 
         fontMakerForBar?.ResetGlyphColor();
+        if (null != maxExperienceImage)
+            maxExperienceImage.color = Color.white;
         if (null != fillImage)
             fillImage.color = fillInitialColor;
     }

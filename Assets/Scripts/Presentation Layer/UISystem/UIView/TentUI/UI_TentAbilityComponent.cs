@@ -57,6 +57,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private LocalizationManager localizationManager;
     private Canvas rootCanvas;
     private bool hasDraggedCurrentPress;
+    private bool moneyVisualRefreshPending;
     private bool hasZoomFocus;
     private bool hasPreviousMousePosition;
     private Vector2 previousMousePosition;
@@ -1432,6 +1433,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
         SetCircleRevealDimActive(false);
     }
 
+    // 동전 여러 개나 중복 재화 알림은 LateUpdate에서 한 번으로 합친다.
+    public void RequestMoneyVisualRefresh()
+    {
+        moneyVisualRefreshPending = true;
+    }
+
     public void Refresh()
     {
         BuildNodesIfNeeded();
@@ -1772,7 +1779,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             BuildToolTipTitleText(_node),
             BuildToolTipLevelText(_skillInfo),
             BuildToolTipDescriptionText(descriptionFormat, _previewData),
-            BuildToolTipValueText(_previewData, IsMaxLevel(_skillInfo, _applyReason), ShouldAppendPercentUnit(descriptionFormat)),
+            BuildToolTipValueText(_previewData, IsMaxLevel(_skillInfo, _applyReason), GetToolTipValueFormat(descriptionFormat)),
             costText,
             costMoneyType);
     }
@@ -1835,7 +1842,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         }
     }
 
-    private string BuildToolTipValueText(SkillAccumulatedValueChangeData _data, bool _isMaxLevel, bool _appendPercentUnit)
+    private string BuildToolTipValueText(SkillAccumulatedValueChangeData _data, bool _isMaxLevel, string _valueFormat)
     {
         if (_data.type == SkillCommandType.None)
             return string.Empty;
@@ -1843,11 +1850,11 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (ShouldUseUnlockToolTipValueText(_data.type))
             return BuildUnlockToolTipValueText(_isMaxLevel);
 
-        string currentValue = FormatToolTipValue(_data.currentValueX, _appendPercentUnit);
+        string currentValue = FormatToolTipValue(_data.currentValueX, _valueFormat);
         if (_isMaxLevel)
             return BuildToolTipColorText(currentValue, ToolTipCostMaxLevelColor);
 
-        string totalValue = BuildToolTipColorText(FormatToolTipValue(_data.totalValueZ, _appendPercentUnit), ToolTipValueColor);
+        string totalValue = BuildToolTipColorText(FormatToolTipValue(_data.totalValueZ, _valueFormat), ToolTipValueColor);
         return $"{currentValue} -> {totalValue}";
     }
 
@@ -1876,6 +1883,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
             case SkillCommandType.RemoteDeposit:
             case SkillCommandType.IncreaseJackPotAmount:
             case SkillCommandType.FinalAttack:
+            case SkillCommandType.EmberEverywhere:
+            case SkillCommandType.BoomerangOverheatBoost:
+            case SkillCommandType.DroneOverheatBoost:
+            case SkillCommandType.SpeciesImprovement:
+            case SkillCommandType.PicnicBasket:
+            case SkillCommandType.StaminaRecover:
 
                 return true;
             default:
@@ -1890,7 +1903,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         return BuildToolTipColorText(ResolveLocalizedText(textKey), color);
     }
 
-    private string FormatToolTipValue(float _value, bool _appendPercentUnit = false)
+    private string FormatToolTipValue(float _value, string _valueFormat = "")
     {
         string valueText;
         if (Mathf.Approximately(_value, Mathf.Round(_value)))
@@ -1898,17 +1911,25 @@ public class UI_TentAbilityComponent : MonoBehaviour
         else
             valueText = _value.ToString("0.##");
 
-        return _appendPercentUnit ? valueText + "%" : valueText;
+        return string.IsNullOrEmpty(_valueFormat) ? valueText : string.Format(_valueFormat, valueText);
     }
 
-    private bool ShouldAppendPercentUnit(string _descriptionFormat)
+    private string GetToolTipValueFormat(string _descriptionFormat)
     {
         if (string.IsNullOrEmpty(_descriptionFormat))
-            return false;
+            return string.Empty;
 
-        return _descriptionFormat.Contains("{0}%") ||
-               _descriptionFormat.Contains("{1}%") ||
-               _descriptionFormat.Contains("{2}%");
+        if (_descriptionFormat.Contains("%{0}") ||
+            _descriptionFormat.Contains("%{1}") ||
+            _descriptionFormat.Contains("%{2}"))
+            return "%{0}";
+
+        if (_descriptionFormat.Contains("{0}%") ||
+            _descriptionFormat.Contains("{1}%") ||
+            _descriptionFormat.Contains("{2}%"))
+            return "{0}%";
+
+        return string.Empty;
     }
 
     private AbilityLevelUpRejectReason GetToolTipApplyReason(SkillType _skillType)
@@ -2929,6 +2950,14 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (moneyVisualRefreshPending && hasBuiltNodes && !isCloseFading &&
+            abilityBackground != null && abilityBackground.gameObject.activeInHierarchy)
+        {
+            RefreshNodeAvailabilityVisuals();
+            if (currentToolTipNode != null)
+                ShowToolTip(currentToolTipNode);
+        }
+
         if (false == IsMouseKeyboardControlMode)
             return;
 
@@ -3839,7 +3868,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
             _currentHUDState.PrestigeLevel > _previousHUDState.PrestigeLevel;
 
         // 해금되는 순간임
-        if ((wasLockedByLevel && node.IsUnlockedByLevel()) || prestigeIncreased)
+        bool picnicUnlocked = _currentHUDState.IsValid && _previousHUDState.IsValid &&
+            IsPicnicBasketVisible(_currentHUDState.PrestigeLevel, _currentHUDState.Experience) &&
+            !IsPicnicBasketVisible(_previousHUDState.PrestigeLevel, _previousHUDState.Experience);
+        if ((wasLockedByLevel && node.IsUnlockedByLevel()) || prestigeIncreased || picnicUnlocked)
             RefreshNodeVisibility(true);
         else
             RefreshLines();
@@ -4343,6 +4375,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
     // 현재 보이는 노드를 순회하며 찍기 가능 여부를 확인하고 테두리/배경 색을 갱신한다.
     private void RefreshNodeAvailabilityVisuals()
     {
+        // 창 열기나 구매로 즉시 갱신했다면 예약된 재화 갱신도 처리한 것으로 본다.
+        moneyVisualRefreshPending = false;
         for (int i = 0; i < spawnedNodes.Count; i++)
         {
             AbilityNode node = spawnedNodes[i];
@@ -4397,6 +4431,18 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (_node == null)
             return false;
 
+        if (_node.SkillType == SkillType.PicnicBasket)
+        {
+            if (skillSystemProvider == null)
+                return false;
+
+            // 기존 세이브에서 이미 습득한 소풍은 숨기지 않는다.
+            bool alreadyAcquired = skillSystemProvider.IsApplied(_node.SkillType, out int level) && level > 0;
+            if (!alreadyAcquired && !IsPicnicBasketVisible(
+                skillSystemProvider.GetCurrentPrestigeLevel(), skillSystemProvider.GetCurrentPrestigeExp()))
+                return false;
+        }
+
         if (SatisfiesPrestigeRequirement(_node) == false)
             return false;
 
@@ -4404,6 +4450,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return ShouldShowNodeByProvider(_node);
 
         return ShouldShowNodeByVisualConnection(_node);
+    }
+
+    // 소풍의 등장은 TentUI에서만 제한하고, 구매 판정은 기존 스킬 시스템에 맡긴다.
+    private static bool IsPicnicBasketVisible(int _prestigeLevel, int _experience)
+    {
+        return _prestigeLevel > 11 || (_prestigeLevel == 11 && _experience >= 149);
     }
 
     private bool SatisfiesPrestigeRequirement(AbilityNode _node)

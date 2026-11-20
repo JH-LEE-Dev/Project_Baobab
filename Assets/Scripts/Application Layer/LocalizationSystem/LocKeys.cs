@@ -168,9 +168,7 @@ public static class LocKeys
         public const int logInsurance3Name = 4194606;
         public const int sourceOfSpeed3Name = 4194607;
         public const int overheatGainBonus1Name = 4194608;
-        public const int abilityDescriptionEmberDropBonus = 4203489;
         public const int emberDropBonus1Name = 4194609;
-        public const int abilityDescriptionOverheatGainBonus = 4203490;
         public const int boomerangCooldownReduction2Name = 4194610;
         public const int droneChainAttack2Name = 4194611;
         public const int droneChainAttackRange1Name = 4194612;
@@ -180,11 +178,8 @@ public static class LocKeys
         public const int steelAxe4Name = 4194616;
         public const int weakPointHit2Name = 4194617;
         public const int finalAttackName = 4194618;
-        public const int abilityDescriptionFinalAttack = 4203491;
         public const int remoteDepositName = 4194619;
-        public const int abilityDescriptionRemoteDeposit = 4203492;
         public const int increaseRepairEfficiency1Name = 4194620;
-        public const int abilityDescriptionIncreaseRepairEfficiency = 4203493;
         public const int movementSpeed3Name = 4194621;
         public const int pickupRange3Name = 4194622;
         public const int itemTransferSpeedUP2Name = 4194623;
@@ -193,13 +188,38 @@ public static class LocKeys
         public const int overheatGainBonus2Name = 4194626;
         public const int emberDropBonus2Name = 4194627;
         public const int preheat1Name = 4194628;
-        public const int abilityDescriptionPreheat = 4203494;
         public const int treeHeatResistance1Name = 4194629;
-        public const int abilityDescriptionTreeHeatResistance = 4203495;
         public const int bountifulTree5Name = 4194630;
         public const int increaseJackPotAmountName = 4194631;
-        public const int abilityDescriptionIncreaseJackPotAmount = 4203496;
         public const int logProcessingSpeed6Name = 4194632;
+        public const int axeDamage7Name = 4194633;
+        public const int axeAttackSpeed3Name = 4194634;
+        public const int steelAxe5Name = 4194635;
+        public const int shockwaveDamage4Name = 4194636;
+        public const int boomerangOverheatBoostName = 4194637;
+        public const int boomerangDamage4Name = 4194638;
+        public const int droneOverheatBoostName = 4194639;
+        public const int droneDamage4Name = 4194640;
+        public const int increaseJackPotChance2Name = 4194641;
+        public const int logValue6Name = 4194642;
+        public const int bountifulTree6Name = 4194643;
+        public const int speciesImprovementName = 4194644;
+        public const int inventoryExpansion2Name = 4194645;
+        public const int sawmillLogStorageExpansion4Name = 4194646;
+        public const int woodenTransportBoxExpansion4Name = 4194647;
+        public const int logCapacityIncrease4Name = 4194648;
+        public const int conveyorSpeed3Name = 4194649;
+        public const int logProcessingSpeed7Name = 4194650;
+        public const int topgradeAssessment2Name = 4194651;
+        public const int fatigueMaxIncrease7Name = 4194652;
+        public const int pickupRange4Name = 4194653;
+        public const int emberEverywhereName = 4194654;
+        public const int preheat2Name = 4194655;
+        public const int overheatMaxIncreaseName = 4194656;
+        public const int overheatGainBonus3Name = 4194657;
+        public const int overheatEfficiencyName = 4194658;
+        public const int treeHeatResistance2Name = 4194659;
+        public const int picnicBasketName = 4194660;
         public const int commonLevel = 4203304;
         public const int commonFree = 4203305;
         public const int commonMaxLevel = 4203306;
@@ -295,6 +315,19 @@ public static class LocKeys
         public const int abilityDescriptionRepair = 4203486;
         public const int abilityDescriptionRemoteLogTransport = 4203487;
         public const int abilityDescriptionConstellationAfterimage = 4203488;
+        public const int abilityDescriptionEmberDropBonus = 4203489;
+        public const int abilityDescriptionOverheatGainBonus = 4203490;
+        public const int abilityDescriptionFinalAttack = 4203491;
+        public const int abilityDescriptionRemoteDeposit = 4203492;
+        public const int abilityDescriptionIncreaseRepairEfficiency = 4203493;
+        public const int abilityDescriptionPreheat = 4203494;
+        public const int abilityDescriptionTreeHeatResistance = 4203495;
+        public const int abilityDescriptionIncreaseJackPotAmount = 4203496;
+        public const int abilityDescriptionSpeciesImprovement = 4203497;
+        public const int abilityDescriptionEmberEverywhere = 4203498;
+        public const int abilityDescriptionOverheatMaxIncrease = 4203499;
+        public const int abilityDescriptionOverheatEfficiency = 4203500;
+        public const int abilityDescriptionPicnicBasket = 4203501;
     }
 
     public static class DemoNoticeUI
@@ -690,6 +723,7 @@ public static class LocKeys
         public const int roguelikeChallengeClearedToast = 37749317;
         public const int roguelikeChallengePrismCardTitle = 37749318;
         public const int roguelikeChallengePrismCardTip = 37749319;
+        public const int roguelikeChallengesClearedLabel = 37749320;
     }
 
     public static class SaveCheckUI
