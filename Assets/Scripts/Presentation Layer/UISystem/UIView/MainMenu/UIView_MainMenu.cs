@@ -151,6 +151,11 @@ public class UIView_MainMenu : UIView
         return null != saveSystem && true == saveSystem.HasSaveData();
     }
 
+    public bool IsRoguelikeUnlockedInSave()
+    {
+        return null != saveSystem && true == saveSystem.IsRoguelikeUnlockedInSave();
+    }
+
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);
