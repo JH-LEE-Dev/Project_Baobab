@@ -361,6 +361,13 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Publish(new OverheatGaugeRequiredSignal(character.bEmberEverywhere || character.PreheatAmount > 0f));
         signalHub.Publish(new DecalreDungeonTypeSignal(currentMapType, currentForestType));
 
+        // 스테이지 첫 입장 도전과제. MainMenu → Dungeon은 튜토리얼 원정이라 세지 않는다.
+        // 이미 해금됐으면 아무 일도 없으므로 입장(재도전 포함)마다 불러도 된다.
+        if (false == bIsFromMainMenu && false == GameModeContext.IsRoguelike)
+        {
+            SteamAchievementService.UnlockStageEnter(currentMapType);
+        }
+
         character.gameObject.SetActive(true);
 
         // MainMenu → Dungeon: 캐릭터를 차량 탑승 위치로 옮겨 탑승 상태로 표시한 뒤 다시 숨기고,
