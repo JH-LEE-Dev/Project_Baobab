@@ -290,6 +290,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     float ICharacterStatForNPC.overheatBurnTickInterval => overheatBurnTickInterval;
     float ICharacterStatForNPC.criticalChance => criticalChance;
     float ICharacterStatForNPC.ciriticalDamageMul => ciriticalDamageMul;
+    float ICharacterStatForNPC.finalAttackHealthPercent => finalAttackHealthPercent;
 
     public override void Initialize(ComponentCtx _ctx)
     {

@@ -1963,6 +1963,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
             // "드론 치명타 적용" 특성: 도끼 치명타 확률·배율을 계승한다(꺼져 있으면 굴리지 않는다). 실제 판정은 Drone이 발사마다 한다.
             activeDrones[i].SetCritical(statComponent.bDroneCritical, statComponent.criticalChance, statComponent.ciriticalDamageMul);
+            activeDrones[i].SetFinalAttack(statComponent.finalAttackHealthPercent);
             activeDrones[i].Activate(statComponent.droneDamage, statComponent.droneDamageInterval, statComponent.droneActiveDuration, statComponent.droneAttackRange, target);
         }
     }
@@ -2182,7 +2183,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
                     if (next is TreeObj nextTree)
                     {
-                        nextTree.TakeDamageWithoutHitSound(chainDamage, bChainCritical); // 레이저 전이 - 도끼 타격음 없이 드론 발사음만
+                        // 마무리 벌목: 체력이 기준 이하인 나무는 남은 체력 전부(이번 발사 치명타 배율 포함)를 받는다.
+                        float nextDamage = FinalAttackRule.ApplyToSkillDamage(nextTree, chainDamage, statComponent.finalAttackHealthPercent, _drone.LastShotDamageMul);
+                        nextTree.TakeDamageWithoutHitSound(nextDamage, bChainCritical); // 레이저 전이 - 도끼 타격음 없이 드론 발사음만
 
                         if (_bIsOverheat)
                         {

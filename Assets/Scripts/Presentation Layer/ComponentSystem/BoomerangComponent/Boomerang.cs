@@ -136,6 +136,8 @@ public class Boomerang : MonoBehaviour
     private bool bCriticalEnabled;
     private float criticalChance;
     private float criticalDamageMul;
+    // 마무리 벌목 특성: 남은 체력이 이 비율 이하인 나무는 남은 체력 전부를 받는다(0이면 꺼짐). BoomerangCreator가 발사마다 넘긴다.
+    private float finalAttackHealthRatio;
 
     private float damageCheckTimer;
     private Vector2 lastDamageCheckPosition; // 터널링 방지: 직전 판정 시점의 위치. 이 위치~현재 위치 사이 선분 전체를 검사한다.
@@ -239,6 +241,12 @@ public class Boomerang : MonoBehaviour
         bCriticalEnabled = _enabled;
         criticalChance = _chance;
         criticalDamageMul = _damageMul;
+    }
+
+    /// <summary>마무리 벌목 특성 비율(StatComponent.finalAttackHealthPercent, 0~1). 풀에서 재사용되므로 발사마다 덮어쓴다.</summary>
+    public void SetFinalAttack(float _healthRatio)
+    {
+        finalAttackHealthRatio = _healthRatio;
     }
 
     /// <summary>
@@ -809,7 +817,9 @@ public class Boomerang : MonoBehaviour
                         bool bNotifyRun = RunCombatHooks.HasBoomerangHitTreeListener;
                         Vector3 hitTreePos = bNotifyRun ? (Vector3)treeObj.Position : Vector3.zero;
 
-                        treeObj.TakeDamage(tickDamage, false, bCritical);
+                        // 마무리 벌목: 체력이 기준 이하인 나무는 남은 체력 전부(이번 틱 치명타 배율 포함)를 받는다.
+                        float hitDamage = FinalAttackRule.ApplyToSkillDamage(treeObj, tickDamage, finalAttackHealthRatio, bCritical ? criticalDamageMul : 1f);
+                        treeObj.TakeDamage(hitDamage, false, bCritical);
                         bHitAny = true;
 
                         // 과열 부메랑: 방금 들어간 피해의 비율로 화상(충격파·드론과 공유). 막타였으면 가드가 무시한다.

@@ -98,6 +98,7 @@ public class BoomerangCreator : MonoBehaviour, IBoomerangCreator
             statComponent.bBoomerangCritical,
             statComponent.criticalChance,
             statComponent.ciriticalDamageMul);
+        boomerang.SetFinalAttack(statComponent.finalAttackHealthPercent);
         boomerang.SetHitRadius(finalHitRadius);
         boomerang.SetSpeedMultiplier(1f);
         // 과열 부메랑이면 과열 전용 스프라이트(OverHeatBoomerang_Base/Effect)로 재생하고 맞힌 나무에 화상을 건다.

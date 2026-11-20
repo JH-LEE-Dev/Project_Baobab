@@ -205,6 +205,8 @@ public class Drone : MonoBehaviour
     // 확률·배율은 도끼 치명타 값을 그대로 계승한다(Character가 Activate 직전에 SetCritical로 넘긴다).
     private bool bCriticalEnabled;
     private float criticalChance;
+    // 마무리 벌목 특성: 남은 체력이 이 비율 이하인 나무는 남은 체력 전부를 받는다(0이면 꺼짐). Character가 Activate 직전마다 넘긴다.
+    private float finalAttackHealthRatio;
     private float criticalDamageMul = 1f;
 
     /// <summary>
@@ -475,6 +477,12 @@ public class Drone : MonoBehaviour
         bCriticalEnabled = _enabled;
         criticalChance = _chance;
         criticalDamageMul = _damageMul;
+    }
+
+    /// <summary>마무리 벌목 특성 비율(StatComponent.finalAttackHealthPercent, 0~1). Character가 Activate 직전마다 넘긴다.</summary>
+    public void SetFinalAttack(float _healthRatio)
+    {
+        finalAttackHealthRatio = _healthRatio;
     }
 
     /// <summary>
@@ -1158,7 +1166,9 @@ public class Drone : MonoBehaviour
         // 레이저라 발사와 동시에 맞는다 - 도끼 타격음 대신 위의 발사음만 들리게 한다
         if (currentTarget is TreeObj tree)
         {
-            tree.TakeDamageWithoutHitSound(shotDamage, bLastShotCritical);
+            // 마무리 벌목: 체력이 기준 이하인 나무는 남은 체력 전부(이번 발사 치명타 배율 포함)를 받는다.
+            float treeDamage = FinalAttackRule.ApplyToSkillDamage(tree, shotDamage, finalAttackHealthRatio, LastShotDamageMul);
+            tree.TakeDamageWithoutHitSound(treeDamage, bLastShotCritical);
         }
         else
         {
