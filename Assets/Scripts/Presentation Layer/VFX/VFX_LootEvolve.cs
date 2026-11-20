@@ -53,13 +53,15 @@ namespace PresentationLayer.VFX
         [SerializeField] private MeshRenderer groundMeshRenderer;
         [SerializeField] private string groundSortingLayerName = "ShockWave";
         [SerializeField] private int groundSortingOrder = 0;
+        [SerializeField, Tooltip("연출 중심(이 오브젝트 또는 itemTransform)에서 바닥 고리 중심까지 아래로 내려가는 거리(px). 기본 29는 전리품 기둥 받침대 밑. 바닥에 놓인 물체는 발밑에 맞춘다.")]
+        private int groundOffsetPx = DefaultGroundY;
 
         private const float PixelsPerUnit = 32.0f;
         private const float TicksPerSecond = 24.0f;
         private const int TotalTicks = 72;
         private const int GatherTicks = 15;
         private const int BurstTick = 19;
-        private const int GroundY = 29;         // 전리품 중심 기준 바닥 고리 중심(아래 +)
+        private const int DefaultGroundY = 29;  // 전리품 중심 기준 바닥 고리 중심(아래 +), 기둥 받침대 밑
         private const int MinBeamHeight = 128;       // 카메라를 못 구할 때 / 화면 안에 들어오는 최소 길이
         private const int MaxBeamHeight = 420;       // 화면 위쪽 끝까지 닿게 늘리는 상한(약 13유닛)
         private const int BeamScreenMargin = 24;     // 화면 위쪽 끝을 이만큼(px) 넘겨서 그린다
@@ -118,6 +120,9 @@ namespace PresentationLayer.VFX
 
         // 이번 프레임의 빛기둥 길이(px). RebuildMesh가 카메라 위쪽 끝으로 정한다(인스턴스 하나씩 순서대로 그리므로 공유해도 된다).
         private static int beamHeightPx = MinBeamHeight;
+
+        // 이번 프레임의 바닥 고리 중심(px, 아래 +). RebuildMesh가 인스턴스 값(groundOffsetPx)으로 정한다(빛기둥 길이와 같은 방식).
+        private static int groundYPx = DefaultGroundY;
 
         // 톤 정의: 기본색 r,g,b(0~1)와 발광 배율. 알파 = (배율 - 1.2) / 4.8. 색 계열마다 3톤.
         private static readonly float[][] FamilyTones =
@@ -618,15 +623,15 @@ namespace PresentationLayer.VFX
             byte ringTone = _gather < 0.35f ? ToneOldM : ToneOldL;
             float keep = 0.3f + 0.7f * _gather;
 
-            RingDots(_g, 0, GroundY, 30, 15, 34, ringTone, ph * 0.7f, keep, 3, true);
-            RingDots(_g, 0, GroundY, 20, 10, 24, _gather > 0.5f ? ToneOldL : ToneOldM, -ph * 1.0f, keep, 4, false);
+            RingDots(_g, 0, groundYPx, 30, 15, 34, ringTone, ph * 0.7f, keep, 3, true);
+            RingDots(_g, 0, groundYPx, 20, 10, 24, _gather > 0.5f ? ToneOldL : ToneOldM, -ph * 1.0f, keep, 4, false);
 
             for (int r = 0; r < 8; r++)
             {
                 if (_gather * 8.0f > r)
                 {
                     float a = r * Mathf.PI * 0.25f + ph * 0.04f;
-                    Plus(_g, Mathf.Cos(a) * 34, GroundY + Mathf.Sin(a) * 17, ToneOldL, 2);
+                    Plus(_g, Mathf.Cos(a) * 34, groundYPx + Mathf.Sin(a) * 17, ToneOldL, 2);
                 }
             }
 
@@ -795,8 +800,8 @@ namespace PresentationLayer.VFX
                 float keep = 1.0f - 0.75f * u;
                 int nn = (int)(24.0f + rx * 0.9f);
 
-                RingDots(_g, 0, GroundY, rx, ry, nn, tone, 0.0f, keep, 11 + delay, true);
-                RingDots(_g, 0, GroundY, rx * 0.93f, ry * 0.93f, nn, u < 0.6f ? ToneNewM : ToneNewD, 0.0f, keep * 0.8f, 21 + delay, false);
+                RingDots(_g, 0, groundYPx, rx, ry, nn, tone, 0.0f, keep, 11 + delay, true);
+                RingDots(_g, 0, groundYPx, rx * 0.93f, ry * 0.93f, nn, u < 0.6f ? ToneNewM : ToneNewD, 0.0f, keep * 0.8f, 21 + delay, false);
             }
 
             // 바닥에 누운 별 섬광(쿼터뷰 바닥면): 가로 팔이 길고 세로 팔은 절반. 4단계로 줄어든다
@@ -807,19 +812,19 @@ namespace PresentationLayer.VFX
                 for (int k = 1; k <= ax; k++)
                 {
                     byte tone = k <= 3 ? ToneWhite : (k < ax * 0.6f ? ToneNewL : ToneNewM);
-                    Plot(_g, k, GroundY, tone);
-                    Plot(_g, -k, GroundY, tone);
+                    Plot(_g, k, groundYPx, tone);
+                    Plot(_g, -k, groundYPx, tone);
 
                     if (k <= ay)
                     {
-                        Plot(_g, 0, GroundY + k, tone);
-                        Plot(_g, 0, GroundY - k, tone);
+                        Plot(_g, 0, groundYPx + k, tone);
+                        Plot(_g, 0, groundYPx - k, tone);
                         if (k <= 6)
                         {
-                            Plot(_g, k, GroundY + 1, ToneNewL);
-                            Plot(_g, -k, GroundY + 1, ToneNewL);
-                            Plot(_g, k, GroundY - 1, ToneNewL);
-                            Plot(_g, -k, GroundY - 1, ToneNewL);
+                            Plot(_g, k, groundYPx + 1, ToneNewL);
+                            Plot(_g, -k, groundYPx + 1, ToneNewL);
+                            Plot(_g, k, groundYPx - 1, ToneNewL);
+                            Plot(_g, -k, groundYPx - 1, ToneNewL);
                         }
                     }
                 }
@@ -841,7 +846,7 @@ namespace PresentationLayer.VFX
                     {
                         float d = head + 8.0f - i;
                         byte tone = d < 2.0f ? ToneWhite : (d < 5.0f ? ToneNewL : ToneNewM);
-                        P(_g, Mathf.Cos(ang) * i, GroundY + Mathf.Sin(ang) * i * 0.5f, tone);
+                        P(_g, Mathf.Cos(ang) * i, groundYPx + Mathf.Sin(ang) * i * 0.5f, tone);
                     }
                 }
             }
@@ -927,14 +932,14 @@ namespace PresentationLayer.VFX
                 float keep = Mathf.Max(0.0f, 1.0f - (int)(du * 10.0f) / 10.0f);
                 int ph = _tick / 2;
 
-                RingDots(_g, 0, GroundY, 30, 15, 34, ToneNewM, ph * 0.7f, keep, 3, true);
+                RingDots(_g, 0, groundYPx, 30, 15, 34, ToneNewM, ph * 0.7f, keep, 3, true);
                 for (int i = 0; i < 34; i++)
                 {
                     if (keep < Hash(3, i) && Hash(i, 41) < 0.5f)
                     {
                         float a = 2.0f * Mathf.PI * (i + ph * 0.7f) / 34.0f;
                         float rise = du * (14.0f + Hash(i, 42) * 20.0f);
-                        P(_a, Mathf.Cos(a) * 30.0f, GroundY + Mathf.Sin(a) * 15.0f - rise, ToneNewL);
+                        P(_a, Mathf.Cos(a) * 30.0f, groundYPx + Mathf.Sin(a) * 15.0f - rise, ToneNewL);
                     }
                 }
             }
@@ -1050,6 +1055,7 @@ namespace PresentationLayer.VFX
         private void RebuildMesh(float _ft)
         {
             beamHeightPx = ComputeBeamHeight();
+            groundYPx = groundOffsetPx;
             DrawFrame(_ft);
 
             bool bHalo = null != haloMesh;
