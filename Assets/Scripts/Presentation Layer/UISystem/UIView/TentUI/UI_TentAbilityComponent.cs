@@ -1888,6 +1888,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             case SkillCommandType.DroneOverheatBoost:
             case SkillCommandType.SpeciesImprovement:
             case SkillCommandType.PicnicBasket:
+            case SkillCommandType.StaminaRecover:
 
                 return true;
             default:
