@@ -218,9 +218,9 @@ MonoBehaviour:
     - forestType: 13
       spawnTreeTypes:
       - treeType: 11
-        regenProb: 60
+        regenProb: 35
       - treeType: 12
-        regenProb: 40
+        regenProb: 65
       spawnAnimalTypes: []
       treeStartDensityRatio: 0.03
       treeMaxDensityRatio: 0.06
