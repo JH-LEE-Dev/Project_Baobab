@@ -483,7 +483,9 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
     /// <param name="_heightScale">원목이 튀는 높이 배율. 보석 나무가 쓰러질 때 단계별로 더 높이 튀게 한다(1이면 예전과 같다).
     /// 비행 시간이 높이에 따라 늘지 않도록 시간 배율을 1/√배율로 같이 넘겨, 착지 시각·자리는 그대로이고 포물선만 높아진다.</param>
     /// <param name="_launched">null이 아니면 이번에 튄 원목을 담아 준다(보석 원목 잔광 꼬리가 따라갈 때).</param>
-    public void SpawnLogItem(TreeObj _treeObj, float _multiplier, float _heightScale = 1f, List<LogItem> _launched = null)
+    /// <param name="_gradeOverride">None이 아니면 나무 등급 대신 이 등급으로 원목 종류·개수를 정한다
+    /// (보석 나무가 다음 단계로 변할 때 직전 단계의 원목을 떨어뜨리는 용도). 기본 None이면 예전과 같다.</param>
+    public void SpawnLogItem(TreeObj _treeObj, float _multiplier, float _heightScale = 1f, List<LogItem> _launched = null, TreeGrade _gradeOverride = TreeGrade.None)
     {
         using var _profile = ChopProfilerMarkers.SpawnLogs.Auto();
 
@@ -493,7 +495,8 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
         }
 
         TreeData treeData = _treeObj.treeData;
-        LogState logType = GetLogStateFromTreeGrade(treeData.grade);
+        TreeGrade dropGrade = TreeGrade.None != _gradeOverride ? _gradeOverride : treeData.grade;
+        LogState logType = GetLogStateFromTreeGrade(dropGrade);
 
         // 이 수종의 원목 데이터가 없으면 드랍할 수 없다. 가드가 없던 시절에는 아래 루프 한가운데서
         // info.color가 NRE를 내며 드랍이 통째로 끊겼는데, 원인이 "데이터베이스에 행 하나 누락"이라
@@ -507,7 +510,7 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
         }
 
         int minCnt, maxCnt;
-        if (treeData.grade >= TreeGrade.Fascinating)
+        if (dropGrade >= TreeGrade.Fascinating)
         {
             minCnt = highGradeDropCntMin;
             maxCnt = highGradeDropCntMax;
