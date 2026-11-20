@@ -242,6 +242,29 @@ public static class LogValue
 }
 
 /// <summary>
+/// 원목의 "종류" = (수종, 등급) 한 쌍을 표 인덱스로 바꾸는 창구. 교체 시스템이 들어올 원목을 종류별로
+/// 기록할 때 쓴다(InventoryManager의 종류별 요청 표).
+/// </summary>
+public static class LogKind
+{
+    public const int STATE_COUNT = 6;   // LogState: Destoyed ~ Perfect
+    public const int COUNT = (int)TreeType.Max * STATE_COUNT;
+
+    /// <summary>표 인덱스. 범위를 벗어난 값이면 -1.</summary>
+    public static int Index(TreeType _treeType, LogState _logState)
+    {
+        int tree = (int)_treeType;
+        int state = (int)_logState;
+        if (tree < 0 || tree >= (int)TreeType.Max || state < 0 || state >= STATE_COUNT) return -1;
+
+        return tree * STATE_COUNT + state;
+    }
+
+    public static TreeType TreeTypeOf(int _index) => (TreeType)(_index / STATE_COUNT);
+    public static LogState LogStateOf(int _index) => (LogState)(_index % STATE_COUNT);
+}
+
+/// <summary>
 /// 이번 감지 틱에 캐릭터의 흡입 반경 안에 (수종, 등급)별로 원목이 몇 개 보이는지. <b>공중에 떠 있는
 /// 것도 센다.</b>
 ///
@@ -282,9 +305,10 @@ public static class LogVisibleCounts
 }
 
 /// <summary>
-/// 바닥의 원목 중 <b>누가 먼저 칸을 차지하는지</b>의 순서. 흡입 선점 정렬(ItemDetector.SortByPickupPriority)과
-/// 교체의 "들어올 원목" 선정(InventoryManager.RequestLogSwap)이 이 함수 하나를 본다. 두 곳이 다른 기준을 쓰면
-/// "안내는 A인데 선점은 B를 밀어주는" 일이 생기므로 반드시 여기서만 정한다.
+/// 바닥의 원목 중 <b>누가 먼저 칸을 차지하는지</b>의 순서. 흡입 선점 정렬(ItemDetector.SortByPickupPriority)이 쓴다.
+/// 교체의 "들어올 원목"은 이 순서가 아니라 <b>이득이 가장 큰 거래</b>로 고르고(LogSwapRule 참고), 이득이 정확히
+/// 같을 때만 이 순서로 가른다. 교체는 비운 그 프레임에 안내한 종류를 직접 끌어와 칸을 예약하므로
+/// (UnitSystem.LogSwapRequested), 선점 1위가 아닌 종류를 안내해도 그 종류가 그 칸에 들어온다.
 ///
 ///   1. 보석 등급(황금/다이아/프리즘)이 일반보다 먼저. 총가치와 무관하다.
 ///      보석은 희귀하고 기획상 중요해서, 빈 칸 하나를 두고 일반 더미에 밀려 바닥에 남는 손실은 복구가 안 된다.
@@ -328,6 +352,12 @@ public static class LogPickupOrder
 ///          만들 수 있지만 유저가 검증할 수 없고, 검증 못 하는 이득은 이득으로 느껴지지 않는다.
 ///   선정 : 자격·상한을 통과한 슬롯 중 총 가치가 가장 낮은 것("가장 싸게 살 수 있는 칸").
 ///          같으면 개당 가치가 낮은 쪽(더 싼 수종)을 골라 직관과 맞춘다.
+///   거래 : 들어올 원목이 여러 종류면(바닥에서 못 먹은 종류들 / 상자가 못 받아준 가방 슬롯들) <b>종류마다</b>
+///          위 규칙으로 버릴 슬롯을 찾고, 그중 이득(GetGain)이 가장 큰 거래 하나를 제안한다. 예전엔 우선순위
+///          1위 종류 하나만 따져서, 그 종류로 버릴 슬롯이 없으면 다른 종류로 성립하는 거래가 있어도 제안이
+///          없었다(가방의 황금 잿불 5개가 막혀 있으면, 상자의 잿불 30개를 용암수액 30개로 바꾸는 거래가 묻혔다).
+///          종류를 고르는 쪽은 각 보관함이 맡고(InventoryManager / OffroadContainer의 TryFindLogSwapVictimSlot),
+///          여기서는 종류 하나에 대한 슬롯 선정과 이득 계산만 한다.
 ///
 /// 가장 싼 수종이 들어올 때는 자격을 만족하는 슬롯이 없어 제안이 없다. "잡템 자리를 만들라"는
 /// 제안은 구조적으로 나오지 않는다.
@@ -358,19 +388,32 @@ public static class LogSwapRule
     }
 
     /// <summary>
+    /// 거래의 이득 = 들어올 원목의 개당 가치 × min(들어올 개수, 슬롯 최대 중첩) − 버릴 슬롯의 총 가치.
+    /// 앞 항은 상한(IsCandidate)의 "보이는 만큼"과 같은 값이라, 후보로 통과한 슬롯이면 0 이상이다.
+    /// </summary>
+    public static long GetGain(long _incomingUnitValue, int _incomingCount, int _slotCapacity, long _victimTotalValue)
+    {
+        return _incomingUnitValue * Mathf.Min(_incomingCount, _slotCapacity) - _victimTotalValue;
+    }
+
+    /// <summary>
     /// 버릴 슬롯을 고른다. _stickyIndex가 아직 후보라면 그대로 유지하고(한 번 띄운 제안은 무효가 되기
     /// 전까지 바꾸지 않는다), 아니면 후보 중 총 가치 최소(같으면 개당 최소)를 새로 고른다. 없으면 -1.
     /// _excluded는 지금 옮기는 중이라 건드리면 안 되는 슬롯(없으면 null).
+    /// _victimTotalValue는 고른 슬롯의 총 가치(없으면 0) - 거래의 이득(GetGain)을 구할 때 쓴다.
     /// </summary>
     public static int SelectVictim(System.Collections.Generic.List<InventorySlot> _slots, int _slotCount,
         long _incomingUnitValue, int _incomingCount, int _slotCapacity,
-        System.Collections.Generic.HashSet<InventorySlot> _excluded, int _stickyIndex)
+        System.Collections.Generic.HashSet<InventorySlot> _excluded, int _stickyIndex, out long _victimTotalValue)
     {
+        _victimTotalValue = 0;
+
         int count = Mathf.Min(_slotCount, _slots.Count);
 
         if (_stickyIndex >= 0 && _stickyIndex < count && !IsExcluded(_slots[_stickyIndex], _excluded)
-            && IsCandidate(_slots[_stickyIndex], _incomingUnitValue, _incomingCount, _slotCapacity, out _, out _))
+            && IsCandidate(_slots[_stickyIndex], _incomingUnitValue, _incomingCount, _slotCapacity, out long stickyTotalValue, out _))
         {
+            _victimTotalValue = stickyTotalValue;
             return _stickyIndex;
         }
 
@@ -390,6 +433,8 @@ public static class LogSwapRule
                 bestIndex = i;
             }
         }
+
+        if (bestIndex >= 0) _victimTotalValue = bestTotalValue;
 
         return bestIndex;
     }

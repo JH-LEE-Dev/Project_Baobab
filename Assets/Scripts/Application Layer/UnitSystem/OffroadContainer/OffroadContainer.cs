@@ -577,6 +577,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         bRemoteWaitingForRoom = false;
         SetRemoteTransporting(false);
         ClearLogSwapRequest();
+        swapForcedSlot = null;
         bSwapDropPending = false;
         lastTransferTime = -transferInterval;
         currentDepositPitch = DEPOSIT_PITCH_MIN;
@@ -689,6 +690,17 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         }
         else
         {
+            // 교체(Tab)가 방금 상자 슬롯을 비웠다면, 안내한 가방 슬롯을 다른 무엇보다 먼저 넘긴다. 교체의 들어올 원목은
+            // 전송 순서 1위가 아니라 이득이 가장 큰 거래의 것이라(TryFindLogSwapVictimSlot), 아래의 평소 순서에 맡기면
+            // 비운 칸을 다른 종류(막혀 있던 보석 등)가 먼저 차지해 안내한 슬롯이 넘어가지 못한다.
+            if (TryTakeSwapForcedSlot(out InventorySlot forcedSlot))
+            {
+                ClearLogSwapRequest();
+                StartCoroutine(TransferOneSlotVisualRoutine(forcedSlot, false));
+                lastTransferTime = Time.time;
+                return true;
+            }
+
             // 인벤토리 -> 운반 상자 방향은 IsTransferredBefore 순서로 옮긴다: 보석 먼저, 그 다음 개당 가치 높은 순, 같으면
             // 많이 쌓인 순. 상자가 도중에 가득 차더라도 보석은 반드시 들어가고 일반은 값싼 것만 가방에 남게 하기 위해서다.
             // 슬롯 순서대로 옮기면 어느 원목이 살아남는지가 "가방에 먼저 들어온 순서"에 달리게 된다.
@@ -697,11 +709,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             long bestUnitValue = LogValue.NONE;
             int bestCount = 0;
 
-            // 자리가 없어 거절당한 슬롯 중 전송 순서가 가장 앞선 것. 하나라도 있으면 교체 발동 조건 1이 성립한다.
-            // 교체 뒤 실제로 넘어갈 슬롯을 고르는 것과 같은 순서라야 "넘어감"으로 표시한 슬롯이 그대로 넘어간다.
-            LogItemData blockedData = null;
-            long blockedUnitValue = LogValue.NONE;
-            int blockedCount = 0;
+            // 자리가 없어 거절당한 슬롯이 하나라도 있는지. 있으면 교체 발동 조건 1이 성립한다. 어느 슬롯으로 교체를
+            // 제안할지는 여기서 정하지 않는다 - TryFindLogSwapVictimSlot이 가방 슬롯 전부를 따져 이득이 가장 큰 거래를 고른다.
+            bool bAnyBlocked = false;
 
             var charSlots = characterInventory.inventorySlots;
             for (int i = 0; i < characterInventory.currentSlotCnt; i++)
@@ -711,18 +721,13 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                     if (transferringSlots.Contains(charSlot)) continue;
                     if (!(charSlot.itemData is LogItemData logSourceData)) continue;
 
-                    long unitValue = LogValue.GetUnitValue(logSourceData.treeType, logSourceData.logState);
-
                     if (!CanAddItemByData(logSourceData))
                     {
-                        if (IsTransferredBefore(logSourceData, unitValue, charSlot.count, blockedData, blockedUnitValue, blockedCount))
-                        {
-                            blockedUnitValue = unitValue;
-                            blockedData = logSourceData;
-                            blockedCount = charSlot.count;
-                        }
+                        bAnyBlocked = true;
                         continue;
                     }
+
+                    long unitValue = LogValue.GetUnitValue(logSourceData.treeType, logSourceData.logState);
 
                     if (IsTransferredBefore(logSourceData, unitValue, charSlot.count, bestData, bestUnitValue, bestCount))
                     {
@@ -737,13 +742,13 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             // 교체 발동 조건 1은 "더 이상 넣을 수 없는 상황"이다. 한 종류라도 아직 들어갈 자리가
             // 있으면(bestSlot != null) 전송이 계속되는 중이므로 교체를 켜지 않는다 - 비행 중인
             // 물량 때문에 잠깐 거절되는 경우까지 교체로 오해하지 않도록 한다.
-            if (bestSlot != null || blockedData == null)
+            if (bestSlot != null || !bAnyBlocked)
             {
                 ClearLogSwapRequest();
             }
             else
             {
-                SetLogSwapBlocked(blockedData.treeType, blockedData.logState, blockedUnitValue);
+                SetLogSwapBlocked();
             }
 
             if (bestSlot != null)
@@ -2063,6 +2068,13 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     // 다른 점은 "들어올 원목이 몇 개인가"다. 인벤토리 교체에서는 바닥에 보이는 개수를 추정치로 쓰지만,
     // 여기서는 <b>가방에 든 개수</b>라 정확한 값이다.
     //
+    // 들어올 원목은 <b>가방 슬롯 전부</b>가 후보다. 슬롯마다 버릴 상자 슬롯을 찾고, 이득(들어올 원목 개당 가치 ×
+    // 개수 − 버릴 슬롯 총 가치)이 가장 큰 거래 하나를 제안한다(TryFindLogSwapVictimSlot). 예전엔 전송 순서 1위
+    // (보석 → 개당 가치 → 개수)인 한 종류만 따져서, 그 종류로 버릴 슬롯이 없으면 다른 슬롯으로 성립하는 거래가
+    // 있어도 제안이 없었다 - 가방의 황금 잿불 5개(300만 × 5)가 막혀 있으면 상자의 잿불 30개(3,000만)는 상한을
+    // 넘어 탈락하고, 가방의 용암수액 30개(3억)로 바꾸는 거래는 따져 보지도 않았다. 그때는 교체 뒤의 전송을 평소
+    // 순서에 맡겼기 때문에 1위 종류만 안내할 수 있었는데, 지금은 안내한 가방 슬롯을 직접 먼저 넘긴다(swapForcedSlot).
+    //
     // 방향은 인벤토리 -> 상자일 때만이다. 마을에서는 상자 -> 인벤토리로 흐르므로(bInTown) 교체가
     // 성립하지 않는다.
 
@@ -2072,13 +2084,26 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     /// </summary>
     public event Action SwapStateChangedEvent;
 
-    // 상자가 받아주지 못한 원목 중 가장 비싼 종류와, 그 종류가 가방에 몇 개 있는지, 그리고 교체 뒤
-    // 실제로 상자로 넘어갈 가방 슬롯이 어느 칸인지(TryTransferOneSlot이 고를 칸과 같은 규칙으로 미리 찾아둔다).
-    private TreeType swapBlockedTreeType = TreeType.None;
-    private LogState swapBlockedLogState = LogState.Normal;
-    private long swapBlockedUnitValue = LogValue.NONE;
-    private int swapBlockedCount = 0;
-    private int swapBlockedSlotIndex = -1;
+    // 상자가 가방의 원목을 하나도 받아주지 못하는 상태인지(교체 발동 조건 1). TryTransferOneSlot과
+    // RevalidateLogSwapBlockedOrder가 기록한다.
+    private bool bSwapBlocked = false;
+
+    // 현재 띄워 둔 거래의 들어올 원목 - 어느 가방 슬롯이(swapIncomingSlotIndex) 무슨 종류로 몇 개 넘어가는지.
+    // TryFindLogSwapVictimSlot이 고르고 GetLogSwapInfo가 읽는다. 없으면 슬롯 인덱스가 -1이다.
+    private TreeType swapIncomingTreeType = TreeType.None;
+    private LogState swapIncomingLogState = LogState.Normal;
+    private long swapIncomingUnitValue = LogValue.NONE;
+    private int swapIncomingCount = 0;
+    private int swapIncomingSlotIndex = -1;
+
+    // 교체(Tab)가 상자 슬롯을 비운 직후, 전송 루프가 가장 먼저 넘겨야 하는 가방 슬롯(안내한 그 슬롯)과 그때의 종류.
+    // TryTransferOneSlot이 한 번 쓰고 지운다. 전송 루프는 교체와 같은 프레임에 시작되므로 보통 그 자리에서 쓰이고,
+    // 루프가 시작되지 못한 채 남은 예약이 한참 뒤의 E 전송 순서를 바꾸지 않도록 유효 시간을 둔다.
+    private InventorySlot swapForcedSlot = null;
+    private TreeType swapForcedTreeType = TreeType.None;
+    private LogState swapForcedLogState = LogState.Normal;
+    private float swapForcedUntil = -999f;
+    private const float SWAP_FORCED_LIFETIME = 1.0f;
 
     private float swapValidateTimer = 0f;
 
@@ -2116,7 +2141,10 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     /// <summary>교체 직후 다음 제안을 띄우지 않는 시간. 결과를 눈으로 확인할 여유다.</summary>
     private const float SWAP_COOLDOWN = 1.0f;
 
-    /// <summary>현재 띄워 둔 제안의 슬롯. 무효가 되기 전까지는 더 나은 후보가 생겨도 바꾸지 않는다.</summary>
+    /// <summary>
+    /// 현재 띄워 둔 제안의 상자 슬롯. 들어올 가방 슬롯(swapIncomingSlotIndex)과 한 쌍이다. 이 쌍이 무효가 되기
+    /// 전까지는 이득이 더 큰 거래가 생겨도 바꾸지 않는다.
+    /// </summary>
     private int stickyVictimSlotIndex = -1;
 
     private float swapCooldownUntil = -999f;
@@ -2144,83 +2172,94 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             logState = logData.logState,
             count = inventorySlots[slotIndex].totalCount,
             unitValue = LogValue.GetUnitValue(logData.treeType, logData.logState),
-            incomingTreeType = swapBlockedTreeType,
-            incomingLogState = swapBlockedLogState,
-            incomingCount = Mathf.Min(swapBlockedCount, maxItemsPerSlot),
-            incomingUnitValue = swapBlockedUnitValue,
-            incomingSlotIndex = swapBlockedSlotIndex,
+            incomingTreeType = swapIncomingTreeType,
+            incomingLogState = swapIncomingLogState,
+            incomingCount = Mathf.Min(swapIncomingCount, maxItemsPerSlot),
+            incomingUnitValue = swapIncomingUnitValue,
+            incomingSlotIndex = swapIncomingSlotIndex,
         };
     }
 
     /// <summary>
-    /// 전송 시도에서 "상자가 못 받아준 원목 중 가장 비싼 것"을 기록한다. 그 종류가 가방에 몇 개
-    /// 있는지(상한은 "들어올 만큼"이므로)와, 교체 뒤 실제로 넘어갈 가방 슬롯이 어느 칸인지도 함께 찾는다.
+    /// "상자가 가방의 원목을 하나도 받아주지 못한다"를 기록한다. 띄워 둔 거래(들어올 슬롯·sticky)는 건드리지 않는다 -
+    /// 주기 재검증이 같은 상태를 다시 기록할 때마다 제안이 흔들리면 안 된다.
     /// </summary>
-    private void SetLogSwapBlocked(TreeType _treeType, LogState _logState, long _unitValue)
+    private void SetLogSwapBlocked()
     {
-        swapBlockedTreeType = _treeType;
-        swapBlockedLogState = _logState;
-        swapBlockedUnitValue = _unitValue;
-        CollectCharacterLogs(_treeType, _logState, out swapBlockedCount, out swapBlockedSlotIndex);
+        bSwapBlocked = true;
         swapValidateTimer = 0f;
     }
 
     /// <summary>기록을 지운다. lastNotifiedSwapInfo는 건드리지 않는다 - 그래야 "사라졌다"는 전이가 알려진다.</summary>
     private void ClearLogSwapRequest()
     {
-        swapBlockedTreeType = TreeType.None;
-        swapBlockedLogState = LogState.Normal;
-        swapBlockedUnitValue = LogValue.NONE;
-        swapBlockedCount = 0;
-        swapBlockedSlotIndex = -1;
+        bSwapBlocked = false;
+        ClearSwapSelection();
         swapValidateTimer = 0f;
+    }
+
+    /// <summary>띄워 둔 거래(들어올 가방 슬롯 + 버릴 상자 슬롯)만 지운다. 막힘 기록은 그대로다.</summary>
+    private void ClearSwapSelection()
+    {
+        swapIncomingTreeType = TreeType.None;
+        swapIncomingLogState = LogState.Normal;
+        swapIncomingUnitValue = LogValue.NONE;
+        swapIncomingCount = 0;
+        swapIncomingSlotIndex = -1;
         stickyVictimSlotIndex = -1;
     }
 
     /// <summary>
-    /// 교체로 상자에 자리가 생기면 TryTransferOneSlot이 먼저 옮길 가방 슬롯과 그 슬롯의 개수를 구한다. 옮길 슬롯은
-    /// TryTransferOneSlot의 규칙 그대로 - 같은 종류 중 <b>가장 많이 쌓인 것</b>, 같으면 앞쪽 인덱스. 옮기는 중인
-    /// 슬롯은 제외한다. 개수는 그 종류의 가방 총합이 아니라 <b>그 슬롯 하나</b>의 개수다 - Tab 한 번에 넘어가는 건
-    /// 슬롯 하나이고, 상한("들어올 만큼")과 UI의 "×N → 상자" 표기도 실제로 넘어갈 양이어야 한다.
-    /// 가방 UI는 이 인덱스에 "상자로 넘어감" 표시를 붙인다.
+    /// 이 가방 슬롯이 교체의 "들어올 원목"이 될 수 있는지 - 원목이 들어 있고 지금 옮기는 중이 아니어야 한다.
+    /// 개수는 그 종류의 가방 총합이 아니라 <b>그 슬롯 하나</b>의 개수다 - Tab 한 번에 넘어가는 건 슬롯 하나이고,
+    /// 상한("들어올 만큼")과 UI의 "×N → 상자" 표기도 실제로 넘어갈 양이어야 한다.
     /// </summary>
-    private void CollectCharacterLogs(TreeType _treeType, LogState _logState, out int _count, out int _slotIndex)
+    private bool TryGetSwapIncoming(IInventorySlot _slot, out LogItemData _logData, out int _count)
     {
+        _logData = null;
         _count = 0;
-        _slotIndex = -1;
 
-        if (characterInventory == null) return;
+        if (!(_slot is InventorySlot charSlot) || charSlot.count <= 0) return false;
+        if (transferringSlots.Contains(charSlot)) return false;
+        if (!(charSlot.itemData is LogItemData logData)) return false;
 
-        int bestCount = 0;
+        _logData = logData;
+        _count = charSlot.count;
+        return true;
+    }
 
-        var charSlots = characterInventory.inventorySlots;
-        for (int i = 0; i < characterInventory.currentSlotCnt; i++)
-        {
-            if (!(charSlots[i] is InventorySlot charSlot) || charSlot.count <= 0) continue;
-            if (transferringSlots.Contains(charSlot)) continue;
-            if (!(charSlot.itemData is LogItemData logData)) continue;
-            if (logData.treeType != _treeType || logData.logState != _logState) continue;
-
-            if (charSlot.count > bestCount)
-            {
-                bestCount = charSlot.count;
-                _slotIndex = i;
-            }
-        }
-
-        _count = bestCount;
+    /// <summary>교체가 상자 슬롯을 비운 뒤 전송 루프가 가장 먼저 넘길 가방 슬롯을 예약한다(ExecuteLogSwap).</summary>
+    private void SetSwapForcedSlot(InventorySlot _slot, TreeType _treeType, LogState _logState)
+    {
+        swapForcedSlot = _slot;
+        swapForcedTreeType = _treeType;
+        swapForcedLogState = _logState;
+        swapForcedUntil = Time.time + SWAP_FORCED_LIFETIME;
     }
 
     /// <summary>
-    /// 상자에 아직 못 넣는 원목이 남아있는지 인벤토리를 다시 훑어 기록을 갱신한다.
-    /// 상자에 자리가 생겼거나 가방 사정이 바뀌었으면 그에 맞게 기록이 바뀌고 안내도 따라간다.
+    /// 예약해 둔 가방 슬롯을 꺼낸다(한 번 꺼내면 지워진다). 그 슬롯에 아직 안내한 종류가 들어 있고 상자가 받아줄 수
+    /// 있을 때만 true다 - 아니면 false를 돌려 평소 전송 순서로 넘어가게 한다.
     /// </summary>
+    private bool TryTakeSwapForcedSlot(out InventorySlot _slot)
+    {
+        _slot = swapForcedSlot;
+        if (_slot == null) return false;
+
+        swapForcedSlot = null;
+
+        if (Time.time > swapForcedUntil) return false;
+        if (_slot.count <= 0 || transferringSlots.Contains(_slot)) return false;
+        if (!(_slot.itemData is LogItemData logData)) return false;
+        if (logData.treeType != swapForcedTreeType || logData.logState != swapForcedLogState) return false;
+
+        return CanAddItemByData(logData);
+    }
+
     /// <summary>
     /// 가방 → 상자 전송 순서. <b>보석 등급 → 개당 가치 → 많이 쌓인 순</b>. 같으면 false(먼저 만난 슬롯 유지).
-    /// 막힘 기록(TryTransferOneSlot·RevalidateLogSwapBlockedOrder)과 실제 전송 선정(TryTransferOneSlot)이 전부 이
-    /// 함수를 쓴다. 예전엔 막힘 기록은 개당 가치의 엄격 부등호, 전송은 개당 가치 뒤 개수였는데, 황금 별뿌리(20000×5)와
-    /// 일반 달무리(100000)처럼 개당 가치가 같은 두 종류가 한 숲에 함께 있으면 "넘어감"으로 표시한 슬롯과 실제로
-    /// 넘어가는 슬롯이 달랐다. 보석을 앞세우는 것은 인벤토리 선점(LogPickupOrder)과 같은 이유다.
+    /// 실제 전송 선정(TryTransferOneSlot)이 이 순서로 고르고, 교체는 이득이 같은 거래를 가를 때만 쓴다
+    /// (TryFindLogSwapVictimSlot). 보석을 앞세우는 것은 인벤토리 선점(LogPickupOrder)과 같은 이유다.
     /// 가방 → 제재소 보관함 전송(LogContainer.TryTransferOneItem)도 같은 순서를 쓰도록 이 함수를 부른다.
     /// </summary>
     public static bool IsTransferredBefore(LogItemData _a, long _unitA, int _countA, LogItemData _b, long _unitB, int _countB)
@@ -2235,11 +2274,13 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         return _countA > _countB;
     }
 
+    /// <summary>
+    /// 상자에 아직 못 넣는 원목이 남아있는지 인벤토리를 다시 훑어 막힘 기록을 갱신한다.
+    /// 상자에 자리가 생겼으면 기록이 지워지고 안내도 따라 내려간다.
+    /// </summary>
     private void RevalidateLogSwapBlockedOrder()
     {
-        LogItemData blockedData = null;
-        long blockedUnitValue = LogValue.NONE;
-        int blockedCount = 0;
+        bool bAnyBlocked = false;
 
         if (characterInventory != null)
         {
@@ -2257,23 +2298,17 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                     return;
                 }
 
-                long unitValue = LogValue.GetUnitValue(logSourceData.treeType, logSourceData.logState);
-                if (IsTransferredBefore(logSourceData, unitValue, charSlot.count, blockedData, blockedUnitValue, blockedCount))
-                {
-                    blockedUnitValue = unitValue;
-                    blockedData = logSourceData;
-                    blockedCount = charSlot.count;
-                }
+                bAnyBlocked = true;
             }
         }
 
-        if (blockedData == null)
+        if (!bAnyBlocked)
         {
             ClearLogSwapRequest();
         }
         else
         {
-            SetLogSwapBlocked(blockedData.treeType, blockedData.logState, blockedUnitValue);
+            SetLogSwapBlocked();
         }
     }
 
@@ -2285,7 +2320,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         if (!bInRange)
         {
             // 마을이나 사정권 밖에서는 매 프레임 여기로 오므로, 지울 것이 있을 때만 쓴다.
-            if (swapBlockedUnitValue != LogValue.NONE) ClearLogSwapRequest();
+            if (bSwapBlocked) ClearLogSwapRequest();
             bSwapRangeActive = false;
         }
         else if (!bSwapRangeActive)
@@ -2335,23 +2370,24 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     }
 
     /// <summary>
-    /// 버릴 상자 슬롯을 고른다. 규칙(자격·상한·선정·sticky)은 LogSwapRule 한 곳에 있다. 지금 이 슬롯에서
-    /// 꺼내 옮기는 중인 것(transferringSlots)은 건드리지 않는다. 없으면 false.
+    /// 제안할 거래(들어올 가방 슬롯 + 버릴 상자 슬롯)를 고른다. 슬롯 하나에 대한 규칙(자격·상한·선정)은 LogSwapRule
+    /// 한 곳에 있고, 여기서는 가방 슬롯 전부를 따져 이득이 가장 큰 거래를 고른다. 지금 꺼내 옮기는 중인 것
+    /// (transferringSlots)은 양쪽 다 건드리지 않는다. 없으면 false.
+    ///
+    /// 한 번 띄운 거래는 그것이 무효가 될 때까지 유지한다 - 그 가방 슬롯에서 안내한 종류가 사라지거나(전송 중이거나
+    /// 다 넘어감) 그 상자 슬롯이 더는 후보가 아니게 되면 그때 전체를 다시 고른다. 가방 슬롯과 그 개수는 매 판정마다
+    /// "지금 가방"에서 다시 읽는다 - 묵은 기록으로 비교하면 표시한 슬롯과 실제로 넘어가는 슬롯이 어긋나고, 실행 직전
+    /// 대조도 잡지 못한다. 양쪽 슬롯이 10개 이하라 매 판정에 다시 따져도 비용이 없다.
     /// </summary>
     private bool TryFindLogSwapVictimSlot(out int _slotIndex)
     {
         _slotIndex = -1;
 
-        if (swapBlockedUnitValue == LogValue.NONE) return false;
+        if (!bSwapBlocked) return false;
         if (Time.time < swapCooldownUntil) return false;
 
-        // 넘어갈 가방 슬롯과 그 개수는 "지금 가방" 기준이어야 한다. 막힘 기록 시점과 0.25초 재검증 사이에 가방이
-        // 바뀌면(같은 종류가 다른 슬롯에 더 쌓임) 표시한 슬롯과 실제로 넘어가는 슬롯이 어긋나고, 실행 직전 대조도
-        // 같은 묵은 기록으로 비교해 잡지 못한다. 슬롯 10개 이하라 매 판정에 다시 세어도 비용이 없다.
-        CollectCharacterLogs(swapBlockedTreeType, swapBlockedLogState, out swapBlockedCount, out swapBlockedSlotIndex);
-        if (swapBlockedSlotIndex < 0)
+        if (characterInventory == null)
         {
-            // 그 종류가 가방에서 사라졌다(전송 중이거나 다 넘어감). 다음 재검증이 새 기록을 잡는다.
             ClearLogSwapRequest();
             return false;
         }
@@ -2363,11 +2399,88 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         // 제안은 최대 1초쯤 늦게 뜰 뿐 사라지지 않는다.
         if (HasItemsFlyingIntoContainer()) return false;
 
-        _slotIndex = LogSwapRule.SelectVictim(inventorySlots, currentSlotCount,
-            swapBlockedUnitValue, swapBlockedCount, maxItemsPerSlot, transferringSlots, stickyVictimSlotIndex);
+        var charSlots = characterInventory.inventorySlots;
+        int charSlotCount = Mathf.Min(characterInventory.currentSlotCnt, charSlots.Count);
 
-        stickyVictimSlotIndex = _slotIndex;
-        return _slotIndex >= 0;
+        // 막힘 기록은 최대 0.25초(재검증 주기) 묵은 것이다. 그 사이 상자가 그냥 받아줄 수 있는 원목이 가방에 생겼으면
+        // (상자에 덜 찬 같은 종류 슬롯이 있는 원목을 주움) 더는 "넣을 수 없는 상황"이 아니다. 가방 슬롯 전부가 들어올
+        // 후보라서, 이걸 거르지 않으면 E로 그냥 들어갈 원목을 위해 상자 슬롯을 버리라는 제안이 잠깐 뜰 수 있다.
+        for (int i = 0; i < charSlotCount; i++)
+        {
+            if (!TryGetSwapIncoming(charSlots[i], out LogItemData addableData, out _)) continue;
+
+            if (CanAddItemByData(addableData))
+            {
+                ClearLogSwapRequest();
+                return false;
+            }
+        }
+
+        // 1. 띄워 둔 거래가 아직 유효하면 그대로 둔다.
+        if (swapIncomingSlotIndex >= 0 && swapIncomingSlotIndex < charSlotCount && stickyVictimSlotIndex >= 0
+            && TryGetSwapIncoming(charSlots[swapIncomingSlotIndex], out LogItemData stickyData, out int stickyCount)
+            && stickyData.treeType == swapIncomingTreeType && stickyData.logState == swapIncomingLogState)
+        {
+            int kept = LogSwapRule.SelectVictim(inventorySlots, currentSlotCount, swapIncomingUnitValue,
+                stickyCount, maxItemsPerSlot, transferringSlots, stickyVictimSlotIndex, out _);
+
+            if (kept == stickyVictimSlotIndex)
+            {
+                swapIncomingCount = stickyCount;
+                _slotIndex = kept;
+                return true;
+            }
+        }
+
+        // 2. 가방 슬롯 전부를 따져 이득이 가장 큰 거래를 고른다. 이득이 같으면 전송 순서(IsTransferredBefore:
+        //    보석 등급 → 개당 가치 → 많이 쌓인 순)가 앞선 슬롯, 그것도 같으면 앞쪽 인덱스다. 같은 종류가 여러 슬롯에
+        //    나뉘어 있으면 많이 쌓인 슬롯의 이득이 같거나 더 크므로 그쪽이 고른다.
+        int bestCharSlotIndex = -1;
+        int bestVictimIndex = -1;
+        long bestGain = 0;
+        LogItemData bestData = null;
+        long bestUnitValue = LogValue.NONE;
+        int bestCount = 0;
+
+        for (int i = 0; i < charSlotCount; i++)
+        {
+            if (!TryGetSwapIncoming(charSlots[i], out LogItemData logData, out int count)) continue;
+
+            long unitValue = LogValue.GetUnitValue(logData.treeType, logData.logState);
+
+            int victimIndex = LogSwapRule.SelectVictim(inventorySlots, currentSlotCount, unitValue,
+                count, maxItemsPerSlot, transferringSlots, -1, out long victimTotalValue);
+            if (victimIndex < 0) continue;
+
+            long gain = LogSwapRule.GetGain(unitValue, count, maxItemsPerSlot, victimTotalValue);
+
+            if (bestCharSlotIndex < 0 || gain > bestGain
+                || (gain == bestGain && IsTransferredBefore(logData, unitValue, count, bestData, bestUnitValue, bestCount)))
+            {
+                bestCharSlotIndex = i;
+                bestVictimIndex = victimIndex;
+                bestGain = gain;
+                bestData = logData;
+                bestUnitValue = unitValue;
+                bestCount = count;
+            }
+        }
+
+        if (bestCharSlotIndex < 0)
+        {
+            ClearSwapSelection();
+            return false;
+        }
+
+        swapIncomingTreeType = bestData.treeType;
+        swapIncomingLogState = bestData.logState;
+        swapIncomingUnitValue = bestUnitValue;
+        swapIncomingCount = bestCount;
+        swapIncomingSlotIndex = bestCharSlotIndex;
+        stickyVictimSlotIndex = bestVictimIndex;
+
+        _slotIndex = bestVictimIndex;
+        return true;
     }
 
     /// <summary>
@@ -2393,18 +2506,22 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             return LogSwapSlotInfo.None;
         }
 
+        // 안내한 가방 슬롯. 상자 슬롯을 비운 뒤 전송 루프가 이 슬롯을 가장 먼저 넘긴다(TryTransferOneSlot).
+        InventorySlot incomingSlot = characterInventory.inventorySlots[info.incomingSlotIndex] as InventorySlot;
+
         ItemDeleted(inventorySlots[info.slotIndex]);
         ContainerUpdatedEvent?.Invoke();
 
         swapCooldownUntil = Time.time + SWAP_COOLDOWN;
         ClearLogSwapRequest();
+        SetSwapForcedSlot(incomingSlot, info.incomingTreeType, info.incomingLogState);
         UpdateLogSwapState(0f);
 
         // 가방 원목의 출발은 E로 그냥 넣을 때와 똑같이 지금 당장이다 - 던전의 E 전송은 뚜껑을 기다리지 않고
         // 시작하고, 뚜껑은 그 사이에 열린다(UpdateContainerState). 교체도 "상자 슬롯 하나가 빠지고 가방 슬롯
         // 하나가 들어오는" 것 말고는 그 흐름과 같아야 한다. E를 다시 누르라고 요구하지 않는다.
         // TransferAllItemsRoutine은 키를 뗀 상태면 한 슬롯 뒤 스스로 멈추므로 정확히 그 슬롯 하나만 넘어간다
-        // (TryTransferOneSlot이 가장 비싼 종류 = 방금 막혀 있던 그 종류를 먼저 고른다). E를 누른 채였다면
+        // (TryTransferOneSlot이 위에서 예약한 가방 슬롯 = 안내한 그 슬롯을 가장 먼저 고른다). E를 누른 채였다면
         // 그건 E의 동작이라 평소처럼 이어진다.
         if (CanTransferWithCharacter() && transferCoroutine == null && HasAnyItemToTransfer())
         {
