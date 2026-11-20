@@ -1779,7 +1779,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             BuildToolTipTitleText(_node),
             BuildToolTipLevelText(_skillInfo),
             BuildToolTipDescriptionText(descriptionFormat, _previewData),
-            BuildToolTipValueText(_previewData, IsMaxLevel(_skillInfo, _applyReason), ShouldAppendPercentUnit(descriptionFormat)),
+            BuildToolTipValueText(_previewData, IsMaxLevel(_skillInfo, _applyReason), GetToolTipValueFormat(descriptionFormat)),
             costText,
             costMoneyType);
     }
@@ -1842,7 +1842,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         }
     }
 
-    private string BuildToolTipValueText(SkillAccumulatedValueChangeData _data, bool _isMaxLevel, bool _appendPercentUnit)
+    private string BuildToolTipValueText(SkillAccumulatedValueChangeData _data, bool _isMaxLevel, string _valueFormat)
     {
         if (_data.type == SkillCommandType.None)
             return string.Empty;
@@ -1850,11 +1850,11 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (ShouldUseUnlockToolTipValueText(_data.type))
             return BuildUnlockToolTipValueText(_isMaxLevel);
 
-        string currentValue = FormatToolTipValue(_data.currentValueX, _appendPercentUnit);
+        string currentValue = FormatToolTipValue(_data.currentValueX, _valueFormat);
         if (_isMaxLevel)
             return BuildToolTipColorText(currentValue, ToolTipCostMaxLevelColor);
 
-        string totalValue = BuildToolTipColorText(FormatToolTipValue(_data.totalValueZ, _appendPercentUnit), ToolTipValueColor);
+        string totalValue = BuildToolTipColorText(FormatToolTipValue(_data.totalValueZ, _valueFormat), ToolTipValueColor);
         return $"{currentValue} -> {totalValue}";
     }
 
@@ -1902,7 +1902,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         return BuildToolTipColorText(ResolveLocalizedText(textKey), color);
     }
 
-    private string FormatToolTipValue(float _value, bool _appendPercentUnit = false)
+    private string FormatToolTipValue(float _value, string _valueFormat = "")
     {
         string valueText;
         if (Mathf.Approximately(_value, Mathf.Round(_value)))
@@ -1910,17 +1910,25 @@ public class UI_TentAbilityComponent : MonoBehaviour
         else
             valueText = _value.ToString("0.##");
 
-        return _appendPercentUnit ? valueText + "%" : valueText;
+        return string.IsNullOrEmpty(_valueFormat) ? valueText : string.Format(_valueFormat, valueText);
     }
 
-    private bool ShouldAppendPercentUnit(string _descriptionFormat)
+    private string GetToolTipValueFormat(string _descriptionFormat)
     {
         if (string.IsNullOrEmpty(_descriptionFormat))
-            return false;
+            return string.Empty;
 
-        return _descriptionFormat.Contains("{0}%") ||
-               _descriptionFormat.Contains("{1}%") ||
-               _descriptionFormat.Contains("{2}%");
+        if (_descriptionFormat.Contains("%{0}") ||
+            _descriptionFormat.Contains("%{1}") ||
+            _descriptionFormat.Contains("%{2}"))
+            return "%{0}";
+
+        if (_descriptionFormat.Contains("{0}%") ||
+            _descriptionFormat.Contains("{1}%") ||
+            _descriptionFormat.Contains("{2}%"))
+            return "{0}%";
+
+        return string.Empty;
     }
 
     private AbilityLevelUpRejectReason GetToolTipApplyReason(SkillType _skillType)

@@ -16,7 +16,7 @@ namespace LocalizationQA
     /// 값은 진행도에 따라 달라지므로, 게임에서 나올 수 있는 가장 긴 상태로 만든다.
     ///  - 보통: 그 노드가 마지막 레벨업 직전이고 같은 효과의 다른 노드는 모두 최대 (누적값이 가장 큼)
     ///  - "최대 레벨"·"해금 완료" 문구: 그 노드가 최대 레벨인 상태
-    /// 문자열 조합은 게임 메서드(FormatToolTipValue, ShouldAppendPercentUnit, GetToolTipDisplayBaseValue 등)를 그대로 부른다.
+    /// 문자열 조합은 게임 메서드(FormatToolTipValue, GetToolTipValueFormat, GetToolTipDisplayBaseValue 등)를 그대로 부른다.
     /// 위치는 화면 가운데 노드 옆 (가로 위치는 게임도 화면 안으로 보정하지 않으므로, 넓은 툴팁은 게임처럼 잘려 보인다)
     /// </summary>
     internal static class LocQAAbilityTooltip
@@ -113,11 +113,11 @@ namespace LocalizationQA
                 string _format = Text(_table, "AbilityUI/AbilityDescription_" + _type, _lang);
                 if (false == string.IsNullOrEmpty(_format))
                 {
-                    try { _description = string.Format(_format, Format(_ability, _y, false), Format(_ability, _x, false), Format(_ability, _z, false)); }
+                    try { _description = string.Format(_format, Format(_ability, _y), Format(_ability, _x), Format(_ability, _z)); }
                     catch (FormatException) { _description = _format; }
                 }
 
-                bool _percent = Call<bool>(_ability, "ShouldAppendPercentUnit", _format);
+                string _valueFormat = Call<string>(_ability, "GetToolTipValueFormat", _format);
                 if (true == Call<bool>(_ability, "ShouldUseUnlockToolTipValueText", _type))
                 {
                     _value = true == _maxed
@@ -127,8 +127,8 @@ namespace LocalizationQA
                 else
                 {
                     _value = true == _maxed
-                        ? Colored(_ability, Format(_ability, _x, _percent), _maxColor)
-                        : $"{Format(_ability, _x, _percent)} -> {Colored(_ability, Format(_ability, _z, _percent), _valueColor)}";
+                        ? Colored(_ability, Format(_ability, _x, _valueFormat), _maxColor)
+                        : $"{Format(_ability, _x, _valueFormat)} -> {Colored(_ability, Format(_ability, _z, _valueFormat), _valueColor)}";
                 }
             }
 
@@ -366,7 +366,7 @@ namespace LocalizationQA
             return null != _entry ? LocQALanguages.Resolve(_entry.data, _lang) : string.Empty;
         }
 
-        private static string Format(MonoBehaviour _ability, float _value, bool _percent) => Call<string>(_ability, "FormatToolTipValue", _value, _percent);
+        private static string Format(MonoBehaviour _ability, float _value, string _valueFormat = "") => Call<string>(_ability, "FormatToolTipValue", _value, _valueFormat);
 
         private static string Colored(MonoBehaviour _ability, string _text, string _color) => Call<string>(_ability, "BuildToolTipColorText", _text, _color);
 
