@@ -123,6 +123,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<SpendMoneySignal>(SpendMoney);
         signalHub.Subscribe<TownStartedSignal>(TownStarted);
         signalHub.Subscribe<DecalreDungeonTypeSignal>(DungeonStarted);
+        signalHub.Subscribe<OverheatGaugeRequiredSignal>(OverheatGaugeRequired);
         signalHub.Subscribe<AnimalHitSignal>(AnimalHit);
         signalHub.Subscribe<SkillDispatchedSignal>(SkillDispatched);
         signalHub.Subscribe<PrestigeLevelIncreasedSignal>(PrestigeLevelIncreased);
@@ -193,6 +194,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<SpendMoneySignal>(SpendMoney);
         signalHub.UnSubscribe<TownStartedSignal>(TownStarted);
         signalHub.UnSubscribe<DecalreDungeonTypeSignal>(DungeonStarted);
+        signalHub.UnSubscribe<OverheatGaugeRequiredSignal>(OverheatGaugeRequired);
         signalHub.UnSubscribe<AnimalHitSignal>(AnimalHit);
         signalHub.UnSubscribe<SkillDispatchedSignal>(SkillDispatched);
         signalHub.UnSubscribe<PrestigeLevelIncreasedSignal>(PrestigeLevelIncreased);
@@ -746,6 +748,11 @@ public class GameplayUICoordinator
         bIsTutorialQuestHiding = false;
         bPendingGameEnd = false;
         popUpUI.Hide();
+    }
+
+    private void OverheatGaugeRequired(OverheatGaugeRequiredSignal _signal)
+    {
+        hudUI.SetPreheatActive(_signal.bRequired);
     }
 
     private void DungeonStarted(DecalreDungeonTypeSignal decareDungeonTypeSignal)

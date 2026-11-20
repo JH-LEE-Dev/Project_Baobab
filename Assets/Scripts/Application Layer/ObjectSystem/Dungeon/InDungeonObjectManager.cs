@@ -2802,12 +2802,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     /// <summary>
     /// "예열" 특성 - 캐릭터가 움직일 수 있게 된 순간(InDungeonSystem의 ActivateCharacterSignal) 과열 수치를 올린다.
-    /// 불씨가 나오는 원정에서만, 원정마다 한 번만 적용한다. 과열 리셋(Character.SetWhereIsCharacter)보다 늦은 시점이라 지워지지 않는다.
+    /// "산불 조심" 없이도 모든 숲에서 원정마다 한 번 적용한다(로그라이크는 스테이지 기믹을 꺼서 예전처럼 적용하지 않는다).
+    /// 과열 리셋(Character.SetWhereIsCharacter)보다 늦은 시점이라 지워지지 않는다.
     /// </summary>
     public void ApplyPreheat()
     {
         if (bPreheatAppliedThisRun || character == null) return;
-        if (itemManager == null || itemManager.emberItemController == null || false == itemManager.emberItemController.bEnabled) return;
+        if (null != runTreeRules && runTreeRules.bDisableStageGimmicks) return;
 
         bPreheatAppliedThisRun = true;
         if (character.PreheatAmount > 0f)
