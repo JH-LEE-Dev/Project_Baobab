@@ -228,18 +228,18 @@
         {
             "item": "380342ca825ed8643bdca4bd050d56c6|Visuals/Body/Text (TMP)|SpeechBubbleUI/InventoryFull",
             "state": 1,
-            "hash": "ea96811d",
+            "hash": "dd1f4896",
             "memo": "",
             "by": "void91112@gmail.com",
-            "at": "2026-10-05 15:33"
+            "at": "2026-11-20 12:41"
         },
         {
             "item": "380342ca825ed8643bdca4bd050d56c6|Visuals/Body/Text (TMP)|SpeechBubbleUI/ItemCantAcquired",
             "state": 1,
-            "hash": "3b2a7f5e",
+            "hash": "ff2af16d",
             "memo": "",
             "by": "void91112@gmail.com",
-            "at": "2026-10-05 15:33"
+            "at": "2026-11-20 12:41"
         },
         {
             "item": "4ae2b0a891e214945add8961418fbea8|Groups/Field_TMP/TMP_Desc|DemoNoticeUI/Description",
@@ -282,6 +282,14 @@
             "at": "2026-10-05 14:20"
         },
         {
+            "item": "520d4e0f53cfd9249aef204c9c7eb9a1|Buttons/Buttons_2/Ray/Text (TMP)|EscapeMenuUI/Abandon",
+            "state": 1,
+            "hash": "399d4f67",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 12:34"
+        },
+        {
             "item": "520d4e0f53cfd9249aef204c9c7eb9a1|Buttons/Buttons_2/Ray/Text (TMP)|EscapeMenuUI/MainMenu",
             "state": 1,
             "hash": "eac7a6a7",
@@ -298,12 +306,84 @@
             "at": "2026-10-05 14:19"
         },
         {
+            "item": "56ab1690e99457b42b9b057f319d65d9|Panel_ResultContents/Section_AcquiredLogs/Text_Header|ResultUI/acquiredLogsHeader",
+            "state": 1,
+            "hash": "e8bf6ccb",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 12:38"
+        },
+        {
+            "item": "56ab1690e99457b42b9b057f319d65d9|Panel_ResultContents/Section_AcquiredLogs/UI_ResultLogRowPivot/Text_Empty|ResultUI/emptyAcquiredLogs",
+            "state": 1,
+            "hash": "338852d5",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 12:39"
+        },
+        {
+            "item": "56ab1690e99457b42b9b057f319d65d9|Panel_ResultContents/Section_Container/Text_Header|ResultUI/containerStateHeader",
+            "state": 1,
+            "hash": "b3177bac",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 12:38"
+        },
+        {
+            "item": "56ab1690e99457b42b9b057f319d65d9|Panel_ResultContents/Section_KillCount/Text_TreeKillCount|ResultUI/treeKillCountHigh",
+            "state": 1,
+            "hash": "2d15c977",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 12:38"
+        },
+        {
+            "item": "56ab1690e99457b42b9b057f319d65d9|Panel_ResultContents/Section_KillCount/Text_TreeKillCount|ResultUI/treeKillCountLow",
+            "state": 1,
+            "hash": "73391100",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 12:38"
+        },
+        {
+            "item": "56ab1690e99457b42b9b057f319d65d9|Panel_ResultContents/Section_KillCount/Text_TreeKillCount|ResultUI/treeKillCountMiddle",
+            "state": 1,
+            "hash": "79382497",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 12:38"
+        },
+        {
+            "item": "56ab1690e99457b42b9b057f319d65d9|Panel_ResultContents/Section_KillCount/Text_TreeKillCount|ResultUI/treeKillCountZero",
+            "state": 1,
+            "hash": "7f94c629",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 12:39"
+        },
+        {
+            "item": "56ab1690e99457b42b9b057f319d65d9|Panel_ResultContents/Section_Title/Text_Title|ResultUI/resultTitle",
+            "state": 1,
+            "hash": "0d1b5b31",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 12:39"
+        },
+        {
             "item": "644c96ad309ba114f9743fd5b9c6d5eb|MainPop/MessageUI/Border/Message|EscapeMenuUI/ExitGameWarning",
             "state": 1,
             "hash": "a50db209",
             "memo": "",
             "by": "void91112@gmail.com",
             "at": "2026-10-05 15:17"
+        },
+        {
+            "item": "644c96ad309ba114f9743fd5b9c6d5eb|MainPop/MessageUI/Border/Message|EscapeMenuUI/LobbyWarning",
+            "state": 1,
+            "hash": "d64a86a5",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 12:34"
         },
         {
             "item": "644c96ad309ba114f9743fd5b9c6d5eb|MainPop/MessageUI/Border/Message|EscapeMenuUI/MainMenuWarning",
@@ -404,10 +484,10 @@
         {
             "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/SubText|MessageHUD/dungeonStateStage2Idle2SubText",
             "state": 1,
-            "hash": "afbaca6f",
+            "hash": "1d590dae",
             "memo": "",
             "by": "void91112@gmail.com",
-            "at": "2026-10-05 17:54"
+            "at": "2026-11-20 12:28"
         },
         {
             "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/SubText|MessageHUD/dungeonStateStage3Idle0SubText",
@@ -482,6 +562,54 @@
             "at": "2026-10-05 18:00"
         },
         {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/TitleText|MessageHUD/forestMagmaForest1Title",
+            "state": 1,
+            "hash": "99d59473",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 12:31"
+        },
+        {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/TitleText|MessageHUD/forestMagmaForest2Title",
+            "state": 1,
+            "hash": "6538574e",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 12:31"
+        },
+        {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/TitleText|MessageHUD/forestMagmaForest3Title",
+            "state": 1,
+            "hash": "5eb10005",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 12:32"
+        },
+        {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/TitleText|MessageHUD/forestStarrootForest1Title",
+            "state": 1,
+            "hash": "7469dd04",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 12:32"
+        },
+        {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/TitleText|MessageHUD/forestStarrootForest2Title",
+            "state": 1,
+            "hash": "8fa76037",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 12:32"
+        },
+        {
+            "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/TitleText|MessageHUD/forestStarrootForest3Title",
+            "state": 1,
+            "hash": "a27ce65a",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 12:33"
+        },
+        {
             "item": "7842cf31a45cee54ba7e7564a83bc5cb|Visual/TitleText|MessageHUD/forestWideGreenForest1Title",
             "state": 1,
             "hash": "f3152ca9",
@@ -516,10 +644,10 @@
         {
             "item": "822e4581f49c2334db9d0c23560726c4|TextGroup/Desc|TutorialQuestUI/FillOffroadContainer_Desc",
             "state": 1,
-            "hash": "c4652baf",
+            "hash": "7fa21190",
             "memo": "",
             "by": "void91112@gmail.com",
-            "at": "2026-10-05 15:29"
+            "at": "2026-11-20 12:36"
         },
         {
             "item": "822e4581f49c2334db9d0c23560726c4|TextGroup/Main|TutorialQuestUI/CutTree_Title",
@@ -532,10 +660,10 @@
         {
             "item": "822e4581f49c2334db9d0c23560726c4|TextGroup/Main|TutorialQuestUI/FillOffroadContainer_Title",
             "state": 1,
-            "hash": "2a20401b",
+            "hash": "7b8d7703",
             "memo": "",
             "by": "void91112@gmail.com",
-            "at": "2026-10-05 15:29"
+            "at": "2026-11-20 12:36"
         },
         {
             "item": "822e4581f49c2334db9d0c23560726c4|TextGroup/Main|TutorialQuestUI/GoHomeBeforeExhausted_Title",
@@ -690,6 +818,14 @@
             "at": "2026-10-05 15:38"
         },
         {
+            "item": "9ebf378887fd90d49a073c3a90cce74c|UI_InitialSetupPopup/Objets/LanguagePanel/LanguageBox/TitleRow/TXT_Title|MainMenuUI/LanguageSelectTitle",
+            "state": 1,
+            "hash": "d519010b",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 12:37"
+        },
+        {
             "item": "9ebf378887fd90d49a073c3a90cce74c|UI_InitialSetupPopup/Objets/LanguagePanel/LanguageBox/TitleRow/TXT_Title|OptionUI/Language",
             "state": 1,
             "hash": "d519010b",
@@ -810,6 +946,110 @@
             "at": "2026-10-05 15:33"
         },
         {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/GrowthMask/TMP_Growth|LootTooltipUI/growth_max",
+            "state": 1,
+            "hash": "abd4c9a4",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 13:05"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/GrowthMask/TMP_Growth|LootTooltipUI/growth_next",
+            "state": 1,
+            "hash": "e8aaff90",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 13:08"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Description|LootTooltipUI/desc_lostandfoundbox_t1",
+            "state": 1,
+            "hash": "cac2a013",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 13:08"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Description|LootTooltipUI/desc_lostandfoundbox_t2",
+            "state": 1,
+            "hash": "4fdf9774",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 13:09"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Description|LootTooltipUI/desc_lostandfoundbox_t3",
+            "state": 1,
+            "hash": "0d1bfbc0",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 13:09"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Description|LootTooltipUI/desc_obsidiancharm_t1",
+            "state": 1,
+            "hash": "f0bf3880",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 13:09"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Description|LootTooltipUI/desc_obsidiancharm_t3",
+            "state": 1,
+            "hash": "adb8881d",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 13:09"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Description|LootTooltipUI/desc_sporepotion_t1",
+            "state": 1,
+            "hash": "21fc1a2e",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 13:09"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Description|LootTooltipUI/desc_sporepotion_t2",
+            "state": 1,
+            "hash": "262de83c",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 13:09"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Description|LootTooltipUI/desc_sporepotion_t3",
+            "state": 1,
+            "hash": "3858e427",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 13:09"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Description|LootTooltipUI/desc_starcompass_t1",
+            "state": 1,
+            "hash": "40b328fa",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 13:10"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Description|LootTooltipUI/desc_starcompass_t2",
+            "state": 1,
+            "hash": "3846b723",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 13:10"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Description|LootTooltipUI/desc_starcompass_t3",
+            "state": 1,
+            "hash": "c2dd699e",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 13:10"
+        },
+        {
             "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Description|LootTooltipUI/foundbox",
             "state": 1,
             "hash": "9b958042",
@@ -834,12 +1074,100 @@
             "at": "2026-10-05 15:44"
         },
         {
-            "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Title|OptionUI/DataConsent",
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Name|LootTooltipUI/name_lostandfoundbox_t1",
             "state": 1,
-            "hash": "c81ef7d4",
+            "hash": "3003ec68",
             "memo": "",
             "by": "void91112@gmail.com",
-            "at": "2026-10-05 14:57"
+            "at": "2026-11-20 13:10"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Name|LootTooltipUI/name_lostandfoundbox_t2",
+            "state": 1,
+            "hash": "eb81b343",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 13:10"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Name|LootTooltipUI/name_lostandfoundbox_t3",
+            "state": 1,
+            "hash": "28614167",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 13:11"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Name|LootTooltipUI/name_obsidiancharm_t1",
+            "state": 1,
+            "hash": "4cc97fe5",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 13:11"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Name|LootTooltipUI/name_obsidiancharm_t3",
+            "state": 1,
+            "hash": "becad0d8",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 13:11"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Name|LootTooltipUI/name_sporepotion_t1",
+            "state": 1,
+            "hash": "4812f029",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 13:11"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Name|LootTooltipUI/name_sporepotion_t2",
+            "state": 1,
+            "hash": "5a20c412",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 13:12"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Name|LootTooltipUI/name_sporepotion_t3",
+            "state": 1,
+            "hash": "dd7ca7c2",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 13:12"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Name|LootTooltipUI/name_starcompass_t1",
+            "state": 1,
+            "hash": "388f57b4",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 13:12"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Name|LootTooltipUI/name_starcompass_t2",
+            "state": 1,
+            "hash": "a0915ae7",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 13:12"
+        },
+        {
+            "item": "f9cf806ea42d58849800b366300ef44c|DimBG/TextField/TMP_Name|LootTooltipUI/name_starcompass_t3",
+            "state": 1,
+            "hash": "4de38f33",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 13:12"
+        },
+        {
+            "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Title|OptionUI/DataConsent",
+            "state": 1,
+            "hash": "53a2e82e",
+            "memo": "",
+            "by": "void91112@gmail.com",
+            "at": "2026-11-20 12:33"
         },
         {
             "item": "fdd5be21d9568a442a2f5bf7d71f5414|Visuals/TMP_Title|OptionUI/FPS",
