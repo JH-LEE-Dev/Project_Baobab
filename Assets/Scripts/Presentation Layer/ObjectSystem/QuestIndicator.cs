@@ -214,6 +214,11 @@ public class QuestIndicator : MonoBehaviour
             if (null == _renderer)
                 continue;
 
+            // 그림이 없는 렌더러(예: 불씨 프리팹의 임시 SpriteRenderer)는 그려지는 것이 없어 반짝임 값이 화면에 영향을 주지 않는다.
+            // 프로퍼티 블록 읽기·쓰기 비용만 들어서 건너뛴다(그림이 들어오면 그 프레임부터 다시 건다).
+            if (null == _renderer.sprite)
+                continue;
+
             _renderer.GetPropertyBlock(shimmerMPB);
             shimmerMPB.SetFloat(FlashAmountID, _amount);
             _renderer.SetPropertyBlock(shimmerMPB);

@@ -42,6 +42,8 @@ public class TreeHeatIndicator : MonoBehaviour
     private float showDuration;
     private float elapsed;
     private bool bPlaying;
+    // spriteRenderer.enabled를 마지막으로 넣은 값. 보이는 동안 매 프레임 같은 값을 다시 넣지 않게 한다.
+    private bool bShown;
 
     public void Initialize(Material _material, int _sortingLayerID, int _sortingOrder, Action<TreeHeatIndicator> _onFinished)
     {
@@ -53,6 +55,7 @@ public class TreeHeatIndicator : MonoBehaviour
         spriteRenderer.sortingLayerID = _sortingLayerID;
         spriteRenderer.sortingOrder = _sortingOrder;
         spriteRenderer.enabled = false;
+        bShown = false;
 
         propertyBlock = new MaterialPropertyBlock();
         onFinished = _onFinished;
@@ -80,6 +83,7 @@ public class TreeHeatIndicator : MonoBehaviour
         propertyBlock.SetFloat(AlphaID, 0f);
         spriteRenderer.SetPropertyBlock(propertyBlock);
         spriteRenderer.enabled = false;
+        bShown = false;
     }
 
     public void Stop()
@@ -94,6 +98,7 @@ public class TreeHeatIndicator : MonoBehaviour
         }
         tree = null;
         spriteRenderer.enabled = false;
+        bShown = false;
 
         onFinished?.Invoke(this);
     }
@@ -140,7 +145,11 @@ public class TreeHeatIndicator : MonoBehaviour
         propertyBlock.SetFloat(ProgressID, progress);
         propertyBlock.SetFloat(AlphaID, alpha);
         spriteRenderer.SetPropertyBlock(propertyBlock);
-        spriteRenderer.enabled = true;
+        if (false == bShown)
+        {
+            spriteRenderer.enabled = true;
+            bShown = true;
+        }
     }
 
     private static Sprite GetQuadSprite()

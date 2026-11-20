@@ -145,6 +145,9 @@ namespace PresentationLayer.VFX
         // transform / sortingSource.transform 프로퍼티(네이티브 호출)를 매 프레임 부르지 않도록 캐싱(둘 다 바뀌지 않는다)
         private Transform cachedTransform;
         private Transform sortingSourceTransform;
+        // 바닥 빛·드랍 꼬리 렌더러의 Transform(렌더러가 바뀌지 않는다)
+        private Transform glowTransform;
+        private Transform trailTransform;
         // 세 렌더러가 모두 꺼져 있고 그 뒤로 켤 수 있는 그리기를 하지 않았으면 true. 화면 밖에 머무는 동안 HideMeshes를 반복하지 않는다.
         private bool bMeshesHidden;
         private int flyingSortingLayerID;
@@ -215,6 +218,7 @@ namespace PresentationLayer.VFX
                 glowRenderer.GetComponent<MeshFilter>().sharedMesh = glowMesh;
                 PixelQuadBuffer.ReserveMesh(glowMesh, GlowQuadBudget);
 
+                glowTransform = glowRenderer.transform;
                 glowRenderer.sortingLayerID = glowSortingLayerID;
                 glowRenderer.sortingOrder = glowSortingOrder;
                 glowRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -224,6 +228,7 @@ namespace PresentationLayer.VFX
 
             if (null != trailRenderer)
             {
+                trailTransform = trailRenderer.transform;
                 trailMesh = new Mesh { name = "VFX_OverheatEmberTrail" };
                 trailMesh.MarkDynamic();
                 trailRenderer.GetComponent<MeshFilter>().sharedMesh = trailMesh;
@@ -317,7 +322,7 @@ namespace PresentationLayer.VFX
 
         private float AnchorScale()
         {
-            float scale = null != groundAnchor ? groundAnchor.lossyScale.x : transform.lossyScale.x;
+            float scale = null != groundAnchor ? groundAnchor.lossyScale.x : cachedTransform.lossyScale.x;
             return Mathf.Clamp(scale, 0.0f, 1.0f);
         }
 
@@ -391,7 +396,8 @@ namespace PresentationLayer.VFX
 
                 float sin = Mathf.Sin(m.angle);
                 float cos = Mathf.Cos(m.angle);
-                float lift = Mathf.Sin(time * m.bobSpeed + m.bobPhase) * m.bobAmp;
+                // 위아래 흔들림은 바닥에 있을 때만 쓴다(날아가는 중에는 0)
+                float lift = true == bMoving ? 0.0f : Mathf.Sin(time * m.bobSpeed + m.bobPhase) * m.bobAmp;
 
                 if (true == bMoving)
                 {
@@ -499,13 +505,14 @@ namespace PresentationLayer.VFX
 
         // ---------- 그리기 ----------
 
-        private void RebuildMesh(float _scale)
+        private void RebuildMesh(float _scale, float _meshZ)
         {
             int cx = Mathf.RoundToInt(orbX);
             int cy = Mathf.RoundToInt(orbY);
             float pulse = OverheatEmberOrb.Pulse(time, phase);
 
-            painter.Begin(buffer, transform.worldToLocalMatrix, transform.position.z);
+            // _meshZ는 이번 LateUpdate에서 읽은 위치의 z(그 뒤로 위치를 바꾸는 코드가 없다)
+            painter.Begin(buffer, cachedTransform.worldToLocalMatrix, _meshZ);
 
             // 드랍 꼬리 심선과 떨어지는 불티는 불덩이·불티 뒤에 깐다(시안과 같은 순서)
             if (true == trail.bHasPoints) trail.DrawCore(painter, tones);
@@ -569,7 +576,7 @@ namespace PresentationLayer.VFX
             if (null == trailRenderer || null == trailMesh) return;
             if (false == trail.bHasPoints && false == trailRenderer.enabled) return;
 
-            trail.BuildRibbon(trailMesh, trailRenderer, trailRenderer.transform.worldToLocalMatrix, trailDuration, trailIntensity, trailWidth, trailMaterialIntensity);
+            trail.BuildRibbon(trailMesh, trailRenderer, trailTransform.worldToLocalMatrix, trailDuration, trailIntensity, trailWidth, trailMaterialIntensity);
         }
 
         // 드랍 비행 판단. 불씨 상태를 읽지 않고 루트 스케일과 Visual(부모) 높이로 정한다.
@@ -599,14 +606,16 @@ namespace PresentationLayer.VFX
         private void RebuildGlow()
         {
             if (null == glowRenderer) return;
+            // 날아가는 중에는 그릴 것이 없다. 직전 그리기도 비어 렌더러가 꺼져 있으면 Commit이 아무것도 바꾸지 않으므로 건너뛴다.
+            if (true == bMoving && 0 == glowVertexCount && false == glowRenderer.enabled) return;
 
-            Vector3 anchor = null != groundAnchor ? groundAnchor.position : transform.position;
+            Vector3 anchor = null != groundAnchor ? groundAnchor.position : cachedTransform.position;
             int gx = Mathf.RoundToInt(anchor.x * PixelsPerUnit);
             int gy = Mathf.RoundToInt(anchor.y * PixelsPerUnit) - 1;
             float pulse = OverheatEmberOrb.Pulse(time, phase);
             float alpha = (0.3f + 0.3f * pulse + flare * 0.2f) * groundGlowStrength;
 
-            glowPainter.Begin(glowBuffer, glowRenderer.transform.worldToLocalMatrix, glowRenderer.transform.position.z);
+            glowPainter.Begin(glowBuffer, glowTransform.worldToLocalMatrix, glowTransform.position.z);
 
             if (false == bMoving && 0.0f < alpha)
             {
@@ -672,14 +681,14 @@ namespace PresentationLayer.VFX
         // 이 오브젝트의 월드 스케일을 1로 되돌린다(크기 변화는 AnchorScale로 직접 그린다). 부모 스케일이 0에 가까우면 false.
         private bool CancelParentScale()
         {
-            Transform parent = transform.parent;
+            Transform parent = cachedTransform.parent;
             if (null == parent) return true;
 
             Vector3 parentScale = parent.lossyScale;
             if (0.01f > Mathf.Abs(parentScale.x) || 0.01f > Mathf.Abs(parentScale.y)) return false;
 
             Vector3 wanted = new Vector3(1.0f / parentScale.x, 1.0f / parentScale.y, 1.0f);
-            if (wanted != transform.localScale) transform.localScale = wanted;
+            if (wanted != cachedTransform.localScale) cachedTransform.localScale = wanted;
             return true;
         }
 
@@ -764,7 +773,7 @@ namespace PresentationLayer.VFX
             if (0 < steps || -1 == meshVertexCount || pos != lastDrawPosition || scale != lastDrawScale)
             {
                 bMeshesHidden = false;
-                RebuildMesh(scale);
+                RebuildMesh(scale, pos.z);
                 RebuildTrail();
                 lastDrawPosition = pos;
                 lastDrawScale = scale;

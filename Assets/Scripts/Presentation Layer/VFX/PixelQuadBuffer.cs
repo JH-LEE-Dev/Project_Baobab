@@ -289,14 +289,17 @@ namespace PresentationLayer.VFX
             int total = _vertexOffset + vertexCount;
             bool bKept = true;
 
-            if (_mesh.vertexCount < total)
+            // 메쉬 정점 수는 엔진 호출이라 한 번만 읽는다(버퍼를 다시 잡을 때만 다시 읽는다).
+            int meshVertexCount = _mesh.vertexCount;
+            if (meshVertexCount < total)
             {
                 bKept = 0 == _vertexOffset;
                 SetupMesh(_mesh, total);
+                meshVertexCount = _mesh.vertexCount;
             }
 
             if (0 < vertexCount) _mesh.SetVertexBufferData(vertices, 0, _vertexOffset, vertexCount, 0, UploadFlags);
-            if (0 == _mesh.vertexCount) return bKept; // 한 번도 채운 적 없는 빈 메쉬는 그릴 것이 없다
+            if (0 == meshVertexCount) return bKept; // 한 번도 채운 적 없는 빈 메쉬는 그릴 것이 없다
 
             SubMeshDescriptor subMesh = new SubMeshDescriptor(0, total / 4 * 6, MeshTopology.Triangles);
             subMesh.firstVertex = 0;

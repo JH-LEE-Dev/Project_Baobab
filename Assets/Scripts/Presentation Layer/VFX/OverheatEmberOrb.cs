@@ -282,9 +282,19 @@ namespace PresentationLayer.VFX
                 // 왼쪽 위 가장자리 빛
                 float rim = 0.74f < d ? rimBase : 0.0f;
 
-                int gx = Mathf.Clamp(Mathf.RoundToInt(CenterX + dx / _scale), 0, Width - 1);
-                int gy = Mathf.Clamp(Mathf.RoundToInt(CenterY + dy / _scale), 0, Height - 1);
-                float h = heat[gy * Width + gx] + (1.0f - d) * 0.15f + _pulse * 0.06f + _flare * 0.32f + vein + rim;
+                // 원래 크기(스케일 1)면 아래 계산이 이 칸 자신을 가리키므로 계산 없이 쓴다
+                int heatIndex;
+                if (true == bFullSize)
+                {
+                    heatIndex = index;
+                }
+                else
+                {
+                    int gx = Mathf.Clamp(Mathf.RoundToInt(CenterX + dx / _scale), 0, Width - 1);
+                    int gy = Mathf.Clamp(Mathf.RoundToInt(CenterY + dy / _scale), 0, Height - 1);
+                    heatIndex = gy * Width + gx;
+                }
+                float h = heat[heatIndex] + (1.0f - d) * 0.15f + _pulse * 0.06f + _flare * 0.32f + vein + rim;
 
                 if (1.05f < h && 0.3f < _flare) return 4;
                 if (0.8f < h) return 3;
@@ -294,7 +304,8 @@ namespace PresentationLayer.VFX
                 return CodeDark;
             }
 
-            if (0.01f < Mathf.Abs(_scale - 1.0f)) return CodeNone;
+            // 스케일은 1 이하로 들어오므로 원래 크기면 1과의 차이가 0이다
+            if (false == bFullSize && 0.01f < Mathf.Abs(_scale - 1.0f)) return CodeNone;
 
             float outside = heat[index] + _flare * 0.12f;
             if (0.55f < outside) return 2;

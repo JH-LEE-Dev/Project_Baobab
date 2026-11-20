@@ -250,6 +250,8 @@ public class TreeVisualComponent : MonoBehaviour
     // 수관·밑동(topRenderer/bottomRenderer) 블록에 들어가는 float 값들. 이 밖에는 _FlashColor(색)만 들어간다
     // (HDR은 하이라이트·실드·물 위·별자리, 포자막은 실드, 외곽선 색은 외곽선 렌더러에만 넣는다. 깎인 모습은 블록이 아니라 재질 사본에 넣는다).
     private static readonly int[] BodyBlockFloatIDs = { FlashAmountID, HeatChargeID, BarrierAfterglowID, EnableWindSwayID };
+    // BodyBlockFloatIDs에서 HeatChargeID의 자리.
+    private const int HeatChargeBodyBlockIndex = 1;
     // 블록 값이 모두 이 값과 같으면 블록을 비운다(CommitBodyBlock). 기본 재질 값이며, 보석 재질도 같은 값을 가질 때만 쓴다.
     private float[] topBodyBlockDefaults;
     private float[] bottomBodyBlockDefaults;
@@ -1099,7 +1101,30 @@ public class TreeVisualComponent : MonoBehaviour
         if (sr == null) return;
         sr.GetPropertyBlock(_flashMPB);
         _flashMPB.SetFloat(HeatChargeID, _charge);
-        CommitBodyBlock(sr, _flashMPB);
+
+        // 방금 넣은 열기 값이 비워도 되는 기준 값과 다르면 CommitBodyBlock은 다른 값을 볼 것 없이 블록을 그대로 넣는다.
+        // 그 판정을 열기 값 하나로 먼저 해 나머지 값 읽기를 건너뛴다(같으면 예전처럼 전부 본다).
+        if (IsHeatChargeOffDefault(sr, _charge))
+            sr.SetPropertyBlock(_flashMPB);
+        else
+            CommitBodyBlock(sr, _flashMPB);
+    }
+
+    // IsBodyBlockAtDefaults가 열기 값 때문에 false를 낼 것이 확실한지. 확실하지 않으면 false.
+    private bool IsHeatChargeOffDefault(SpriteRenderer _sr, float _charge)
+    {
+        if (IsHDRMaterialRenderer(_sr))
+        {
+            Material material = _sr.sharedMaterial;
+            return null == material || false == material.HasFloat(HeatChargeID) || material.GetFloat(HeatChargeID) != _charge;
+        }
+
+        bool bTop = _sr == topRenderer;
+        if (false == bTop && _sr != bottomRenderer) return false;
+
+        ResolveBodyBlockDefaults();
+        float[] defaults = bTop ? topBodyBlockDefaults : bottomBodyBlockDefaults;
+        return null == defaults || defaults[HeatChargeBodyBlockIndex] != _charge;
     }
 
     /// <summary>

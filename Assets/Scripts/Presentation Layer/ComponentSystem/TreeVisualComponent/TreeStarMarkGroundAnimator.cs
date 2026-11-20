@@ -27,6 +27,10 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
     // 렌더러의 transform 프로퍼티(네이티브 호출)를 매 프레임 6회 반복하지 않도록 Awake에서 캐싱
     private Transform starTransform;
     private Transform sparkleTransform;
+    // 두 Transform의 크기·반짝임 회전은 이 컴포넌트만 쓴다. 마지막으로 넣은 값과 비트까지 같으면 다시 넣지 않는다.
+    private bool bScaleApplied;
+    private int appliedScaleBits;
+    private bool bSparkleRotationApplied;
 
     [Header("Sparkle Animation")]
     [Tooltip("StarMark_2의 두 번째 스프라이트부터 순서대로 할당합니다.")]
@@ -503,12 +507,21 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
         if (starRenderer != null)
             (starTransform != null ? starTransform : starRenderer.transform).localRotation = Quaternion.Euler(0f, 0f, _angle);
 
-        if (sparkleRenderer != null)
+        if (sparkleRenderer != null && false == bSparkleRotationApplied)
+        {
             (sparkleTransform != null ? sparkleTransform : sparkleRenderer.transform).localRotation = Quaternion.identity;
+            bSparkleRotationApplied = true;
+        }
     }
 
     private void ApplyUniformScale(float _scale)
     {
+        int _scaleBits = System.BitConverter.SingleToInt32Bits(_scale);
+        if (true == bScaleApplied && _scaleBits == appliedScaleBits)
+            return;
+
+        bScaleApplied = true;
+        appliedScaleBits = _scaleBits;
         Vector3 _localScale = Vector3.one * _scale;
 
         if (starRenderer != null)
