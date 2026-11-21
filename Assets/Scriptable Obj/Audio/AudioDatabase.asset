@@ -1525,7 +1525,7 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: c3f98775a52c4dc4990cc4f8ca3732b8, type: 3}
     cueData: {fileID: 0}
     mixerGroup: {fileID: 24300200, guid: 865ed13951834138be11bea38be7fea0, type: 2}
-    defaultVolume: 1
+    defaultVolume: 0.65
     is3D: 1
     loop: 0
     maxConcurrentVoices: 0
