@@ -16,7 +16,7 @@ namespace PresentationLayer.VFX
     [DisallowMultipleComponent]
     [RequireComponent(typeof(MeshFilter))]
     [RequireComponent(typeof(MeshRenderer))]
-    public class VFX_OverheatEmberOneShot : MonoBehaviour
+    public class VFX_OverheatEmberOneShot : MonoBehaviour, IPixelVfxDeferred
     {
         public enum EKind
         {
@@ -43,8 +43,36 @@ namespace PresentationLayer.VFX
 
         private static readonly int[] ChunkShapes = { PixelPainter.ShapeCross, PixelPainter.ShapePlus, PixelPainter.ShapeDot, PixelPainter.ShapeCross, PixelPainter.ShapePlus };
 
-        // 쿼드 버퍼는 인스턴스끼리 공유한다(메인 스레드 단일 실행, 그리는 동안에만 쓴다).
-        private static readonly PixelQuadBuffer buffer = new PixelQuadBuffer(QuadBudget);
+        // 쿼드를 모으는 스레드별 작업 버퍼. 픽셀 채우기가 일꾼 스레드에서 돌 수 있어(PixelVfxWorkQueue) 스레드마다 하나씩 둔다.
+        // 한 번의 계산 묶음(PixelVfxWorkQueue.Serial) 동안 그 스레드가 맡은 인스턴스들의 그림을 구간으로 이어 담고, 묶음이 바뀌면 비운다.
+        private sealed class Work
+        {
+            [System.ThreadStatic] private static Work current;
+
+            public readonly PixelQuadBuffer buffer = new PixelQuadBuffer(QuadBudget);
+            private int serial;
+            private bool bUsed;
+
+            public static Work ForCurrentThread()
+            {
+                Work work = current;
+                if (null == work)
+                {
+                    work = new Work();
+                    current = work;
+                }
+
+                int queueSerial = PixelVfxWorkQueue.Serial;
+                if (false == work.bUsed || work.serial != queueSerial)
+                {
+                    work.bUsed = true;
+                    work.serial = queueSerial;
+                    work.buffer.Clear();
+                }
+
+                return work;
+            }
+        }
 
         // 내부 의존성
         private readonly OverheatEmberOrb orb = new OverheatEmberOrb();
@@ -76,6 +104,12 @@ namespace PresentationLayer.VFX
         private int meshVertexCount = -1;
         private int appliedRootSortingLayerID = int.MinValue;
         private int appliedRootSortingOrder = int.MinValue;
+
+        // 미룬 그리기(PixelVfxWorkQueue): LateUpdate가 담아 두는 입력과, ComputeDeferred가 남겨 ApplyDeferred가 메쉬에 올리는 결과
+        private int deferredSlot = -1;            // 대기열 자리. -1이면 미뤄 둔 그리기가 없다
+        private Matrix4x4 deferredWorldToLocal;   // LateUpdate에서 읽은 월드 -> 로컬 변환
+        private float deferredMeshZ;
+        private PixelPainter.Segment drawSegment;
 
         // 퍼블릭 초기화 및 제어 메서드
 
@@ -242,9 +276,20 @@ namespace PresentationLayer.VFX
             particles.Step(_dt, elapsed);
         }
 
+        // 메쉬를 이번 프레임에 다시 그리도록 대기열에 넣는다. 픽셀 채우기는 미뤄서 일꾼 스레드에서 돌리고(ComputeDeferred),
+        // 그리기가 읽을 변환은 예전과 같은 시점인 여기서 읽어 둔다.
         private void RebuildMesh()
         {
-            painter.Begin(buffer, transform.worldToLocalMatrix, transform.position.z);
+            deferredWorldToLocal = transform.worldToLocalMatrix;
+            deferredMeshZ = transform.position.z;
+            deferredSlot = PixelVfxWorkQueue.Enqueue(this);
+        }
+
+        // 미뤄 둔 그리기: 작업 버퍼의 새 구간에 그린다(일꾼 스레드에서 불릴 수 있다). 예전 RebuildMesh에서 메쉬에 올리는 부분만 뺀 것이고 순서는 같다.
+        void IPixelVfxDeferred.ComputeDeferred()
+        {
+            Work work = Work.ForCurrentThread();
+            painter.BeginSegment(work.buffer, deferredWorldToLocal, deferredMeshZ);
 
             if (EKind.Expire == kind && elapsed < ExpireFadeLength)
             {
@@ -257,7 +302,21 @@ namespace PresentationLayer.VFX
             }
 
             particles.Draw(painter, tones, darks, smokeColor);
-            painter.Commit(mesh, meshRenderer, ref meshHash, ref meshVertexCount);
+            painter.EndSegment(out drawSegment);
+        }
+
+        // 미뤄 둔 그리기의 결과를 메쉬에 올린다(주 스레드)
+        void IPixelVfxDeferred.ApplyDeferred()
+        {
+            deferredSlot = -1;
+            PixelPainter.CommitSegment(in drawSegment, mesh, meshRenderer, ref meshHash, ref meshVertexCount);
+            drawSegment.buffer = null;
+        }
+
+        // 미뤄 둔 그리기가 있으면 지금 끝낸다(꺼지거나 색이 바뀌기 전에: 예전에는 LateUpdate에서 이미 끝나 있던 일이다)
+        private void CompleteDeferred()
+        {
+            if (0 <= deferredSlot) PixelVfxWorkQueue.CompleteNow(deferredSlot, this);
         }
 
         // 소멸 중 불티: 궤도를 돌며 어두워지다 0.4초(fade 0.33)에 사라진다
@@ -342,6 +401,7 @@ namespace PresentationLayer.VFX
 
         private void OnDisable()
         {
+            CompleteDeferred();
             if (null != meshRenderer) meshRenderer.enabled = false;
         }
 
@@ -359,7 +419,11 @@ namespace PresentationLayer.VFX
             glowScale = Mathf.Clamp(glowScale, 0.0f, 2.0f);
 
 #if UNITY_EDITOR
-            if (true == bInitialized) BuildTones();
+            if (true == bInitialized)
+            {
+                CompleteDeferred();
+                BuildTones();
+            }
 #endif
         }
     }

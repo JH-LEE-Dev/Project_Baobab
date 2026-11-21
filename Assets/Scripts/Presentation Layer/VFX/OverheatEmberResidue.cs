@@ -50,6 +50,9 @@ namespace PresentationLayer.VFX
                 return;
             }
 
+            // 이번 프레임에 미뤄 둔 그리기가 지금 입자와 색을 읽으므로 넘겨받기 전에 먼저 끝낸다(예전에는 LateUpdate에서 이미 끝나 있었다)
+            driver.CompleteDeferred();
+
             _source.TransferTo(particles);
             driver.Configure(_material, _sortingLayerID, _sortingOrder, _tones, _darks, _smoke);
         }
@@ -65,8 +68,9 @@ namespace PresentationLayer.VFX
             driver = go.AddComponent<ResidueDriver>();
         }
 
-        private sealed class ResidueDriver : MonoBehaviour
+        private sealed class ResidueDriver : MonoBehaviour, IPixelVfxDeferred
         {
+            // 드라이버는 하나뿐이라 버퍼도 하나다. 채우는 것은 일꾼 스레드에서 할 수 있지만(ComputeDeferred) 이 드라이버만 쓴다.
             private static readonly PixelQuadBuffer buffer = new PixelQuadBuffer(QuadBudget);
 
             // 내부 의존성
@@ -81,6 +85,7 @@ namespace PresentationLayer.VFX
             private float time;
             private ulong meshHash;
             private int meshVertexCount = -1;
+            private int deferredSlot = -1; // 대기열 자리. -1이면 미뤄 둔 그리기가 없다
 
             public void Configure(Material _material, int _sortingLayerID, int _sortingOrder, Color32[] _tones, Color32[] _darks, Color32 _smoke)
             {
@@ -127,9 +132,33 @@ namespace PresentationLayer.VFX
                 time += dt;
                 particles.Step(dt, time);
 
+                // 픽셀 채우기는 유니티 API를 쓰지 않는 계산이라 미뤄서 일꾼 스레드에서 돌린다(ComputeDeferred)
+                deferredSlot = PixelVfxWorkQueue.Enqueue(this);
+            }
+
+            // 미뤄 둔 그리기: 버퍼를 채운다(일꾼 스레드에서 불릴 수 있다). 예전 LateUpdate의 Begin ~ Draw 그대로다.
+            void IPixelVfxDeferred.ComputeDeferred()
+            {
                 painter.Begin(buffer, Matrix4x4.identity, 0.0f);
                 particles.Draw(painter, tones, darks, smoke);
+            }
+
+            // 미뤄 둔 그리기의 결과를 메쉬에 올린다(주 스레드)
+            void IPixelVfxDeferred.ApplyDeferred()
+            {
+                deferredSlot = -1;
                 painter.Commit(mesh, meshRenderer, ref meshHash, ref meshVertexCount);
+            }
+
+            // 미뤄 둔 그리기가 있으면 지금 끝낸다(입자·색이 바뀌거나 꺼지기 전에)
+            public void CompleteDeferred()
+            {
+                if (0 <= deferredSlot) PixelVfxWorkQueue.CompleteNow(deferredSlot, this);
+            }
+
+            private void OnDisable()
+            {
+                CompleteDeferred();
             }
 
             private void OnDestroy()
