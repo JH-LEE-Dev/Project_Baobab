@@ -160,7 +160,7 @@ MonoBehaviour:
   abilityNodePrefab: {fileID: 186751372433236867, guid: f50dc13d7e7439444b4bed2520b62d96, type: 3}
   abilityBuildVariantData: {fileID: 11400000, guid: 435d117acee74a889a1c34c20d764a81, type: 2}
   gridCellSize: 32
-  prewarmNodePoolCount: 64
+  prewarmNodePoolCount: 256
   pictureBindings:
   - skillType: 1
     sprite: {fileID: 21300000, guid: b300ddcd03e2c01409143cdffe3b493a, type: 3}

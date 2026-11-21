@@ -120,6 +120,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private static readonly Vector3[] nodeBoundsCornerBuffer = new Vector3[4];
     // 노드 자기 사각형만으로 "안쪽" 판정을 내릴 때 두는 여유(UI 단위). 경계 계산의 부동소수 반올림 오차(수천 단위 좌표에서 0.01 미만)보다 훨씬 크다.
     private const float NodeViewportFastInsideMargin = 1f;
+    // 꺼진 노드를 미리 걸러낼 반경 = 프리팹에서 잰 최대 거리 x 배수 + 여유(노드 로컬 단위)
+    private const float NodeCullRadiusScale = 1.5f;
+    private const float NodeCullRadiusExtraMargin = 32f;
     // 툴팁 위치 계산용 꼭짓점 버퍼(매번 new Vector3[4] 하던 할당을 없앤다)
     private static readonly Vector3[] toolTipCornerBuffer = new Vector3[4];
     // 툴팁을 띄우는 중에 미리보기 응답(SkillAccumulatedValuePreviewProvided)이 같은 내용을 이미 적용했는지
@@ -3892,10 +3895,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
         bool picnicUnlocked = _currentHUDState.IsValid && _previousHUDState.IsValid &&
             IsPicnicBasketVisible(_currentHUDState.PrestigeLevel, _currentHUDState.Experience) &&
             !IsPicnicBasketVisible(_previousHUDState.PrestigeLevel, _previousHUDState.Experience);
+        // 새로 드러나는 노드가 없는 구매에서는 여기서 선을 따로 만들지 않는다. 바로 아래 RefreshNodeAvailabilityVisuals가
+        // 끝에서 같은 노드 배치로 선을 다시 만들어 통째로 덮어쓰므로, 여기서 만든 선은 화면에 나가지 않았다(결과 동일).
         if ((wasLockedByLevel && node.IsUnlockedByLevel()) || prestigeIncreased || picnicUnlocked)
             RefreshNodeVisibility(true);
-        else
-            RefreshLines();
 
         RefreshNodeAvailabilityVisuals();
 
@@ -4238,6 +4241,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
         // 노드를 켜고 끄는 것으로는 배경의 월드 변환이 바뀌지 않으므로 한 번만 읽는다(CalculateRelativeRectTransformBounds가 매번 읽던 값과 같다).
         Matrix4x4 viewportFromWorld = abilityBackground.worldToLocalMatrix;
 
+        // 화면 밖으로 나가 꺼져 있는 노드는 경계(자기와 자식 사각형 전체)를 정확히 구하기 전에, 넉넉히 잡은 반경으로 먼저 걸러낸다.
+        // 노드 중심에서 반경만큼 벌린 정사각형이 화면 영역과 겹치지 않으면 그 안에 드는 실제 경계도 겹치지 않으므로 판정은 "밖"으로 같다.
+        float nodeCullRadius = GetNodeCullRadiusInViewport(viewportFromWorld);
+
         for (int i = 0; i < spawnedNodes.Count; i++)
         {
             AbilityNode node = spawnedNodes[i];
@@ -4257,10 +4264,64 @@ public class UI_TentAbilityComponent : MonoBehaviour
                 continue;
             }
 
+            if (false == node.IsViewportVisible && 0f < nodeCullRadius &&
+                IsNodeClearlyOutsideViewport(nodeRect, viewportFromWorld, viewportRect, nodeCullRadius))
+            {
+                continue;
+            }
+
             bool isInsideViewport = IsNodeInsideViewport(nodeRect, viewportFromWorld, viewportRect);
 
             node.SetViewportVisible(isInsideViewport);
         }
+    }
+
+    // 노드 프리팹의 사각형들이 노드 원점에서 뻗는 최대 거리(노드 로컬 단위). 모든 노드가 같은 프리팹이라 한 번만 잰다.
+    private float nodeCullRadiusLocal = -1f;
+
+    // 꺼진 노드를 미리 걸러낼 반경(배경 좌표 단위). 잴 노드가 아직 없으면 0을 돌려 거르지 않는다.
+    private float GetNodeCullRadiusInViewport(Matrix4x4 _viewportFromWorld)
+    {
+        if (nodeCullRadiusLocal < 0f)
+        {
+            AbilityNode sample = null;
+            for (int i = 0; i < spawnedNodes.Count && sample == null; i++)
+                sample = spawnedNodes[i];
+
+            if (sample == null || sample.RectTransform == null)
+                return 0f;
+
+            // 꺼진 자식까지 전부 포함해 잰 값의 1.5배에 여유를 더한다. 모션·흔들림 보정으로 자식이 커지거나 밀린 채 꺼져 있어도 이 안에 든다.
+            RectTransform root = sample.RectTransform;
+            root.GetComponentsInChildren(true, nodeBoundsRectBuffer);
+            float farthest = 0f;
+            for (int i = 0; i < nodeBoundsRectBuffer.Count; i++)
+            {
+                nodeBoundsRectBuffer[i].GetWorldCorners(nodeBoundsCornerBuffer);
+                for (int j = 0; j < 4; j++)
+                {
+                    Vector3 local = root.InverseTransformPoint(nodeBoundsCornerBuffer[j]);
+                    farthest = Mathf.Max(farthest, Mathf.Abs(local.x), Mathf.Abs(local.y));
+                }
+            }
+
+            nodeBoundsRectBuffer.Clear();
+            nodeCullRadiusLocal = farthest * NodeCullRadiusScale + NodeCullRadiusExtraMargin;
+        }
+
+        // 노드 로컬 단위 하나가 배경 좌표에서 얼마인지(확대·축소 배율)
+        Vector3 unitX = _viewportFromWorld.MultiplyVector(moveTarget.TransformVector(Vector3.right));
+        Vector3 unitY = _viewportFromWorld.MultiplyVector(moveTarget.TransformVector(Vector3.up));
+        return nodeCullRadiusLocal * Mathf.Max(unitX.magnitude, unitY.magnitude);
+    }
+
+    private static bool IsNodeClearlyOutsideViewport(RectTransform _nodeRect, Matrix4x4 _viewportFromWorld, Rect _viewportRect, float _radius)
+    {
+        Vector3 center = _viewportFromWorld.MultiplyPoint3x4(_nodeRect.position);
+        return center.x + _radius < _viewportRect.xMin ||
+               center.x - _radius > _viewportRect.xMax ||
+               center.y + _radius < _viewportRect.yMin ||
+               center.y - _radius > _viewportRect.yMax;
     }
 
     // 노드 경계(자기와 켜진 자식 사각형 전체를 배경 좌표로 옮긴 합집합)가 화면 영역과 겹치는지 본다.

@@ -1,11 +1,13 @@
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
 
+// UIBehaviour가 아니라 MonoBehaviour다. UIBehaviour는 크기 변경·부모 변경 같은 UI 알림을 빈 함수로 받는데,
+// 픽셀 퍼펙트 캔버스는 그래픽이 움직일 때마다 그 알림을 보내므로 이 컴포넌트가 붙은 그래픽 수만큼 빈 호출이 생긴다.
+// 여기서 쓰는 것은 OnEnable·OnDisable·OnDestroy뿐이다.
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Graphic))]
-public sealed class TentUICircleRevealStencil : UIBehaviour, IMaterialModifier
+public sealed class TentUICircleRevealStencil : MonoBehaviour, IMaterialModifier
 {
     private const int StencilId = 64;
     private const int StencilMask = 64;
@@ -158,23 +160,20 @@ public sealed class TentUICircleRevealStencil : UIBehaviour, IMaterialModifier
             destination.DisableKeyword("UNITY_UI_ALPHACLIP");
     }
 
-    protected override void OnEnable()
+    private void OnEnable()
     {
-        base.OnEnable();
         SetMaterialDirty();
     }
 
-    protected override void OnDisable()
+    private void OnDisable()
     {
         RemoveCachedMaterials();
         SetMaterialDirty();
-        base.OnDisable();
     }
 
-    protected override void OnDestroy()
+    private void OnDestroy()
     {
         RemoveCachedMaterials();
-        base.OnDestroy();
     }
 
     private Graphic GetGraphic()
