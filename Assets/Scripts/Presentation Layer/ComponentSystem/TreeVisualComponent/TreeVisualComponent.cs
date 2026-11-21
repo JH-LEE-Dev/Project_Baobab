@@ -1093,6 +1093,31 @@ public class TreeVisualComponent : MonoBehaviour
     /// </summary>
     public void SetHeatCharge(float _charge)
     {
+        // 켜져 있는 동안은 값만 기억해 두고 그리기 직전에 카메라에 걸릴 때만 써넣는다(TreeDeferredMaterialWrites).
+        if (bDeferralEnabled)
+        {
+            deferredHeatCharge = _charge;
+            bHeatChargeDeferred = true;
+            if (deferredWriteIndex < 0) TreeDeferredMaterialWrites.Register(this);
+            return;
+        }
+
+        bHeatChargeDeferred = false;
+        WriteHeatCharge(_charge);
+    }
+
+    /// <summary>
+    /// 열기 값을 미루지 않고 바로 넣는다. 카운트다운이 끝나 더 갱신되지 않을 값(TreeHeatIndicator.Stop의 0)에 쓴다 -
+    /// 미뤄 두면 화면 밖 나무가 검사 목록에 계속 남는다. 그보다 먼저 미뤄 둔 열기 값은 이 값에 덮이므로 버린다.
+    /// </summary>
+    public void SetHeatChargeImmediate(float _charge)
+    {
+        bHeatChargeDeferred = false;
+        WriteHeatCharge(_charge);
+    }
+
+    private void WriteHeatCharge(float _charge)
+    {
         if (_flashMPB == null) _flashMPB = new MaterialPropertyBlock();
 
         // 빛나는 줄기·불씨는 하이라이트 그림에 들어 있어 하이라이트에도 넣는다.
@@ -1230,6 +1255,167 @@ public class TreeVisualComponent : MonoBehaviour
         _copy.SetPropertyBlock(_flashMPB);
     }
 
+    // ===== 화면 밖 재질 쓰기 미루기 =====
+    // 열기 차오름(SetHeatCharge)과 점멸(TreeFlashSystem이 매 틱 넣는 세기, 치명타는 색·외곽선 색까지)은 진행 중인 나무마다 매 프레임
+    // 렌더러 4~8개의 블록을 읽고 다시 넣는데, 대부분 화면 밖 나무다. 값은 그리는 데만 쓰이므로 가장 나중 값만 기억해 두고, 카메라가
+    // 그리기 직전(TreeDeferredMaterialWrites)에 그 카메라에 걸리는 나무만 실제로 써넣는다.
+    // - 다른 값들은 "블록을 읽어 한 값만 바꿔 다시 넣는" 방식이라 이 값들이 늦게 들어가도 나머지 값은 그대로다.
+    // - 블록을 비우는 판정(CommitBodyBlock)은 비워도 셰이더가 받는 값이 같을 때만 비우므로, 써넣은 뒤 셰이더가 받는 값은 바로 쓰던 때와 같다.
+    // - 같은 값을 바로 쓰는 경로(점멸 시작·끝, 초기화)는 미뤄 둔 쓰기를 먼저 쓰거나(순서 유지) 덮이는 것만 버린다.
+    // - 나무가 꺼질 때와, 블록을 밖에서 읽어 가는 곳(TreeFadeMask·지진 대역)은 읽기 전에 미뤄 둔 값을 먼저 써넣는다(FlushDeferredMaterial).
+    private const byte DeferredFlashNone = 0;
+    private const byte DeferredFlashNormal = 1;
+    private const byte DeferredFlashCrit = 2;
+    private bool bDeferralEnabled;
+    private bool bHeatChargeDeferred;
+    private float deferredHeatCharge;
+    private byte deferredFlashKind;
+    // 미뤄 둔 점멸의 세기는 이 곡선의 deferredFlashProgress 지점 값이다(써넣을 때 구한다).
+    private AnimationCurve deferredFlashCurve;
+    private float deferredFlashProgress;
+    private bool bDeferredCritOutline;
+    private Color deferredCritOutlineTop;
+    private Color deferredCritOutlineBottom;
+    // TreeDeferredMaterialWrites 목록에서의 자리(-1이면 목록에 없다).
+    internal int deferredWriteIndex = -1;
+    // 미룬 값을 받는 렌더러(수관·밑동·실드·하이라이트·외곽선)가 나무 뿌리 위치에서 뻗을 수 있는 범위(월드 유닛)를 넉넉히 잡은 것.
+    // 렌더러마다 경계를 구하면 그 비용이 아끼는 쓰기 비용과 맞먹어서, 뿌리 위치 하나와 고정 범위로 판정한다.
+    // 실측(네 숲 3단계, 모든 특성 상태): 왼쪽 0.88, 오른쪽 0.78, 아래 0.39, 위 2.58이 최대(나무 배율 최대 1.48) - 그 1.5배 이상으로 둔다.
+    // 판정 때 각 변에 PixelVfxCulling.MarginUnits가 더 붙는다. 새 나무 그림이 이 범위를 넘으면 에디터 점검(EditorCheckDeferredReach)이 오류를 낸다.
+    private const float DeferredReachSide = 1.5f;
+    private const float DeferredReachDown = 1.0f;
+    private const float DeferredReachUp = 4.0f;
+    // 미룬 값을 받는 렌더러들이 놓인 레이어의 비트 합(0이면 아직 안 구했다). 이 레이어를 그리지 않는 카메라(UI 카메라 등)는 판정에서 건너뛴다.
+    // 나무 렌더러의 레이어를 실행 중에 바꾸는 코드는 없고, 나무가 켜질 때마다 처음 쓸 때 다시 구한다.
+    private int deferredLayerMask;
+    // 이번 그리기 묶음에서 읽어 둔 뿌리 위치(카메라가 여럿이어도 한 번만 읽는다).
+    private int deferredRootSerial = -1;
+    private Vector3 deferredRootPosition;
+
+    internal bool HasDeferredMaterial => bHeatChargeDeferred || DeferredFlashNone != deferredFlashKind;
+
+    internal int DeferredLayerMask
+    {
+        get
+        {
+            if (0 == deferredLayerMask)
+            {
+                int mask = 0;
+                AddDeferredLayer(topRenderer, ref mask);
+                AddDeferredLayer(bottomRenderer, ref mask);
+                AddDeferredLayer(topShieldRenderer, ref mask);
+                AddDeferredLayer(bottomShieldRenderer, ref mask);
+                AddDeferredLayer(topHighlightRenderer, ref mask);
+                AddDeferredLayer(bottomHighlightRenderer, ref mask);
+                AddDeferredLayer(topOutlineSR, ref mask);
+                AddDeferredLayer(bottomOutlineSR, ref mask);
+                // 렌더러가 하나도 없으면 쓸 곳도 없으니 어느 카메라에서든 바로 걸리는 것으로 본다.
+                deferredLayerMask = 0 == mask ? -1 : mask;
+            }
+
+            return deferredLayerMask;
+        }
+    }
+
+    private static void AddDeferredLayer(SpriteRenderer _sr, ref int _mask)
+    {
+        if (_sr != null) _mask |= 1 << _sr.gameObject.layer;
+    }
+
+    /// <summary>미뤄 둔 열기·점멸을 지금 써넣는다. 미룬 것이 없으면 아무것도 하지 않는다.</summary>
+    internal void FlushDeferredMaterial()
+    {
+        if (deferredWriteIndex >= 0) TreeDeferredMaterialWrites.Unregister(this);
+
+        if (bHeatChargeDeferred)
+        {
+            bHeatChargeDeferred = false;
+            WriteHeatCharge(deferredHeatCharge);
+        }
+
+        if (DeferredFlashNone != deferredFlashKind) FlushDeferredFlash();
+    }
+
+    /// <summary>
+    /// 미룬 값을 받는 렌더러가 이 절두체에 걸릴 수 있는지. 나무 뿌리 위치에서 고정 범위(DeferredReach*)만큼 뻗은 상자를 각 변에 _margin만큼
+    /// 더 넓혀 본다. 실제 렌더러 경계는 이 상자 안에 있으므로, 상자가 절두체 밖이면 유니티 컬링도 이 나무를 그리지 않는다.
+    /// _planeData는 평면 6개의 (nx, ny, nz, |nx|, |ny|, |nz|, d), _serial은 그리기 묶음 번호(같은 묶음 안에서는 위치를 다시 읽지 않는다).
+    /// </summary>
+    internal bool IsDeferredTargetInFrustum(float[] _planeData, float _margin, int _serial)
+    {
+        if (deferredRootSerial != _serial)
+        {
+            deferredRootSerial = _serial;
+            deferredRootPosition = cachedTransform.position;
+        }
+
+        float cx = deferredRootPosition.x;
+        float cy = deferredRootPosition.y + (DeferredReachUp - DeferredReachDown) * 0.5f;
+        float cz = deferredRootPosition.z;
+        float ex = DeferredReachSide + _margin;
+        float ey = (DeferredReachUp + DeferredReachDown) * 0.5f + _margin;
+        float ez = PresentationLayer.VFX.PixelVfxCulling.BoundsDepth * 0.5f + _margin;
+        for (int o = 0; o < 6 * 7; o += 7)
+        {
+            float reach = _planeData[o] * cx + _planeData[o + 1] * cy + _planeData[o + 2] * cz + _planeData[o + 6]
+                + _planeData[o + 3] * ex + _planeData[o + 4] * ey + _planeData[o + 5] * ez;
+            if (0f > reach) return false;
+        }
+
+        return true;
+    }
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// 에디터 전용 점검. 미룬 값을 받는 렌더러들의 실제 경계가 판정에 쓰는 고정 범위 안에 있는지 본다.
+    /// 넘으면 false와 함께 얼마나 넘었는지 돌려준다(그 나무는 화면에 걸려도 값이 늦게 들어갈 수 있으니 DeferredReach*를 키워야 한다).
+    /// </summary>
+    internal bool EditorCheckDeferredReach(out string _detail)
+    {
+        _detail = null;
+        Vector3 root = cachedTransform.position;
+        float left = 0f, right = 0f, down = 0f, up = 0f;
+        EditorMeasureReach(topRenderer, root, ref left, ref right, ref down, ref up);
+        EditorMeasureReach(bottomRenderer, root, ref left, ref right, ref down, ref up);
+        EditorMeasureReach(topShieldRenderer, root, ref left, ref right, ref down, ref up);
+        EditorMeasureReach(bottomShieldRenderer, root, ref left, ref right, ref down, ref up);
+        EditorMeasureReach(topHighlightRenderer, root, ref left, ref right, ref down, ref up);
+        EditorMeasureReach(bottomHighlightRenderer, root, ref left, ref right, ref down, ref up);
+        EditorMeasureReach(topOutlineSR, root, ref left, ref right, ref down, ref up);
+        EditorMeasureReach(bottomOutlineSR, root, ref left, ref right, ref down, ref up);
+        if (left <= DeferredReachSide && right <= DeferredReachSide && down <= DeferredReachDown && up <= DeferredReachUp) return true;
+
+        _detail = name + " 왼쪽 " + left.ToString("F2") + " 오른쪽 " + right.ToString("F2") + " 아래 " + down.ToString("F2") + " 위 " + up.ToString("F2")
+            + " (허용 좌우 " + DeferredReachSide + " 아래 " + DeferredReachDown + " 위 " + DeferredReachUp + ")";
+        return false;
+    }
+
+    private static void EditorMeasureReach(SpriteRenderer _sr, Vector3 _root, ref float _left, ref float _right, ref float _down, ref float _up)
+    {
+        if (_sr == null || false == _sr.enabled || false == _sr.gameObject.activeInHierarchy || _sr.sprite == null) return;
+
+        Bounds bounds = _sr.bounds;
+        _left = Mathf.Max(_left, _root.x - bounds.min.x);
+        _right = Mathf.Max(_right, bounds.max.x - _root.x);
+        _down = Mathf.Max(_down, _root.y - bounds.min.y);
+        _up = Mathf.Max(_up, bounds.max.y - _root.y);
+    }
+#endif
+
+
+    private void OnEnable()
+    {
+        bDeferralEnabled = Application.isPlaying;
+        deferredLayerMask = 0;
+    }
+
+    // 꺼지는 나무는 그리기 직전 검사를 받지 못하므로 미뤄 둔 값을 여기서 써넣고, 꺼져 있는 동안 들어오는 값은 바로 쓴다.
+    private void OnDisable()
+    {
+        FlushDeferredMaterial();
+        bDeferralEnabled = false;
+    }
+
     // 깎인 채로 나무가 없어지면(씬 정리 등) 끼워 두었던 사본을 풀로 돌린다.
     private void OnDestroy()
     {
@@ -1296,6 +1482,9 @@ public class TreeVisualComponent : MonoBehaviour
 
         if (bCritFlashActive)
         {
+            // 아래에서 색·점멸량(과 외곽선)을 바로 쓰므로, 그보다 먼저 미뤄 둔 점멸 쓰기는 모두 덮인 값이다.
+            deferredFlashKind = DeferredFlashNone;
+
             // 색과 점멸량을 렌더러마다 한 번의 Get/Set으로 함께 쓴다. 외곽선 단계는 별도 외곽선 렌더러만 건드리므로
             // 쓰는 순서가 바뀌어도 각 렌더러에 남는 값은 예전(색 전부 → 외곽선 → 점멸량 전부)과 같다.
             Color critColor = EvaluateCriticalFlashColor(_progress);
@@ -1314,6 +1503,73 @@ public class TreeVisualComponent : MonoBehaviour
         }
 
         ApplyFlashAmountToRenderers(_flash);
+    }
+
+    /// <summary>
+    /// TreeFlashSystem이 진행 중인 점멸마다 부른다. ApplyFlashAmountFromSystem(_curve.Evaluate(_progress), _progress)와 같은 결과를 내되,
+    /// 켜져 있는 동안은 쓰기를 그리기 직전으로 미루고 곡선 값도 실제로 써넣을 때 구한다(같은 곡선·같은 진행도라 값이 같다).
+    /// 치명타 점멸이 끝나는 틱(진행도 1 이상)은 상태를 바꾸므로(EndCriticalFlash) 미루지 않는다. 일반 점멸이 끝나는 틱(TreeFlashSystem이
+    /// ApplyFlashAmountFromSystem(0, 1)로 부른다)도 바로 쓴다 - 더 갱신되지 않을 값을 미뤄 두면 화면 밖 나무가 검사 목록에 계속 남는다.
+    /// </summary>
+    internal void ApplyFlashFromSystem(AnimationCurve _curve, float _progress)
+    {
+        if (false == bDeferralEnabled || (bCritFlashActive && _progress >= 1f))
+        {
+            ApplyFlashAmountFromSystem(_curve.Evaluate(_progress), _progress);
+            return;
+        }
+
+        deferredFlashCurve = _curve;
+        deferredFlashProgress = _progress;
+        if (bCritFlashActive)
+        {
+            deferredFlashKind = DeferredFlashCrit;
+            // 외곽선 색은 이 시점의 외곽선 상태(켜짐 여부·재질 색)로 정해지므로 지금 구해 두고 쓰기만 미룬다(ApplyCriticalOutlineFlash와 같다).
+            bDeferredCritOutline = bCritOutlineShown;
+            if (bCritOutlineShown)
+            {
+                bCritOutlineColorApplied = true;
+                deferredCritOutlineTop = EvaluateCriticalOutlineColor(_progress, topOutlineSR);
+                deferredCritOutlineBottom = EvaluateCriticalOutlineColor(_progress, bottomOutlineSR);
+            }
+        }
+        else
+        {
+            deferredFlashKind = DeferredFlashNormal;
+        }
+
+        if (deferredWriteIndex < 0) TreeDeferredMaterialWrites.Register(this);
+    }
+
+    // 미뤄 둔 점멸 쓰기를 지금 한다. 치명타는 ApplyFlashAmountFromSystem의 진행 중 틱과 같은 값을 같은 렌더러에 쓴다.
+    private void FlushDeferredFlash()
+    {
+        byte kind = deferredFlashKind;
+        deferredFlashKind = DeferredFlashNone;
+        if (DeferredFlashNone == kind) return;
+
+        if (_flashMPB == null) _flashMPB = new MaterialPropertyBlock();
+        float flash = deferredFlashCurve.Evaluate(deferredFlashProgress);
+
+        if (DeferredFlashNormal == kind)
+        {
+            ApplyFlashAmountToRenderers(flash);
+            return;
+        }
+
+        Color critColor = EvaluateCriticalFlashColor(deferredFlashProgress);
+        SetFlashColorAndAmountToRenderer(topRenderer, critColor, flash);
+        SetFlashColorAndAmountToRenderer(bottomRenderer, critColor, flash);
+        SetFlashColorAndAmountToRenderer(topShieldRenderer, critColor, flash);
+        SetFlashColorAndAmountToRenderer(bottomShieldRenderer, critColor, flash);
+        SetFlashColorAndAmountToRenderer(topHighlightRenderer, critColor, flash);
+        SetFlashColorAndAmountToRenderer(bottomHighlightRenderer, critColor, flash);
+
+        if (bDeferredCritOutline)
+        {
+            SetOutlineColorToRenderer(topOutlineSR, deferredCritOutlineTop);
+            SetOutlineColorToRenderer(bottomOutlineSR, deferredCritOutlineBottom);
+        }
     }
 
     private void SetFlashColorAndAmountToRenderer(SpriteRenderer sr, Color _color, float flash)
@@ -1344,6 +1600,10 @@ public class TreeVisualComponent : MonoBehaviour
 
     private void BeginCriticalFlash()
     {
+        // 앞선 치명타 점멸의 미뤄 둔 쓰기 가운데 색은 아래 흰색에, 외곽선은 아래 ApplyCriticalOutlineFlash(0)에 덮인다
+        // (외곽선을 안 쓰는 나무는 미뤄 둔 외곽선 쓰기가 애초에 없다). 점멸량만 다음 틱까지 남으므로 점멸량 쓰기로 바꿔 둔다.
+        if (DeferredFlashCrit == deferredFlashKind) deferredFlashKind = DeferredFlashNormal;
+
         bCritFlashActive = true;
         ApplyFlashColorToRenderers(Color.white);
 
@@ -1361,6 +1621,9 @@ public class TreeVisualComponent : MonoBehaviour
     // 치명타 점멸 상태를 끝내고 외곽선을 원래(대상이면 켜진 원래 색, 아니면 꺼짐)로 되돌린다. 치명타 점멸 중이 아니면 할 일이 없다.
     private void EndCriticalFlash()
     {
+        // 미뤄 둔 치명타 점멸 쓰기가 있으면 순서대로 먼저 쓴 뒤 끝낸다(끝나는 틱은 이미 버리고 들어온다).
+        if (DeferredFlashCrit == deferredFlashKind) FlushDeferredFlash();
+
         bCritFlashActive = false;
 
         if (bCritOutlineColorApplied)
@@ -1432,6 +1695,10 @@ public class TreeVisualComponent : MonoBehaviour
     {
         if (_flashMPB == null) _flashMPB = new MaterialPropertyBlock();
         
+        // 미뤄 둔 치명타 점멸 쓰기가 있으면(색·외곽선 포함) 순서대로 먼저 쓰고, 미뤄 둔 일반 점멸량은 지금 쓰는 값에 덮이므로 버린다.
+        if (DeferredFlashCrit == deferredFlashKind) FlushDeferredFlash();
+        deferredFlashKind = DeferredFlashNone;
+
         SetFlashAmountToRenderer(topRenderer, flash);
         SetFlashAmountToRenderer(bottomRenderer, flash);
         SetFlashAmountToRenderer(topShieldRenderer, flash);
@@ -1756,7 +2023,7 @@ public class TreeVisualComponent : MonoBehaviour
             maskRenderer.sharedMaterial = maskMaterial;
             maskRenderer.renderingLayerMask = topRenderer.renderingLayerMask;
             fadeMask = maskObj.AddComponent<TreeFadeMask>();
-            fadeMask.Bind(maskRenderer, topRenderer, bottomRenderer);
+            fadeMask.Bind(maskRenderer, topRenderer, bottomRenderer, this);
         }
 
         if (false == fadeMask.gameObject.activeSelf) fadeMask.gameObject.SetActive(true);

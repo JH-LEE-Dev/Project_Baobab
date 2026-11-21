@@ -293,6 +293,8 @@ public sealed class QuakeTreeLaunch
         _copy.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         _copy.receiveShadows = false;
 
+        // 나무가 그리기 직전으로 미뤄 둔 값(열기·점멸)이 있으면 블록을 읽기 전에 써넣는다.
+        TreeDeferredMaterialWrites.FlushAll();
         _source.GetPropertyBlock(block);
         _copy.SetPropertyBlock(block);
 
