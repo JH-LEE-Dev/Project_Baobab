@@ -826,10 +826,16 @@ public class TreeVisualComponent : MonoBehaviour
     {
         if (null != hitPunchGetter && ReferenceEquals(hitPunchAccessorTarget, visualRoot)) return;
 
-        Transform target = visualRoot;
-        hitPunchAccessorTarget = target;
-        hitPunchGetter = () => target.localPosition;
-        hitPunchSetter = x => target.localPosition = x;
+        CreateHitPunchAccessors(visualRoot);
+    }
+
+    // 람다가 붙잡는 변수를 이 함수의 인자로 둔다. 같은 함수 안에 두면 컴파일러가 붙잡을 상자를 함수 첫머리에서 만들어
+    // 위의 이미 만들어 둔 경우(바로 돌아가는 경로)에도 피격마다 할당이 생긴다.
+    private void CreateHitPunchAccessors(Transform _target)
+    {
+        hitPunchAccessorTarget = _target;
+        hitPunchGetter = () => _target.localPosition;
+        hitPunchSetter = x => _target.localPosition = x;
     }
 
     // 치명타: 빠르게(OutQuad) 커졌다가, 줄어들며 반대로 한 번 출렁이고(감쇠 진동) 원래 크기로 돌아온다.
