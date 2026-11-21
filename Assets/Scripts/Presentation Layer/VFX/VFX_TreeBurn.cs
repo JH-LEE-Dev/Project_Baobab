@@ -16,13 +16,15 @@ namespace PresentationLayer.VFX
     /// 켜짐(SetBurning true)에는 0.15초에 걸쳐 나타나고, 꺼짐(false)에는 여우불이 위로 떠오르며 0.35초 만에 사라진 뒤 스스로 비활성화된다. 색은 파랑 3가지(진한 색, 중간 색, 밝은 색)만 쓰고
     /// 밝기는 정점 알파에 실린 HDR 발광 세기(BrandWrapGlow 셰이더)로 낸다.
     ///
-    /// 최적화: 꺼져 있을 때는 오브젝트가 비활성이라 비용이 0이고 메쉬는 처음 켜질 때 한 번만 만든다. 모든 데이터는 고정 배열/구조체이고 쿼드는 공유 정적 버퍼에 모아 올리므로 런타임 할당이 없다.
+    /// 최적화: 꺼져 있을 때는 오브젝트가 비활성이라 비용이 0이고 메쉬는 처음 켜질 때 한 번만 만든다. 모든 데이터는 고정 배열/구조체이고 쿼드는 스레드별 작업 버퍼에 모아 올리므로 런타임 할당이 없다.
+    /// 여우불·불씨 이동과 픽셀 채우기(유니티 API를 쓰지 않는 계산)는 LateUpdate에서 하지 않고 PixelVfxWorkQueue에 등록해, 모든 LateUpdate가 끝난 직후
+    /// 일꾼 스레드에서 나눠 계산한 뒤(ComputeDeferred) 주 스레드에서 메쉬에 올린다(ApplyDeferred). 계산식과 순서는 그대로라 결과는 같다.
     /// 동시에 타는 나무가 많으면 여우불 수와 꼬리 해상도를 줄이고, 화면 밖이면 메쉬 재구성을 건너뛴다.
     /// 움직임 폭이 1~2px이라 앞 프레임과 같은 그림이 자주 나오므로 내용 해시가 같으면 업로드를 건너뛴다. 메쉬 경계는 실제로 그린 픽셀 범위로 좁게 잡고,
     /// 화면 안/밖은 이번 프레임 메인 카메라 절두체로 판단한다(PixelVfxCulling). 고정 발광 세기의 색은 켜질 때 미리 계산한다.
     /// </summary>
     [DisallowMultipleComponent]
-    public class VFX_TreeBurn : MonoBehaviour
+    public class VFX_TreeBurn : MonoBehaviour, IPixelVfxDeferred
     {
         [Header("렌더링")]
         [SerializeField] private Material burnMaterial;
@@ -139,9 +141,49 @@ namespace PresentationLayer.VFX
 
         private static int activeCount;
 
-        // 화면에 그릴 쿼드를 모으는 공유 버퍼(매 프레임 Clear 후 채우고 곧바로 업로드하므로 인스턴스끼리 겹치지 않는다)
-        private static readonly PixelQuadBuffer backBuffer = new PixelQuadBuffer(512);
-        private static readonly PixelQuadBuffer frontBuffer = new PixelQuadBuffer(768);
+        // 작업 버퍼의 한 구간(이 인스턴스가 이번에 그린 한 층)의 자리와 내용 요약
+        private struct LayerSegment
+        {
+            public int start;
+            public int count;
+            public ulong hash;
+            public bool bHasBounds;
+            public Vector2 boundsMin;
+            public Vector2 boundsMax;
+        }
+
+        // 화면에 그릴 쿼드를 모으는 스레드별 작업 버퍼. 계산이 일꾼 스레드에서 돌 수 있어 스레드마다 한 벌씩 둔다.
+        // 한 번의 계산 묶음(PixelVfxWorkQueue.Serial) 동안 그 스레드가 맡은 인스턴스들의 그림을 구간으로 이어 담고, 묶음이 바뀌면 비운다.
+        private sealed class Work
+        {
+            [System.ThreadStatic] private static Work current;
+
+            public readonly PixelQuadBuffer back = new PixelQuadBuffer(512);
+            public readonly PixelQuadBuffer front = new PixelQuadBuffer(768);
+            private int serial;
+            private bool bUsed;
+
+            public static Work ForCurrentThread()
+            {
+                Work work = current;
+                if (null == work)
+                {
+                    work = new Work();
+                    current = work;
+                }
+
+                int queueSerial = PixelVfxWorkQueue.Serial;
+                if (false == work.bUsed || work.serial != queueSerial)
+                {
+                    work.bUsed = true;
+                    work.serial = queueSerial;
+                    work.back.Clear();
+                    work.front.Clear();
+                }
+
+                return work;
+            }
+        }
 
         //내부 의존성
         private readonly Wisp[] wisps = new Wisp[MaxWisps];
@@ -180,6 +222,22 @@ namespace PresentationLayer.VFX
         private int seedBase;
         private uint randomState;
 
+        // 미룬 계산(PixelVfxWorkQueue): LateUpdate가 담아 두는 입력과, ComputeDeferred가 남겨 ApplyDeferred가 메쉬에 올리는 결과
+        private Work work;                        // 계산 중에 쓰는 작업 버퍼(계산한 스레드의 것). 반영이 끝나면 비운다
+        private int deferredSlot = -1;            // 대기열 자리. -1이면 미뤄 둔 계산이 없다
+        private float deferredDt;
+        private bool bHeavyLoad;                  // 이번 LateUpdate 시점의 저사양 모드 여부(동시에 타는 나무 수는 같은 프레임 안에서도 바뀐다)
+        private bool bDeferredForceVisible;       // 처음 몇 프레임은 판정 없이 보이는 것으로 본다
+        private bool bDeferredPrepared;           // 절두체를 준비해 뒀다(일꾼 스레드에서 판정해도 된다)
+        private Vector3 deferredWorldPosition;    // LateUpdate에서 읽은 위치(화면 안/밖 판정용)
+        private Vector3 deferredParentScale;      // LateUpdate에서 읽은 부모 스케일/회전(SyncTransforms용)
+        private Quaternion deferredParentRotation;
+        private int deferredVisibility;           // 1 보임, 0 안 보임, -1 아직 모름(반영 때 주 스레드에서 확정)
+        private Vector3 deferredCullCenter;
+        private Vector3 deferredCullSize;
+        private LayerSegment backSegment;
+        private LayerSegment frontSegment;
+
         // ---------- 외부 제어 ----------
 
         /// <summary>
@@ -188,6 +246,9 @@ namespace PresentationLayer.VFX
         /// </summary>
         public void SetBurning(bool _bBurning)
         {
+            // 이번 프레임에 미뤄 둔 계산이 상태(state)를 읽으므로 바꾸기 전에 먼저 끝낸다(예전에는 LateUpdate에서 이미 끝나 있었다)
+            CompleteDeferred();
+
             if (true == _bBurning)
             {
                 if (false == gameObject.activeSelf)
@@ -363,9 +424,10 @@ namespace PresentationLayer.VFX
             return Mathf.Lerp(Mathf.Lerp(a, b, fx), Mathf.Lerp(c, d, fx), fy);
         }
 
+        // 이번 LateUpdate 시점에 정해 둔 값(계산이 미뤄져 돌 때도 LateUpdate 때의 값을 쓴다)
         private bool IsHeavyLoad()
         {
-            return heavyLoadCount < activeCount;
+            return bHeavyLoad;
         }
 
         private byte GlowByte(float _glow)
@@ -540,15 +602,25 @@ namespace PresentationLayer.VFX
 
         // ---------- 그리기 ----------
 
+        // 두 층을 작업 버퍼의 새 구간에 그린다(계산만 한다. 메쉬에 올리는 것은 UploadLayer).
         private void DrawAll()
         {
-            backBuffer.Clear();
-            frontBuffer.Clear();
+            PixelQuadBuffer backBuffer = work.back;
+            PixelQuadBuffer frontBuffer = work.front;
+            backSegment.start = backBuffer.BeginSegment();
+            frontSegment.start = frontBuffer.BeginSegment();
 
             int wispDraw = true == IsHeavyLoad() ? Mathf.Min(3, wispCount) : Mathf.Min(MaxWisps, wispCount);
             for (int i = 0; i < wispDraw; i++) DrawWisp(i);
             DrawTongues();
             DrawEmbers();
+
+            backSegment.count = backBuffer.VertexCount - backSegment.start;
+            backSegment.hash = backBuffer.ContentHash;
+            backSegment.bHasBounds = backBuffer.TryGetLocalBounds(out backSegment.boundsMin, out backSegment.boundsMax);
+            frontSegment.count = frontBuffer.VertexCount - frontSegment.start;
+            frontSegment.hash = frontBuffer.ContentHash;
+            frontSegment.bHasBounds = frontBuffer.TryGetLocalBounds(out frontSegment.boundsMin, out frontSegment.boundsMax);
         }
 
         // 여우불 하나: 꼬리(기록된 위치를 이은 선) -> 머리 순으로 그려서 머리가 꼬리 위에 오게 한다. 나무 뒤 층 여우불이면 뒤 층, 아니면 앞 층에 그린다.
@@ -562,7 +634,7 @@ namespace PresentationLayer.VFX
             float lift = (1.0f - intensity) * 14.0f;
             int headX = Mathf.RoundToInt(x);
             int headY = Mathf.RoundToInt(y + lift);
-            PixelQuadBuffer buffer = true == wisps[_index].bBehind ? backBuffer : frontBuffer;
+            PixelQuadBuffer buffer = true == wisps[_index].bBehind ? work.back : work.front;
 
             DrawTrail(_index, buffer, headX, headY, lift);
             DrawHead(_index, buffer, headX, headY);
@@ -681,6 +753,7 @@ namespace PresentationLayer.VFX
         // 줄기 불꽃 혀: 줄기의 정해진 자리에서 위로 솟는 날카로운 불꽃(밑동 2칸, 끝 1칸). 길이는 노이즈로 이글거리고 끝이 좌우로 흔들린다. 항상 나무 앞 층이다.
         private void DrawTongues()
         {
+            PixelQuadBuffer frontBuffer = work.front;
             int count = Mathf.Min(MaxTongues, tongueCount);
             float t = elapsed * 16.0f;
             for (int i = 0; i < count; i++)
@@ -707,6 +780,8 @@ namespace PresentationLayer.VFX
         // 불씨: `.`, `+`, `x`, 대시. `+`와 `x`는 0.09초마다 번갈아 바뀌어 회전하는 것처럼 보이고 후반에 깜빡이다 사라진다.
         private void DrawEmbers()
         {
+            PixelQuadBuffer backBuffer = work.back;
+            PixelQuadBuffer frontBuffer = work.front;
             for (int i = 0; i < embers.Length; i++)
             {
                 if (false == embers[i].bActive) continue;
@@ -752,13 +827,6 @@ namespace PresentationLayer.VFX
 
         // ---------- 메쉬 갱신 ----------
 
-        private void RebuildMeshes()
-        {
-            DrawAll();
-            UploadLayer(backBuffer, backMesh, ref backUpload);
-            UploadLayer(frontBuffer, frontMesh, ref frontUpload);
-        }
-
         private static void ResetUploadState(ref LayerUploadState _state)
         {
             _state.vertexCount = -1;
@@ -766,15 +834,18 @@ namespace PresentationLayer.VFX
             _state.bHasBounds = false;
         }
 
-        // 직전에 올린 그림과 같으면(정점 수와 내용 해시가 같으면) 올리지 않는다. 올릴 때는 메쉬 경계를 실제로 그린 픽셀 범위(1px 여유)로 좁게 잡는다.
-        private static void UploadLayer(PixelQuadBuffer _buffer, Mesh _mesh, ref LayerUploadState _state)
+        // 작업 버퍼에 그려 둔 한 층(구간)을 메쉬에 올린다. 직전에 올린 그림과 같으면(정점 수와 내용 해시가 같으면) 올리지 않는다.
+        // 올릴 때는 메쉬 경계를 실제로 그린 픽셀 범위(1px 여유)로 좁게 잡는다.
+        private static void UploadLayer(PixelQuadBuffer _buffer, in LayerSegment _segment, Mesh _mesh, ref LayerUploadState _state)
         {
-            if (_buffer.VertexCount == _state.vertexCount && _buffer.ContentHash == _state.hash) return;
+            if (_segment.count == _state.vertexCount && _segment.hash == _state.hash) return;
 
-            _buffer.Upload(_mesh, 0);
-            _state.vertexCount = _buffer.VertexCount;
-            _state.hash = _buffer.ContentHash;
-            _state.bHasBounds = _buffer.TryGetLocalBounds(out _state.boundsMin, out _state.boundsMax);
+            _buffer.UploadRange(_mesh, 0, _segment.start, _segment.count);
+            _state.vertexCount = _segment.count;
+            _state.hash = _segment.hash;
+            _state.bHasBounds = _segment.bHasBounds;
+            _state.boundsMin = _segment.boundsMin;
+            _state.boundsMax = _segment.boundsMax;
             if (false == _state.bHasBounds) return; // 그릴 것이 없으면 경계는 상관없다
 
             Vector3 center = new Vector3((_state.boundsMin.x + _state.boundsMax.x) * 0.5f, (_state.boundsMin.y + _state.boundsMax.y) * 0.5f, 0.0f);
@@ -787,8 +858,9 @@ namespace PresentationLayer.VFX
         }
 
         // 이번 프레임 메인 카메라에 보이는지: 두 층 메쉬에 올라가 있는 그림과 시뮬레이션 중인 불씨 위치를 합친 범위에 여유를 두고 절두체와 비교한다.
-        // 범위를 알 수 없으면(아직 아무것도 없으면) 보이는 것으로 본다.
-        private bool IsOnScreen()
+        // 범위를 알 수 없으면(아직 아무것도 없으면) 보이는 것으로 본다. 일꾼 스레드에서 불릴 수 있어 위치는 LateUpdate에서 읽어 둔 값을 쓴다.
+        // 1 보임, 0 안 보임, -1 아직 모름(ApplyDeferred가 주 스레드에서 IsVisible로 확정). 절두체를 준비해 두지 않았으면 판정하지 않고 -1을 돌려준다.
+        private int TestOnScreen()
         {
             bool bHas = false;
             Vector2 min = Vector2.zero;
@@ -796,11 +868,13 @@ namespace PresentationLayer.VFX
             if (true == backUpload.bHasBounds) Encapsulate(ref bHas, ref min, ref max, backUpload.boundsMin, backUpload.boundsMax);
             if (true == frontUpload.bHasBounds) Encapsulate(ref bHas, ref min, ref max, frontUpload.boundsMin, frontUpload.boundsMax);
             if (true == bEmberSimHasBounds) Encapsulate(ref bHas, ref min, ref max, emberSimMinPx * PixelUnit, emberSimMaxPx * PixelUnit);
-            if (false == bHas) return true;
+            if (false == bHas) return 1;
 
-            Vector3 center = transform.position + new Vector3((min.x + max.x) * 0.5f, (min.y + max.y) * 0.5f, 0.0f);
+            Vector3 center = deferredWorldPosition + new Vector3((min.x + max.x) * 0.5f, (min.y + max.y) * 0.5f, 0.0f);
             Vector3 size = new Vector3(max.x - min.x + 2.0f * CullingMarginUnits, max.y - min.y + 2.0f * CullingMarginUnits, BoundsDepth);
-            return PixelVfxCulling.IsVisible(center, size);
+            deferredCullCenter = center;
+            deferredCullSize = size;
+            return true == bDeferredPrepared ? PixelVfxCulling.TestPrepared(center, size) : -1;
         }
 
         private static void Encapsulate(ref bool _bHas, ref Vector2 _min, ref Vector2 _max, Vector2 _addMin, Vector2 _addMax)
@@ -820,8 +894,9 @@ namespace PresentationLayer.VFX
         // 부모(나무)의 스케일/회전을 지우고 도트 크기가 항상 1px이 되게 한다. 부모 스케일/회전이 바뀌었을 때만 다시 쓴다.
         private void SyncTransforms()
         {
-            Vector3 parentScale = transform.lossyScale;
-            Quaternion parentRotation = transform.rotation;
+            // 부모 스케일/회전은 LateUpdate에서 읽어 둔 값을 쓴다(반영이 미뤄져도 예전과 같은 시점의 값)
+            Vector3 parentScale = deferredParentScale;
+            Quaternion parentRotation = deferredParentRotation;
             bool bChanged = false == bTransformSynced
                 || parentScale.x != syncedParentScale.x || parentScale.y != syncedParentScale.y || parentScale.z != syncedParentScale.z
                 || parentRotation.x != syncedParentRotation.x || parentRotation.y != syncedParentRotation.y
@@ -882,24 +957,76 @@ namespace PresentationLayer.VFX
                 }
             }
 
-            UpdateWisps(dt);
-            SpawnEmbers(dt);
-            UpdateEmbers(dt);
+            // 여우불·불씨 이동, 화면 안/밖 판정, 그리기는 유니티 API를 쓰지 않는 계산이라 미뤄서 일꾼 스레드에서 돌린다(ComputeDeferred).
+            // 여기서는 그 계산과 반영이 읽을 유니티 상태를 예전과 같은 시점에 읽어 둔다.
+            deferredDt = dt;
+            bHeavyLoad = heavyLoadCount < activeCount;
+            deferredParentScale = transform.lossyScale;
+            deferredParentRotation = transform.rotation;
 
             // 화면 밖이면(첫 몇 프레임은 보이는 것으로 본다) 메쉬 재구성을 건너뛴다. 시간은 계속 흐르므로 다시 보일 때 어긋나지 않는다.
-            bool bVisible = 3 > framesSinceEnable || true == IsOnScreen();
-            if (true == bVisible)
+            // 예전에는 범위를 아는 경우에만 이 자리에서 절두체를 준비했다(PixelVfxCulling.IsVisible). 메쉬에 올린 그림의 범위가 있으면 반드시 그 경우라
+            // 지금 준비해 두고 미룬다. 없으면 불씨 이동 결과에 달려 있어 미루지 않고 이 자리에서 예전 순서 그대로 끝낸다(절두체 준비 시점이 달라지지 않게).
+            bDeferredForceVisible = 3 > framesSinceEnable;
+            bDeferredPrepared = false;
+            bool bRunNow = false;
+            if (false == bDeferredForceVisible)
             {
-                RebuildMeshes();
-                SyncTransforms();
+                deferredWorldPosition = transform.position;
+                bDeferredPrepared = true == backUpload.bHasBounds || true == frontUpload.bHasBounds;
+                if (true == bDeferredPrepared) PixelVfxCulling.PrepareFrame();
+                else bRunNow = true;
             }
 
             if (false == backRenderer.enabled) backRenderer.enabled = true;
             if (false == frontRenderer.enabled) frontRenderer.enabled = true;
+
+            if (true == bRunNow) PixelVfxWorkQueue.ExecuteNow(this);
+            else deferredSlot = PixelVfxWorkQueue.Enqueue(this);
+        }
+
+        // 미뤄 둔 계산: 여우불·불씨 이동 -> 화면 안/밖 판정 -> (보이면) 두 층을 작업 버퍼에 그린다. 일꾼 스레드에서 불릴 수 있다.
+        // 예전 LateUpdate의 UpdateWisps ~ DrawAll에서 메쉬에 올리는 부분만 뺀 것이고 순서는 같다.
+        void IPixelVfxDeferred.ComputeDeferred()
+        {
+            work = Work.ForCurrentThread();
+
+            UpdateWisps(deferredDt);
+            SpawnEmbers(deferredDt);
+            UpdateEmbers(deferredDt);
+
+            deferredVisibility = true == bDeferredForceVisible ? 1 : TestOnScreen();
+            if (0 == deferredVisibility) return;
+
+            // 아직 모르는 경우(-1)는 그려 두고, 안 보이는 것으로 확정되면 쓰지 않는다(상태는 반영 때만 바뀐다)
+            DrawAll();
+        }
+
+        // 미뤄 둔 계산의 결과를 메쉬에 올린다(주 스레드). 예전 LateUpdate의 올리기 부분과 같은 순서다.
+        void IPixelVfxDeferred.ApplyDeferred()
+        {
+            deferredSlot = -1;
+
+            bool bVisible = 1 == deferredVisibility || (-1 == deferredVisibility && true == PixelVfxCulling.IsVisible(deferredCullCenter, deferredCullSize));
+            if (true == bVisible)
+            {
+                UploadLayer(work.back, in backSegment, backMesh, ref backUpload);
+                UploadLayer(work.front, in frontSegment, frontMesh, ref frontUpload);
+                SyncTransforms();
+            }
+
+            work = null;
+        }
+
+        // 미뤄 둔 계산이 있으면 지금 끝낸다(꺼지거나 상태가 바뀌기 전에: 예전에는 LateUpdate에서 이미 끝나 있던 일이다)
+        private void CompleteDeferred()
+        {
+            if (0 <= deferredSlot) PixelVfxWorkQueue.CompleteNow(deferredSlot, this);
         }
 
         private void OnDisable()
         {
+            CompleteDeferred();
             HideRenderers();
             if (true == bCounted)
             {
@@ -929,6 +1056,7 @@ namespace PresentationLayer.VFX
         {
             if (false == bInitialized) return;
 
+            CompleteDeferred();
             BuildToneColors();
         }
 #endif

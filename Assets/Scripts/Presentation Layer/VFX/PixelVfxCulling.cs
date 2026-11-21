@@ -35,6 +35,33 @@ namespace PresentationLayer.VFX
         /// </summary>
         public static bool IsVisible(Vector3 _center, Vector3 _size)
         {
+            PrepareFrame();
+
+            if (false == bHasCamera) return true;
+
+            // 상자가 어느 평면의 완전히 바깥이면 안 보인다(TestPlanesAABB와 같은 판정: 평면까지 거리 + 반경 < 0).
+            float ex = _size.x * 0.5f;
+            float ey = _size.y * 0.5f;
+            float ez = _size.z * 0.5f;
+            bool bNearBoundary = false;
+            for (int o = 0; o < 6 * 7; o += 7)
+            {
+                float reach = planeData[o] * _center.x + planeData[o + 1] * _center.y + planeData[o + 2] * _center.z + planeData[o + 6]
+                    + planeData[o + 3] * ex + planeData[o + 4] * ey + planeData[o + 5] * ez;
+                if (-ManagedTestSlack > reach) return false;
+                if (ManagedTestSlack > reach) bNearBoundary = true;
+            }
+
+            if (false == bNearBoundary) return true;
+            return GeometryUtility.TestPlanesAABB(frustumPlanes, new Bounds(_center, _size));
+        }
+
+        /// <summary>
+        /// 이번 프레임의 절두체를 준비한다(프레임마다 처음 한 번만 계산한다. IsVisible이 처음 불릴 때 하던 일 그대로다).
+        /// 일꾼 스레드에서 TestPrepared로 판정할 이펙트는 예전에 IsVisible을 부르던 시점에 주 스레드에서 이것을 불러 둔다.
+        /// </summary>
+        public static void PrepareFrame()
+        {
             int frame = Time.frameCount;
             if (frame != cachedFrame)
             {
@@ -59,10 +86,17 @@ namespace PresentationLayer.VFX
                     }
                 }
             }
+        }
 
-            if (false == bHasCamera) return true;
+        /// <summary>
+        /// PrepareFrame으로 준비해 둔 절두체로 IsVisible의 관리 코드 판정만 한다(유니티 API를 쓰지 않아 일꾼 스레드에서 불러도 된다).
+        /// 1: 보인다, 0: 안 보인다, -1: 경계 근처라 여기서는 정하지 못한다(주 스레드에서 같은 값으로 IsVisible을 불러 확정한다).
+        /// 1과 0은 IsVisible이 같은 입력에 돌려주는 값과 같다(IsVisible의 앞부분과 같은 식이다).
+        /// </summary>
+        public static int TestPrepared(Vector3 _center, Vector3 _size)
+        {
+            if (false == bHasCamera) return 1;
 
-            // 상자가 어느 평면의 완전히 바깥이면 안 보인다(TestPlanesAABB와 같은 판정: 평면까지 거리 + 반경 < 0).
             float ex = _size.x * 0.5f;
             float ey = _size.y * 0.5f;
             float ez = _size.z * 0.5f;
@@ -71,12 +105,11 @@ namespace PresentationLayer.VFX
             {
                 float reach = planeData[o] * _center.x + planeData[o + 1] * _center.y + planeData[o + 2] * _center.z + planeData[o + 6]
                     + planeData[o + 3] * ex + planeData[o + 4] * ey + planeData[o + 5] * ez;
-                if (-ManagedTestSlack > reach) return false;
+                if (-ManagedTestSlack > reach) return 0;
                 if (ManagedTestSlack > reach) bNearBoundary = true;
             }
 
-            if (false == bNearBoundary) return true;
-            return GeometryUtility.TestPlanesAABB(frustumPlanes, new Bounds(_center, _size));
+            return true == bNearBoundary ? -1 : 1;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

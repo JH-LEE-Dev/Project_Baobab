@@ -17,7 +17,7 @@ namespace PresentationLayer.VFX
     /// 반투명 페이드 없이 계단식 크기 변화·점멸로만 사라진다. 고정 크기 배열만 써서 재생 중 힙 할당이 없다. 그림일 뿐이라 판정과 무관하다.
     /// </summary>
     [DisallowMultipleComponent]
-    public class VFX_CriticalImpact : MonoBehaviour
+    public class VFX_CriticalImpact : MonoBehaviour, IPixelVfxDeferred
     {
         // //공용 상수
 
@@ -85,8 +85,37 @@ namespace PresentationLayer.VFX
 
         // //공유 자원
 
-        private static readonly PixelQuadBuffer buffer = new PixelQuadBuffer(512);
-        private static readonly PixelPainter painter = new PixelPainter();
+        // 그리기에 쓰는 스레드별 작업 버퍼와 그리개. 픽셀 채우기가 일꾼 스레드에서 돌 수 있어(PixelVfxWorkQueue) 스레드마다 한 벌씩 둔다.
+        // 한 번의 계산 묶음(PixelVfxWorkQueue.Serial) 동안 그 스레드가 맡은 인스턴스들의 그림을 구간으로 이어 담고, 묶음이 바뀌면 비운다.
+        private sealed class Work
+        {
+            [System.ThreadStatic] private static Work current;
+
+            public readonly PixelQuadBuffer buffer = new PixelQuadBuffer(512);
+            public readonly PixelPainter painter = new PixelPainter();
+            private int serial;
+            private bool bUsed;
+
+            public static Work ForCurrentThread()
+            {
+                Work work = current;
+                if (null == work)
+                {
+                    work = new Work();
+                    current = work;
+                }
+
+                int queueSerial = PixelVfxWorkQueue.Serial;
+                if (false == work.bUsed || work.serial != queueSerial)
+                {
+                    work.bUsed = true;
+                    work.serial = queueSerial;
+                    work.buffer.Clear();
+                }
+
+                return work;
+            }
+        }
         private static Material sharedMaterial;
         private static bool bShaderMissingWarned;
 
@@ -122,6 +151,12 @@ namespace PresentationLayer.VFX
         private int slashDirX;        // 베기 줄기 방향(가로 부호). 위로 갈수록 오른쪽(1) 또는 왼쪽(-1)
         private uint randomState = 1u;
 
+        // 미룬 그리기(PixelVfxWorkQueue): LateUpdate가 담아 두는 입력과, ComputeDeferred가 남겨 ApplyDeferred가 메쉬에 올리는 결과
+        private PixelPainter painter;             // 그리는 동안에만 쓰는 그리개(그리는 스레드의 것)
+        private int deferredSlot = -1;            // 대기열 자리. -1이면 미뤄 둔 그리기가 없다
+        private Matrix4x4 deferredWorldToLocal;   // LateUpdate에서 읽은 월드 -> 로컬 변환
+        private PixelPainter.Segment drawSegment;
+
         public bool IsPlaying => bPlaying;
 
         // //퍼블릭
@@ -144,6 +179,9 @@ namespace PresentationLayer.VFX
         /// <summary>치명타 한 번을 _worldPos(맞은 자리)에서 재생한다. 정렬은 맞은 나무 바로 앞(_sortingOrder)에 둔다.</summary>
         public void Play(Vector3 _worldPos, string _sortingLayerName, int _sortingOrder)
         {
+            // 이번 프레임에 미뤄 둔 그리기가 있으면 다시 시작하기 전에 먼저 끝낸다(예전에는 LateUpdate에서 이미 끝나 있었다)
+            CompleteDeferred();
+
             meshRenderer.sortingLayerName = _sortingLayerName;
             meshRenderer.sortingOrder = _sortingOrder;
 
@@ -198,6 +236,8 @@ namespace PresentationLayer.VFX
 
         private void StopInternal()
         {
+            CompleteDeferred();
+
             bPlaying = false;
             for (int i = 0; i < DustCapacity; i++) dusts[i].bActive = false;
             if (null != meshRenderer) meshRenderer.enabled = false;
@@ -350,21 +390,42 @@ namespace PresentationLayer.VFX
                 return;
             }
 
-            Draw();
+            // 픽셀 채우기는 유니티 API를 쓰지 않는 계산이라 미뤄서 일꾼 스레드에서 돌린다(ComputeDeferred).
+            // 그리기가 읽을 변환은 예전과 같은 시점인 여기서 읽어 둔다.
+            deferredWorldToLocal = transform.worldToLocalMatrix;
+            deferredSlot = PixelVfxWorkQueue.Enqueue(this);
         }
 
         // //그리기
 
-        private void Draw()
+        // 미뤄 둔 그리기: 작업 버퍼의 새 구간에 그린다(일꾼 스레드에서 불릴 수 있다). 예전 Draw에서 메쉬에 올리는 부분만 뺀 것이고 순서는 같다.
+        void IPixelVfxDeferred.ComputeDeferred()
         {
-            painter.Begin(buffer, transform.worldToLocalMatrix, 0f);
+            Work work = Work.ForCurrentThread();
+            painter = work.painter;
+            painter.BeginSegment(work.buffer, deferredWorldToLocal, 0f);
 
             DrawRing();
             DrawDusts();
             DrawSlash();
             DrawStar();
 
-            painter.Commit(mesh, meshRenderer, ref meshHash, ref meshVertexCount);
+            painter.EndSegment(out drawSegment);
+            painter = null;
+        }
+
+        // 미뤄 둔 그리기의 결과를 메쉬에 올린다(주 스레드)
+        void IPixelVfxDeferred.ApplyDeferred()
+        {
+            deferredSlot = -1;
+            PixelPainter.CommitSegment(in drawSegment, mesh, meshRenderer, ref meshHash, ref meshVertexCount);
+            drawSegment.buffer = null;
+        }
+
+        // 미뤄 둔 그리기가 있으면 지금 끝낸다(다시 시작하거나 끝내기 전에)
+        private void CompleteDeferred()
+        {
+            if (0 <= deferredSlot) PixelVfxWorkQueue.CompleteNow(deferredSlot, this);
         }
 
         private static Color32 WithGlow(Color32 _color, float _glow)
@@ -516,7 +577,7 @@ namespace PresentationLayer.VFX
 
         // 불꽃 줄기: 머리는 밝고(처음엔 흰빛), 날아온 방향으로 금 -> 주황 꼬리를 끈다. 빠를수록 꼬리가 길고,
         // 느려지면 점 하나로 줄었다가 끝물에 점멸하며 꺼진다(VFX_TownMoney와 같은 모양).
-        private static void DrawStreak(int _x, int _y, float _vx, float _vy, float _age, float _u, Color32 _color)
+        private void DrawStreak(int _x, int _y, float _vx, float _vy, float _age, float _u, Color32 _color)
         {
             if (_u > 0.78f && 0 != ((int)(_age * 30f) & 1)) return;
 
@@ -541,7 +602,7 @@ namespace PresentationLayer.VFX
         }
 
         // 금가루: 3단계로 반짝이고, `+`/`x`가 계단식으로 줄며 번갈아 바뀐다. 끝물에는 점멸하며 사라진다.
-        private static void DrawSpark(int _x, int _y, float _age, float _u, int _seed, Color32 _color)
+        private void DrawSpark(int _x, int _y, float _age, float _u, int _seed, Color32 _color)
         {
             if (_u > 0.8f && 0 != ((int)(_age * 30f) & 1)) return;
 

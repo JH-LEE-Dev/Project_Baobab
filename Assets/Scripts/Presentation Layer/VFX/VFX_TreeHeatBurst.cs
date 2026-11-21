@@ -19,7 +19,9 @@ namespace PresentationLayer.VFX
     /// 5. 화면 왜곡: 중심에서 퍼지는 충격파 링과 위로 피어오르는 아지랑이(별도 쿼드, 셰이더가 _CameraSortingLayerTexture를 샘플링).
     ///
     /// 최적화: 몸통(파편, 소용돌이, 연기) 메쉬도 매 프레임 다시 만든다(저사양 모드에서는 30fps로 제한). 모든 조각은 구조체 배열에서 닫힌 식으로 위치를 계산하고
-    /// 공유 정적 PixelQuadBuffer에 모아 올리므로 런타임 할당이 없다. 동시 재생 수가 많으면 불씨 수를 줄이고, 화면 밖이면 메쉬 재구성을 건너뛴다.
+    /// 스레드별 작업 버퍼(PixelQuadBuffer)에 모아 올리므로 런타임 할당이 없다. 동시 재생 수가 많으면 불씨 수를 줄이고, 화면 밖이면 메쉬 재구성을 건너뛴다.
+    /// - 불씨 이동과 픽셀 채우기(유니티 API를 쓰지 않는 계산)는 LateUpdate에서 하지 않고 PixelVfxWorkQueue에 등록해, 모든 LateUpdate가 끝난 직후
+    ///   일꾼 스레드에서 나눠 계산한 뒤(ComputeDeferred) 주 스레드에서 메쉬에 올린다(ApplyDeferred). 계산식과 순서는 그대로라 결과는 같다.
     /// - 몸통과 불씨는 같은 머티리얼이라 한 메쉬에 몸통 -> 불씨 순서로 넣어 드로우를 줄인다(불씨가 몸통 위에 그려진다). 저사양 모드에서 몸통을 건너뛰는 프레임에는
     ///   메쉬에 남아 있는 몸통 정점 뒤에 불씨만 다시 올린다. 직전과 같은 그림이면(내용 해시) 업로드를 건너뛴다.
     /// - 메쉬 경계는 실제로 그린 픽셀 범위로 좁게 잡고, 화면 안/밖은 이번 프레임 메인 카메라 절두체로 판단한다(PixelVfxCulling).
@@ -29,7 +31,7 @@ namespace PresentationLayer.VFX
     /// </summary>
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(10000)]
-    public class VFX_TreeHeatBurst : MonoBehaviour
+    public class VFX_TreeHeatBurst : MonoBehaviour, IPixelVfxDeferred
     {
         [Header("렌더링")]
         [SerializeField] private Material glowMaterial;
@@ -194,12 +196,42 @@ namespace PresentationLayer.VFX
         private static Mesh sharedQuadMesh;
         private static int activeCount;
 
-        // 화면에 그릴 쿼드를 모으는 공유 버퍼(매 프레임 Clear 후 채우고 곧바로 업로드하므로 인스턴스끼리 겹치지 않는다)
-        private static readonly PixelQuadBuffer bodyBuffer = new PixelQuadBuffer(BodyQuadCapacity);
-        private static readonly PixelQuadBuffer emberBuffer = new PixelQuadBuffer(EmberQuadCapacity);
-        private static readonly byte[] rowTone = new byte[RowCapacity];
-        private static readonly int[] spanLo = new int[3];      // 연기 한 행에서 원마다 덮는 칸 구간(원 최대 3개)
-        private static readonly int[] spanHi = new int[3];
+        // 화면에 그릴 쿼드를 모으는 스레드별 작업 버퍼. 계산이 일꾼 스레드에서 돌 수 있어 스레드마다 한 벌씩 둔다.
+        // 한 번의 계산 묶음(PixelVfxWorkQueue.Serial) 동안 그 스레드가 맡은 인스턴스들의 그림을 구간으로 이어 담고, 묶음이 바뀌면 비운다.
+        private sealed class Work
+        {
+            [System.ThreadStatic] private static Work current;
+
+            public readonly PixelQuadBuffer body = new PixelQuadBuffer(BodyQuadCapacity);
+            public readonly PixelQuadBuffer ember = new PixelQuadBuffer(EmberQuadCapacity);
+            public readonly byte[] rowTone = new byte[RowCapacity];
+            public readonly int[] spanLo = new int[3];      // 연기 한 행에서 원마다 덮는 칸 구간(원 최대 3개)
+            public readonly int[] spanHi = new int[3];
+            private int serial;
+            private bool bUsed;
+
+            public static Work ForCurrentThread()
+            {
+                Work work = current;
+                if (null == work)
+                {
+                    work = new Work();
+                    current = work;
+                }
+
+                int queueSerial = PixelVfxWorkQueue.Serial;
+                if (false == work.bUsed || work.serial != queueSerial)
+                {
+                    work.bUsed = true;
+                    work.serial = queueSerial;
+                    work.body.Clear();
+                    work.ember.Clear();
+                }
+
+                return work;
+            }
+        }
+
         private static readonly int ProgressId = Shader.PropertyToID("_Progress");
         private static readonly int IntensityId = Shader.PropertyToID("_Intensity");
         private static readonly int TimeSeedId = Shader.PropertyToID("_TimeSeed");
@@ -252,6 +284,29 @@ namespace PresentationLayer.VFX
         private int emberCursor;
         private int bodySeed;
         private uint randomState;
+
+        // 미룬 계산(PixelVfxWorkQueue): LateUpdate가 담아 두는 입력과, ComputeDeferred가 남겨 ApplyDeferred가 메쉬에 올리는 결과
+        private Work work;                       // 계산 중에 쓰는 작업 버퍼(계산한 스레드의 것). 반영이 끝나면 비운다
+        private int deferredSlot = -1;           // 대기열 자리. -1이면 미뤄 둔 계산이 없다
+        private float deferredDt;
+        private bool bDeferredBodyDue;           // 이번 프레임에 몸통을 다시 그릴 차례인지(화면에 보일 때만 실제로 쓴다)
+        private bool bDeferredForceVisible;      // 처음 몇 프레임은 판정 없이 보이는 것으로 본다
+        private Vector3 deferredWorldPosition;   // LateUpdate에서 읽은 몸통 위치(화면 안/밖 판정용)
+        private int deferredVisibility;          // 1 보임, 0 안 보임, -1 경계 근처(반영 때 주 스레드에서 확정)
+        private Vector3 deferredCullCenter;
+        private Vector3 deferredCullSize;
+        private int bodySegmentStart;
+        private int bodySegmentCount;
+        private ulong bodySegmentHash;
+        private bool bBodySegmentHasBounds;
+        private Vector2 bodySegmentMin;
+        private Vector2 bodySegmentMax;
+        private int emberSegmentStart;
+        private int emberSegmentCount;
+        private ulong emberSegmentHash;
+        private bool bEmberSegmentHasBounds;
+        private Vector2 emberSegmentMin;
+        private Vector2 emberSegmentMax;
 
         private void EnsureInitialized()
         {
@@ -614,6 +669,7 @@ namespace PresentationLayer.VFX
         // 한 줄(행)에 모아 둔 셀 색(rowTone: 255 = 비어 있음)을 같은 색끼리 가로로 합쳐 쿼드로 낸다
         private void FlushRow(PixelQuadBuffer _buffer, int _y, int _xStart, int _count)
         {
+            byte[] rowTone = work.rowTone;
             int runStart = 0;
             int runTone = 255;
             for (int i = 0; i <= _count; i++)
@@ -632,14 +688,15 @@ namespace PresentationLayer.VFX
             }
         }
 
-        private static void ClearRow(int _count)
+        private void ClearRow(int _count)
         {
+            byte[] rowTone = work.rowTone;
             for (int i = 0; i < _count; i++) rowTone[i] = 255;
         }
 
         private void AddFirePixel(int _x, int _y, int _tone)
         {
-            bodyBuffer.AddLocalRect(_x, _y, _x + 1, _y + 1, toneColors[_tone]);
+            work.body.AddLocalRect(_x, _y, _x + 1, _y + 1, toneColors[_tone]);
         }
 
         // ---------- 1. 중심 폭발(파편 발산) ----------
@@ -745,6 +802,7 @@ namespace PresentationLayer.VFX
             int tone = _t < 0.3f ? ToneFireLight : (_t < 0.65f ? ToneFireMid : ToneFireDeep);
             Color32 color = toneColors[tone];
 
+            PixelQuadBuffer bodyBuffer = work.body;
             int variant = _f.variant;
             if (1 == variant) bodyBuffer.AddLocalRect(x, y, x + 2, y + 1, color);
             else if (2 == variant) bodyBuffer.AddLocalRect(x, y, x + 1, y + 2, color);
@@ -805,6 +863,7 @@ namespace PresentationLayer.VFX
             int samples = Mathf.RoundToInt(SwirlSamples * tailKeep);
             float headRise = swirlHeightPx * EaseOut(Mathf.Clamp01(st / 0.7f)); // 나무 꼭대기에 닿으면(마지막 30%) 높이를 고정하고 감기만 이어간다
             float fade = 1.0f - Mathf.Clamp01((st - 0.85f) / 0.15f);
+            PixelQuadBuffer bodyBuffer = work.body;
 
             for (int i = 0; i < count; i++)
             {
@@ -930,15 +989,18 @@ namespace PresentationLayer.VFX
             // 원 합집합: 행마다 원이 덮는 칸 구간(원 최대 3개)을 구해 겹치거나 맞닿은 구간을 합쳐 왼쪽부터 쿼드로 낸다.
             // 한 행의 칸은 모두 같은 색이라 FlushRow가 같은 색 연속 칸을 합치는 것과 결과(쿼드와 순서)가 같다.
             Color32 color = toneColors[_tone];
+            PixelQuadBuffer bodyBuffer = work.body;
+            int[] spanLo = work.spanLo;
+            int[] spanHi = work.spanHi;
             int xStart = _cx - extent;
             for (int dy = -extent; dy <= extent; dy++)
             {
                 int spanCount = 0;
                 int lo;
                 int hi;
-                if (true == CircleRowSpan(dy, extent, width, x1, y1, r1, out lo, out hi)) AddSpan(ref spanCount, lo, hi);
-                if (0.0f < r2 && true == CircleRowSpan(dy, extent, width, x2, y2, r2, out lo, out hi)) AddSpan(ref spanCount, lo, hi);
-                if (0.0f < r3 && true == CircleRowSpan(dy, extent, width, x3, y3, r3, out lo, out hi)) AddSpan(ref spanCount, lo, hi);
+                if (true == CircleRowSpan(dy, extent, width, x1, y1, r1, out lo, out hi)) AddSpan(spanLo, spanHi, ref spanCount, lo, hi);
+                if (0.0f < r2 && true == CircleRowSpan(dy, extent, width, x2, y2, r2, out lo, out hi)) AddSpan(spanLo, spanHi, ref spanCount, lo, hi);
+                if (0.0f < r3 && true == CircleRowSpan(dy, extent, width, x3, y3, r3, out lo, out hi)) AddSpan(spanLo, spanHi, ref spanCount, lo, hi);
                 if (0 == spanCount) continue;
 
                 int runLo = spanLo[0];
@@ -966,6 +1028,8 @@ namespace PresentationLayer.VFX
         {
             float outerRadius = _radius + 1.2f;
             float innerRadius = _radius - 1.2f;
+            byte[] rowTone = work.rowTone;
+            PixelQuadBuffer bodyBuffer = work.body;
             for (int dy = -_extent; dy <= _extent; dy++)
             {
                 if (Mathf.Abs(dy) > outerRadius + 1.0f) continue;
@@ -1025,18 +1089,18 @@ namespace PresentationLayer.VFX
         }
 
         // 구간을 시작 칸 순서로 끼워 넣는다(최대 3개)
-        private static void AddSpan(ref int _count, int _lo, int _hi)
+        private static void AddSpan(int[] _spanLo, int[] _spanHi, ref int _count, int _lo, int _hi)
         {
             int k = _count;
-            while (0 < k && spanLo[k - 1] > _lo)
+            while (0 < k && _spanLo[k - 1] > _lo)
             {
-                spanLo[k] = spanLo[k - 1];
-                spanHi[k] = spanHi[k - 1];
+                _spanLo[k] = _spanLo[k - 1];
+                _spanHi[k] = _spanHi[k - 1];
                 k--;
             }
 
-            spanLo[k] = _lo;
-            spanHi[k] = _hi;
+            _spanLo[k] = _lo;
+            _spanHi[k] = _hi;
             _count++;
         }
 
@@ -1044,6 +1108,7 @@ namespace PresentationLayer.VFX
 
         private void DrawEmbers()
         {
+            PixelQuadBuffer emberBuffer = work.ember;
             for (int i = 0; i < embers.Length; i++)
             {
                 if (false == embers[i].bActive || 0.0f >= embers[i].age) continue;
@@ -1095,47 +1160,69 @@ namespace PresentationLayer.VFX
 
         // ---------- 메쉬 갱신 ----------
 
-        // 몸통을 다시 그려 메쉬 앞쪽(정점 0부터)에 올린다. 직전에 올린 그림과 같으면 올리지 않는다.
-        private void RebuildBody()
+        // 몸통을 작업 버퍼의 새 구간에 다시 그린다(계산만 한다. 메쉬에 올리는 것은 CommitBody).
+        private void DrawBodySegment()
         {
-            bodyBuffer.Clear();
+            PixelQuadBuffer bodyBuffer = work.body;
+            bodySegmentStart = bodyBuffer.BeginSegment();
             DrawSmoke();      // 연기가 가장 뒤
             DrawFragments();
             DrawFlash();
             DrawSwirls();     // 소용돌이 불꽃이 가장 앞
+            bodySegmentCount = bodyBuffer.VertexCount - bodySegmentStart;
+            bodySegmentHash = bodyBuffer.ContentHash;
+            bBodySegmentHasBounds = bodyBuffer.TryGetLocalBounds(out bodySegmentMin, out bodySegmentMax);
+        }
 
-            if (bodyBuffer.VertexCount == bodyVertexCount && bodyBuffer.ContentHash == bodyHash) return;
+        // 다시 그린 몸통을 메쉬 앞쪽(정점 0부터)에 올린다. 직전에 올린 그림과 같으면 올리지 않는다.
+        private void CommitBody()
+        {
+            if (bodySegmentCount == bodyVertexCount && bodySegmentHash == bodyHash) return;
 
-            bodyBuffer.Upload(bodyMesh, 0);
-            bodyVertexCount = bodyBuffer.VertexCount;
-            bodyHash = bodyBuffer.ContentHash;
-            bBodyHasBounds = bodyBuffer.TryGetLocalBounds(out bodyBoundsMin, out bodyBoundsMax);
+            work.body.UploadRange(bodyMesh, 0, bodySegmentStart, bodySegmentCount);
+            bodyVertexCount = bodySegmentCount;
+            bodyHash = bodySegmentHash;
+            bBodyHasBounds = bBodySegmentHasBounds;
+            bodyBoundsMin = bodySegmentMin;
+            bodyBoundsMax = bodySegmentMax;
             bBodyUploaded = true;
         }
 
-        // 불씨를 다시 그려 메쉬의 몸통 정점 뒤에 올린다(같은 메쉬라 몸통 위에 그려진다). 몸통을 새로 올렸거나 불씨 그림이 바뀌었을 때만 올린다.
-        private void RebuildEmbers()
+        // 불씨를 작업 버퍼의 새 구간에 다시 그린다(계산만 한다. 메쉬에 올리는 것은 CommitEmbers).
+        private void DrawEmberSegment()
         {
-            emberBuffer.Clear();
+            PixelQuadBuffer emberBuffer = work.ember;
+            emberSegmentStart = emberBuffer.BeginSegment();
             DrawEmbers();
+            emberSegmentCount = emberBuffer.VertexCount - emberSegmentStart;
+            emberSegmentHash = emberBuffer.ContentHash;
+            bEmberSegmentHasBounds = emberBuffer.TryGetLocalBounds(out emberSegmentMin, out emberSegmentMax);
+        }
 
-            bool bChanged = true == bBodyUploaded || emberBuffer.VertexCount != emberVertexCount || emberBuffer.ContentHash != emberHash;
+        // 다시 그린 불씨를 메쉬의 몸통 정점 뒤에 올린다(같은 메쉬라 몸통 위에 그려진다). 몸통을 새로 올렸거나 불씨 그림이 바뀌었을 때만 올린다.
+        private void CommitEmbers()
+        {
+            bool bChanged = true == bBodyUploaded || emberSegmentCount != emberVertexCount || emberSegmentHash != emberHash;
             bBodyUploaded = false;
             if (false == bChanged) return;
 
+            PixelQuadBuffer emberBuffer = work.ember;
             int offset = Mathf.Max(0, bodyVertexCount);
-            if (false == emberBuffer.Upload(bodyMesh, offset))
+            if (false == emberBuffer.UploadRange(bodyMesh, offset, emberSegmentStart, emberSegmentCount))
             {
                 // 메쉬 용량을 다시 잡느라 앞쪽 몸통 정점이 지워졌다: 몸통을 다시 그려 올리고 불씨를 그 뒤에 다시 올린다
                 bodyVertexCount = -1;
-                RebuildBody();
+                DrawBodySegment();
+                CommitBody();
                 bBodyUploaded = false;
-                emberBuffer.Upload(bodyMesh, Mathf.Max(0, bodyVertexCount));
+                emberBuffer.UploadRange(bodyMesh, Mathf.Max(0, bodyVertexCount), emberSegmentStart, emberSegmentCount);
             }
 
-            emberVertexCount = emberBuffer.VertexCount;
-            emberHash = emberBuffer.ContentHash;
-            bEmberHasBounds = emberBuffer.TryGetLocalBounds(out emberBoundsMin, out emberBoundsMax);
+            emberVertexCount = emberSegmentCount;
+            emberHash = emberSegmentHash;
+            bEmberHasBounds = bEmberSegmentHasBounds;
+            emberBoundsMin = emberSegmentMin;
+            emberBoundsMax = emberSegmentMax;
             ApplyMeshBounds();
         }
 
@@ -1159,8 +1246,9 @@ namespace PresentationLayer.VFX
         }
 
         // 이번 프레임 메인 카메라에 보이는지: 지금 메쉬에 올라가 있는 그림과 시뮬레이션 중인 불씨 위치를 합친 범위에 여유를 두고 절두체와 비교한다.
-        // 범위를 알 수 없으면(아직 아무것도 없으면) 보이는 것으로 본다.
-        private bool IsOnScreen()
+        // 범위를 알 수 없으면(아직 아무것도 없으면) 보이는 것으로 본다. 일꾼 스레드에서 불릴 수 있어 위치는 LateUpdate에서 읽어 둔 값을 쓰고,
+        // 판정은 준비해 둔 절두체로 한다(PixelVfxCulling.TestPrepared). 1 보임, 0 안 보임, -1 경계 근처(ApplyDeferred가 IsVisible로 확정).
+        private int TestOnScreen()
         {
             bool bHas = false;
             Vector2 min = Vector2.zero;
@@ -1168,11 +1256,13 @@ namespace PresentationLayer.VFX
             if (true == bBodyHasBounds) Encapsulate(ref bHas, ref min, ref max, bodyBoundsMin, bodyBoundsMax);
             if (true == bEmberHasBounds) Encapsulate(ref bHas, ref min, ref max, emberBoundsMin, emberBoundsMax);
             if (true == bEmberSimHasBounds) Encapsulate(ref bHas, ref min, ref max, emberSimMinPx * PixelUnit, emberSimMaxPx * PixelUnit);
-            if (false == bHas) return true;
+            if (false == bHas) return 1;
 
-            Vector3 center = bodyTransform.position + new Vector3((min.x + max.x) * 0.5f, (min.y + max.y) * 0.5f, 0.0f);
+            Vector3 center = deferredWorldPosition + new Vector3((min.x + max.x) * 0.5f, (min.y + max.y) * 0.5f, 0.0f);
             Vector3 size = new Vector3(max.x - min.x + 2.0f * CullingMarginUnits, max.y - min.y + 2.0f * CullingMarginUnits, BoundsDepth);
-            return PixelVfxCulling.IsVisible(center, size);
+            deferredCullCenter = center;
+            deferredCullSize = size;
+            return PixelVfxCulling.TestPrepared(center, size);
         }
 
         private static void Encapsulate(ref bool _bHas, ref Vector2 _min, ref Vector2 _max, Vector2 _addMin, Vector2 _addMax)
@@ -1303,28 +1393,71 @@ namespace PresentationLayer.VFX
                 for (int i = 0; i < spawnCount; i++) SpawnTrickleEmber();
             }
 
-            UpdateEmbers(dt);
-
+            // 불씨 이동, 화면 안/밖 판정, 몸통·불씨 그리기는 유니티 API를 쓰지 않는 계산이라 미뤄서 일꾼 스레드에서 돌린다(ComputeDeferred).
+            // 여기서는 그 계산이 읽을 유니티 상태를 예전과 같은 시점에 읽어 둔다.
             // 몸통 메쉬는 매 프레임 다시 만들고(저사양 모드에서만 30fps로 제한), 화면 밖이면(첫 몇 프레임은 보이는 것으로 본다) 건너뛴다.
             bodyTimer += dt;
             float bodyInterval = true == IsHeavyLoad() ? 1.0f / LowQualityFps : 0.0f;
-            bool bVisible = 3 > framesSinceEnable || true == IsOnScreen();
-            if (bodyTimer >= bodyInterval && true == bVisible)
+            deferredDt = dt;
+            bDeferredBodyDue = bodyTimer >= bodyInterval;
+            bDeferredForceVisible = 3 > framesSinceEnable;
+            if (false == bDeferredForceVisible)
             {
-                bodyTimer = 0.0f;
-                RebuildBody();
+                deferredWorldPosition = bodyTransform.position;
+                PixelVfxCulling.PrepareFrame();
             }
 
-            if (true == bVisible) RebuildEmbers();
-
+            // 아래 셋은 계산 결과를 쓰지 않는다(Transform, 정렬, 경과 시간만 읽는다). 예전과 같은 시점에 읽도록 여기서 끝낸다.
             SyncTransformsAndSorting();
             UpdateDistortion();
 
             if (false == bodyRenderer.enabled) bodyRenderer.enabled = true;
+
+            deferredSlot = PixelVfxWorkQueue.Enqueue(this);
+        }
+
+        // 미뤄 둔 계산: 불씨 이동 -> 화면 안/밖 판정 -> (보이면) 몸통·불씨를 작업 버퍼에 그린다. 일꾼 스레드에서 불릴 수 있다.
+        // 예전 LateUpdate의 UpdateEmbers ~ RebuildEmbers에서 메쉬에 올리는 부분만 뺀 것이고 순서는 같다.
+        void IPixelVfxDeferred.ComputeDeferred()
+        {
+            work = Work.ForCurrentThread();
+
+            UpdateEmbers(deferredDt);
+
+            deferredVisibility = true == bDeferredForceVisible ? 1 : TestOnScreen();
+            if (0 == deferredVisibility) return;
+
+            // 경계 근처(-1)는 보이는지 아직 모른다: 그려 두고, 안 보이는 것으로 확정되면 쓰지 않는다(상태는 반영 때만 바뀐다)
+            if (true == bDeferredBodyDue) DrawBodySegment();
+            DrawEmberSegment();
+        }
+
+        // 미뤄 둔 계산의 결과를 메쉬에 올린다(주 스레드). 예전 LateUpdate의 올리기 부분과 같은 순서다.
+        void IPixelVfxDeferred.ApplyDeferred()
+        {
+            deferredSlot = -1;
+
+            bool bVisible = 1 == deferredVisibility || (-1 == deferredVisibility && true == PixelVfxCulling.IsVisible(deferredCullCenter, deferredCullSize));
+            if (true == bDeferredBodyDue && true == bVisible)
+            {
+                bodyTimer = 0.0f;
+                CommitBody();
+            }
+
+            if (true == bVisible) CommitEmbers();
+
+            work = null;
+        }
+
+        // 미뤄 둔 계산이 있으면 지금 끝낸다(꺼지거나 설정이 바뀌기 전에: 예전에는 LateUpdate에서 이미 끝나 있던 일이다)
+        private void CompleteDeferred()
+        {
+            if (0 <= deferredSlot) PixelVfxWorkQueue.CompleteNow(deferredSlot, this);
         }
 
         private void OnDisable()
         {
+            CompleteDeferred();
             HideRenderers();
             if (true == bCounted)
             {
@@ -1348,6 +1481,7 @@ namespace PresentationLayer.VFX
         {
             if (false == bInitialized) return;
 
+            CompleteDeferred();
             BuildToneColors();
             bTransformSynced = false;
         }
