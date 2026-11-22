@@ -351,6 +351,18 @@ namespace PresentationLayer.VFX
         }
 
         /// <summary>
+        /// 버퍼의 [_start, _start + _count) 구간 정점을 메쉬의 처음부터 올리고 경계를 넉넉한 고정 크기로 둔다. 구간이 버퍼 전체면
+        /// Upload(_mesh, _boundsSize)와 같은 호출이다.
+        /// </summary>
+        public void UploadRange(Mesh _mesh, Vector3 _boundsSize, int _start, int _count)
+        {
+            UploadRange(_mesh, 0, _start, _count);
+
+            Bounds bounds = _mesh.bounds;
+            if (Vector3.zero != bounds.center || _boundsSize != bounds.size) _mesh.bounds = new Bounds(Vector3.zero, _boundsSize);
+        }
+
+        /// <summary>
         /// 메쉬가 최소 _quadCount 쿼드를 담을 수 있게 정점/인덱스 버퍼를 미리 잡는다(재생 중에 다시 잡지 않도록).
         /// </summary>
         public static void ReserveMesh(Mesh _mesh, int _quadCount)

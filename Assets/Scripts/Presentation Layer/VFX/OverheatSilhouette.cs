@@ -53,6 +53,31 @@ namespace PresentationLayer.VFX
         private readonly float[] cellWorldX = new float[GridWidth];          // 칸 중심의 월드 X(원점 기준, 빌드마다 한 번 계산)
         private readonly int[] columnTop = new int[GridWidth];               // 열마다 실루엣 맨 위 칸의 격자 y(없으면 -1)
 
+        // Capture가 주 스레드에서 읽어 둔 소스 하나의 값(BuildCaptured가 쓴다). 유니티가 돌려준 값만 그대로 담고, 그 값으로 하는 계산은
+        // BuildCaptured가 예전 Build와 같은 식으로 한다.
+        private struct CapturedSource
+        {
+            public SpriteMaskData mask;
+            public Matrix4x4 worldToSource;
+            public float pixelsPerUnit;
+            public float pivotX;
+            public float pivotY;
+            public bool bFlipX;
+            public bool bFlipY;
+            public float sourceZ;
+            public Vector3 corner0; // 스프라이트 사각형의 네 꼭짓점을 월드로 옮긴 값(min.x/min.y, max.x/min.y, min.x/max.y, max.x/max.y 순)
+            public Vector3 corner1;
+            public Vector3 corner2;
+            public Vector3 corner3;
+        }
+
+        private readonly CapturedSource[] captured = new CapturedSource[MaxSources];
+        private int capturedCount;
+        private Vector3 capturedOrigin;
+        private int capturedMarginX;
+        private int capturedMarginDown;
+        private int capturedMarginUp;
+
         // 지난 빌드에서 solid가 채워졌던 경계 사각형(다음 빌드에서 이 범위만 지운다)
         private int previousMinX;
         private int previousMaxX = -1;
@@ -235,19 +260,21 @@ namespace PresentationLayer.VFX
         /// </summary>
         public void Build(Vector3 _origin, int _marginX, int _marginDown, int _marginUp)
         {
-            ClearPrevious();
+            Capture(_origin, _marginX, _marginDown, _marginUp);
+            BuildCaptured();
+        }
 
-            // 역방향 샘플링: 격자 칸 중심(원점 기준)을 각 스프라이트 렌더러의 Transform 전체(위치, 회전, 스케일 - 음수 스케일 반전 포함)의
-            // 역변환으로 스프라이트 픽셀 좌표로 바꿔 마스크를 조회한다. 팔과 도끼가 회전/반전되어도 구멍 없이 실루엣이 그대로 따라온다.
-            for (int gx = 0; gx < GridWidth; gx++)
-            {
-                cellWorldX[gx] = _origin.x + (gx - GridOriginX + 0.5f) * PixelUnit;
-            }
-
-            int minX = GridWidth;
-            int maxX = -1;
-            int minY = GridHeight;
-            int maxY = -1;
+        /// <summary>
+        /// Build의 앞 절반: 주 스레드에서 소스 스프라이트들의 유니티 상태(마스크, Transform, 스프라이트 값)만 읽어 둔다.
+        /// 격자 계산은 BuildCaptured가 한다. 둘을 이어 부르면 Build와 같다.
+        /// </summary>
+        public void Capture(Vector3 _origin, int _marginX, int _marginDown, int _marginUp)
+        {
+            capturedOrigin = _origin;
+            capturedMarginX = _marginX;
+            capturedMarginDown = _marginDown;
+            capturedMarginUp = _marginUp;
+            capturedCount = 0;
 
             for (int s = 0; s < sources.Count; s++)
             {
@@ -255,15 +282,65 @@ namespace PresentationLayer.VFX
                 if (false == IsSourceActive(source)) continue;
 
                 Sprite sprite = source.sprite;
-                SpriteMaskData mask = GetSpriteMask(sprite);
                 Transform sourceTransform = source.transform;
-                Matrix4x4 worldToSource = sourceTransform.worldToLocalMatrix;
-                float pixelsPerUnit = sprite.pixelsPerUnit;
-                float pivotX = sprite.pivot.x;
-                float pivotY = sprite.pivot.y;
-                float flipSignX = true == source.flipX ? -1.0f : 1.0f;
-                float flipSignY = true == source.flipY ? -1.0f : 1.0f;
-                float sourceZ = sourceTransform.position.z;
+
+                ref CapturedSource item = ref captured[capturedCount];
+                capturedCount++;
+
+                item.mask = GetSpriteMask(sprite);
+                item.worldToSource = sourceTransform.worldToLocalMatrix;
+                item.pixelsPerUnit = sprite.pixelsPerUnit;
+                item.pivotX = sprite.pivot.x;
+                item.pivotY = sprite.pivot.y;
+                item.bFlipX = source.flipX;
+                item.bFlipY = source.flipY;
+                item.sourceZ = sourceTransform.position.z;
+
+                // 스프라이트 사각형(로컬 경계)의 네 꼭짓점을 월드로 옮긴다
+                float flipSignX = true == item.bFlipX ? -1.0f : 1.0f;
+                float flipSignY = true == item.bFlipY ? -1.0f : 1.0f;
+                Bounds bounds = sprite.bounds;
+                Vector3 min = bounds.min;
+                Vector3 max = bounds.max;
+                item.corner0 = sourceTransform.TransformPoint(new Vector3(flipSignX * min.x, flipSignY * min.y, 0.0f));
+                item.corner1 = sourceTransform.TransformPoint(new Vector3(flipSignX * max.x, flipSignY * min.y, 0.0f));
+                item.corner2 = sourceTransform.TransformPoint(new Vector3(flipSignX * min.x, flipSignY * max.y, 0.0f));
+                item.corner3 = sourceTransform.TransformPoint(new Vector3(flipSignX * max.x, flipSignY * max.y, 0.0f));
+            }
+        }
+
+        /// <summary>
+        /// Build의 뒤 절반: Capture가 읽어 둔 값으로 실루엣 격자, 거리장, 가장자리 목록을 만든다. 유니티 API를 쓰지 않아 일꾼 스레드에서 불러도 된다
+        /// (스프라이트 마스크는 만든 뒤에는 읽기만 한다).
+        /// </summary>
+        public void BuildCaptured()
+        {
+            Vector3 origin = capturedOrigin;
+
+            ClearPrevious();
+
+            // 역방향 샘플링: 격자 칸 중심(원점 기준)을 각 스프라이트 렌더러의 Transform 전체(위치, 회전, 스케일 - 음수 스케일 반전 포함)의
+            // 역변환으로 스프라이트 픽셀 좌표로 바꿔 마스크를 조회한다. 팔과 도끼가 회전/반전되어도 구멍 없이 실루엣이 그대로 따라온다.
+            for (int gx = 0; gx < GridWidth; gx++)
+            {
+                cellWorldX[gx] = origin.x + (gx - GridOriginX + 0.5f) * PixelUnit;
+            }
+
+            int minX = GridWidth;
+            int maxX = -1;
+            int minY = GridHeight;
+            int maxY = -1;
+
+            for (int s = 0; s < capturedCount; s++)
+            {
+                SpriteMaskData mask = captured[s].mask;
+                Matrix4x4 worldToSource = captured[s].worldToSource;
+                float pixelsPerUnit = captured[s].pixelsPerUnit;
+                float pivotX = captured[s].pivotX;
+                float pivotY = captured[s].pivotY;
+                float flipSignX = true == captured[s].bFlipX ? -1.0f : 1.0f;
+                float flipSignY = true == captured[s].bFlipY ? -1.0f : 1.0f;
+                float sourceZ = captured[s].sourceZ;
 
                 // MultiplyPoint3x4와 같은 항 순서로 x, y만 구한다(z 항은 소스마다 상수)
                 float m00 = worldToSource.m00;
@@ -275,21 +352,16 @@ namespace PresentationLayer.VFX
                 float zTermY = worldToSource.m12 * sourceZ;
                 float m13 = worldToSource.m13;
 
-                // 스프라이트 사각형(로컬 경계)의 네 꼭짓점을 월드로 옮겨서 조회할 격자 범위를 좁힌다
-                Bounds bounds = sprite.bounds;
-                Vector3 min = bounds.min;
-                Vector3 max = bounds.max;
+                // 월드로 옮긴 네 꼭짓점으로 조회할 격자 범위를 좁힌다
                 float minCellX = float.MaxValue;
                 float maxCellX = float.MinValue;
                 float minCellY = float.MaxValue;
                 float maxCellY = float.MinValue;
                 for (int c = 0; c < 4; c++)
                 {
-                    float cx = 0 == (c & 1) ? min.x : max.x;
-                    float cy = c < 2 ? min.y : max.y;
-                    Vector3 corner = sourceTransform.TransformPoint(new Vector3(flipSignX * cx, flipSignY * cy, 0.0f));
-                    float cellX = (corner.x - _origin.x) * PixelsPerUnit;
-                    float cellY = (corner.y - _origin.y) * PixelsPerUnit;
+                    Vector3 corner = 0 == c ? captured[s].corner0 : (1 == c ? captured[s].corner1 : (2 == c ? captured[s].corner2 : captured[s].corner3));
+                    float cellX = (corner.x - origin.x) * PixelsPerUnit;
+                    float cellY = (corner.y - origin.y) * PixelsPerUnit;
                     minCellX = Mathf.Min(minCellX, cellX);
                     maxCellX = Mathf.Max(maxCellX, cellX);
                     minCellY = Mathf.Min(minCellY, cellY);
@@ -303,7 +375,7 @@ namespace PresentationLayer.VFX
 
                 for (int gy = startY; gy <= endY; gy++)
                 {
-                    float worldY = _origin.y + (gy - GridOriginY + 0.5f) * PixelUnit;
+                    float worldY = origin.y + (gy - GridOriginY + 0.5f) * PixelUnit;
                     int rowIndex = gy * GridWidth;
 
                     for (int gx = startX; gx <= endX; gx++)
@@ -346,10 +418,10 @@ namespace PresentationLayer.VFX
 
             BuildFootPoint(minX, maxX, minY, maxY);
 
-            RegionMinX = Mathf.Max(0, minX - _marginX);
-            RegionMaxX = Mathf.Min(GridWidth - 1, maxX + _marginX);
-            RegionMinY = Mathf.Max(0, minY - _marginDown);
-            RegionMaxY = Mathf.Min(GridHeight - 1, maxY + _marginUp);
+            RegionMinX = Mathf.Max(0, minX - capturedMarginX);
+            RegionMaxX = Mathf.Min(GridWidth - 1, maxX + capturedMarginX);
+            RegionMinY = Mathf.Max(0, minY - capturedMarginDown);
+            RegionMaxY = Mathf.Min(GridHeight - 1, maxY + capturedMarginUp);
 
             BuildDistanceField();
             BuildEdgeList(minX, maxX, minY, maxY);
