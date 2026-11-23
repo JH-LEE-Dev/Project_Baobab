@@ -189,7 +189,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     [Header("Overheat - 과열 수치 1당 효과")]
     public float overheatMaxValue = 100f; // 기본 최대치. 특성이 IncreaseOverheatMaxValue로 N씩 올린다
     public float overheatDamagePerLevel = 0.02f; // 화상을 뺀 모든 공격의 피해 마지막에 곱한다 (1 + 과열 * 값)
-    public float overheatAxeAttackSpeedPerLevel = 0.005f; // 도끼 공격속도 마지막에 곱한다 (1 + 과열 * 값)
+    public float overheatAxeAttackSpeedPerLevel = 0.002f; // 도끼 공격속도 마지막에 곱한다 (1 + 과열 * 값)
 
     [Header("Overheat - 구간 (화상 비율 · 드론 연쇄 공통)")]
     // 과열 수치가 이 값 이상이면 다음 구간. 기본값이면 0~33 / 34~66 / 67~99 / 100의 4구간이다.
@@ -201,11 +201,11 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public float overheatBurnTickInterval = 0.5f; // 틱 간격(초)
 
     [Header("Overheat - 과열 충격파")]
-    public float shockWaveOverheatDurationBase = 1f; // 유지시간 배율 = 기본값 + 과열 * 1당 값 (과열 100이면 1 + 100 * 0.02 = 3배)
-    public float shockWaveOverheatDurationPerLevel = 0.02f;
+    public float shockWaveOverheatDurationBase = 1f; // 유지시간 배율 = 기본값 + 과열 * 1당 값 (과열 100이면 1 + 100 * 0.008 = 1.8배)
+    public float shockWaveOverheatDurationPerLevel = 0.008f;
 
     [Header("Overheat - 과열 부메랑")]
-    public float boomerangOverheatHitRadiusPerLevel = 0.02f; // 판정 범위 배율 = 1 + 과열 * 값
+    public float boomerangOverheatHitRadiusPerLevel = 0.008f; // 판정 범위 배율 = 1 + 과열 * 값
     public float boomerangOverheatCooldownMul = 0.5f; // 최종 쿨타임 배율
 
     [Header("Overheat - 과열 드론")]

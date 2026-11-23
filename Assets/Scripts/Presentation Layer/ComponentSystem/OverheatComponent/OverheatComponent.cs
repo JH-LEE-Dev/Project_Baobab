@@ -19,10 +19,10 @@ public class OverheatComponent : PComponent, IOverheatComponent
     // 이펙트 단계(1~33 예열 / 34~66 가열 / 67~ 푸른 불꽃)의 시작 값. 0은 과열 없음.
     private static readonly int[] StageStartLevels = { 1, 34, 67 };
 
-    // 과열 수치는 0.0001 단위 정수로 쌓는다. 소수 획득량(예: 0.1씩)을 float로 더하면 오차가 누적되어(1000번이면 99.99…)
+    // 과열 수치는 0.000001 단위 정수로 쌓는다. 소수 획득량(예: 0.1씩)을 float로 더하면 오차가 누적되어(1000번이면 99.99…)
     // 정수 경계를 못 넘고, 내림한 값(HUD·공식)이 1 낮게 나온다.
-    // 0.01 단위면 높은 과열에서 줄어든 불씨 획득량(최소 0.005, EmberItemController.GetGainEfficiency)이 반올림으로 0이 되어 못 오른다.
-    private const int ValueScale = 10000;
+    // 최소 획득량 0.00025와 획득량 증가 특성 배율을 함께 적용해도 소수 누적을 충분히 보존한다.
+    private const int ValueScale = 1000000;
 
     private int overheatScaled = 0;
     private int overheatLevel = 0;
