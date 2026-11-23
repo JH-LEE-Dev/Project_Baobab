@@ -84,6 +84,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         // 묶음 발사(TransferBurstPacer)에서 첫 원목이 아닌 것. 같은 묶음은 같은 프레임에 착지하므로 착지 피드백
         // (효과음·진동·흔들림·바운스)은 첫 원목만 내고 이 원목은 데이터만 커밋한다.
         public bool bMuteFeedback;
+        // 자동 적재 2로 휴식 범위·상자 사정권 밖에서, 상자가 화면 밖에 있을 때 보낸 것(IsFarAutoLoading).
+        // 착지 때 카메라 흔들림·진동은 내지 않는다. 바운스와 위치 기준 효과음은 그대로다.
+        public bool bFarAutoLoad;
     }
     private const float FLYING_TIMEOUT = 5f;
     private List<FlyingTransferItem> flyingItems = new List<FlyingTransferItem>(32);
@@ -397,7 +400,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         {
             TriggerBounce();
 
-            if (_flyingData.fromCharacter)
+            // 자동 적재 2로 화면 밖 상자에 들어가는 원목은 흔들림·진동을 내지 않는다.
+            if (_flyingData.fromCharacter && !_flyingData.bFarAutoLoad)
             {
                 if (_bAllowCameraShake)
                 {
@@ -891,7 +895,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
                     // 자동 적재 모드에서 캐릭터가 휴식 범위를 벗어났으면 이 원목부터는 보내지 않는다. 남은 원목은 가방에 그대로
                     // 남고, 이미 발사된 것은 그대로 착지한다. (E 전송은 이 모드에서 없으므로 일반 E 전송 동작은 바뀌지 않는다)
-                    if (!bFromContainer && IsInteractionDisabled && !IsAutoLoading()) { bStopTransfer = bLead; break; }
+                    // 자동 적재 2는 휴식 범위가 없어도(IsInteractionDisabled가 false) 상자 사정권 밖에서 돌므로, 사정권 밖이면 같은 판정으로
+                    // 멈춘다(사망·탈진·귀환 경고). 상자 사정권 안이면 E 전송과 같이 둔다.
+                    if (!bFromContainer && !IsAutoLoading() && (IsInteractionDisabled || (bAutoLoadAnywhere && !bCanInteract))) { bStopTransfer = bLead; break; }
 
                     if (null != _toRemoteTarget)
                     {
@@ -971,9 +977,12 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     private void LaunchSlotItem(InventorySlot _sourceSlot, LogItemData _sourceData, bool _toCharacter, int _burstIndex, int _burstCount)
     {
         bool bLead = _burstIndex == 0;
+        // 자동 적재 2로 휴식 범위·상자 사정권 밖에서, 화면 밖 상자로 보내는 원목. 줍는 소리 바로 뒤에 발사 소리가 겹치지 않게 발사 효과음을 내지 않고,
+        // 착지 때 흔들림·진동도 내지 않는다(PlayArrivalFeedback).
+        bool bFarAutoLoad = !_toCharacter && IsFarAutoLoading();
 
         LogState takenState = _sourceSlot.TakeOneItem();
-        if (bLead)
+        if (bLead && !bFarAutoLoad)
         {
             Sound.PlayUI(SoundID.OutItem);
         }
@@ -1019,9 +1028,10 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         {
             flyingItem.DynamicTransferLaunch(start, charTransform, TransferBurstPacer.Range(0.8f, 1.2f, heightIndex, _burstCount), UnityEngine.Random.Range(0.5f, 0.5f), trajectoryJitter, rotationSpeed);
         }
-        else if (IsInteractionDisabled)
+        else if (IsInteractionDisabled || bAutoLoadAnywhere)
         {
-            // 자동 적재: 휴식 범위 어디서든 담기므로 상자 사정권보다 멀리서 날아온다. 거리에 맞춰 체공·높이·흡수 지점을 늘린다.
+            // 자동 적재: 휴식 범위 어디서든(자동 적재 2는 던전 어디서든) 담기므로 상자 사정권보다 멀리서 날아온다.
+            // 거리에 맞춰 체공·높이·흡수 지점을 늘린다(기준 거리 안이면 E 전송과 같은 비행이다).
             GetCharacterToBoxFlight(start, end, out float flightHeight, out float flightDuration, out float shrinkStartT, heightIndex, _burstCount);
             flyingItem.ContainerTransferLaunch(start, end, flightHeight, flightDuration, trajectoryJitter, rotationSpeed, shrinkStartT);
         }
@@ -1030,7 +1040,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             flyingItem.ContainerTransferLaunch(start, end, TransferBurstPacer.Range(0.8f, 1.2f, heightIndex, _burstCount), UnityEngine.Random.Range(0.5f, 0.5f), trajectoryJitter, rotationSpeed);
         }
 
-        flyingItems.Add(new FlyingTransferItem { item = flyingItem, toCharacter = _toCharacter, fromCharacter = !_toCharacter, bMuteFeedback = !bLead });
+        flyingItems.Add(new FlyingTransferItem { item = flyingItem, toCharacter = _toCharacter, fromCharacter = !_toCharacter, bMuteFeedback = !bLead, bFarAutoLoad = bFarAutoLoad });
     }
 
     // 컨테이너/캐릭터 슬롯과 마찬가지로, 캐릭터의 인벤토리도 착지 시점 커밋이라 "빈 슬롯 쟁탈전"
@@ -2379,8 +2389,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     private void UpdateLogSwapState(float _deltaTime)
     {
-        // 상자에 손이 닿지 않거나(멀어짐) 마을이면 넣는 상황 자체가 아니다. 자동 적재 모드에서는 휴식 범위가 사정권이다.
-        bool bInRange = !bInTown && CanTransferWithCharacter() && characterInventory != null;
+        // 상자에 손이 닿지 않거나(멀어짐) 마을이면 넣는 상황 자체가 아니다. 자동 적재 모드에서는 휴식 범위가 사정권이다
+        // (자동 적재 2로 전송이 어디서든 돌아도 교체는 휴식 범위 안에서만 - CanSwapWithCharacter).
+        bool bInRange = !bInTown && CanSwapWithCharacter() && characterInventory != null;
 
         if (!bInRange)
         {
@@ -2559,7 +2570,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         // 사정권 밖(또는 마을)이면 실행하지 않는다. 아래 전송 시작이 bCanInteract를 보고 조용히 건너뛰는데, 슬롯 삭제는
         // 그 전에 일어나므로 트리거를 벗어나는 프레임에 Tab이 들어오면 상자 슬롯만 사라지고 가방 슬롯은 안 넘어갔다.
         // 요청 삭제는 Update(UpdateLogSwapState)에서 하므로 그 한 프레임은 GetLogSwapInfo가 아직 슬롯을 돌려준다.
-        if (bInTown || !CanTransferWithCharacter() || characterInventory == null) return LogSwapSlotInfo.None;
+        if (bInTown || !CanSwapWithCharacter() || characterInventory == null) return LogSwapSlotInfo.None;
 
         LogSwapSlotInfo info = GetLogSwapInfo();
         if (!info.bHasSlot) return LogSwapSlotInfo.None;
@@ -2854,8 +2865,12 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     // 휴식 범위에 들어오면 상자 슬롯 UI와 가방이 열리고(AutoLoadAreaStateChangedEvent), 상호작용 키를 누르고 있는 것처럼
     // 가방 -> 상자 전송이 계속 돈다. 전송 자체(순서·비행·착지 커밋·교체 막힘 기록)는 E 전송과 같은
     // TransferAllItemsRoutine을 그대로 쓴다. 교체는 수동 그대로다 - 휴식 범위 안에서 교체 키로 일어난다.
+    //
+    // 자동 적재 2는 전송 범위만 던전 전체로 넓힌다(bAutoLoadAnywhere). 가방 -> 상자 전송은 어디서든 돌고, 상자 슬롯 UI·가방
+    // 자동 열림과 교체는 그대로 휴식 범위 안에서만이다(IsInAutoLoadRestArea). 상자에 자리가 없으면 원목은 가방에 남는다.
 
     private bool bAutoLoadInRestArea = false;
+    private bool bAutoLoadAnywhere = false;
     private float autoLoadCheckTimer = 0f;
     // 이번 던전 방문에서 자동 적재를 시작해도 되는지. 스폰 지점이 휴식 범위 한가운데라, 이게 없으면 입장 연출 도중
     // (조작 불가)에 상자 UI와 가방이 열린다. 캐릭터가 처음 움직일 수 있게 된 순간 켜지고, 맵이 바뀔 때(SetInTown) 꺼진다.
@@ -2874,8 +2889,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     /// 자동 적재 모드(던전 + 자동 적재 특성)라 상자와의 E 상호작용이 없는지. 이때는 차량·모루의 E 대상 경합에서도 빠진다
     /// (OffroadVehicleObj.CalcDistForCanReach).
     /// 휴식 특성이 아직 없어 휴식 범위가 없으면 자동 적재가 돌 수 없으므로 E 상호작용을 그대로 둔다(상자를 못 쓰게 되지 않게).
+    /// 자동 적재 2도 같다 - 휴식 범위가 없으면 상자 UI·교체를 열 곳이 없으므로 E 사정권을 남겨 둔다(전송은 그래도 어디서든 돈다).
     /// </summary>
-    public bool IsInteractionDisabled => bAutoLoadInRestArea && !bInTown && IsRestAreaOpened();
+    public bool IsInteractionDisabled => (bAutoLoadInRestArea || bAutoLoadAnywhere) && !bInTown && IsRestAreaOpened();
 
     // 휴식 범위가 열려 있는지. StaminaRecoverCircle의 개방 게이트와 같은 판정이다(staminaRecoverAmount는 특성으로만 0보다 커진다).
     private bool IsRestAreaOpened()
@@ -2889,26 +2905,77 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         UpdateInteractState();
     }
 
-    /// <summary>
-    /// 지금 자동 적재가 동작해야 하는지. 던전 + 휴식 범위 안 + 원목을 다룰 수 있는 상태(사망·귀환 중 아님)일 때만이다.
-    /// 휴식 범위 판정은 휴식 특성이 열려 있을 때만 켜지므로(StaminaRecoverCircle) 휴식이 없으면 자동 적재도 없다.
-    /// </summary>
-    private bool IsAutoLoading()
+    public void SetAutoLoadAnywhere(bool _bActive)
     {
-        if (!bAutoLoadInRestArea || bInTown || !bCollisionEnabled || !bAutoLoadStarted) return false;
+        bAutoLoadAnywhere = _bActive;
+        UpdateInteractState();
+    }
+
+    /// <summary>
+    /// 자동 적재 특성(1 또는 2)이 있고 원목을 다룰 수 있는 상태(던전, 입장 연출 뒤, 사망·귀환 중 아님)인지. 범위는 보지 않는다.
+    /// </summary>
+    private bool CanAutoLoadNow()
+    {
+        if (!(bAutoLoadInRestArea || bAutoLoadAnywhere) || bInTown || !bCollisionEnabled || !bAutoLoadStarted) return false;
 
         // 귀환 경고창이 떠 있는 동안은 던전 전체와 함께 상자로 날아가던 원목도 멈춰 있다(PauseAllFlyingItems).
         // 그동안 새로 쏘면 캐릭터 옆 공중에 멈춘 채 쌓이므로 자동 적재도 쉰다. 취소하거나 귀환을 확정하면 풀린다.
         if (bFlyingPaused) return false;
         if (character == null || character.bDead || !character.CanAcquireItems) return false;
 
+        return true;
+    }
+
+    /// <summary>
+    /// 자동 적재 중 휴식 범위 안인지. 상자 슬롯 UI·가방을 열고(AutoLoadAreaStateChangedEvent) 교체를 허락하는 범위다 -
+    /// 자동 적재 2도 이 범위는 넓히지 않는다. 휴식 범위 판정은 휴식 특성이 열려 있을 때만 켜진다(StaminaRecoverCircle).
+    /// </summary>
+    private bool IsInAutoLoadRestArea()
+    {
+        return CanAutoLoadNow() && character.pHealthComponent != null && character.pHealthComponent.IsInRestArea;
+    }
+
+    /// <summary>
+    /// 지금 자동 적재(가방 -> 상자 전송)가 동작해야 하는지. 자동 적재는 휴식 범위 안에서만, 자동 적재 2는 던전 어디서든이다.
+    /// </summary>
+    private bool IsAutoLoading()
+    {
+        if (!CanAutoLoadNow()) return false;
+        if (bAutoLoadAnywhere) return true;
+
         return character.pHealthComponent != null && character.pHealthComponent.IsInRestArea;
     }
+
+    /// <summary>
+    /// 자동 적재 2로 휴식 범위와 상자 사정권 밖에서 보내고 있고, 상자가 화면 밖에 있는지. 상자 바로 옆인데 E 대상이 차량으로
+    /// 잡혀 사정권이 꺼진 경우(휴식 범위가 없을 때)도 있으므로 거리가 아니라 상자가 화면에 보이는지로 가른다.
+    /// 자동 적재 2가 없거나 휴식 범위 안이면 항상 false라 자동 적재 1·E 전송의 연출은 바뀌지 않는다.
+    /// </summary>
+    private bool IsFarAutoLoading()
+    {
+        if (!bAutoLoadAnywhere || bCanInteract || IsInAutoLoadRestArea() || !IsAutoLoading()) return false;
+
+        if (cachedViewCamera == null || !cachedViewCamera.isActiveAndEnabled) cachedViewCamera = Camera.main;
+        if (cachedViewCamera == null) return false;
+
+        Vector3 viewport = cachedViewCamera.WorldToViewportPoint(transform.position);
+        return viewport.x < 0f || viewport.x > 1f || viewport.y < 0f || viewport.y > 1f;
+    }
+    private Camera cachedViewCamera;
 
     /// <summary>가방과 상자 사이에 전송을 할 수 있는지. 상자 사정권이거나 자동 적재 중이면 된다.</summary>
     private bool CanTransferWithCharacter()
     {
         return bCanInteract || IsAutoLoading();
+    }
+
+    /// <summary>
+    /// 상자 교체를 제안·실행할 수 있는 범위인지. 상자 사정권이거나 자동 적재의 휴식 범위 안이다.
+    /// 자동 적재 2로 전송이 던전 어디서든 돌아도 교체는 휴식 범위 안에서만 한다. 자동 적재 2가 없으면 CanTransferWithCharacter와 같다.
+    /// </summary>
+    private bool CanSwapWithCharacter()
+    {
+        return bCanInteract || IsInAutoLoadRestArea();
     }
 
     private void SetAutoLoadAreaActive(bool _bActive)
@@ -2922,13 +2989,14 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     private void UpdateAutoLoad(float _deltaTime)
     {
         // 던전에 들어와 캐릭터가 차에서 내려 처음 움직일 수 있게 된 뒤부터 자동 적재를 연다(입장 연출 중에는 열지 않는다).
-        if (!bAutoLoadStarted && bAutoLoadInRestArea && !bInTown && inputManager != null && !inputManager.IsMovePaused &&
+        if (!bAutoLoadStarted && (bAutoLoadInRestArea || bAutoLoadAnywhere) && !bInTown && inputManager != null && !inputManager.IsMovePaused &&
             character != null && character.gameObject.activeInHierarchy && !character.bRide)
         {
             bAutoLoadStarted = true;
         }
 
-        SetAutoLoadAreaActive(IsAutoLoading());
+        // 상자 UI·가방은 휴식 범위에서만 연다(자동 적재 2로 전송이 어디서든 돌아도 같다).
+        SetAutoLoadAreaActive(IsInAutoLoadRestArea());
 
         if (transferCoroutine != null || !IsAutoLoading())
         {
