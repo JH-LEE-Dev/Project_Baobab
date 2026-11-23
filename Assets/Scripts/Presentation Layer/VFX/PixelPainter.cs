@@ -43,8 +43,9 @@ namespace PresentationLayer.VFX
         private const int DotListKindLattice = 2;
 
         // LineCapacity / SpacedCapacity는 처음 크기다. 넘치면 두 배로 늘어난다.
-        private static int[] linePixelX = new int[LineCapacity];
-        private static int[] linePixelY = new int[LineCapacity];
+        // 선 좌표를 잠깐 담는 작업 배열. 그리기가 일꾼 스레드에서도 돌 수 있어(PixelVfxWorkQueue) 스레드마다 따로 둔다(처음 쓸 때 만든다).
+        [System.ThreadStatic] private static int[] linePixelX;
+        [System.ThreadStatic] private static int[] linePixelY;
 
         // 윤곽 각도 표(Atan2 결과 캐시). 각도는 (rx, ry)만으로 정해지므로 같은 링을 다시 그릴 때 Atan2를 다시 하지 않는다.
         // 값은 ClockAngle과 같은 식으로 한 번 계산해 담아 둔 것이라 매번 계산한 값과 비트까지 같다.
@@ -91,6 +92,25 @@ namespace PresentationLayer.VFX
         private int maxY;
         private float translationX;
         private float translationY;
+        private int segmentStart;
+
+        /// <summary>
+        /// BeginSegment ~ EndSegment 사이에 그린 한 구간의 요약. 그리기(계산)와 메쉬 올리기(CommitSegment)를 따로 할 때
+        /// 그린 쪽이 남기고 올리는 쪽이 읽는다. 버퍼의 그 구간은 CommitSegment를 부를 때까지 그대로 있어야 한다.
+        /// </summary>
+        public struct Segment
+        {
+            public PixelQuadBuffer buffer;
+            public int start;
+            public int count;
+            public ulong hash;
+            public int minX;
+            public int minY;
+            public int maxX;
+            public int maxY;
+            public float translationX;
+            public float translationY;
+        }
 
         public int VertexCount => null != buffer ? buffer.VertexCount : 0;
 
@@ -113,6 +133,80 @@ namespace PresentationLayer.VFX
             minY = int.MaxValue;
             maxX = int.MinValue;
             maxY = int.MinValue;
+        }
+
+        /// <summary>
+        /// Begin과 같되 버퍼를 비우지 않고 새 구간을 시작한다(한 버퍼에 여러 인스턴스의 그림을 이어 담을 때). EndSegment로 끝낸다.
+        /// 이 구간에 그린 내용(쿼드, 해시, 범위)은 Begin으로 시작해 그린 것과 같다.
+        /// </summary>
+        public void BeginSegment(PixelQuadBuffer _buffer, in Matrix4x4 _worldToLocal, float _meshZ)
+        {
+            buffer = _buffer;
+            segmentStart = buffer.BeginSegment();
+            buffer.SetWorldTransform(_worldToLocal, _meshZ);
+
+            translationX = _worldToLocal.m03;
+            translationY = _worldToLocal.m13;
+            bRunActive = false;
+            spacedCount = 0;
+            minX = int.MaxValue;
+            minY = int.MaxValue;
+            maxX = int.MinValue;
+            maxY = int.MinValue;
+        }
+
+        /// <summary>
+        /// BeginSegment로 시작한 그리기를 끝내고 구간 요약을 남긴다(메쉬에는 올리지 않는다. 유니티 API를 쓰지 않는다).
+        /// </summary>
+        public void EndSegment(out Segment _segment)
+        {
+            FlushRun();
+
+            _segment.buffer = buffer;
+            _segment.start = segmentStart;
+            _segment.count = buffer.VertexCount - segmentStart;
+            _segment.hash = buffer.ContentHash;
+            _segment.minX = minX;
+            _segment.minY = minY;
+            _segment.maxX = maxX;
+            _segment.maxY = maxY;
+            _segment.translationX = translationX;
+            _segment.translationY = translationY;
+        }
+
+        /// <summary>
+        /// EndSegment가 남긴 구간을 메쉬에 올린다. 판단과 순서는 Commit과 같다(직전과 정점 수·내용 해시가 같으면 올리지 않고,
+        /// 경계는 실제로 그린 범위로 좁히고, 그릴 것이 없으면 렌더러를 끈다).
+        /// </summary>
+        public static void CommitSegment(in Segment _segment, Mesh _mesh, MeshRenderer _renderer, ref ulong _hash, ref int _vertexCount)
+        {
+            bool bHasContent = 0 < _segment.count;
+            if (_renderer.enabled != bHasContent) _renderer.enabled = bHasContent;
+
+            if (false == bHasContent)
+            {
+                if (0 != _vertexCount)
+                {
+                    _segment.buffer.UploadRange(_mesh, 0, _segment.start, 0);
+                    _vertexCount = 0;
+                    _hash = 0UL;
+                }
+
+                return;
+            }
+
+            if (_segment.count == _vertexCount && _segment.hash == _hash) return;
+
+            _segment.buffer.UploadRange(_mesh, 0, _segment.start, _segment.count);
+
+            float x0 = _segment.minX * PixelUnit + _segment.translationX - PixelUnit;
+            float y0 = _segment.minY * PixelUnit + _segment.translationY - PixelUnit;
+            float x1 = _segment.maxX * PixelUnit + _segment.translationX + PixelUnit;
+            float y1 = _segment.maxY * PixelUnit + _segment.translationY + PixelUnit;
+            _mesh.bounds = new Bounds(new Vector3((x0 + x1) * 0.5f, (y0 + y1) * 0.5f, 0.0f), new Vector3(x1 - x0, y1 - y0, 1.0f));
+
+            _vertexCount = _segment.count;
+            _hash = _segment.hash;
         }
 
         /// <summary>
@@ -651,11 +745,13 @@ namespace PresentationLayer.VFX
         {
             int count = BuildLine(_x0, _y0, _x1, _y1);
             int period = _dashOn + _dashOff;
+            int[] lineX = linePixelX;
+            int[] lineY = linePixelY;
 
             for (int i = 0; i < count; i++)
             {
                 if (0 < _dashOff && ((i + _phase) % period + period) % period >= _dashOn) continue;
-                Dot(linePixelX[i], linePixelY[i], _color);
+                Dot(lineX[i], lineY[i], _color);
             }
         }
 
@@ -783,17 +879,30 @@ namespace PresentationLayer.VFX
             int y = _y0;
             int n = 0;
 
+            // 이 스레드의 작업 배열(처음 쓸 때 만든다). 아래에서는 지역 변수로 쓰고, 늘렸을 때만 다시 담는다.
+            int[] lineX = linePixelX;
+            int[] lineY = linePixelY;
+            if (null == lineX)
+            {
+                lineX = new int[LineCapacity];
+                lineY = new int[LineCapacity];
+                linePixelX = lineX;
+                linePixelY = lineY;
+            }
+
             while (true)
             {
                 // 선이 버퍼보다 길면 통째로 버리지 않고 버퍼를 두 배로 늘린다
-                if (linePixelX.Length <= n)
+                if (lineX.Length <= n)
                 {
-                    System.Array.Resize(ref linePixelX, linePixelX.Length * 2);
-                    System.Array.Resize(ref linePixelY, linePixelY.Length * 2);
+                    System.Array.Resize(ref lineX, lineX.Length * 2);
+                    System.Array.Resize(ref lineY, lineY.Length * 2);
+                    linePixelX = lineX;
+                    linePixelY = lineY;
                 }
 
-                linePixelX[n] = x;
-                linePixelY[n] = y;
+                lineX[n] = x;
+                lineY[n] = y;
                 n++;
 
                 if (x == _x1 && y == _y1) break;
@@ -818,13 +927,13 @@ namespace PresentationLayer.VFX
             {
                 if (0 < i && i < n - 1 && 0 < w)
                 {
-                    int prevX = linePixelX[w - 1];
-                    int prevY = linePixelY[w - 1];
-                    if (Mathf.Abs(linePixelX[i + 1] - prevX) <= 1 && Mathf.Abs(linePixelY[i + 1] - prevY) <= 1) continue;
+                    int prevX = lineX[w - 1];
+                    int prevY = lineY[w - 1];
+                    if (Mathf.Abs(lineX[i + 1] - prevX) <= 1 && Mathf.Abs(lineY[i + 1] - prevY) <= 1) continue;
                 }
 
-                linePixelX[w] = linePixelX[i];
-                linePixelY[w] = linePixelY[i];
+                lineX[w] = lineX[i];
+                lineY[w] = lineY[i];
                 w++;
             }
 

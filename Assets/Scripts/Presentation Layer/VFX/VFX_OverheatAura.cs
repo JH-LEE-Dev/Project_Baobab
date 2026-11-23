@@ -30,7 +30,7 @@ namespace PresentationLayer.VFX
     /// </summary>
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(10000)] // 팔/도끼 회전(ArmComponent, AxeAnimation)이 끝난 뒤의 Transform으로 실루엣을 계산하도록 다른 LateUpdate보다 늦게 실행한다
-    public class VFX_OverheatAura : MonoBehaviour
+    public class VFX_OverheatAura : MonoBehaviour, IPixelVfxDeferred
     {
         public enum AuraStyle
         {
@@ -246,8 +246,36 @@ namespace PresentationLayer.VFX
         private static readonly Color32[] WaveColorsPreheat = { ColorPale, ColorAmber, ColorOrange, ColorRed };
         private static readonly Color32[] WaveColorsHeating = { ColorWhite, ColorYellow, ColorOrange, ColorRed };
 
-        // 메쉬 버퍼는 매 프레임 Clear 후 채우므로 인스턴스끼리 공유해도 안전하다(BackLayer, FrontLayer, AuraLayer 순)
-        private static readonly PixelQuadBuffer[] quadBuffers = { new PixelQuadBuffer(512, false), new PixelQuadBuffer(512, false), new PixelQuadBuffer(1024, false) };
+        // 쿼드를 모으는 스레드별 작업 버퍼(BackLayer, FrontLayer, AuraLayer 순). 계산과 그리기가 일꾼 스레드에서 돌 수 있어(PixelVfxWorkQueue) 스레드마다 한 벌씩 둔다.
+        // 한 번의 계산 묶음(PixelVfxWorkQueue.Serial) 동안 그 스레드가 맡은 인스턴스들의 그림을 구간으로 이어 담고, 묶음이 바뀌면 비운다.
+        private sealed class Work
+        {
+            [System.ThreadStatic] private static Work current;
+
+            public readonly PixelQuadBuffer[] buffers = { new PixelQuadBuffer(512, false), new PixelQuadBuffer(512, false), new PixelQuadBuffer(1024, false) };
+            private int serial;
+            private bool bUsed;
+
+            public static Work ForCurrentThread()
+            {
+                Work work = current;
+                if (null == work)
+                {
+                    work = new Work();
+                    current = work;
+                }
+
+                int queueSerial = PixelVfxWorkQueue.Serial;
+                if (false == work.bUsed || work.serial != queueSerial)
+                {
+                    work.bUsed = true;
+                    work.serial = queueSerial;
+                    for (int i = 0; i < LayerCount; i++) work.buffers[i].Clear();
+                }
+
+                return work;
+            }
+        }
 
         //내부 의존성
         private readonly MeshFilter[] meshFilters = new MeshFilter[LayerCount];
@@ -291,6 +319,20 @@ namespace PresentationLayer.VFX
         private int tongueMinColumn;          // 불꽃 혀를 배치하는 실루엣 가로 범위(격자 x)
         private int tongueColumnSpan;
 
+        // 미룬 계산(PixelVfxWorkQueue): LateUpdate가 유니티 상태를 읽어 담아 두는 입력과, ComputeDeferred가 남겨 ApplyDeferred가 메쉬에 올리는 결과
+        private int deferredSlot = -1;                 // 대기열 자리. -1이면 미뤄 둔 계산이 없다
+        private float deferredDt;
+        private Vector3 deferredPosition;              // 그 프레임의 원점 월드 위치(GetOriginPosition)
+        private Matrix4x4 deferredWorldToLocal;
+        private bool bDeferredBuild;                   // 이번 프레임에 실루엣을 다시 만든다(읽어 둔 값은 silhouette가 들고 있다)
+        private bool bDeferredHasRoot;
+        private int deferredRootSortingOrder;
+        private int deferredRootSortingLayerID;
+        private bool bDeferredRebuildAura;             // 이번 프레임에 아우라 본체를 다시 그렸다
+        private PixelQuadBuffer[] drawBuffers;         // 그리는 동안, 그리고 메쉬에 올릴 때까지 쓰는 작업 버퍼(그린 스레드의 것)
+        private readonly int[] segmentStart = new int[LayerCount];
+        private readonly int[] segmentCount = new int[LayerCount];
+
         private void EnsureInitialized()
         {
             if (true == bInitialized) return;
@@ -321,6 +363,7 @@ namespace PresentationLayer.VFX
 
         private void Begin()
         {
+            CompleteDeferred();
             EnsureInitialized();
 
             // 풀에서 재사용되므로 이전에 지정한 대상은 잊는다(다시 SetSourceRoot가 불리거나 부모 계층에서 찾는다)
@@ -396,6 +439,7 @@ namespace PresentationLayer.VFX
         /// </summary>
         public void SetSourceRoot(Transform _root)
         {
+            CompleteDeferred();
             sourceRootOverride = _root;
             CollectSources();
             bMaskBuilt = false;
@@ -410,6 +454,7 @@ namespace PresentationLayer.VFX
             float progress = Mathf.Clamp01(_progress);
             if (true == Mathf.Approximately(progress, stageProgress)) return;
 
+            CompleteDeferred();
             stageProgress = progress;
             bAuraDirty = true;
         }
@@ -461,15 +506,16 @@ namespace PresentationLayer.VFX
             return Mathf.CeilToInt(maxReach) + 1;
         }
 
-        private void BuildSilhouette()
+        // 실루엣을 다시 만들 값을 읽어 둔다(주 스레드). 격자 계산은 ComputeDeferred에서 silhouette.BuildCaptured가 한다.
+        private void CaptureSilhouette()
         {
             // 불꽃 혀 모드는 그리는 칸이 (1) 몸 가장자리 칸, (2) 몸에 상하좌우로 닿는 외곽선 칸, (3) 열 꼭대기 위의 혀 칸(옆으로 최대 1칸 흔들림)뿐이라
             // 좌우·아래로는 실루엣에서 1칸 밖까지만 닿는다. 좌우·아래 여백은 2칸으로 줄이고, 혀가 솟는 위쪽만 원래 여백을 둔다(그리는 칸·순서 동일).
             int margin = GetReachMarginCells();
             if (true == IsTongueMode())
-                silhouette.Build(GetOriginPosition(), Mathf.Min(2, margin), Mathf.Min(2, margin), margin);
+                silhouette.Capture(GetOriginPosition(), Mathf.Min(2, margin), Mathf.Min(2, margin), margin);
             else
-                silhouette.Build(GetOriginPosition(), margin);
+                silhouette.Capture(GetOriginPosition(), margin, margin, margin);
         }
 
         // ---------- 갱신 ----------
@@ -740,7 +786,7 @@ namespace PresentationLayer.VFX
         // 캐릭터의 월드 위치와 이동 속도를 갱신한다. 한 프레임에 크게 튄 위치(던전 입장, 텔레포트)는 이동으로 보지 않고 남은 불씨를 지운다.
         private void UpdateMovement(float _dt)
         {
-            Vector3 position = GetOriginPosition();
+            Vector3 position = deferredPosition;
             characterWorldPx = new Vector2(position.x * PixelsPerUnit, position.y * PixelsPerUnit);
 
             float jump = (characterWorldPx - lastCharacterWorldPx).magnitude;
@@ -760,11 +806,15 @@ namespace PresentationLayer.VFX
 
         // ---------- 그리기 ----------
 
-        private void RebuildMeshes()
+        // 세 층의 쿼드를 스레드별 작업 버퍼에 구간으로 채운다. 유니티 API를 쓰지 않는다(위치와 변환은 LateUpdate가 읽어 둔 값). 메쉬에는 ApplyDeferred가 올린다.
+        private void DrawMeshes()
         {
+            Work work = Work.ForCurrentThread();
+            drawBuffers = work.buffers;
+
             // 불씨/충격파/표면 불씨는 매 프레임 다시 만든다(앞/뒤 두 메쉬)
-            Vector3 pos = GetOriginPosition();
-            Matrix4x4 worldToLocal = transform.worldToLocalMatrix;
+            Vector3 pos = deferredPosition;
+            Matrix4x4 worldToLocal = deferredWorldToLocal;
             originX = Mathf.FloorToInt(pos.x * PixelsPerUnit);
             originY = Mathf.FloorToInt(pos.y * PixelsPerUnit);
             bodyOriginPxX = true == snapToPixelGrid ? originX : pos.x * PixelsPerUnit;
@@ -772,8 +822,8 @@ namespace PresentationLayer.VFX
 
             for (int i = 0; i < AuraLayer; i++)
             {
-                quadBuffers[i].Clear();
-                quadBuffers[i].SetWorldTransform(worldToLocal, pos.z);
+                segmentStart[i] = drawBuffers[i].BeginSegment();
+                drawBuffers[i].SetWorldTransform(worldToLocal, pos.z);
             }
 
             // 프레임 단위 시간(12fps 등) - 불꽃이 부드럽게 흐르지 않고 도트 애니메이션처럼 끊겨서 일렁인다
@@ -788,14 +838,34 @@ namespace PresentationLayer.VFX
             // 아우라 본체는 12fps 프레임이 바뀌거나, 실루엣/세기가 바뀔 때만 다시 만든다(움직임에 따른 위치 이동은 오브젝트 위치로 처리한다).
             float intensity = GetIntensity();
             bool bRebuildAura = true == bAuraDirty || flickerFrame != lastAuraFrame || false == Mathf.Approximately(intensity, lastAuraIntensity);
+            segmentStart[AuraLayer] = drawBuffers[AuraLayer].BeginSegment();
             if (true == bRebuildAura)
             {
-                quadBuffers[AuraLayer].Clear();
                 DrawAura(flickerTime, flickerFrame, intensity);
                 bAuraDirty = false;
                 lastAuraFrame = flickerFrame;
                 lastAuraIntensity = intensity;
             }
+
+            bDeferredRebuildAura = bRebuildAura;
+            for (int i = 0; i < LayerCount; i++) segmentCount[i] = drawBuffers[i].VertexCount - segmentStart[i];
+        }
+
+        void IPixelVfxDeferred.ComputeDeferred()
+        {
+            if (true == bDeferredBuild) silhouette.BuildCaptured();
+
+            UpdateMovement(deferredDt);
+            SpawnEmbers(deferredDt);
+            UpdateEmbers(deferredDt);
+            DrawMeshes();
+        }
+
+        void IPixelVfxDeferred.ApplyDeferred()
+        {
+            deferredSlot = -1;
+            bDeferredBuild = false;
+            Vector3 pos = deferredPosition;
 
             // 아우라 메쉬 오브젝트는 캐릭터의 픽셀 스냅 위치에 둔다: 정점은 발밑 기준 픽셀 오프셋이라 캐릭터가 서브픽셀로 움직여도 격자에서 벗어나지 않는다.
             Transform auraTransform = meshRenderers[AuraLayer].transform;
@@ -803,10 +873,10 @@ namespace PresentationLayer.VFX
             auraTransform.position = true == snapToPixelGrid ? new Vector3(originX * PixelUnit, originY * PixelUnit, pos.z) : pos;
             auraTransform.rotation = Quaternion.identity;
 
-            if (null != rootParticleRenderer)
+            if (true == bDeferredHasRoot)
             {
-                int rootOrder = rootParticleRenderer.sortingOrder;
-                int rootLayer = rootParticleRenderer.sortingLayerID;
+                int rootOrder = deferredRootSortingOrder;
+                int rootLayer = deferredRootSortingLayerID;
                 if (rootOrder != appliedRootSortingOrder || rootLayer != appliedRootSortingLayerID)
                 {
                     appliedRootSortingOrder = rootOrder;
@@ -819,6 +889,7 @@ namespace PresentationLayer.VFX
                 }
             }
 
+            bool bRebuildAura = bDeferredRebuildAura;
             for (int i = 0; i < LayerCount; i++)
             {
                 if (AuraLayer == i && false == bRebuildAura)
@@ -828,15 +899,37 @@ namespace PresentationLayer.VFX
                 }
 
                 // 그릴 것이 없고 메쉬도 이미 비어 있으면 올리지 않는다
-                bool bEmpty = 0 == quadBuffers[i].VertexCount;
+                bool bEmpty = 0 == segmentCount[i];
                 if (false == bEmpty || true == meshHasGeometry[i])
                 {
-                    quadBuffers[i].Upload(meshes[i], MeshBoundsSize);
+                    drawBuffers[i].UploadRange(meshes[i], MeshBoundsSize, segmentStart[i], segmentCount[i]);
                     meshHasGeometry[i] = false == bEmpty;
                 }
 
                 meshRenderers[i].enabled = true;
             }
+
+            drawBuffers = null;
+        }
+
+        // 미뤄 둔 계산이 있으면 지금 끝낸다(계산 + 메쉬 반영). 상태를 바꾸거나 끄기 전에 불러 예전 순서(계산 뒤 변경)를 지킨다.
+        private void CompleteDeferred()
+        {
+            if (0 <= deferredSlot) PixelVfxWorkQueue.CompleteNow(deferredSlot, this);
+        }
+
+        // 이번 프레임에 점화 충격파(DrawIgniteWave)가 무언가를 그리는지. 그리는 조건은 DrawIgniteWave의 앞부분과 같다.
+        // 충격파 링은 PixelEllipse의 공용 정적 배열을 쓰므로, 그리는 프레임에는 미루지 않고 주 스레드에서 바로 끝낸다.
+        private bool IsIgniteWaveFrame()
+        {
+            float t = Mathf.Floor((elapsed - WaveStartTime) * WaveFps) / WaveFps;
+            if (0.0f > t) return false;
+
+            float duration = Mathf.Max(0.05f, waveDuration);
+            float secondDelay = true == useSecondWaveRing ? SecondWaveDelay : 0.0f;
+            if (t >= duration + secondDelay && t >= WaveFlashDuration) return false;
+
+            return true;
         }
 
         private byte GlowAlpha(float _glow, int _layer)
@@ -1522,18 +1615,18 @@ namespace PresentationLayer.VFX
         {
             if (AuraLayer == _layer)
             {
-                quadBuffers[_layer].AddLocalRect(_x0, _y0, _x1, _y1, _color);
+                drawBuffers[_layer].AddLocalRect(_x0, _y0, _x1, _y1, _color);
             }
             else
             {
-                quadBuffers[_layer].AddWorldRect(originX + _x0, originY + _y0, originX + _x1, originY + _y1, _color);
+                drawBuffers[_layer].AddWorldRect(originX + _x0, originY + _y0, originX + _x1, originY + _y1, _color);
             }
         }
 
         // 실루엣 칸에 붙는 픽셀(표면 반짝임)을 넣는다. 아우라 본체와 같은 원점(스냅을 끄면 소수 위치)을 써서 몸과 어긋나지 않게 한다. 아우라 층에는 쓰지 않는다.
         private void AddBodyRect(int _layer, int _x0, int _y0, int _x1, int _y1, Color32 _color)
         {
-            quadBuffers[_layer].AddWorldRect(bodyOriginPxX + _x0, bodyOriginPxY + _y0, bodyOriginPxX + _x1, bodyOriginPxY + _y1, _color);
+            drawBuffers[_layer].AddWorldRect(bodyOriginPxX + _x0, bodyOriginPxY + _y0, bodyOriginPxX + _x1, bodyOriginPxY + _y1, _color);
         }
 
         private void HideRenderers()
@@ -1603,18 +1696,37 @@ namespace PresentationLayer.VFX
             {
                 maskKey = key;
                 bMaskBuilt = true;
-                BuildSilhouette();
+                CaptureSilhouette();
+                bDeferredBuild = true;
                 bAuraDirty = true;
             }
 
-            UpdateMovement(dt);
-            SpawnEmbers(dt);
-            UpdateEmbers(dt);
-            RebuildMeshes();
+            // 여기까지가 유니티 상태를 읽는 부분이다. 계산이 쓸 값(시간, 원점 위치, 변환, 루트 소팅)을 예전과 같은 시점에 읽어 담아 둔다.
+            deferredDt = dt;
+            deferredPosition = GetOriginPosition();
+            deferredWorldToLocal = transform.worldToLocalMatrix;
+            bDeferredHasRoot = null != rootParticleRenderer;
+            if (true == bDeferredHasRoot)
+            {
+                deferredRootSortingOrder = rootParticleRenderer.sortingOrder;
+                deferredRootSortingLayerID = rootParticleRenderer.sortingLayerID;
+            }
+
+            // 실루엣 격자 계산, 불씨 이동·생성, 픽셀 채우기는 모든 LateUpdate가 끝난 직후 일꾼 스레드에서 돌고(ComputeDeferred), 메쉬와 렌더러에는 주 스레드에서 반영한다(ApplyDeferred).
+            // 점화 충격파를 그리는 프레임은 공용 타원 배열을 쓰므로 그 자리에서 끝낸다.
+            if (true == IsIgniteWaveFrame())
+            {
+                PixelVfxWorkQueue.ExecuteNow(this);
+            }
+            else
+            {
+                deferredSlot = PixelVfxWorkQueue.Enqueue(this);
+            }
         }
 
         private void OnDisable()
         {
+            CompleteDeferred();
             HideRenderers();
         }
 

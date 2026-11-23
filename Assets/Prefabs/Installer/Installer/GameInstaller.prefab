@@ -631,8 +631,8 @@ MonoBehaviour:
     minCnt: 2
     maxCnt: 3
   - treeType: 12
-    minCnt: 4
-    maxCnt: 5
+    minCnt: 2
+    maxCnt: 3
   logStateAuraDatas:
   - logState: 3
     auraPrefab: {fileID: 5369747700770951006, guid: f2e753f545c8dd043ad37ef888ef4c3f, type: 3}
@@ -4103,11 +4103,12 @@ MonoBehaviour:
   quakeMaxStack: 100
   quakeStackPerEmberMin: 2
   quakeStackPerEmberMax: 3
+  quakeCooldown: 15
   quakeTier1Radius: 8
-  quakeTier1FlashScale: 0.5
-  quakeTier3FlashScale: 0.7
-  quakeTier1MaxHpRatio: 0.1
-  quakeTier3MaxHpRatio: 0.15
+  quakeTier1FlashScale: 0.35
+  quakeTier3FlashScale: 0.5
+  quakeTier1MaxHpRatio: 0.05
+  quakeTier3MaxHpRatio: 0.075
   goldTreePityMinKills: 3
   goldTreePityMaxKills: 7
   treePrefab: {fileID: 5272385284174554040, guid: 3224048e2842e2c48bc93158251200d2, type: 3}

@@ -20,9 +20,12 @@ public sealed class TreeFadeMask : MonoBehaviour
     private SpriteRenderer source;
     private SpriteRenderer bottom;
     private MaterialPropertyBlock block;
+    // 수관의 블록을 베끼기 전에, 이 나무가 그리기 직전으로 미뤄 둔 값(열기·점멸)을 먼저 써넣게 한다.
+    private TreeVisualComponent owner;
 
-    public void Bind(SpriteRenderer _maskRenderer, SpriteRenderer _source, SpriteRenderer _bottom)
+    public void Bind(SpriteRenderer _maskRenderer, SpriteRenderer _source, SpriteRenderer _bottom, TreeVisualComponent _owner)
     {
+        owner = _owner;
         maskRenderer = _maskRenderer;
         source = _source;
         bottom = _bottom;
@@ -50,6 +53,8 @@ public sealed class TreeFadeMask : MonoBehaviour
         maskRenderer.color = source.color;
         maskRenderer.sortingLayerID = bottom.sortingLayerID;
         maskRenderer.sortingOrder = bottom.sortingOrder + SortingOrderOffset;
+
+        if (owner is object) owner.FlushDeferredMaterial();
 
         if (source.HasPropertyBlock())
         {

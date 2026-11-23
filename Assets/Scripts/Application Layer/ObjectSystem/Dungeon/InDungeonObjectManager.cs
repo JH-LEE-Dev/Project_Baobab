@@ -2776,14 +2776,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         EmberItemController emberController = itemManager.emberItemController;
         float overheatPerEmber = emberController != null ? emberController.OverheatPerEmber : 1f;
         float gainEfficiency = emberController != null ? emberController.GetGainEfficiency(character.OverheatValue) : 1f;
-        bool bWasOverheatMax = character.IsOverheatMax;
         character.AddOverheat(overheatPerEmber * character.OverheatGainMultiplier * gainEfficiency);
-
-        // 이 불씨로 과열이 가득 찬 순간 - 열기 물결이 퍼지는 연출만 더한다(수치·규칙은 그대로).
-        if (false == bWasOverheatMax && character.IsOverheatMax)
-        {
-            PlayOverheatFullMoment();
-        }
 
         // "흑요 부적" 지진 게이지는 과열과 따로 찬다(과열이 최대여도 찬다).
         if (0 < obsidianCharmTierThisRun) ChargeQuake();
@@ -2814,25 +2807,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     {
         if (itemManager != null) itemManager.CollectGuideEmbers(_results);
         else _results.Clear();
-    }
-
-    // 과열이 가득 차는 순간의 연출 수치(화면 흔들림 세기·시간, 터지는 소리의 크기·높낮이)
-    private const float OverheatFullShakeIntensity = 4f;
-    private const float OverheatFullShakeSeconds = 0.35f;
-    private const float OverheatFullSoundVolume = 1f;
-    private const float OverheatFullSoundPitch = 0.72f;
-
-    // 과열이 가득 찬 순간: 캐릭터 발밑에서 열기 물결이 퍼지고(불 고리 + 닿는 나무가 달아오름), 화면이 흔들리고,
-    // 패드가 울리고, 나무 열기 폭발음을 낮게 깔아 "쿵" 하고 터진다. 전부 연출이며 게임 동작은 바꾸지 않는다.
-    private void PlayOverheatFullMoment()
-    {
-        if (character == null) return;
-
-        Vector3 center = character.transform.position;
-        StageOverheatBurst.Play(center);
-        CameraMoveController.Instance?.ShakeCamera(OverheatFullShakeIntensity, OverheatFullShakeSeconds);
-        Rumble.Play(EHapticEvent.OverheatFull);
-        Sound.Play(SoundID.TreeFireExplosion, center, OverheatFullSoundVolume, false, OverheatFullSoundPitch);
     }
 
     /// <summary>

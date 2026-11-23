@@ -76,8 +76,9 @@ namespace PresentationLayer.VFX
 
         // 내부 의존성
         private readonly float[] heat = new float[Width * Height];
-        // 다음 열 격자. StepOnce가 모든 칸을 다시 쓴 뒤 heat로 옮기고 다른 때는 읽지 않으므로 모든 불덩이가 한 벌을 같이 쓴다.
-        private static readonly float[] nextHeat = new float[Width * Height];
+        // 다음 열 격자(스레드마다 한 벌, 처음 쓸 때 만든다. 계산이 일꾼 스레드에서도 돌 수 있다 - PixelVfxWorkQueue).
+        // StepOnce가 모든 칸을 다시 쓴 뒤 heat로 옮기고 다른 때는 읽지 않으므로 같은 스레드의 불덩이가 한 벌을 같이 쓴다.
+        [System.ThreadStatic] private static float[] nextHeat;
 
         // 상태 변수
         private float accumulator;
@@ -212,6 +213,13 @@ namespace PresentationLayer.VFX
             float sourceSin = Mathf.Sin(t4);
             float sourceCos = Mathf.Cos(t4);
 
+            float[] next = nextHeat;
+            if (null == next)
+            {
+                next = new float[Width * Height];
+                nextHeat = next;
+            }
+
             for (int y = 0; y < Height; y++)
             {
                 for (int x = 0; x < Width; x++)
@@ -242,11 +250,11 @@ namespace PresentationLayer.VFX
                         value = (up * 0.86f + heat[index] * 0.1f) * (0.84f + Rand01() * 0.13f);
                     }
 
-                    nextHeat[index] = Mathf.Min(1.25f, value);
+                    next[index] = Mathf.Min(1.25f, value);
                 }
             }
 
-            System.Array.Copy(nextHeat, heat, heat.Length);
+            System.Array.Copy(next, heat, heat.Length);
         }
 
         private int ColorCode(int _x, int _y, float _time, float _phase, float _fade, float _pulse, float _flare, float _scale)

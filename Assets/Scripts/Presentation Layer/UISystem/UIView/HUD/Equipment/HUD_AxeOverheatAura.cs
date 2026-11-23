@@ -23,7 +23,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
     /// 점화와 단계 전환 때는 바닥 타원 대신 도끼 실루엣 모양 그대로 1px 윤곽이 바깥으로 퍼지는 윤곽 파동을 그린다(평면 HUD용).
     /// 아이콘 섬광/튕김은 HUD_EquipmentAxe.PlayOverheatStageEffect가 맡는다.
     /// </summary>
-    public class HUD_AxeOverheatAura : MonoBehaviour
+    public class HUD_AxeOverheatAura : MonoBehaviour, PresentationLayer.VFX.IPixelVfxDeferred
     {
         [Header("Graphics")]
         [SerializeField, Tooltip("도끼 이미지 뒤쪽 층(아우라 본체 + 뒤쪽 불씨)")] private HUD_AxeAuraGraphic backGraphic;
@@ -212,6 +212,13 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         private float crownStartYPx;
         private float crownRampPx;
 
+        // 미룬 계산(PixelVfxWorkQueue): LateUpdate가 담아 두는 입력. 불씨 이동·생성과 쿼드 채우기는 ComputeDeferred가 하고, UI 메쉬 갱신 요청은 ApplyDeferred가 한다.
+        private int deferredSlot = -1;   // 대기열 자리. -1이면 미뤄 둔 계산이 없다
+        private float deferredStepDt;
+        private int deferredMeshFrame;
+        private bool bDeferredHasBack;   // 그래픽이 있는지(유니티 객체 확인은 주 스레드에서 해 둔다)
+        private bool bDeferredHasFront;
+
         // //퍼블릭 초기화 및 제어 메서드
 
         /// <summary>
@@ -261,6 +268,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             if (false == bInitialized || bOverheat == _bActive)
                 return;
 
+            CompleteDeferred();
             bOverheat = _bActive;
 
             if (true == _bActive)
@@ -282,6 +290,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         /// </summary>
         public void SetStage(int _stage, float _progress)
         {
+            CompleteDeferred();
             stageProgress = Mathf.Clamp01(_progress);
             if (StagePreheat > _stage || StageBlueFlame < _stage || stage == _stage)
                 return;
@@ -300,6 +309,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         /// </summary>
         public void OnAxeSpriteChanged(Sprite _sprite)
         {
+            CompleteDeferred();
             bool bSame = ReferenceEquals(currentAxeSprite, _sprite);
             currentAxeSprite = _sprite;
 
@@ -737,10 +747,11 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
         // ---------- 그리기 ----------
 
+        // 두 그래픽의 쿼드 목록을 다시 채운다. 유니티 API를 쓰지 않는다(그래픽이 있는지는 LateUpdate가 확인해 둔 값). UI 메쉬 갱신 요청(Flush)은 ApplyDeferred가 한다.
         private void Rebuild(int _meshFrame)
         {
-            if (null != backGraphic) backGraphic.Clear();
-            if (null != frontGraphic) frontGraphic.Clear();
+            if (true == bDeferredHasBack) backGraphic.Clear();
+            if (true == bDeferredHasFront) frontGraphic.Clear();
 
             // 불꽃 일렁임(노이즈)은 flickerFps로, 불씨/반짝임/밝은 띠/충격파는 메쉬 프레임(meshFps)으로 움직인다.
             float fps = Mathf.Max(1.0f, flickerFps);
@@ -752,9 +763,26 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             DrawEmbers();
             if (StagePreheat != stage)
                 DrawAura(flickerTime, flickerFrame, GetIntensity());
+        }
 
+        void PresentationLayer.VFX.IPixelVfxDeferred.ComputeDeferred()
+        {
+            SpawnEmbers(deferredStepDt);
+            UpdateEmbers(deferredStepDt);
+            Rebuild(deferredMeshFrame);
+        }
+
+        void PresentationLayer.VFX.IPixelVfxDeferred.ApplyDeferred()
+        {
+            deferredSlot = -1;
             if (null != backGraphic) backGraphic.Flush();
             if (null != frontGraphic) frontGraphic.Flush();
+        }
+
+        // 미뤄 둔 계산이 있으면 지금 끝낸다(계산 + 갱신 요청). 상태를 바꾸거나 끄기 전에 불러 예전 순서(계산 뒤 변경)를 지킨다.
+        private void CompleteDeferred()
+        {
+            if (0 <= deferredSlot) PresentationLayer.VFX.PixelVfxWorkQueue.CompleteNow(deferredSlot, this);
         }
 
         // 캐릭터 셰이더의 HDR 발광(정점 알파 0~1 -> 1~glowMax 배율)을 흉내 낸다: 팔레트를 밝기 배율로 키우고 채널을 255에서 자른다.
@@ -1187,9 +1215,14 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         private void AddRect(int _layer, int _x0, int _y0, int _x1, int _y1, Color32 _color)
         {
             int halfHeight = field.height / 2;
-            HUD_AxeAuraGraphic target = FrontLayer == _layer ? frontGraphic : backGraphic;
-            if (null != target)
-                target.AddRect(_x0, _y0 - halfHeight, _x1, _y1 - halfHeight, _color);
+            if (FrontLayer == _layer)
+            {
+                if (true == bDeferredHasFront) frontGraphic.AddRect(_x0, _y0 - halfHeight, _x1, _y1 - halfHeight, _color);
+            }
+            else
+            {
+                if (true == bDeferredHasBack) backGraphic.AddRect(_x0, _y0 - halfHeight, _x1, _y1 - halfHeight, _color);
+            }
         }
 
         private bool HasActiveEmbers()
@@ -1240,13 +1273,19 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             int steps = 0 > lastFlickerFrame ? 1 : Mathf.Clamp(meshFrame - lastFlickerFrame, 1, 8);
             float stepDt = steps / fps;
             lastFlickerFrame = meshFrame;
-            SpawnEmbers(stepDt);
-            UpdateEmbers(stepDt);
-            Rebuild(meshFrame);
+
+            // 불씨 이동·생성과 쿼드 채우기는 모든 LateUpdate가 끝난 직후 일꾼 스레드에서 돌고(ComputeDeferred), UI 메쉬 갱신 요청은 주 스레드에서 한다(ApplyDeferred).
+            // 캔버스가 메쉬를 다시 만드는 시점(그리기 직전)보다 앞이다.
+            deferredStepDt = stepDt;
+            deferredMeshFrame = meshFrame;
+            bDeferredHasBack = null != backGraphic;
+            bDeferredHasFront = null != frontGraphic;
+            deferredSlot = PresentationLayer.VFX.PixelVfxWorkQueue.Enqueue(this);
         }
 
         private void OnDisable()
         {
+            CompleteDeferred();
             if (null != backGraphic) backGraphic.Clear();
             if (null != frontGraphic) frontGraphic.Clear();
         }

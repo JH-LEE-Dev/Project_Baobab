@@ -547,6 +547,44 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
         return bCachedHasUsableSave;
     }
 
+    // 메인 메뉴용: 아직 세이브를 불러오기 전이라 디스크의 세이브에서 로그라이크 해금 여부를 읽는다.
+    // 슬롯 우선순위는 LoadGameData와 같다(메인을 쓸 수 있으면 메인, 메인이 "지금 못 읽힘"이면 백업으로 내려가지 않음).
+    // 메인 메뉴에서 여러 번 불리므로 기다리지 않고 한 번만 읽고, 파일이 그대로면 직전 결과를 재사용한다.
+    private string cachedRoguelikeUnlockStateKey;
+    private bool bCachedRoguelikeUnlocked;
+
+    public bool IsRoguelikeUnlockedInSave()
+    {
+        string stateKey = BuildSaveStateKey();
+        if (null != cachedRoguelikeUnlockStateKey && stateKey == cachedRoguelikeUnlockStateKey)
+        {
+            return bCachedRoguelikeUnlocked;
+        }
+
+        bool bUnlocked = false;
+        bool bResolved = true;
+        ESaveSlotState mainState = ReadSaveSlot(GetSaveFilePath(), out GameSaveData mainData, out _, SafeFileIO.SINGLE_ATTEMPT, false);
+        if (ESaveSlotState.Usable == mainState)
+        {
+            bUnlocked = mainData.bRoguelikeUnlocked;
+        }
+        else if (ESaveSlotState.Unreadable == mainState)
+        {
+            bResolved = false;
+        }
+        else
+        {
+            ESaveSlotState backupState = ReadSaveSlot(GamePaths.GameSaveBackupFile, out GameSaveData backupData, out _, SafeFileIO.SINGLE_ATTEMPT, false);
+            if (ESaveSlotState.Usable == backupState) bUnlocked = backupData.bRoguelikeUnlocked;
+            else if (ESaveSlotState.Unreadable == backupState) bResolved = false;
+        }
+
+        // 못 읽은 경우는 캐시하지 않아 다음 갱신 때 다시 읽는다.
+        cachedRoguelikeUnlockStateKey = bResolved ? stateKey : null;
+        bCachedRoguelikeUnlocked = bUnlocked;
+        return bUnlocked;
+    }
+
     // 세이브 파일들의 상태를 갱신 시각/크기로 요약한다. 저장/클라우드 반영/외부 삭제가 일어나면 값이 달라져
     // HasSaveData 캐시가 자연히 무효화된다.
     private string BuildSaveStateKey()

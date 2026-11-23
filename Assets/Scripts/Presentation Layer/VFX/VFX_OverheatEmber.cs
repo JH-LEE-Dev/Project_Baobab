@@ -30,7 +30,7 @@ namespace PresentationLayer.VFX
     [DisallowMultipleComponent]
     [RequireComponent(typeof(MeshFilter))]
     [RequireComponent(typeof(MeshRenderer))]
-    public class VFX_OverheatEmber : MonoBehaviour
+    public class VFX_OverheatEmber : MonoBehaviour, IPixelVfxDeferred
     {
         [Header("연결 (빌더가 채운다)")]
         [SerializeField, Tooltip("불씨 루트. 크기 배율과 바닥 빛 위치의 기준이다.")]
@@ -100,6 +100,9 @@ namespace PresentationLayer.VFX
 
         private static readonly int[] TrailShapes = { PixelPainter.ShapeCross, PixelPainter.ShapePlus, PixelPainter.ShapeDot, PixelPainter.ShapeDot, PixelPainter.ShapePlus };
         private static readonly byte[] GlowRGB = { 150, 30, 10 };
+        // 바닥 빛의 기본 색(색 공간에 맞춘 값). 상수와 색 공간으로만 정해지므로 한 번 구해 둔다(주 스레드에서, EnsureInitialized).
+        private static bool bGlowBaseReady;
+        private static Color glowBaseColor;
         private static readonly int TrailIntensityID = Shader.PropertyToID("_Intensity");
 
         private struct Mote
@@ -117,9 +120,38 @@ namespace PresentationLayer.VFX
             public int filled;
         }
 
-        // 쿼드 버퍼는 인스턴스끼리 공유한다(메인 스레드 단일 실행, 그리는 동안에만 쓴다).
-        private static readonly PixelQuadBuffer buffer = new PixelQuadBuffer(QuadBudget);
-        private static readonly PixelQuadBuffer glowBuffer = new PixelQuadBuffer(GlowQuadBudget);
+        // 쿼드를 모으는 스레드별 작업 버퍼. 픽셀 채우기가 일꾼 스레드에서 돌 수 있어(PixelVfxWorkQueue) 스레드마다 한 벌씩 둔다.
+        // 한 번의 계산 묶음(PixelVfxWorkQueue.Serial) 동안 그 스레드가 맡은 인스턴스들의 그림을 구간으로 이어 담고, 묶음이 바뀌면 비운다.
+        private sealed class Work
+        {
+            [System.ThreadStatic] private static Work current;
+
+            public readonly PixelQuadBuffer buffer = new PixelQuadBuffer(QuadBudget);
+            public readonly PixelQuadBuffer glowBuffer = new PixelQuadBuffer(GlowQuadBudget);
+            private int serial;
+            private bool bUsed;
+
+            public static Work ForCurrentThread()
+            {
+                Work work = current;
+                if (null == work)
+                {
+                    work = new Work();
+                    current = work;
+                }
+
+                int queueSerial = PixelVfxWorkQueue.Serial;
+                if (false == work.bUsed || work.serial != queueSerial)
+                {
+                    work.bUsed = true;
+                    work.serial = queueSerial;
+                    work.buffer.Clear();
+                    work.glowBuffer.Clear();
+                }
+
+                return work;
+            }
+        }
 
         // 내부 의존성
         private readonly OverheatEmberOrb orb = new OverheatEmberOrb();
@@ -187,12 +219,49 @@ namespace PresentationLayer.VFX
         // 마지막 계산 스텝이 쓴 불씨 위치. 한 프레임에 스텝이 여러 번 돌 때 이 위치에서 현재 위치까지 나눠 쓴다.
         private Vector3 lastStepPosition;
 
+        // 미룬 계산·그리기(PixelVfxWorkQueue): LateUpdate가 담아 두는 입력과, ComputeDeferred가 남겨 ApplyDeferred가 메쉬에 올리는 결과
+        private int deferredSlot = -1;                  // 대기열 자리. -1이면 미뤄 둔 일이 없다
+        private int deferredPendingSteps;               // 이번 프레임에 돌릴 계산 스텝 수
+        private bool bDeferredExtraStep;                // 스텝이 없고 이전 위치도 없어 한 번 더 돌린다
+        private Vector3 deferredStepFrom;               // 스텝마다 나눠 쓸 이동의 시작 위치
+        private Vector3 deferredPosition;               // LateUpdate에서 읽은 현재 위치
+        private bool bDeferredDraw;                     // 스텝 뒤에 정렬·그리기까지 한다(부모 스케일이 0에 가까우면 스텝만 돌린다)
+        private bool bDeferredRedraw;                   // 불덩이·불티 메쉬를 다시 그릴 프레임이다
+        private int deferredSortLayer;                  // 바닥에 있을 때 따를 정렬(LateUpdate에서 읽은 값)
+        private int deferredSortOrder;
+        private Matrix4x4 deferredTrailWorldToLocal;    // 드랍 꼬리 메쉬의 월드 -> 로컬 변환
+        private bool bDeferredHasGlow;                  // 바닥 빛 렌더러가 있다
+        private bool bDeferredGlowRendererEnabled;      // LateUpdate 시점에 바닥 빛 렌더러가 켜져 있었다
+        private bool bDeferredMesh;                     // 이번 프레임에 불덩이·불티 메쉬를 다시 그린다
+        private bool bDeferredGlow;                     // 이번 프레임에 바닥 빛 메쉬를 다시 그린다
+        private float deferredScale;
+        private float deferredMeshZ;
+        private Matrix4x4 deferredMeshWorldToLocal;     // LateUpdate에서 읽은 월드 -> 로컬 변환
+        private Matrix4x4 deferredGlowWorldToLocal;
+        private float deferredGlowZ;
+        private int deferredGlowX;                      // 바닥 빛 중심(월드 px)
+        private int deferredGlowY;
+        private bool bDeferredGlowEllipse;              // 바닥 빛 타원을 그린다(아니면 빈 그림)
+        private Color32 deferredGlowInner;
+        private Color32 deferredGlowOuter;
+        private PixelPainter.Segment meshSegment;
+        private PixelPainter.Segment glowSegment;
+
         // 일반 비즈니스 로직 및 내부 메서드
 
         private void EnsureInitialized()
         {
             if (true == bInitialized) return;
             bInitialized = true;
+
+            if (false == bGlowBaseReady)
+            {
+                bool bLinear = ColorSpace.Linear == QualitySettings.activeColorSpace;
+                Color baseColor = new Color32(GlowRGB[0], GlowRGB[1], GlowRGB[2], 255);
+                if (true == bLinear) baseColor = baseColor.linear;
+                glowBaseColor = baseColor;
+                bGlowBaseReady = true;
+            }
 
             meshFilter = GetComponent<MeshFilter>();
             meshRenderer = GetComponent<MeshRenderer>();
@@ -505,28 +574,40 @@ namespace PresentationLayer.VFX
 
         // ---------- 그리기 ----------
 
+        // 불덩이·불티 메쉬를 이번 프레임에 다시 그리도록 걸어 둔다. 픽셀 채우기는 미뤄서 일꾼 스레드에서 돌리고(DrawMeshSegment),
+        // 그리기가 읽을 변환은 예전과 같은 시점인 여기서 읽어 둔다.
         private void RebuildMesh(float _scale, float _meshZ)
         {
+            bDeferredMesh = true;
+            deferredScale = _scale;
+            // _meshZ는 이번 LateUpdate에서 읽은 위치의 z(그 뒤로 위치를 바꾸는 코드가 없다)
+            deferredMeshZ = _meshZ;
+            deferredMeshWorldToLocal = cachedTransform.worldToLocalMatrix;
+        }
+
+        // 미뤄 둔 불덩이·불티 그리기: 작업 버퍼의 새 구간에 그린다(일꾼 스레드에서 불릴 수 있다). 예전 RebuildMesh에서 메쉬에 올리는 부분만 뺀 것이다.
+        private void DrawMeshSegment(Work _work)
+        {
+            float scale = deferredScale;
             int cx = Mathf.RoundToInt(orbX);
             int cy = Mathf.RoundToInt(orbY);
             float pulse = OverheatEmberOrb.Pulse(time, phase);
 
-            // _meshZ는 이번 LateUpdate에서 읽은 위치의 z(그 뒤로 위치를 바꾸는 코드가 없다)
-            painter.Begin(buffer, cachedTransform.worldToLocalMatrix, _meshZ);
+            painter.BeginSegment(_work.buffer, deferredMeshWorldToLocal, deferredMeshZ);
 
             // 드랍 꼬리 심선과 떨어지는 불티는 불덩이·불티 뒤에 깐다(시안과 같은 순서)
             if (true == trail.bHasPoints) trail.DrawCore(painter, tones);
             shedParticles.Draw(painter, tones, darks, smokeColor);
 
-            if (0.05f < _scale)
+            if (0.05f < scale)
             {
                 DrawMotes(false);
-                orb.Draw(painter, cx, cy, time, phase, 1.0f, pulse, flare, _scale, tones, darks);
+                orb.Draw(painter, cx, cy, time, phase, 1.0f, pulse, flare, scale, tones, darks);
                 DrawMotes(true);
             }
 
             particles.Draw(painter, tones, darks, smokeColor);
-            painter.Commit(mesh, meshRenderer, ref meshHash, ref meshVertexCount);
+            painter.EndSegment(out meshSegment);
         }
 
         // 뒤쪽(_bFront=false) 불티는 불덩이 전에, 앞쪽 불티는 불덩이 뒤에 그린다. 꼬리는 0.1 / 0.2 / 0.32초 전 위치.
@@ -570,13 +651,13 @@ namespace PresentationLayer.VFX
             painter.Dot(x, y, _color);
         }
 
-        // 드랍 빛 꼬리: 기록이 있거나 직전까지 그렸을 때만 다시 만든다.
+        // 드랍 빛 꼬리: 기록이 있거나 직전까지 그렸을 때만 다시 만든다. 스텝이 끝난 뒤(반영 때) 부르고, 변환은 LateUpdate에서 읽어 둔 값을 쓴다.
         private void RebuildTrail()
         {
             if (null == trailRenderer || null == trailMesh) return;
             if (false == trail.bHasPoints && false == trailRenderer.enabled) return;
 
-            trail.BuildRibbon(trailMesh, trailRenderer, trailTransform.worldToLocalMatrix, trailDuration, trailIntensity, trailWidth, trailMaterialIntensity);
+            trail.BuildRibbon(trailMesh, trailRenderer, deferredTrailWorldToLocal, trailDuration, trailIntensity, trailWidth, trailMaterialIntensity);
         }
 
         // 드랍 비행 판단. 불씨 상태를 읽지 않고 루트 스케일과 Visual(부모) 높이로 정한다.
@@ -603,25 +684,23 @@ namespace PresentationLayer.VFX
         }
 
         // 바닥 붉은 빛: 불씨 발밑 타원. 안쪽이 더 밝고 맥동·번쩍임에 따라 숨 쉰다.
-        private void RebuildGlow()
+        // 그릴지와 밝기는 스텝 결과(움직임 여부, 시간, 번쩍임)에 달려 있어 스텝 뒤에 정한다(일꾼 스레드에서 불릴 수 있다).
+        // 유니티 상태(렌더러 유무·켜짐, 발밑 위치, 변환)는 LateUpdate에서 읽어 둔 값을 쓴다.
+        private void PrepareGlow()
         {
-            if (null == glowRenderer) return;
+            if (false == bDeferredHasGlow) return;
             // 날아가는 중에는 그릴 것이 없다. 직전 그리기도 비어 렌더러가 꺼져 있으면 Commit이 아무것도 바꾸지 않으므로 건너뛴다.
-            if (true == bMoving && 0 == glowVertexCount && false == glowRenderer.enabled) return;
+            if (true == bMoving && 0 == glowVertexCount && false == bDeferredGlowRendererEnabled) return;
 
-            Vector3 anchor = null != groundAnchor ? groundAnchor.position : cachedTransform.position;
-            int gx = Mathf.RoundToInt(anchor.x * PixelsPerUnit);
-            int gy = Mathf.RoundToInt(anchor.y * PixelsPerUnit) - 1;
             float pulse = OverheatEmberOrb.Pulse(time, phase);
             float alpha = (0.3f + 0.3f * pulse + flare * 0.2f) * groundGlowStrength;
 
-            glowPainter.Begin(glowBuffer, glowTransform.worldToLocalMatrix, glowTransform.position.z);
+            bDeferredGlow = true;
+            bDeferredGlowEllipse = false;
 
             if (false == bMoving && 0.0f < alpha)
             {
-                bool bLinear = ColorSpace.Linear == QualitySettings.activeColorSpace;
-                Color baseColor = new Color32(GlowRGB[0], GlowRGB[1], GlowRGB[2], 255);
-                if (true == bLinear) baseColor = baseColor.linear;
+                Color baseColor = glowBaseColor;
 
                 Color inner = baseColor;
                 inner.a = Mathf.Clamp01(alpha);
@@ -629,6 +708,24 @@ namespace PresentationLayer.VFX
                 outer.a = Mathf.Clamp01(alpha * 0.6f);
                 Color32 innerColor = inner;
                 Color32 outerColor = outer;
+
+                bDeferredGlowEllipse = true;
+                deferredGlowInner = innerColor;
+                deferredGlowOuter = outerColor;
+            }
+        }
+
+        // 미뤄 둔 바닥 빛 그리기: 작업 버퍼의 새 구간에 타원을 채운다(일꾼 스레드에서 불릴 수 있다). 예전 RebuildGlow의 채우기 부분이다.
+        private void DrawGlowSegment(Work _work)
+        {
+            glowPainter.BeginSegment(_work.glowBuffer, deferredGlowWorldToLocal, deferredGlowZ);
+
+            if (true == bDeferredGlowEllipse)
+            {
+                int gx = deferredGlowX;
+                int gy = deferredGlowY;
+                Color32 innerColor = deferredGlowInner;
+                Color32 outerColor = deferredGlowOuter;
 
                 for (int dy = -GlowRadiusY; dy <= GlowRadiusY; dy++)
                 {
@@ -642,7 +739,66 @@ namespace PresentationLayer.VFX
                 }
             }
 
-            glowPainter.Commit(glowMesh, glowRenderer, ref glowHash, ref glowVertexCount);
+            glowPainter.EndSegment(out glowSegment);
+        }
+
+        // 미뤄 둔 계산과 그리기(일꾼 스레드에서 불릴 수 있다). 순서는 예전 LateUpdate와 같다: 계산 스텝 -> 바닥 빛 판단 -> 불덩이·불티 -> 바닥 빛.
+        void IPixelVfxDeferred.ComputeDeferred()
+        {
+            // 이번 프레임 이동을 스텝 수만큼 나눠, 스텝마다 그 시점 위치로 계산한다
+            int steps = 0;
+            while (steps < deferredPendingSteps)
+            {
+                steps++;
+                StepOnce(deferredScale, Vector3.Lerp(deferredStepFrom, deferredPosition, steps / (float)deferredPendingSteps));
+            }
+
+            if (true == bDeferredExtraStep) StepOnce(deferredScale, deferredPosition);
+
+            if (false == bDeferredDraw) return;
+
+            if (1.0f / 15.0f <= glowAccumulator || -1 == glowVertexCount || true == bMoving)
+            {
+                glowAccumulator = 0.0f;
+                bMeshesHidden = false;
+                PrepareGlow();
+            }
+
+            Work work = Work.ForCurrentThread();
+            if (true == bDeferredMesh) DrawMeshSegment(work);
+            if (true == bDeferredGlow) DrawGlowSegment(work);
+        }
+
+        // 미뤄 둔 일의 결과를 반영한다(주 스레드). 예전 LateUpdate와 같은 순서다: 정렬 -> 불덩이·불티 메쉬 -> 드랍 꼬리 -> 바닥 빛.
+        void IPixelVfxDeferred.ApplyDeferred()
+        {
+            deferredSlot = -1;
+            if (false == bDeferredDraw) return;
+
+            ApplySorting();
+
+            if (true == bDeferredMesh)
+            {
+                PixelPainter.CommitSegment(in meshSegment, mesh, meshRenderer, ref meshHash, ref meshVertexCount);
+                meshSegment.buffer = null;
+            }
+
+            if (true == bDeferredRedraw) RebuildTrail();
+
+            if (true == bDeferredGlow)
+            {
+                PixelPainter.CommitSegment(in glowSegment, glowMesh, glowRenderer, ref glowHash, ref glowVertexCount);
+                glowSegment.buffer = null;
+            }
+
+            bDeferredMesh = false;
+            bDeferredGlow = false;
+        }
+
+        // 미뤄 둔 계산·그리기가 있으면 지금 끝낸다(꺼지거나 색이 바뀌기 전에: 예전에는 LateUpdate에서 이미 끝나 있던 일이다)
+        private void CompleteDeferred()
+        {
+            if (0 <= deferredSlot) PixelVfxWorkQueue.CompleteNow(deferredSlot, this);
         }
 
         // 바닥에서는 Visual 정렬을 따르고, 날아가는 중에는 FlyingItem 레이어로 올린다.
@@ -658,8 +814,9 @@ namespace PresentationLayer.VFX
             }
             else
             {
-                layer = null != sortingSource ? sortingSource.sortingLayerID : meshRenderer.sortingLayerID;
-                order = (null != sortingSource ? sortingSource.sortingOrder : 0) + sortingOrderOffset;
+                // 예전에 이 자리에서 읽던 값을 LateUpdate에서 읽어 둔 것(반영이 미뤄져도 예전과 같은 시점의 값)
+                layer = deferredSortLayer;
+                order = deferredSortOrder;
             }
 
             if (layer == appliedSortingLayerID && order == appliedSortingOrder) return;
@@ -700,6 +857,12 @@ namespace PresentationLayer.VFX
             meshVertexCount = -1;
             glowVertexCount = -1;
             bMeshesHidden = true;
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            bGlowBaseReady = false;
         }
 
         // 유니티 이벤트 함수
@@ -743,53 +906,79 @@ namespace PresentationLayer.VFX
                 pendingSteps++;
             }
 
+            // 계산 스텝(불덩이·불티·꼬리 계산)은 유니티 API를 쓰지 않아 미뤄서 일꾼 스레드에서 돌린다(ComputeDeferred).
+            // 여기서는 스텝 수와 스텝 뒤의 누적 시간을 예전과 같은 식으로 구하고, 스텝과 그 뒤의 일이 읽을 유니티 상태를 예전과 같은 시점에 읽어 둔다.
             // 이번 프레임 이동을 스텝 수만큼 나눠, 스텝마다 그 시점 위치로 계산한다
-            Vector3 stepFrom = true == bHasPrevious ? lastStepPosition : pos;
+            deferredScale = scale;
+            deferredPosition = pos;
+            deferredStepFrom = true == bHasPrevious ? lastStepPosition : pos;
+            deferredPendingSteps = pendingSteps;
             int steps = 0;
             while (steps < pendingSteps)
             {
                 accumulator -= StepInterval;
                 steps++;
-                StepOnce(scale, Vector3.Lerp(stepFrom, pos, steps / (float)pendingSteps));
             }
 
             if (StepInterval <= accumulator) accumulator = 0.0f;
-            if (false == bHasPrevious)
-            {
-                StepOnce(scale, pos);
-                steps++;
-            }
+            // 스텝이 한 번이라도 돌면 이전 위치가 생기므로, 이전 위치가 없고 돌릴 스텝도 없을 때만 한 번 돌린다(예전과 같은 조건)
+            bDeferredExtraStep = false == bHasPrevious && 0 == pendingSteps;
+            if (true == bDeferredExtraStep) steps++;
+
+            bDeferredMesh = false;
+            bDeferredGlow = false;
+            bDeferredRedraw = false;
 
             if (false == CancelParentScale())
             {
                 HideMeshes();
+                // 그리지는 않지만 스텝은 예전처럼 돌린다
+                bDeferredDraw = false;
+                deferredSlot = PixelVfxWorkQueue.Enqueue(this);
                 return;
             }
 
-            ApplySorting();
+            bDeferredDraw = true;
+
+            // 정렬(ApplySorting)은 스텝이 정하는 움직임 여부를 읽으므로 스텝 뒤(ApplyDeferred)에 한다. 바닥에 있을 때 따를 값은 여기서 읽어 둔다.
+            deferredSortLayer = null != sortingSource ? sortingSource.sortingLayerID : meshRenderer.sortingLayerID;
+            deferredSortOrder = (null != sortingSource ? sortingSource.sortingOrder : 0) + sortingOrderOffset;
 
             // 계산 스텝이 없던 프레임(60Hz보다 빠른 화면)에 제자리·같은 크기면 그림이 같으므로 다시 만들지 않는다.
             // 움직이는 중에는 메쉬가 로컬 좌표라 픽셀 격자에서 어긋나므로 항상 다시 그린다.
             if (0 < steps || -1 == meshVertexCount || pos != lastDrawPosition || scale != lastDrawScale)
             {
+                bDeferredRedraw = true;
                 bMeshesHidden = false;
                 RebuildMesh(scale, pos.z);
-                RebuildTrail();
+                // 드랍 꼬리(RebuildTrail)는 스텝 결과를 읽으므로 스텝 뒤에 만든다. 변환만 여기서 읽어 둔다.
+                if (null != trailRenderer && null != trailMesh) deferredTrailWorldToLocal = trailTransform.worldToLocalMatrix;
                 lastDrawPosition = pos;
                 lastDrawScale = scale;
             }
 
+            // 바닥 빛을 다시 그릴지는 움직임 여부(스텝 결과)에 달려 있어 스텝 뒤에 정한다(PrepareGlow). 그릴 때 쓸 유니티 상태만 여기서 읽어 둔다.
             glowAccumulator += dt;
-            if (1.0f / 15.0f <= glowAccumulator || -1 == glowVertexCount || true == bMoving)
+            bDeferredHasGlow = null != glowRenderer;
+            if (true == bDeferredHasGlow)
             {
-                glowAccumulator = 0.0f;
-                bMeshesHidden = false;
-                RebuildGlow();
+                bDeferredGlowRendererEnabled = glowRenderer.enabled;
+                Vector3 anchor = null != groundAnchor ? groundAnchor.position : cachedTransform.position;
+                deferredGlowX = Mathf.RoundToInt(anchor.x * PixelsPerUnit);
+                deferredGlowY = Mathf.RoundToInt(anchor.y * PixelsPerUnit) - 1;
+                deferredGlowWorldToLocal = glowTransform.worldToLocalMatrix;
+                deferredGlowZ = glowTransform.position.z;
             }
+
+            // 모든 LateUpdate가 끝난 직후 스텝이 계산되고, 정렬과 메쉬가 반영된다.
+            deferredSlot = PixelVfxWorkQueue.Enqueue(this);
         }
 
         private void OnDisable()
         {
+            // 이번 프레임에 미뤄 둔 그리기가 불티·꼬리를 읽으므로 넘기거나 숨기기 전에 먼저 끝낸다
+            CompleteDeferred();
+
             // 날아가던 중에 꺼지면(획득) 남은 흡입 꼬리는 잔여 드라이버가 끝까지 그린다.
             // 바닥에서 꺼질 때(소멸·회수·씬 정리)의 대기 불티는 버린다. 소멸 연출은 단발 이펙트가 따로 그린다.
             if (true == bInitialized && true == bMoving)
@@ -827,7 +1016,11 @@ namespace PresentationLayer.VFX
             groundGlowStrength = Mathf.Clamp01(groundGlowStrength);
 
 #if UNITY_EDITOR
-            if (true == bInitialized) BuildTones();
+            if (true == bInitialized)
+            {
+                CompleteDeferred();
+                BuildTones();
+            }
 #endif
         }
     }

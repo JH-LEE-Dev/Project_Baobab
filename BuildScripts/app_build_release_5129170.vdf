@@ -16,7 +16,7 @@
 
 	// Steamworks 빌드 목록에 그대로 보이는 설명입니다. 나중에 어느 빌드가 무엇이었는지
 	// 되짚는 유일한 단서이므로, 매 업로드마다 버전과 커밋을 갱신하세요.
-	"desc"		"LumberBoy 1.0.0-steam"
+	"desc"		"LumberBoy 1.0.0-steam (223176e2)"
 
 	// SteamPipe가 로그와 청크 캐시를 쌓는 곳입니다.
 	// contentroot 안에 두면 그 찌꺼기가 그대로 depot에 실리므로 반드시 바깥이어야 합니다.

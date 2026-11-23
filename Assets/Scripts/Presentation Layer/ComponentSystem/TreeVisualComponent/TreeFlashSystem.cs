@@ -52,7 +52,7 @@ public static class TreeFlashSystem
 
         EnsureDriver();
 
-        _visual.ApplyFlashAmountFromSystem(_curve.Evaluate(0f), 0f);
+        _visual.ApplyFlashFromSystem(_curve, 0f);
         _visual.flashEntryIndex = entries.Count;
         entries.Add(new Entry
         {
@@ -116,7 +116,7 @@ public static class TreeFlashSystem
             if (entry.elapsed < entry.duration)
             {
                 float progress = entry.elapsed / entry.duration;
-                entry.visual.ApplyFlashAmountFromSystem(entry.curve.Evaluate(progress), progress);
+                entry.visual.ApplyFlashFromSystem(entry.curve, progress);
                 entry.elapsed += dt;
                 entries[i] = entry;
             }

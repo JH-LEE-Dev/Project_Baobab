@@ -27,7 +27,15 @@ public class UI_MainMenu : MonoBehaviour
     [SerializeField] private UI_MainMenuButton roguelikeButton;
     [SerializeField] private UI_MainMenuButton loadGameButton;
     [SerializeField] private UI_MainMenuButton exitButton;
-    
+    public enum ERoguelikeButtonMode
+    {
+        [InspectorName("항상 보임")] AlwaysShow,
+        [InspectorName("잠금 (항상 숨김)")] Locked,
+        [InspectorName("해금 조건 (엔딩 + 모든 특성)")] UnlockCondition,
+    }
+    [SerializeField, Tooltip("메인 메뉴 로그라이크 버튼 표시 방식. 해금 조건 = 세이브의 로그라이크 해금 여부(모든 특성 최대 레벨로 엔딩을 봤을 때 기록됨)를 따른다.")]
+    private ERoguelikeButtonMode roguelikeButtonMode = ERoguelikeButtonMode.AlwaysShow;
+
     [Header("Sub Views")]
     [SerializeField] private UI_MainMenuButton optionButton;
     [SerializeField] private UI_MainMenuButton creditButton;
@@ -284,11 +292,21 @@ public class UI_MainMenu : MonoBehaviour
         }
 
         if (null != newGameButton) newGameButton.gameObject.SetActive(true);
-        // 로그라이크 모드 진입 버튼. 해금 조건(본편 모든 특성 해금 + 엔딩)은 본편 엔딩이 아직 없어 개발 중에는 상시 활성이다(기획서 9장).
-        if (null != roguelikeButton) roguelikeButton.gameObject.SetActive(true);
+        // 로그라이크 모드 진입 버튼. 표시 방식은 roguelikeButtonMode(인스펙터)를 따른다.
+        if (null != roguelikeButton) roguelikeButton.gameObject.SetActive(IsRoguelikeButtonVisible());
         if (null != optionButton) optionButton.gameObject.SetActive(true);
         if (null != creditButton) creditButton.gameObject.SetActive(true);
         if (null != exitButton) exitButton.gameObject.SetActive(true);
+    }
+
+    private bool IsRoguelikeButtonVisible()
+    {
+        switch (roguelikeButtonMode)
+        {
+            case ERoguelikeButtonMode.AlwaysShow: return true;
+            case ERoguelikeButtonMode.UnlockCondition: return null != parentView && true == parentView.IsRoguelikeUnlockedInSave();
+            default: return false;
+        }
     }
 
     private void UpdateButtonLayout()

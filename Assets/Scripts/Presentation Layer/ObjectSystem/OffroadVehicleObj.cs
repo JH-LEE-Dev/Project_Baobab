@@ -169,7 +169,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     [Header("Repair Box Settings")]
     [Tooltip("수리 특성으로 모루가 해금됐는지. 해금되면 숲에 들어올 때마다 차량 옆에 모루가 놓인다.")]
     public bool bRepairBoxUnlocked = false;
-    [Tooltip("수리 효율 특성으로 더해지는 초당 수리량(최대 내구도 대비 비율, 0.01 = 1%/s)")]
+    [Tooltip("수리 효율 특성으로 기본 수리량에 곱해지는 증가율(0.5 = 1.5배)")]
     public float repairRateBonus = 0f;
     private PercentAccumulator repairRateBonusAccum;
 

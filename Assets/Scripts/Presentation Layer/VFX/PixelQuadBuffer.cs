@@ -94,6 +94,21 @@ namespace PresentationLayer.VFX
         }
 
         /// <summary>
+        /// 지금까지 채운 쿼드는 그대로 두고 새 구간을 시작한다. 돌려준 값이 구간의 첫 정점 자리다. 이후 ContentHash와 TryGetLocalBounds는
+        /// 이 구간에 채운 쿼드만의 값이 된다(Clear 직후에 채운 것과 같은 값). 한 버퍼에 여러 인스턴스의 그림을 이어 담았다가
+        /// UploadRange로 구간별로 올릴 때 쓴다.
+        /// </summary>
+        public int BeginSegment()
+        {
+            contentHash = HashOffset;
+            minPixelX = int.MaxValue;
+            minPixelY = int.MaxValue;
+            maxPixelX = int.MinValue;
+            maxPixelY = int.MinValue;
+            return vertexCount;
+        }
+
+        /// <summary>
         /// AddWorldRect가 쓸 월드 -> 로컬 변환과 사각형의 z값을 정한다. 변환이 순수 평행이동(회전/스케일 없음)이면 빠른 경로를 쓴다.
         /// </summary>
         public void SetWorldTransform(Matrix4x4 _worldToLocal, float _meshZ)
@@ -306,6 +321,45 @@ namespace PresentationLayer.VFX
             subMesh.vertexCount = total;
             _mesh.SetSubMesh(0, subMesh, UploadFlags);
             return bKept;
+        }
+
+        /// <summary>
+        /// 버퍼의 [_start, _start + _count) 구간 정점을 메쉬의 _vertexOffset 자리부터 올린다. 그 밖의 동작과 돌려주는 값은
+        /// Upload(_mesh, _vertexOffset)과 같다(구간이 버퍼 전체면 같은 호출이다).
+        /// </summary>
+        public bool UploadRange(Mesh _mesh, int _vertexOffset, int _start, int _count)
+        {
+            int total = _vertexOffset + _count;
+            bool bKept = true;
+
+            int meshVertexCount = _mesh.vertexCount;
+            if (meshVertexCount < total)
+            {
+                bKept = 0 == _vertexOffset;
+                SetupMesh(_mesh, total);
+                meshVertexCount = _mesh.vertexCount;
+            }
+
+            if (0 < _count) _mesh.SetVertexBufferData(vertices, _start, _vertexOffset, _count, 0, UploadFlags);
+            if (0 == meshVertexCount) return bKept;
+
+            SubMeshDescriptor subMesh = new SubMeshDescriptor(0, total / 4 * 6, MeshTopology.Triangles);
+            subMesh.firstVertex = 0;
+            subMesh.vertexCount = total;
+            _mesh.SetSubMesh(0, subMesh, UploadFlags);
+            return bKept;
+        }
+
+        /// <summary>
+        /// 버퍼의 [_start, _start + _count) 구간 정점을 메쉬의 처음부터 올리고 경계를 넉넉한 고정 크기로 둔다. 구간이 버퍼 전체면
+        /// Upload(_mesh, _boundsSize)와 같은 호출이다.
+        /// </summary>
+        public void UploadRange(Mesh _mesh, Vector3 _boundsSize, int _start, int _count)
+        {
+            UploadRange(_mesh, 0, _start, _count);
+
+            Bounds bounds = _mesh.bounds;
+            if (Vector3.zero != bounds.center || _boundsSize != bounds.size) _mesh.bounds = new Bounds(Vector3.zero, _boundsSize);
         }
 
         /// <summary>

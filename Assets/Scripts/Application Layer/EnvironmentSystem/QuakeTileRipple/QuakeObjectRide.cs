@@ -686,6 +686,8 @@ public sealed class QuakeObjectRide
         standIn.renderingLayerMask = source.renderingLayerMask;
 
         propertyBlock ??= new MaterialPropertyBlock();
+        // 나무가 그리기 직전으로 미뤄 둔 값(열기·점멸)이 있으면 블록을 읽기 전에 써넣는다.
+        TreeDeferredMaterialWrites.FlushAll();
         source.GetPropertyBlock(propertyBlock);
 
         Material material = source.sharedMaterial;

@@ -525,8 +525,10 @@ namespace PresentationLayer.UISystem
             layoutDirtySinceGeneratedMesh = false;
             // 보조 메시(대체 폰트 등)가 있으면 TMP가 메시를 만들 때마다 보조 메시 색·레이캐스트·마스크를 맞추고,
             // 정점 정렬 순서가 기본이 아니면 오프셋을 입힌 뒤 정점을 다시 정렬하므로 둘 다 재사용 대상에서 뺀다.
+            // 메시 수정 컴포넌트(UIEffect 등)가 붙어 있어도 뺀다(HasMeshModifier 참고).
             hasGeneratedAnimatedMesh = Application.isPlaying &&
                                        false == isRevealPlaying &&
+                                       false == HasMeshModifier() &&
                                        _textInfo.materialCount <= 1 &&
                                        tmpText.geometrySortingOrder == VertexSortingOrder.Normal &&
                                        _textInfo.meshInfo != null &&
@@ -577,6 +579,9 @@ namespace PresentationLayer.UISystem
                 return AnimatedMeshReuse.Regenerate;
 
             if (tmpText.geometrySortingOrder != VertexSortingOrder.Normal)
+                return AnimatedMeshReuse.Regenerate;
+
+            if (HasMeshModifier())
                 return AnimatedMeshReuse.Regenerate;
 
             TMP_TextInfo textInfo = tmpText.textInfo;
@@ -641,6 +646,15 @@ namespace PresentationLayer.UISystem
             }
 
             return AnimatedMeshReuse.Same;
+        }
+
+        // 메시 수정 컴포넌트(UIEffect 등)는 TMP가 메시를 새로 만들 때 나오는 TEXT_CHANGED_EVENT를 받아 자기가 고친 메시를
+        // canvasRenderer에 따로 올린다. 기록한 기본 메시에 다시 입혀 올리는 경로(UpdateVertexData)는 이 이벤트가 없어 TMP 원본
+        // 메시로 덮어써지고, UIEffect 셰이더로 그 원본을 그리면 글자가 아예 안 보인다(오프닝 대사가 등장 직후 사라짐).
+        // 그래서 하나라도 붙어 있으면 켜짐 여부와 상관없이 재사용하지 않고 매번 다시 만든다(UIEffect 쪽도 켜짐 여부를 보지 않고 끼어든다).
+        private bool HasMeshModifier()
+        {
+            return tmpText.TryGetComponent<UnityEngine.UI.IMeshModifier>(out _);
         }
 
         private static bool IsSameBits(float _a, float _b)

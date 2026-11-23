@@ -94,7 +94,7 @@ public class TreeHeatIndicator : MonoBehaviour
         // 같은 나무가 이미 다음 카운트다운을 시작했다면 그 진행도는 그쪽 인디케이터가 넣고 있으므로 건드리지 않는다.
         if (tree != null && tree.HeatSequence == heatSequence && tree.treeVisualComponent != null)
         {
-            tree.treeVisualComponent.SetHeatCharge(0f);
+            tree.treeVisualComponent.SetHeatChargeImmediate(0f);
         }
         tree = null;
         spriteRenderer.enabled = false;
