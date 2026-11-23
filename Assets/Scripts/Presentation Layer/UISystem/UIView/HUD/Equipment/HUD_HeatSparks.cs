@@ -7,7 +7,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
     /// 과열 게이지 바의 불티('.' '+'). 채움 꼭대기에서 튀어 오른다.
     /// 1~3단계는 바 안쪽 빈칸에서만 날고 사라지며, 4단계와 단계가 오를 때의 버스트는 바 밖(숫자 위)까지 튄다.
     /// 21x80 CPU 텍스처(RawImage)에 직접 찍는다. 바(9x50)는 텍스처의 (6, 0)부터 놓인다고 보고 좌표를 계산한다.
-    /// 30fps 고정 스텝, unscaled 시간. 입자가 없고 직전 그림도 비었으면 업로드하지 않는다.
+    /// 30fps 고정 스텝, scaled 시간(ESC 일시정지 동안 멈춤). 입자가 없고 직전 그림도 비었으면 업로드하지 않는다.
     /// </summary>
     public class HUD_HeatSparks : MonoBehaviour
     {
@@ -232,7 +232,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             if (false == bReady)
                 return;
 
-            stepAccumulator = Mathf.Min(stepAccumulator + Time.unscaledDeltaTime, MaxCatchUpSeconds);
+            stepAccumulator = Mathf.Min(stepAccumulator + Time.deltaTime, MaxCatchUpSeconds);
 
             if (StepSeconds > stepAccumulator)
                 return;

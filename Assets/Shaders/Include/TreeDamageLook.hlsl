@@ -4,7 +4,7 @@
 #include "OverheatBurstWave.hlsl"
 
 // 4스테이지(용암 숲) 나무가 깎일수록 달라지는 모습. 렌더링 전용이다.
-// - 돌처럼 생긴 나무: 금이 가며 그 틈으로 용암 빛이 새어 나온다(깎일수록 금이 한 자리에서 뻗어 나가고, 많이 깎이면 굵어진다).
+// - 돌처럼 생긴 나무: 금이 가며 그 틈으로 용암 빛이 새어 나온다(깎일수록 금이 밑동 쪽 한 자리에서 수정 조각을 따라 뻗어 나간다).
 // - 잿불 나무(침엽수 모양): 금 대신 잎 층 아래 그늘에서 숯불이 붙어 아래층부터 위로 번진다.
 // 나무마다 깎인 정도(_DamageLook)와 나무 루트 위치(_DamageLookPivot)를 MaterialPropertyBlock으로 받는다(TreeVisualComponent.SetDamageLook, 넣는 쪽은 TreeObj).
 // 값의 부호가 모습을 고른다: 양수 = 금, 음수 = 숯불, 0 = 없음. 크기(0~1)가 깎인 정도다.
@@ -12,43 +12,60 @@
 // 켜짐과 같은 값으로 채우며(본편 4스테이지·로그라이크 용암 숲에서만 1), 다른 스테이지에서는 값이 들어와도 아무것도 바꾸지 않는다.
 // 열기 차오름(_TreeHeatChargeA)은 로그라이크에서 꺼지므로 따로 둔다. TreeHeatCharge.hlsl 뒤에 include 한다.
 //
-// [비용] 무늬(금의 경계선, 숯불 덩이, 깜빡임 박자)는 픽셀마다 계산하지 않고 미리 구워 둔 작은 텍스처
-// (_TreeDamagePatternTex, TreeDamagePatternTexture.cs가 만든다)에서 한 번 읽는다. 나무 한 그루에 한 번이면 되는 값
-// (무늬 위치, 켜짐 여부, 열기 물결)은 정점 단계(ComputeTreeDamageFx)에서 구해 넘기므로, 깎이지 않은 나무의 픽셀은
-// 비교 한 번으로 끝난다. 같은 그림을 쓰는 나무끼리 무늬가 겹치지 않게 나무 밑동 위치로 무늬를 민다.
+// [비용] 무늬는 픽셀마다 계산하지 않고 미리 구워 둔 작은 텍스처에서 한 번 읽는다.
+// - 금: 나무 그림마다 구운 금 모양(_TreeCrackMaskTex, TreeCrackMaskTexture.cs가 그림의 조각·외곽선을 보고 만든다).
+//   깎인 나무의 재질 사본에 그 나무 그림의 것이 들어간다(TreeVisualComponent). 모양이 여러 가지라 나무 밑동 위치로 하나를 고른다.
+// - 숯불: 덩이·깜빡임 박자 무늬(_TreeDamagePatternTex, TreeDamagePatternTexture.cs가 만든다). 나무 밑동 위치로 무늬를 민다.
+// 나무 한 그루에 한 번이면 되는 값(무늬 위치, 켜짐 여부, 열기 물결)은 정점 단계(ComputeTreeDamageFx)에서 구해 넘기므로,
+// 깎이지 않은 나무의 픽셀은 비교 한 번으로 끝난다.
 
 // 스프라이트 텍스처 크기는 _MainTex_TexelSize를 선언해 받지 않고 텍스처에서 직접 읽는다(TreeDamageSpriteSize).
 // 그 값을 머티리얼 묶음(UnityPerMaterial) 밖에 선언하면 나무 셰이더 전체가 SRP 배처와 맞지 않게 되고,
 // 묶음 안에 넣으면 스프라이트마다 다른 텍스처 대신 머티리얼의 값을 읽게 된다. 깎인 나무의 픽셀에서만 읽는다.
 
-// 미리 구운 무늬(가로세로로 이어 붙는다). 텍스처 픽셀 좌표로 그대로 읽는다(필터 없음).
-// R: 0 = 금 아님, 그 밖 = (금의 심까지 거리 + 1) / 255 (심 = 1, 심 옆 = 2, 그 옆 = 3). 심은 어디서나 1픽셀 굵기로 이어진다.
-// G: 금 한 줄마다 고유한 값(0~1) - 뻗는 빠르기·빛이 흐르는 박자
+// 숯불 무늬(가로세로로 이어 붙는다). 텍스처 픽셀 좌표로 그대로 읽는다(필터 없음). R·G는 쓰지 않는다.
 // B: 숯불 덩이 무늬(0~1, 뭉글뭉글한 값)
 // A: 숯불 깜빡임 박자(0~1, 두 픽셀 묶음마다 다르다)
 TEXTURE2D(_TreeDamagePatternTex);
+// 나무 그림의 금 모양(그림 크기의 가로 TreeCrackVariantCount배, 모양이 가로로 이어 붙어 있다). 그림 픽셀 좌표로 그대로 읽는다.
+// R(x255): 아래 2비트 = 종류(0 = 금 아님, 1 = 금의 심, 2 = 심 옆의 달궈진 가장자리),
+//          위 6비트 = 열기(0~TreeCrackHeatLevels -> 0~1, 수관 금은 1, 밑동 금은 수관에서 멀어질수록 식는다)
+// G: 이 픽셀이 보이기 시작하는 깎임 정도(0~1)
+// B: 금을 따라 시작 자리에서 잰 거리(픽셀, /255) - 빛이 바깥으로 흐르는 박자
+// A: 금 한 줄마다 고유한 값(0~1) - 빛이 흐르는 박자를 줄마다 다르게
+// 머티리얼 묶음(UnityPerMaterial) 밖의 텍스처라 SRP 배처와 맞는다. 깎인 나무의 픽셀에서만 읽는다.
+TEXTURE2D(_TreeCrackMaskTex);
 // 깎인 모습 켜짐(0/1). 위 설명 참고.
 float _TreeDamageLookOn;
 // 무늬 텍스처 한 변의 크기(픽셀). TreeDamagePatternTexture.Size와 같아야 한다.
 static const float TreeDamagePatternSize = 144.0;
 
 // ── 금 ──
-// 금은 그림의 한 자리(수관 아래쪽 가운데, 도끼가 닿는 쪽)에서 시작해 깎일수록 바깥으로 뻗어 나간다.
-// 나무 그림에는 원래 빛나는 점이 많이 박혀 있어서(하이라이트 그림), 금이 여기저기 따로 나타나면 그 점들과 구분되지 않는다.
-// 그래서 한 자리에서 이어져 자라는 줄기로 그리고, 밝은 심 양옆에 붉은 가장자리를 붙여 3픽셀 굵기의 줄로 보이게 한다.
-// 금이 시작하는 자리(그림 안 비율)와, 거기서 이 거리(픽셀)까지 뻗으면 다 뻗은 것으로 본다.
-static const float2 TreeCrackOrigin = float2(0.5, 0.3);
-static const float TreeCrackReach = 36.0;
-// 금의 끝이 처음 보이기 시작해 다 밝아질 때까지 필요한 깎임 폭(금 끝이 흐릿하게 자라난다)
-static const float TreeCrackFadeIn = 0.1;
-// 이보다 많이 깎이면 금의 심이 2픽셀로 굵어진다(쓰러지기 바로 전 단계부터)
-static const float TreeCrackWide = 0.85;
-// 이보다 많이 깎이면 금이 더 밝아지고 빛이 빠르게 흐른다(쓰러지기 직전)
+// 금은 그림의 한 자리(수관 아래쪽 가운데, 도끼가 닿는 쪽)에서 갈라져 깎일수록 바깥으로 뻗어 나간다.
+// 모양은 그림의 수정 조각을 따라 미리 구워 둔다(조각 안에서만 지나가고, 외곽선 뒤로 숨었다가 다음 조각에서 어긋나 나온다).
+// 나무 그림에는 원래 빛나는 점이 많이 박혀 있어서(하이라이트 그림), 금은 한 자리에서 이어져 자라는 1픽셀 줄기로 그리고
+// 빛이 줄기를 따라 바깥으로 흐르게 해 제자리에서 반짝이는 점들과 구분한다.
+// 금 모양 가짓수. TreeCrackMaskTexture.VariantCount와 같아야 한다.
+static const int TreeCrackVariantCount = 4;
+// 금 열기 단계 수. TreeCrackMaskTexture.HeatLevels와 같아야 한다.
+static const float TreeCrackHeatLevels = 63.0;
+// 식은 금(열기 0)의 밝기 배율. 밑동 금은 수관에서 내려오며 식어 어둡고 붉게 사그라든다.
+static const float TreeCrackCoolBrightness = 0.55;
+// 금의 끝이 처음 보이기 시작해 다 드러날 때까지 필요한 깎임 폭(금 끝이 흐릿하게 자라난다)
+static const float TreeCrackFadeIn = 0.08;
+// 금이 드러난 뒤 이만큼 더 깎이면 갓 난 붉은 틈에서 하얗게 달군 심으로 다 달아오른다(오래된 금일수록 밝다).
+static const float TreeCrackAgeSpan = 0.25;
+// 이보다 많이 깎이면 금이 더 밝아지고 가장자리가 짙어지며 빛이 빠르게 흐른다(쓰러지기 직전)
 static const float TreeCrackCritical = 0.75;
-// 금 심(가장 밝은 줄)과 가장자리의 빛 색(선형). 심은 나무의 주황·분홍 점과 구분되게 흰 쪽으로 달군 노랑이고
-// 블룸 임계값(1.345)을 넘겨 번진다. 가장자리는 임계값 아래의 붉은 주황이라 번지지 않고 금의 윤곽을 또렷하게 잡는다.
+// 금 심(가장 밝은 줄)과 갓 난 틈의 빛 색(선형). 심은 나무의 주황·분홍 점과 구분되게 흰 쪽으로 달군 노랑이고
+// 블룸 임계값(1.345)을 넘겨 번진다. 갓 난 틈은 임계값 아래의 붉은 주황이다.
 static const half3 TreeCrackCoreColor = half3(1.75, 1.45, 0.7);
 static const half3 TreeCrackEdgeColor = half3(1.3, 0.34, 0.04);
+// 심 옆 가장자리의 색(선형). 어두운 진홍이라 빛이 아니라 달궈진 돌로 보이고, 심을 1픽셀 줄로 또렷하게 둔다.
+static const half3 TreeCrackRimColor = half3(0.52, 0.136, 0.016);
+// 가장자리를 바탕에 섞는 정도(평소 / 쓰러지기 직전)
+static const float TreeCrackRimBlend = 0.6;
+static const float TreeCrackRimBlendCritical = 0.9;
 
 // ── 숯불 ──
 // 숯불이 붙을 수 있는 픽셀의 밝기 상한과, 숯불의 심으로 가장 밝게 타는 픽셀의 밝기 상한(최대 채널).
@@ -107,46 +124,58 @@ float2 TreeDamageSpriteSize()
     return float2(width, height);
 }
 
-// _texel: 그림 안 픽셀 좌표(무늬 위치를 더하기 전), _texSize: 스프라이트 텍스처 크기
-half3 ApplyTreeDamageCracks(half3 _color, float2 _texel, float2 _texSize, half4 _pattern, float _damage)
+// _texel: 그림 안 픽셀 좌표, _texSize: 스프라이트 텍스처 크기, _variantSeed: 나무마다 다른 무늬 위치 값(정수, 모양을 고른다)
+half3 ApplyTreeDamageCracks(half3 _color, float2 _texel, float2 _texSize, float _variantSeed, float _damage)
 {
-    // 금의 심까지 거리(0 = 심). 금이 아닌 픽셀은 음수다.
-    float edge = round(_pattern.r * 255.0) - 1.0;
-    if (edge < 0.0)
+    // 무늬 위치 값은 0 이상의 정수라 부호 없는 나머지로 고른다(부호 있는 정수 나머지는 느리다).
+    uint variant = (uint)_variantSeed % (uint)TreeCrackVariantCount;
+    int2 maskTexel = int2(_texel.x + variant * _texSize.x, _texel.y);
+
+    // 금 모양이 들어오지 않은 재질(기본 텍스처)이면 그리지 않는다. 범위 밖 읽기 값은 그래픽 API마다 달라 직접 거른다.
+    uint maskWidth;
+    uint maskHeight;
+    _TreeCrackMaskTex.GetDimensions(maskWidth, maskHeight);
+    if (maskTexel.x >= (int)maskWidth || maskTexel.y >= (int)maskHeight)
     {
         return _color;
     }
 
-    // 금이 시작하는 자리에서 먼 픽셀일수록 늦게 나타난다(깎일수록 금이 이어져 뻗어 나간다).
-    // 금 한 줄마다 조금씩 빠르고 느려서 줄기마다 길이가 다르다. 맨 끝은 깎임 0.65쯤에 닿는다.
-    float edgeRandom = _pattern.g;
-    float spread = saturate(length(_texel + 0.5 - _texSize * TreeCrackOrigin) / TreeCrackReach);
-    float appearAt = 0.02 + spread * 0.5 + edgeRandom * 0.12;
+    half4 mask = LOAD_TEXTURE2D(_TreeCrackMaskTex, maskTexel);
+
+    // 아래 2비트 = 종류(0 = 금 아님, 1 = 심, 2 = 가장자리), 위 6비트 = 열기
+    uint code = (uint)round(mask.r * 255.0);
+    uint kind = code & 3u;
+    if (0u == kind)
+    {
+        return _color;
+    }
+    float heat = (float)(code >> 2) / TreeCrackHeatLevels;
+
+    // 시작 자리에서 금을 따라 먼 픽셀일수록 늦게 나타난다(깎일수록 금이 이어져 뻗어 나간다).
+    float appearAt = mask.g;
     float shown = saturate((_damage - appearAt) / TreeCrackFadeIn);
     if (shown <= 0.0)
     {
         return _color;
     }
-
-    // 심은 1픽셀 줄, 쓰러지기 바로 전에는 2픽셀로 굵어진다. 그 바깥 1픽셀은 달궈진 가장자리.
-    float coreWidth = 1.0 + step(TreeCrackWide, _damage);
-    float core = step(edge, coreWidth - 0.5);
-    float rim = step(edge, coreWidth + 0.5) * (1.0 - core);
-    if (core + rim <= 0.0)
-    {
-        return _color;
-    }
+    // 갓 난 금은 붉고, 시간이 지날수록(더 깎일수록) 하얗게 달아오른다. 그래서 금 끝은 가늘고 붉게, 시작 자리 쪽은 밝게 보인다.
+    float age = saturate((_damage - appearAt) / TreeCrackAgeSpan);
 
     // 빛이 시작 자리에서 금을 따라 바깥으로 흘러 나간다(제자리에서 반짝이는 나무의 점들과 움직임이 다르다).
     // 쓰러지기 직전에는 더 밝고 빠르게 흐른다.
     float critical = saturate((_damage - TreeCrackCritical) / (1.0 - TreeCrackCritical));
-    float flow = 0.8 + 0.2 * sin(spread * 9.0 - _Time.y * lerp(3.0, 10.0, critical) + edgeRandom * 6.2832);
+    float flow = 0.8 + 0.2 * sin(mask.b * 255.0 * 0.35 - _Time.y * lerp(3.0, 10.0, critical) + mask.a * 6.2832);
     float glow = flow * lerp(0.85, 1.2, critical);
 
-    half3 color = _color;
-    color = lerp(color, TreeCrackCoreColor * (half)glow, (half)(core * shown));
-    color = lerp(color, TreeCrackEdgeColor * (half)glow, (half)(rim * shown * 0.85));
-    return color;
+    // 식은 금은 하얗게 달아오르지 않고 붉은 틈인 채로 어두워진다(열기 1이면 그대로).
+    if (1u == kind)
+    {
+        half3 core = lerp(TreeCrackEdgeColor, TreeCrackCoreColor, (half)(age * heat)) * (half)(glow * lerp(TreeCrackCoolBrightness, 1.0, heat));
+        return lerp(_color, core, (half)shown);
+    }
+
+    float rimBlend = lerp(TreeCrackRimBlend, TreeCrackRimBlendCritical, critical);
+    return lerp(_color, TreeCrackRimColor * (half)glow, (half)(shown * age * rimBlend * heat));
 }
 
 // _texSize: 스프라이트 텍스처 크기
@@ -212,17 +241,18 @@ half3 ApplyTreeDamageLook(half3 _color, float2 _uv, float4 _fx)
         return _color;
     }
 
-    // 텍스처 픽셀 좌표 + 나무마다 다른 무늬 위치 -> 무늬 텍스처 안으로 접는다.
     float2 texSize = TreeDamageSpriteSize();
     float2 spriteTexel = floor(_uv * texSize);
-    float2 texel = spriteTexel + _fx.xy;
-    texel -= TreeDamagePatternSize * floor(texel / TreeDamagePatternSize);
-    half4 pattern = LOAD_TEXTURE2D(_TreeDamagePatternTex, int2(texel));
 
     if (_fx.w > 0.0)
     {
-        return ApplyTreeDamageCracks(_color, spriteTexel, texSize, pattern, _fx.w);
+        return ApplyTreeDamageCracks(_color, spriteTexel, texSize, _fx.x, _fx.w);
     }
+
+    // 텍스처 픽셀 좌표 + 나무마다 다른 무늬 위치 -> 숯불 무늬 텍스처 안으로 접는다.
+    float2 texel = spriteTexel + _fx.xy;
+    texel -= TreeDamagePatternSize * floor(texel / TreeDamagePatternSize);
+    half4 pattern = LOAD_TEXTURE2D(_TreeDamagePatternTex, int2(texel));
 
     return ApplyTreeDamageEmbers(_color, _uv, texSize, pattern, -_fx.w);
 }

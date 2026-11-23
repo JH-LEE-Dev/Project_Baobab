@@ -886,7 +886,8 @@ public class LogInBelt : MonoBehaviour
                 logState = item.item.logState,
                 durability = item.item.durability,
                 color = item.item.color, // 컬러 저장
-                bIsTimber = item.item.BIsTimber // 가공 여부 저장
+                bIsTimber = item.item.BIsTimber, // 가공 여부 저장
+                processBundleCount = ItemSaveData.ToSavedBundleCount(item.item.ProcessBundleCount) // 동시 가공 묶음 수
             };
 
             _saveData.activeItems.Add(itemSaveData);
@@ -913,7 +914,8 @@ public class LogInBelt : MonoBehaviour
                 logState = dItem.item.logState,
                 durability = dItem.item.durability,
                 color = dItem.item.color,
-                bIsTimber = dItem.item.BIsTimber // 가공 여부 저장
+                bIsTimber = dItem.item.BIsTimber, // 가공 여부 저장
+                processBundleCount = ItemSaveData.ToSavedBundleCount(dItem.item.ProcessBundleCount) // 동시 가공 묶음 수
             };
 
             _saveData.deactivatingItems.Add(dSaveData);
@@ -947,6 +949,7 @@ public class LogInBelt : MonoBehaviour
                 {
                     newItem.transform.position = itemData.position;
                     newItem.durability = itemData.itemData.durability;
+                    if (itemData.itemData.ProcessBundleCount > 1) newItem.SetProcessBundleCount(itemData.itemData.ProcessBundleCount);
                     // targetIndex는 저장 당시 경로 기준이라 그대로 믿을 수 없다(경로 지점 수가 바뀐
                     // 세이브 호환). 저장된 위치에서 다음 목표를 다시 찾는다.
                     int targetIndex = ResolveTargetIndex(itemData.position);
@@ -981,6 +984,7 @@ public class LogInBelt : MonoBehaviour
                 {
                     newItem.transform.position = dItemData.position;
                     newItem.durability = dItemData.itemData.durability;
+                    if (dItemData.itemData.ProcessBundleCount > 1) newItem.SetProcessBundleCount(dItemData.itemData.ProcessBundleCount);
                     ApplyExitSortHeight(newItem);
                     newItem.UpdateSortingOrder();
                     deactivatingItems.Add(new DeactivatingItem(newItem, dItemData.remainingTime));

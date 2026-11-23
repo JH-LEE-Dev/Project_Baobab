@@ -12,6 +12,10 @@ using UnityEngine;
 /// 3) 원목이 평가기로 미끄러져 들어갈 때 같이 뛰어든다.
 /// 4) 평가기가 크게 눌렸다 튀고, 효과음·카메라·진동이 터진다. 짧은 간격으로 연달아 터지면 차임 음이 한 칸씩 올라간다.
 ///
+/// "동시 가공" 특성으로 원목 여러 개가 한 묶음으로 가공되면 같은 연출로 쌍둥이가 (묶음 수 - 1) + 특등품 당첨 수만큼
+/// 짧은 간격으로 차례로 튀어나와 원목 등 위에 층층이 쌓여 업혀 간다(예: 3개 묶음에 2개 당첨이면 원목 포함 5개).
+/// 평가기 "쾅"은 지금처럼 특등품 당첨이 있을 때만 터진다.
+///
 /// 순수 연출이다. 돈·판정·벨트·세이브에는 아무것도 하지 않는다. 쌍둥이는 벨트 원목과 같은 풀의 LogItem을 빌려
 /// 그리기만 하고, 벨트 목록·충돌·저장 어디에도 들어가지 않는다(상태 None이라 충돌 등록도 되지 않는다).
 ///
@@ -45,6 +49,8 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
     [SerializeField] private float popStartScale = 0.4f;
     [Tooltip("튀어 나오는 출발점을 원목에서 커터 쪽으로 이 비율만큼 옮긴다(0 = 원목 자리, 1 = 커터 자리).")]
     [SerializeField, Range(0f, 1f)] private float popFromCutterRatio = 0.25f;
+    [Tooltip("동시 가공으로 쌍둥이가 여럿일 때 차례로 튀어나오는 간격(초). 벨트가 짧으면 착지 시간 안에 들어가도록 줄인다.")]
+    [SerializeField] private float popStagger = 0.08f;
 
     [Header("쌍둥이 원목 - 업혀 가기")]
     [Tooltip("원목 등 위에 얹히는 높이(유닛, 원목 중심 기준).")]
@@ -67,6 +73,8 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
     [SerializeField] private float diveHop = 0.08f;
     [Tooltip("원목보다 이만큼(초) 늦게 다 들어간다. 평가기 '쾅'과 거의 같은 순간이다.")]
     [SerializeField] private float diveLag = 0.04f;
+    [Tooltip("층층이 쌓인 쌍둥이가 한 층 위일수록 이만큼(초) 더 늦게 다 들어간다.")]
+    [SerializeField] private float diveStackLag = 0.03f;
     [Tooltip("원목이 갑자기 사라졌을 때(세이브 로드·라인 철거 등) 쌍둥이가 오그라들며 사라지는 시간(초).")]
     [SerializeField] private float vanishDuration = 0.12f;
     [Tooltip("마을로 돌아와 다시 얹을 때 커지는 시간(초).")]
@@ -124,6 +132,8 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
     // 원목 정렬 기준보다 이만큼 앞(지면 Y가 낮게)으로 그려 늘 원목 앞에 보이게 한다.
     // CustomSortable 정밀도가 100이라 0.04면 4칸 앞이다. 쌍둥이 아웃라인 스텐실(-1칸)까지 원목 본체보다 앞에 온다.
     private const float SortAheadOfMain = 0.04f;
+    // 층층이 쌓인 쌍둥이는 한 층 위일수록 이만큼 더 앞에 그려 아래층 위에 얹혀 보이게 한다(2칸씩).
+    private const float SortAheadPerStack = 0.02f;
 
     private enum ETwinState
     {
@@ -160,6 +170,9 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
         public float bobPhase;
         public float scaleIn;       // 다시 얹을 때 커지는 진행(1이면 다 큼)
         public float sparkleTimer;  // 다음 반짝임까지 남은 시간
+
+        public int stackIndex;          // 원목 등 위 몇 번째 층인지(0 = 원목 바로 위)
+        public bool bPendingReveal;     // 차례를 기다리는 중(아직 튀어나오지 않음). time이 0을 넘으면 튀어나온다.
     }
 
     private LogItemPoolingManager pool;
@@ -250,24 +263,23 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
     public void OnLogCut(LogItem _main)
     {
         if (!IsPresenting || _main == null) return;
-        if (_main.TopgradePreRoll != ETopgradePreRoll.Hit) return;
 
-        Twin twin = SpawnTwin(_main);
-        if (twin == null) return;
+        // 쌍둥이 수 = (동시 가공 묶음 수 - 1) + 특등품 당첨 수. 묶음이 아니면 예전처럼 당첨일 때 하나다.
+        int twinCount = _main.ProcessTwinCount;
+        if (twinCount <= 0 || _main.TopgradeTicket == 0) return;
 
         // 남은 벨트 시간에 맞춰 튀는 시간을 정한다(착지 후 조금이라도 업혀 가도록 여유를 둔다).
-        float popDuration = popMaxDuration;
-        if (outBelt != null && outBelt.TryEstimateSecondsToExit(_main, out float secondsToExit))
+        float secondsToExit = 0f;
+        bool bKnownExit = outBelt != null && outBelt.TryEstimateSecondsToExit(_main, out secondsToExit);
+        float landWindow = secondsToExit - landBeforeExitMargin;
+
+        // 여럿이면 차례로 튀어나온다. 벨트가 짧으면 마지막 쌍둥이도 가장 짧은 튀기 시간 안에 착지하도록 간격을 줄인다.
+        float stagger = 0f;
+        if (twinCount > 1)
         {
-            popDuration = Mathf.Clamp(secondsToExit - landBeforeExitMargin, popMinDuration, popMaxDuration);
+            stagger = popStagger;
+            if (bKnownExit) stagger = Mathf.Min(stagger, Mathf.Max(0f, (landWindow - popMinDuration) / (twinCount - 1)));
         }
-
-        float apexT = Mathf.InverseLerp(popMinDuration, popMaxDuration, popDuration);
-
-        twin.state = ETwinState.Pop;
-        twin.time = 0f;
-        twin.duration = popDuration;
-        twin.popApex = Mathf.Lerp(popMinApex, popMaxApex, apexT);
 
         Vector3 fromCutter = Vector3.zero;
         if (cutter != null)
@@ -275,20 +287,50 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
             fromCutter = cutter.transform.position - _main.transform.position;
             fromCutter.z = 0f;
         }
-        twin.popFromOffset = fromCutter * popFromCutterRatio;
 
-        ApplyTwin(twin, 0f);
+        float bobPhase = 0f;
+        for (int i = 0; i < twinCount; i++)
+        {
+            Twin twin = SpawnTwin(_main, i);
+            if (twin == null) return;
+
+            // 층층이 쌓인 쌍둥이가 따로 까딱거리면 탑이 벌어져 보이므로 모두 첫 쌍둥이와 같은 박자로 까딱인다.
+            if (i == 0) bobPhase = twin.bobPhase;
+            else twin.bobPhase = bobPhase;
+
+            float delay = stagger * i;
+            float popDuration = bKnownExit ? Mathf.Clamp(landWindow - delay, popMinDuration, popMaxDuration) : popMaxDuration;
+            float apexT = Mathf.InverseLerp(popMinDuration, popMaxDuration, popDuration);
+
+            twin.state = ETwinState.Pop;
+            twin.time = -delay;
+            twin.duration = popDuration;
+            twin.popApex = Mathf.Lerp(popMinApex, popMaxApex, apexT);
+            twin.popFromOffset = fromCutter * popFromCutterRatio;
+            twin.bPendingReveal = delay > 0f;
+
+            ApplyTwin(twin, 0f);
+            if (!twin.bPendingReveal) PlayTwinReveal(twin);
+        }
+    }
+
+    // 쌍둥이가 커터에서 튀어나오는 순간의 불티·톱밥과 소리. 여럿이면 한 층 위일수록 소리가 한 칸씩 높아진다(차임 음계).
+    private void PlayTwinReveal(Twin _twin)
+    {
+        Vector3 mainPos = _twin.lastMainPos;
         if (vfx != null)
         {
             // 커터 톱날에서 불티, 출구(쌍둥이 출발점)에서 톱밥. 불티·톱밥은 출고 방향(커터 → 평가기)으로 튄다.
-            Vector3 cutterPos = cutter != null ? cutter.transform.position : _main.transform.position;
+            Vector3 cutterPos = cutter != null ? cutter.transform.position : mainPos;
             LogStorage storage = evaluator != null ? evaluator.Storage : null;
-            Vector3 outTarget = storage != null ? storage.transform.position : _main.transform.position;
+            Vector3 outTarget = storage != null ? storage.transform.position : mainPos;
             Vector2 outDir = outTarget - cutterPos;
-            vfx.PlayReveal(twin.body.transform.position, cutterPos + (Vector3)cutterBladeOffset, outDir);
+            vfx.PlayReveal(_twin.body.transform.position, cutterPos + (Vector3)cutterBladeOffset, outDir);
         }
 
-        Sound.Play(revealSound, _main.transform.position, revealVolume, pitchOverride: Random.Range(0.97f, 1.04f));
+        float pitch = Random.Range(0.97f, 1.04f);
+        if (_twin.stackIndex > 0) pitch *= GetChimePitch(_twin.stackIndex + 1);
+        Sound.Play(revealSound, mainPos, revealVolume, pitchOverride: pitch);
     }
 
     // 마을로 돌아왔을 때 벨트 위에 남은 특등품 원목에 쌍둥이를 다시 얹는다(튀어 오르는 연출·소리 없이 커지기만).
@@ -300,22 +342,31 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
         for (int i = 0; i < scratchItems.Count; i++)
         {
             LogItem main = scratchItems[i];
-            if (main == null || main.TopgradePreRoll != ETopgradePreRoll.Hit) continue;
+            if (main == null || main.TopgradeTicket == 0) continue;
+            int twinCount = main.ProcessTwinCount;
+            if (twinCount <= 0) continue;
             if (FindTwin(main) != null) continue;
 
-            Twin twin = SpawnTwin(main);
-            if (twin == null) continue;
+            float bobPhase = 0f;
+            for (int k = 0; k < twinCount; k++)
+            {
+                Twin twin = SpawnTwin(main, k);
+                if (twin == null) break;
 
-            twin.state = ETwinState.Ride;
-            twin.time = 0f;
-            twin.landTime = landSquashDuration; // 눌림 없이
-            twin.scaleIn = 0f;
-            ApplyTwin(twin, 0f);
+                if (k == 0) bobPhase = twin.bobPhase;
+                else twin.bobPhase = bobPhase;
+
+                twin.state = ETwinState.Ride;
+                twin.time = 0f;
+                twin.landTime = landSquashDuration; // 눌림 없이
+                twin.scaleIn = 0f;
+                ApplyTwin(twin, 0f);
+            }
         }
         scratchItems.Clear();
     }
 
-    private Twin SpawnTwin(LogItem _main)
+    private Twin SpawnTwin(LogItem _main, int _stackIndex)
     {
         LogItem body = pool.GetLogItem(_main.treeType, _main.logState);
         if (body == null) return null;
@@ -336,6 +387,8 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
         twin.bobPhase = Random.Range(0f, Mathf.PI * 2f);
         twin.scaleIn = 1f;
         twin.sparkleTimer = 0f;
+        twin.stackIndex = _stackIndex;
+        twin.bPendingReveal = false;
         twin.lastMainPos = _main.transform.position;
         twin.lastMainGroundY = twin.mainSortable != null ? twin.mainSortable.GroundPosition.y : twin.lastMainPos.y;
 
@@ -358,18 +411,37 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
     {
         if (_main == null) return;
 
-        Twin twin = FindTwin(_main);
-        if (twin == null || twin.state == ETwinState.Dive || twin.state == ETwinState.Vanish) return;
+        // 업혀 가던 쌍둥이가 모두(동시 가공이면 여럿) 같이 뛰어든다. 위층일수록 조금씩 늦게 다 들어간다.
+        for (int i = 0; i < twins.Count; i++)
+        {
+            Twin twin = twins[i];
+            if (twin.main != _main || twin.ticket != _main.TopgradeTicket) continue;
+            if (twin.state == ETwinState.Dive || twin.state == ETwinState.Vanish) continue;
 
-        // 지금 그려진 자리에서 그대로 뛰어든다(튀어 오르는 도중이어도 이어진다).
-        twin.diveFromOffset = twin.body.transform.position - _main.transform.position;
-        twin.diveFromOffset.z = 0f;
-        // 튀어 오르기 도중(커지며 살짝 넘친 순간)에 끊겨도 뛰어들기 예비 동작이 겹쳐 너무 커지지 않게 원래 크기로 묶는다.
-        twin.diveFromScale = Mathf.Min(twin.body.transform.localScale.x, twinScale);
-        twin.diveFromAngle = twin.bodyVisual.localEulerAngles.z;
-        twin.state = ETwinState.Dive;
-        twin.time = 0f;
-        twin.duration = Mathf.Max(0.02f, _exitDuration + diveLag);
+            // 차례를 기다리던(아직 안 튀어나온) 쌍둥이는 보이지 않으므로 소리·불티 없이 바로 거둔다.
+            if (twin.bPendingReveal)
+            {
+                twin.bPendingReveal = false;
+                twin.diveFromOffset = twin.body.transform.position - _main.transform.position;
+                twin.diveFromOffset.z = 0f;
+                twin.diveFromScale = 0f;
+                twin.diveFromAngle = 0f;
+                twin.state = ETwinState.Vanish;
+                twin.time = 0f;
+                twin.duration = 0.0001f;
+                continue;
+            }
+
+            // 지금 그려진 자리에서 그대로 뛰어든다(튀어 오르는 도중이어도 이어진다).
+            twin.diveFromOffset = twin.body.transform.position - _main.transform.position;
+            twin.diveFromOffset.z = 0f;
+            // 튀어 오르기 도중(커지며 살짝 넘친 순간)에 끊겨도 뛰어들기 예비 동작이 겹쳐 너무 커지지 않게 원래 크기로 묶는다.
+            twin.diveFromScale = Mathf.Min(twin.body.transform.localScale.x, twinScale);
+            twin.diveFromAngle = twin.bodyVisual.localEulerAngles.z;
+            twin.state = ETwinState.Dive;
+            twin.time = 0f;
+            twin.duration = Mathf.Max(0.02f, _exitDuration + diveLag + diveStackLag * twin.stackIndex);
+        }
     }
 
     // ---------------------------------------------------------------- 4) 평가기 쾅
@@ -466,6 +538,14 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
             twin.time += dt;
 
             bool bFinished = ApplyTwin(twin, dt);
+
+            // 차례가 온 쌍둥이가 막 튀어나왔다(동시 가공으로 여럿일 때).
+            if (!bFinished && twin.bPendingReveal && twin.state == ETwinState.Pop && twin.time >= 0f)
+            {
+                twin.bPendingReveal = false;
+                PlayTwinReveal(twin);
+            }
+
             if (bFinished) RemoveTwinAt(i, true);
         }
     }
@@ -504,7 +584,7 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
             case ETwinState.Pop:
             {
                 float t = Mathf.Clamp01(_twin.time / Mathf.Max(0.0001f, _twin.duration));
-                Vector3 ride = new Vector3(0f, rideHeight, 0f);
+                Vector3 ride = new Vector3(0f, rideHeight * (_twin.stackIndex + 1), 0f);
 
                 // 수평은 빠르게 출발해 감속(EaseOutQuad), 수직은 포물선. 끝에서 정확히 등 위에 닿는다.
                 float horizontal = t * (2f - t);
@@ -514,6 +594,8 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
                 // 원목에서 쑥 빠져나오듯 작게 시작해 앞 40% 동안 살짝 넘치게 커진다(EaseOutBack).
                 float grow = Mathf.Clamp01(t / 0.4f);
                 float s = Mathf.LerpUnclamped(popStartScale, 1f, EaseOutBack(grow)) * twinScale;
+                // 차례를 기다리는 동안(동시 가공으로 여럿일 때)은 보이지 않는다.
+                if (_twin.time < 0f) s = 0f;
                 scaleX = s;
                 scaleY = s;
 
@@ -553,7 +635,7 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
                 scaleY = s * (1f - squash);
 
                 // 눌린 만큼 바닥(원목 등)이 뜨지 않도록 내려 준다.
-                offset = new Vector3(0f, rideHeight + bob - (1f - scaleY / Mathf.Max(0.0001f, s)) * twinHalfHeight * s, 0f);
+                offset = new Vector3(0f, rideHeight * (_twin.stackIndex + 1) + bob - (1f - scaleY / Mathf.Max(0.0001f, s)) * twinHalfHeight * s, 0f);
                 angle = 0f;
                 break;
             }
@@ -596,7 +678,7 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
 
         // 늘 원목 바로 앞에 그린다: 쌍둥이의 정렬 지면을 원목 지면보다 조금 낮게 맞춘다.
         float twinAnchorY = _twin.bodyVisual.position.y;
-        _twin.body.SetHeight(twinAnchorY - (_twin.lastMainGroundY - SortAheadOfMain));
+        _twin.body.SetHeight(twinAnchorY - (_twin.lastMainGroundY - SortAheadOfMain - SortAheadPerStack * _twin.stackIndex));
         _twin.body.UpdateSortingOrder();
 
         if (vfx != null)

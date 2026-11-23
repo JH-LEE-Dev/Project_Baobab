@@ -85,6 +85,7 @@ public class ItemAuraEffectController : MonoBehaviour
     /// 인스펙터에 세팅된 단발성 버스트의 재생 시간(수명)입니다.
     /// </summary>
     public float BurstDuration => burstDuration;
+    public float BloomIntensity => bloomIntensity;
 
     // 셰이더 프로퍼티 ID 캐싱은 ItemAuraShaderHelper로 위임됨
 

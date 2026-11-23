@@ -221,6 +221,7 @@ public class TreeVisualComponent : MonoBehaviour
     private static readonly int DamageLookID = Shader.PropertyToID("_DamageLook");
     // 깎인 모습 무늬 위치를 정하는 나무 루트 월드 위치. 렌더러 위치는 피격 흔들림으로 움직여 무늬가 바뀌므로 루트 위치를 따로 넣는다.
     private static readonly int DamageLookPivotID = Shader.PropertyToID("_DamageLookPivot");
+    private static readonly int TreeCrackMaskID = Shader.PropertyToID("_TreeCrackMaskTex");
     private float appliedTopDamageLook = 0f;
     private float appliedBottomDamageLook = 0f;
     // 깎인 모습을 넣은 이 나무 전용 재질 사본(SetDamageLookToRenderer). 깎이지 않았으면 null이다.
@@ -1182,6 +1183,16 @@ public class TreeVisualComponent : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 지금 그림(수관·밑동)의 금 모양(TreeCrackMaskTexture)을 미리 만들어 둔다. 금이 가는 맵에서 나무를 심을 때 TreeObj가 부른다.
+    /// 그림마다 한 번만 만들고 그 뒤로는 바로 돌아온다.
+    /// </summary>
+    public void PrewarmDamageCrackMasks()
+    {
+        if (topRenderer != null) TreeCrackMaskTexture.Get(topRenderer.sprite);
+        if (bottomRenderer != null) TreeCrackMaskTexture.Get(bottomRenderer.sprite);
+    }
+
     // 깎인 모습(_DamageLook)과 무늬 위치 기준(_DamageLookPivot, 나무 루트 위치)은 프로퍼티 블록이 아니라 이 나무 전용 재질 사본에 넣는다.
     // 블록이 남은 렌더러는 SRP Batcher를 못 타고 하나씩 그려지는데, 깎인 나무는 쓰러질 때까지 값을 들고 있어 넓은 공격 뒤에는
     // 그런 나무가 많이 남았다. 사본은 원본 재질을 그대로 베끼고 이 두 값만 바꾸므로 셰이더가 받는 값은 블록으로 넣던 때와 같다.
@@ -1207,6 +1218,9 @@ public class TreeVisualComponent : MonoBehaviour
         // 무늬 위치 기준(나무 루트 위치, 흔들리지 않는다). 풀에서 다시 꺼낸 나무도 여기서 새 위치로 들어간다.
         Vector3 pivot = transform.position;
         _damageMaterial.SetVector(DamageLookPivotID, new Vector4(pivot.x, pivot.y, 0f, 0f));
+        // 금(양수)은 이 렌더러 그림의 조각 모양을 따라 구운 금 모양을 쓴다(그림마다 한 번 만들어 두고 나눠 쓴다).
+        // 사본은 다른 그림의 나무가 다시 쓸 수 있으므로 넣을 때마다 이 그림의 것으로 바꾼다. 숯불(음수)은 쓰지 않는다.
+        if (_look > 0f) _damageMaterial.SetTexture(TreeCrackMaskID, TreeCrackMaskTexture.Get(_sr.sprite));
         if (_sr.sharedMaterial == _baseMaterial) _sr.sharedMaterial = _damageMaterial;
     }
 
@@ -1252,6 +1266,8 @@ public class TreeVisualComponent : MonoBehaviour
         _copy.GetPropertyBlock(_flashMPB);
         _flashMPB.SetFloat(DamageLookID, damageMaterial.GetFloat(DamageLookID));
         _flashMPB.SetVector(DamageLookPivotID, damageMaterial.GetVector(DamageLookPivotID));
+        Texture crackMask = damageMaterial.GetTexture(TreeCrackMaskID);
+        if (null != crackMask) _flashMPB.SetTexture(TreeCrackMaskID, crackMask);
         _copy.SetPropertyBlock(_flashMPB);
     }
 

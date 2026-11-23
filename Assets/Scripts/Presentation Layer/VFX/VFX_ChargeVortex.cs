@@ -107,6 +107,11 @@ namespace PresentationLayer.VFX
         private const int ToneDeep = 0;
         private const int ToneMid = 1;
         private const int ToneLight = 2;
+        // 블룸 세기 비율(1이면 예전 그대로). 픽셀마다 블룸이 이 비율이 되도록 정점 알파를 낮춘다(BloomGlowAlpha).
+        private const float BloomScale = 0.8f;
+        private static readonly int GlowMinId = Shader.PropertyToID("_GlowMin");
+        private static readonly int GlowMaxId = Shader.PropertyToID("_GlowMax");
+        private byte[][][] bloomAlpha;
         private static readonly Color32[][] Palettes =
         {
             new Color32[] { new Color32(120, 52, 2, 255), new Color32(190, 112, 6, 255), new Color32(240, 190, 90, 255) },
@@ -160,6 +165,7 @@ namespace PresentationLayer.VFX
             meshFilter.sharedMesh = mesh;
 
             meshRenderer.sharedMaterial = vortexMaterial;
+            BuildBloomAlpha(vortexMaterial);
             meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             meshRenderer.receiveShadows = false;
             meshRenderer.enabled = false;
@@ -334,6 +340,24 @@ namespace PresentationLayer.VFX
 
         // ---------- 그리기 ----------
 
+        // 블룸을 예전의 BloomScale배로 줄이는 알파 표[팔레트][톤][원래 알파]. 재질의 발광 범위로 한 번 만든다(재질이 없으면 null, 알파 그대로).
+        private void BuildBloomAlpha(Material _material)
+        {
+            if (null == _material || false == _material.HasProperty(GlowMinId) || false == _material.HasProperty(GlowMaxId)) return;
+
+            float glowMin = _material.GetFloat(GlowMinId);
+            float glowMax = _material.GetFloat(GlowMaxId);
+            bloomAlpha = new byte[Palettes.Length][][];
+            for (int p = 0; p < Palettes.Length; p++)
+            {
+                bloomAlpha[p] = new byte[Palettes[p].Length][];
+                for (int t = 0; t < Palettes[p].Length; t++)
+                {
+                    bloomAlpha[p][t] = BloomGlowAlpha.Build(Palettes[p][t], glowMin, glowMax, BloomScale);
+                }
+            }
+        }
+
         private byte GlowAlpha(float _glow)
         {
             return (byte)Mathf.RoundToInt(Mathf.Clamp01(_glow * glowScale) * 255.0f);
@@ -341,8 +365,11 @@ namespace PresentationLayer.VFX
 
         private Color32 Tint(int _tone, float _glow)
         {
-            Color32 color = Palettes[true == bOverheat ? 1 : 0][_tone];
-            return new Color32(color.r, color.g, color.b, GlowAlpha(_glow));
+            int palette = true == bOverheat ? 1 : 0;
+            Color32 color = Palettes[palette][_tone];
+            byte alpha = GlowAlpha(_glow);
+            if (null != bloomAlpha) alpha = bloomAlpha[palette][_tone][alpha];
+            return new Color32(color.r, color.g, color.b, alpha);
         }
 
         private static void AddRect(int _x0, int _y0, int _x1, int _y1, Color32 _color)

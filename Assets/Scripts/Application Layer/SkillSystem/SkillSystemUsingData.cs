@@ -521,6 +521,8 @@ public enum SkillCommandType
     PicnicBasket, // 소풍 바구니 (엔딩 특성)
     BarrierPenetration, // 배리어 관통력
     DroneCritical, // 드론 치명타 적용 (도끼 치명타 확률·배율 계승)
+    AutoLoadAnywhere, // 자동 적재 2 (자동 적재 전송 범위를 던전 전체로)
+    SimultaneousProcessing, // 동시 가공 (제재소가 한 번에 가공하는 원목 수 +N, 같은 종류·등급만)
 }
 
 public enum AbilityLevelUpRejectReason

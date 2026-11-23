@@ -8,5 +8,6 @@ public interface IOffroadContainerCH
     public void ColliderRangeIncrease(float _amount);
     public void SetRemoteLogTransport(bool _bActive);
     public void SetAutoLoadInRestArea(bool _bActive);
+    public void SetAutoLoadAnywhere(bool _bActive);
     public void IncreaseLogInsurancePercent(float _amount);
 }

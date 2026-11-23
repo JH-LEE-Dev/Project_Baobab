@@ -11,7 +11,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
     /// 도끼 HUD 왼쪽의 과열 게이지. 과열 수치(세로 바 + 숫자)와 그 수치로 붙는 공격력 · 도끼 공격속도 배율(아이콘 + x배율)을 보여 준다.
     /// 보일지 말지는 상위(UIView_HUD)가 정해 SetVisible로 알려 주고, 값은 Bind한 IOverheatComponent의 이벤트로 갱신한다(Update 폴링 없음).
     ///
-    /// [연출] 모두 unscaled 시간.
+    /// [연출] 등장/퇴장은 unscaled 시간, 그 밖의 반응(차오름 · 번쩍임 · 출렁임 · 뽀잉 · 불티)과 바 셰이더는 scaled 시간이라 ESC 일시정지 동안 멈춘다.
     ///   등장   화면 아래 밖에서 바 → 공격력 줄 → 공격속도 줄 순서로 튀어 오른다(OutBack). 올라오며 길쭉해졌다가 도착하며 납작해지고 탄성 있게 제자리로.
     ///   퇴장   살짝 위로 움찔하며 납작해졌다가 길쭉해지며 화면 아래로 빨려 내려간다(InBack). 공격속도 줄 → 공격력 줄 → 바 순서.
     ///   수치↑  숫자 뽀잉, 바가 1px 단위로 차오른다. 배율 표시가 바뀐 줄은 줄째로 뽀잉.
@@ -577,8 +577,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             }
 
             fillTween = DOTween.To(cachedGetFillPixels, cachedSetFillPixels, _target, fillDuration)
-                .SetEase(Ease.OutQuad)
-                .SetUpdate(true);
+                .SetEase(Ease.OutQuad);
         }
 
         private float GetFillPixels()
@@ -633,8 +632,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
             SetFlashAlpha(1f);
             flashTween = DOTween.To(cachedGetFlashAlpha, cachedSetFlashAlpha, 0f, flashDuration)
-                .SetEase(Ease.InQuad)
-                .SetUpdate(true);
+                .SetEase(Ease.InQuad);
         }
 
         private void PlayBarBounce(Vector3 _scale)
@@ -645,7 +643,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             KillSequence(ref barBounceSequence);
             barGroup.localScale = Vector3.one;
 
-            barBounceSequence = DOTween.Sequence().SetUpdate(true);
+            barBounceSequence = DOTween.Sequence();
             barBounceSequence.Append(barGroup.DOScale(_scale, stageBounceDuration * 0.2f).SetEase(Ease.OutQuad));
             barBounceSequence.Append(barGroup.DOScale(Vector3.one, stageBounceDuration * 0.8f).SetEase(Ease.OutElastic));
         }
@@ -659,7 +657,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             KillSequence(ref _sequence);
             _target.localScale = Vector3.one;
 
-            _sequence = DOTween.Sequence().SetUpdate(true);
+            _sequence = DOTween.Sequence();
             _sequence.Append(_target.DOScale(Vector3.one * _scale, popDuration * 0.25f).SetEase(Ease.OutQuad));
             _sequence.Append(_target.DOScale(Vector3.one, popDuration * 0.75f).SetEase(Ease.OutElastic));
         }
