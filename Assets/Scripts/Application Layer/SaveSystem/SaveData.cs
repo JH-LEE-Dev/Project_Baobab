@@ -43,6 +43,14 @@ public struct ItemSaveData
     // 커터를 통과해 제재목으로 가공된 상태인지. 없으면 로드 시 원목 외형으로 복원된다.
     // 기존 세이브 파일에는 이 필드가 없어 false(원목)로 읽히는데, 가공 전 상태와 동일하므로 안전하다.
     public bool bIsTimber;
+
+    // 제재소 "동시 가공" 특성으로 이 원목 하나에 묶인 원목 수(벨트/커터 위 아이템용). 묶음이 아니면 0으로 적고,
+    // 0(기존 세이브 포함)은 1개로 읽는다.
+    public int processBundleCount;
+
+    public int ProcessBundleCount => processBundleCount > 1 ? processBundleCount : 1;
+
+    public static int ToSavedBundleCount(int _bundleCount) => _bundleCount > 1 ? _bundleCount : 0;
 }
 
 [Serializable]

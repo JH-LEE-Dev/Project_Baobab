@@ -6,4 +6,5 @@ public interface ILogProcessingSystemCH
     public void LogProcessorSpeedUp(float _amount);
     public void ExpandProcessLineCnt(float _amount);
     public void SetRemoteDeposit(bool _bActive);
+    public void IncreaseSimultaneousProcessing(float _amount);
 }

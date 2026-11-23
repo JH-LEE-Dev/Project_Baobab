@@ -14,9 +14,11 @@ public class LogProcessLine : MonoBehaviour
     [SerializeField] private LogEvaluator evaluator;
 
     public event Action<LogProcessLine> LineBusyEvent;
-    public event Action<LogProcessLine> LineFreedEvent;
+    // (라인, 가공을 마친 원목 수). 원목 수는 동시 가공 묶음이면 2 이상이다.
+    public event Action<LogProcessLine, int> LineFreedEvent;
     public event Action<LogProcessLine, LogItem, ILogItemData> LogReadyForEvaluationEvent;
-    public event Action<long> LineMoneyEarnedEvent;
+    // (번 돈, 평가한 원목 수)
+    public event Action<long, int> LineMoneyEarnedEvent;
 
     private bool isBusy = false;
 
@@ -104,11 +106,12 @@ public class LogProcessLine : MonoBehaviour
 
         LogItem cutLog = cutter.GetCuttingLogItem();
         // 특등품 평가를 여기서 미리 굴린다(확률은 평가 순간과 같다). 결과는 원목에 적혀 평가기까지 간다.
+        // 동시 가공 묶음이면 원목마다 따로 굴리고, 묶인 원목 수 + 당첨 수만큼 쌍둥이가 커터에서 튀어나온다.
         evaluator.PreRollTopgrade(cutLog);
         outBelt.LogIn(cutLog);
         if (topgradePresenter != null) topgradePresenter.OnLogCut(cutLog);
 
-        LineFreedEvent?.Invoke(this);
+        LineFreedEvent?.Invoke(this, cutLog != null ? cutLog.ProcessBundleCount : 1);
     }
 
     /// <summary>
@@ -131,9 +134,9 @@ public class LogProcessLine : MonoBehaviour
         LogReadyForEvaluationEvent?.Invoke(this, _item, _itemData);
     }
 
-    private void OnLogEvaluated(long _money)
+    private void OnLogEvaluated(long _money, int _logCount)
     {
-        LineMoneyEarnedEvent?.Invoke(_money);
+        LineMoneyEarnedEvent?.Invoke(_money, _logCount);
 
         if (moneyVisualShop != null && evaluator.Storage != null)
             moneyVisualShop.PlayDepositVisual(evaluator.Storage.transform.position, false);

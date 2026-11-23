@@ -76,6 +76,10 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
     private int logProcessingStack = 0;
     private float amountMultiplier = 0f;
 
+    // "동시 가공" 특성: 라인이 상자에서 원목을 꺼낼 때 같은 종류·등급을 이만큼 더 꺼내 한 묶음(벨트 위 그림은 1개)으로 가공한다.
+    // 0이면 예전처럼 한 개씩. 세이브에는 남기지 않는다(특성이 로드 때 다시 적용한다).
+    private int simultaneousProcessExtra = 0;
+
     // 자동 입금(RemoteDeposit) 특성.
     //  - 보유(bRemoteDepositOwned): 특성을 가지고 있는지.
     //  - 적용(IsRemoteDepositApplied): 상점이 잠기고 상점 돈 HUD가 사라진 상태. 특성 창에서 찍었으면 창을 닫은 뒤에야 적용된다.
@@ -389,16 +393,19 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         // 로드 후 현재 가공 전(컨테이너 + 활성 라인의 입고벨트 + 커터)인 아이템 총 개수로 preCutItemCnt 동기화
         if (logContainer != null)
         {
+            // 동시 가공 묶음 원목은 묶인 원목 수만큼 센다(예전 세이브는 묶음 수가 없어 1개로 읽힌다).
             preCutItemCnt = ((IInventory)logContainer).currentItemCount;
             for (int i = 0; i < activeLineCount && i < _data.lineDatas.Count; i++)
             {
-                if (_data.lineDatas[i].inBeltData.activeItems != null)
-                    preCutItemCnt += _data.lineDatas[i].inBeltData.activeItems.Count;
+                var activeItems = _data.lineDatas[i].inBeltData.activeItems;
+                if (activeItems != null)
+                    for (int k = 0; k < activeItems.Count; k++) preCutItemCnt += activeItems[k].itemData.ProcessBundleCount;
                 // 입고벨트 끝단 퇴출대기(커터 투입 직전) 아이템도 아직 가공 전이므로 포함
-                if (_data.lineDatas[i].inBeltData.deactivatingItems != null)
-                    preCutItemCnt += _data.lineDatas[i].inBeltData.deactivatingItems.Count;
+                var deactivatingItems = _data.lineDatas[i].inBeltData.deactivatingItems;
+                if (deactivatingItems != null)
+                    for (int k = 0; k < deactivatingItems.Count; k++) preCutItemCnt += deactivatingItems[k].itemData.ProcessBundleCount;
                 if (_data.lineDatas[i].cutterData.bIsCutting)
-                    preCutItemCnt += 1;
+                    preCutItemCnt += _data.lineDatas[i].cutterData.cuttingItemData.ProcessBundleCount;
             }
 
             UpdateProcessorActiveState();
@@ -424,18 +431,22 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         InteractStateChangedEvent.Invoke(_boolean);
     }
 
-    private void LogOutFromContainer(LogItemData _itemData)
+    private void LogOutFromContainer(LogItemData _itemData, int _takenCount)
     {
         // TakeFirstItem()은 항상 라인별 폴링(PollLineSupply)에서, 어느 라인이 요청했는지를
         // pendingRequestLine에 미리 담아둔 뒤 동기 호출된다. 그래서 이 이벤트는 항상 그 라인으로
         // 바로 전달하면 되고, 더 이상 "지금 비어있는 라인"을 다시 찾을 필요가 없다.
-        pendingRequestLine?.LogIn(logItemPoolingManager.GetLogItem(_itemData));
+        LogItem item = logItemPoolingManager.GetLogItem(_itemData);
+        // 동시 가공으로 함께 꺼낸 원목 수는 벨트에 올라가는 원목 하나에 적는다(그림은 1개).
+        if (item != null && _takenCount > 1) item.SetProcessBundleCount(_takenCount);
+        pendingRequestLine?.LogIn(item);
     }
 
-    private void OnLineFreed(LogProcessLine _line)
+    private void OnLineFreed(LogProcessLine _line, int _bundleCount)
     {
         // 절단이 끝난 원목은 LogProcessLine.CuttingDone에서 이미 출고벨트에 올라갔다.
-        --preCutItemCnt;
+        // 동시 가공 묶음이면 묶인 원목 수만큼 가공 전 수에서 뺀다(상자에 들어올 때 하나씩 셌다).
+        preCutItemCnt -= Mathf.Max(1, _bundleCount);
         ++postCutItemCnt;
         UpdateProcessorActiveState();
     }
@@ -459,23 +470,25 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
 
         UpdateProcessorSpeed();
 
-        // 커터에서 미리 굴린 특등품 판정은 원목에 적혀 있다. 원목이 풀로 돌아가기 전에 읽어 둔다.
+        // 커터에서 미리 굴린 특등품 판정과 동시 가공 묶음 수는 원목에 적혀 있다. 원목이 풀로 돌아가기 전에 읽어 둔다.
         ETopgradePreRoll topgradePreRoll = _item != null ? _item.TopgradePreRoll : ETopgradePreRoll.None;
+        int topgradeHitCount = _item != null ? _item.TopgradeHitCount : 0;
+        int bundleCount = _item != null ? _item.ProcessBundleCount : 1;
 
         logItemPoolingManager.ReturnLogItem(_item);
-        _line.Evaluator.EvaluateLog(_itemData, topgradePreRoll);
+        _line.Evaluator.EvaluateLog(_itemData, topgradePreRoll, bundleCount, topgradeHitCount);
     }
 
-    private void LogEvaluated(long _money)
+    private void LogEvaluated(long _money, int _logCount)
     {
         if (shopNPC.IsRemoteDepositRunning)
         {
             // 돈은 상점에서 캐릭터로 날아가는 금화가 닿을 때 들어간다(금화를 띄우지 못하면 ShopNPC가 바로 넣는다).
-            shopNPC.QueueRemoteDepositMoney(_money);
+            shopNPC.QueueRemoteDepositMoney(_money, _logCount);
         }
         else
         {
-            shopNPC.InsertLogMoney(_money);
+            shopNPC.InsertLogMoney(_money, _logCount);
         }
     }
 
@@ -685,7 +698,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
             if (!allLines[i].IsEntryClear(MinEntryClearance)) continue;
 
             pendingRequestLine = allLines[i];
-            logContainer.TakeFirstItem();
+            logContainer.TakeFirstItem(1 + simultaneousProcessExtra);
             pendingRequestLine = null;
 
             lineElapsedTime[i] = 0f;
@@ -763,6 +776,15 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
             logContainer.SetCanReach(true);
             shopNPC.SetCanReach(true);
         }
+    }
+
+    /// <summary>
+    /// "동시 가공" 특성. 라인이 한 번에 가공하는 원목 수를 _amount개 늘린다(같은 종류·등급일 때만 묶인다).
+    /// 음수면 되돌린다(특성 Undo). 이미 벨트에 올라간 묶음은 그대로 끝까지 간다.
+    /// </summary>
+    public void IncreaseSimultaneousProcessing(float _amount)
+    {
+        simultaneousProcessExtra = Mathf.Max(0, simultaneousProcessExtra + Mathf.RoundToInt(_amount));
     }
 
     public void LogProcessorSpeedUp(float _amount)

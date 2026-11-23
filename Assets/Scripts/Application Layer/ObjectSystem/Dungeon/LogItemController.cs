@@ -730,9 +730,10 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
 
             // 루프 변수를 그대로 캡처하면 모든 풀이 마지막 프리팹을 쓰게 되므로 지역 변수로 고정한다.
             ItemAuraEffectController prefab = data.auraPrefab;
+            LogState logState = data.logState;
 
             auraPools.Add(data.logState, new ObjectPool<ItemAuraEffectController>(
-                createFunc: () => Instantiate(prefab, transform),
+                createFunc: () => CreateAura(prefab, logState),
                 actionOnGet: OnGetAura,
                 actionOnRelease: OnReleaseAura,
                 actionOnDestroy: OnDestroyAura,
@@ -741,6 +742,18 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
                 maxSize: auraPoolMaxSize
             ));
         }
+    }
+
+    // 다이아(Advanced) 원목 아우라의 블룸 배율에 곱하는 값. 프리셋(DiamondPreset)은 별자리 별 등장 아우라도 같이 쓰므로
+    // 프리팹은 그대로 두고 원목 풀에서 만든 것만 낮춘다. 0.92면 블룸 총량이 예전의 약 80%다(버스트 1.2초 전체를 렌더해
+    // URP 블룸 프리필터로 합산, 임계 = Mathf.GammaToLinearSpace(1.345) ≈ 1.9195, 바닥색에 따라 0.915~0.921).
+    private const float DiamondAuraBloomScale = 0.92f;
+
+    private ItemAuraEffectController CreateAura(ItemAuraEffectController _prefab, LogState _logState)
+    {
+        ItemAuraEffectController aura = Instantiate(_prefab, transform);
+        if (LogState.Advanced == _logState) aura.SetBloomIntensity(aura.BloomIntensity * DiamondAuraBloomScale);
+        return aura;
     }
 
     public ItemAuraEffectController GetAura(LogState _logState)

@@ -5,16 +5,15 @@ using UnityEngine;
 
 public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
 {
-    public event Action<long> logEvaluatedEvent;
+    // (최종 가격, 평가한 원목 수). 원목 수는 동시 가공 묶음이면 2 이상이다(상점이 쌓인 원목 수로 금화 수를 정한다).
+    public event Action<long, int> logEvaluatedEvent;
 
     /// <summary>
     /// 특등품 평가(가격 2배)가 터졌을 때. 인자는 (2배 전 가격, 최종 가격). 돈 처리(logEvaluatedEvent) 직후에 온다.
+    /// 동시 가공 묶음에서 여러 원목이 당첨돼도 한 번만 온다(가격은 묶음 전체 합).
     /// 연출 전용 통로라 맵(마을/던전)을 가리지 않고 항상 보낸다 - 보여줄지는 받는 쪽이 정한다.
     /// </summary>
     public event Action<long, long> TopgradeAssessedEvent;
-
-    // 미리 굴린 판정마다 붙이는 번호(LogItem.TopgradeTicket). 0은 "번호 없음"이라 1부터 쓴다.
-    private static int topgradeTicketSeq = 0;
 
     [SerializeField] private LogItemValueDataBase logItemValueDataBase;
     [SerializeField] private GameObject storageObj;
@@ -52,25 +51,30 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
     /// <summary>
     /// 커터에서 막 나온 원목의 특등품 평가를 미리 굴려 원목에 적어 둔다. 확률은 평가 순간과 같은
     /// topgradeAssessmentChance 하나이고, 굴리는 시점만 커터 배출로 앞당겨진다(쌍둥이 원목 연출용).
+    /// 동시 가공 묶음이면 묶인 원목마다 따로 굴려 당첨 수를 적는다(묶음 1개면 예전처럼 한 번만 굴린다).
+    /// 쌍둥이가 하나라도 나오면(당첨이 있거나 묶음이면) 연출 번호를 새로 붙인다.
     /// </summary>
     public void PreRollTopgrade(LogItem _item)
     {
         if (_item == null) return;
 
-        bool bHit = UnityEngine.Random.value < topgradeAssessmentChance;
-        if (bHit)
+        int bundleCount = _item.ProcessBundleCount;
+        int hitCount = 0;
+        for (int i = 0; i < bundleCount; i++)
         {
-            ++topgradeTicketSeq;
-            if (topgradeTicketSeq <= 0) topgradeTicketSeq = 1; // int가 한 바퀴 도는 경우에도 0(번호 없음)은 피한다
-            _item.SetTopgradePreRoll(ETopgradePreRoll.Hit, topgradeTicketSeq);
+            if (UnityEngine.Random.value < topgradeAssessmentChance) ++hitCount;
         }
-        else
-        {
-            _item.SetTopgradePreRoll(ETopgradePreRoll.Miss, 0);
-        }
+
+        ETopgradePreRoll preRoll = hitCount > 0 ? ETopgradePreRoll.Hit : ETopgradePreRoll.Miss;
+        bool bHasTwin = hitCount > 0 || bundleCount > 1;
+        _item.SetTopgradePreRoll(preRoll, bHasTwin ? LogItem.NextPresentationTicket() : 0, hitCount);
     }
 
-    public void EvaluateLog(ILogItemData _itemData, ETopgradePreRoll _preRoll = ETopgradePreRoll.None)
+    /// <summary>
+    /// 원목을 평가해 돈을 낸다. _bundleCount는 동시 가공으로 묶인 원목 수로, 원목마다 같은 값이 매겨지고 특등품도 원목마다 따로다.
+    /// _hitCount는 커터에서 미리 굴린 당첨 수(_preRoll이 Hit일 때만 본다, 0 이하면 1로 친다).
+    /// </summary>
+    public void EvaluateLog(ILogItemData _itemData, ETopgradePreRoll _preRoll = ETopgradePreRoll.None, int _bundleCount = 1, int _hitCount = 1)
     {
         Sound.Play(SoundID.ConvayerComplete, transform.position, GetSoundVolume());
         Sound.Play(SoundID.ConvayerPrize, transform.position, GetSoundVolume());
@@ -112,21 +116,28 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
 
         // 확률적으로 최종 가격 2배 책정. 커터에서 미리 굴린 원목은 그 결과를 쓰고,
         // 미리 굴리지 않은 원목(세이브에서 복원된 벨트 원목 등)은 예전처럼 여기서 굴린다.
-        bool bTopgrade;
+        // 동시 가공 묶음은 원목마다 따로다: 당첨된 원목만 2배라 최종 가격 = 원목 값 x (묶음 수 + 당첨 수).
+        int bundleCount = Mathf.Max(1, _bundleCount);
+        int hitCount;
         switch (_preRoll)
         {
-            case ETopgradePreRoll.Hit: bTopgrade = true; break;
-            case ETopgradePreRoll.Miss: bTopgrade = false; break;
-            default: bTopgrade = UnityEngine.Random.value < topgradeAssessmentChance; break;
+            case ETopgradePreRoll.Hit: hitCount = Mathf.Clamp(_hitCount, 1, bundleCount); break;
+            case ETopgradePreRoll.Miss: hitCount = 0; break;
+            default:
+                hitCount = 0;
+                for (int i = 0; i < bundleCount; i++)
+                {
+                    if (UnityEngine.Random.value < topgradeAssessmentChance) ++hitCount;
+                }
+                break;
         }
+        bool bTopgrade = hitCount > 0;
 
-        long basePrice = finalPrice;
-        if (bTopgrade)
-        {
-            finalPrice *= 2;
-        }
+        long unitPrice = finalPrice;
+        long basePrice = unitPrice * bundleCount;
+        finalPrice = basePrice + unitPrice * hitCount;
 
-        logEvaluatedEvent?.Invoke(finalPrice);
+        logEvaluatedEvent?.Invoke(finalPrice, bundleCount);
 
         if (logStorage != null) logStorage.TriggerBounce();
 

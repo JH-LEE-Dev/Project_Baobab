@@ -88,10 +88,41 @@ public class LogItem : Item, IStaticCollidable
     public ETopgradePreRoll TopgradePreRoll { get; private set; } = ETopgradePreRoll.None;
     public int TopgradeTicket { get; private set; } = 0;
 
-    public void SetTopgradePreRoll(ETopgradePreRoll _preRoll, int _ticket)
+    public void SetTopgradePreRoll(ETopgradePreRoll _preRoll, int _ticket, int _hitCount)
     {
         TopgradePreRoll = _preRoll;
         TopgradeTicket = _ticket;
+        TopgradeHitCount = Mathf.Max(0, _hitCount);
+    }
+
+    // 특등품에 당첨된 원목 수. 동시 가공 묶음은 원목마다 따로 굴리므로 2 이상일 수 있다(Hit이면 1 이상, 아니면 0).
+    public int TopgradeHitCount { get; private set; } = 0;
+
+    // 제재소 "동시 가공" 특성: 이 원목 하나가 실제로 대표하는 원목 수(같은 종류·등급만 묶인다). 벨트·커터 위 그림은
+    // 늘 1개이고, 평가할 때 이 수만큼 원목마다 따로 값을 매긴다. 1이면 평소 원목. 풀에서 꺼낼 때(ResetItem) 1로 돌아간다.
+    public int ProcessBundleCount { get; private set; } = 1;
+
+    /// <summary>커터에서 원목과 함께 튀어나와 업혀 갈 쌍둥이 수 = (묶음 수 - 1) + 특등품 당첨 수.</summary>
+    public int ProcessTwinCount => (ProcessBundleCount - 1) + TopgradeHitCount;
+
+    // 연출 번호(TopgradeTicket)를 나눠 주는 일련번호. 0은 "번호 없음"이라 1부터 쓴다.
+    private static int presentationTicketSeq = 0;
+
+    public static int NextPresentationTicket()
+    {
+        ++presentationTicketSeq;
+        if (presentationTicketSeq <= 0) presentationTicketSeq = 1; // int가 한 바퀴 도는 경우에도 0(번호 없음)은 피한다
+        return presentationTicketSeq;
+    }
+
+    /// <summary>
+    /// 동시 가공으로 묶인 원목 수를 적는다. 묶음이면 쌍둥이 연출이 원목을 알아볼 번호도 붙인다
+    /// (세이브에서 복원된 묶음 원목은 특등품 판정이 없어도 쌍둥이를 다시 얹어야 한다). 커터에서 판정을 굴리면 번호는 새로 붙는다.
+    /// </summary>
+    public void SetProcessBundleCount(int _count)
+    {
+        ProcessBundleCount = Mathf.Max(1, _count);
+        if (ProcessBundleCount > 1 && TopgradeTicket == 0) TopgradeTicket = NextPresentationTicket();
     }
 
     // 관리용 인덱스
@@ -908,6 +939,8 @@ public class LogItem : Item, IStaticCollidable
         bIsTimber = false;
         TopgradePreRoll = ETopgradePreRoll.None;
         TopgradeTicket = 0;
+        TopgradeHitCount = 0;
+        ProcessBundleCount = 1;
 
         if (null != sprite && null != spriteRenderer)
             SetBodySprite(sprite);
