@@ -565,6 +565,20 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         {
             TreeDamagePatternTexture.EnsureGlobal();
         }
+
+        PrewarmDamageCrackMask();
+    }
+
+    // 금이 가는 나무면 그 나무 그림의 금 모양(TreeCrackMaskTexture)을 나무를 심는 동안 미리 만들어 둔다.
+    // 그림을 GPU에서 한 번 읽어 와 만드는데, 첫 타격 때 하면 그 프레임이 멈칫한다. 그림마다 한 번만 만들고 이미 있으면 바로 돌아온다.
+    // 나무 데이터와 깎인 모습 켜짐 중 어느 쪽이 먼저 들어와도 되도록 두 곳(SetDamageLookEnabled, ApplyData·성장)에서 부른다.
+    private void PrewarmDamageCrackMask()
+    {
+        if (false == bDamageLookEnabled || null == treeVisualComponent) return;
+        // 나무 데이터가 아직 안 들어왔거나(종류 없음) 숯불이 붙는 잿불 나무면 만들 것이 없다.
+        if (TreeType.None == treeData.type || TreeType.CinderTree == treeData.type) return;
+
+        treeVisualComponent.PrewarmDamageCrackMasks();
     }
 
     private CustomSortable customSortable;
@@ -654,6 +668,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         {
             treeVisualComponent.ApplyVisual(treeData);
         }
+        PrewarmDamageCrackMask();
 
         shadowAngle = shadowDataProvider.CurrentShadowAngle;
         shadowScaleY = shadowDataProvider.CurrentShadowScaleY;
@@ -1201,6 +1216,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
                 treeVisualComponent.ActivateOnWaterObject();
 
             treeVisualComponent.ApplyVisual(treeData);
+            PrewarmDamageCrackMask();
         }
 
         if (saplingVEComponent != null)

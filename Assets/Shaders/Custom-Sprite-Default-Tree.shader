@@ -25,6 +25,8 @@ Shader "Custom/Custom-Sprite-Default-Tree"
         // 깎인 모습 무늬 위치를 정하는 나무 루트 월드 위치(xy). _DamageLook과 함께 MaterialPropertyBlock으로 넣는다.
         // 렌더러 위치는 피격 흔들림으로 움직여 무늬가 바뀌므로 흔들리지 않는 루트 위치를 따로 받는다.
         [HideInInspector] _DamageLookPivot("Damage Look Pivot", Vector) = (0,0,0,0)
+        // 깎인 나무 그림의 금 모양(TreeCrackMaskTexture). 금이 가는 나무의 재질 사본에만 넣는다(없으면 금을 그리지 않는다).
+        [HideInInspector][NoScaleOffset] _TreeCrackMaskTex("Tree Crack Mask", 2D) = "black" {}
         // 배리어가 깨진 직후의 잔광 세기(0~1). 3스테이지에서 배리어가 깨진 나무에만 MaterialPropertyBlock으로 잠깐 넣는다.
         [HideInInspector] _BarrierAfterglow("Barrier Afterglow", Float) = 0
         // 2스테이지 포자막 상태(x 깎인 정도, y 번쩍임, z 차오르는 중, w 가득 참 맥동). 포자막 렌더러에만 MaterialPropertyBlock으로 넣는다.
