@@ -9,7 +9,8 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 {
     public event Action ItemAddedEvent;
     public event Action ContainerSpecChangedEvent;
-    public event Action<LogItemData> LogOutEvent;
+    // (꺼낸 원목 데이터, 함께 꺼낸 원목 수). 수는 "동시 가공" 특성으로 묶였을 때 2 이상이다.
+    public event Action<LogItemData, int> LogOutEvent;
     public event Action<bool> InteractStateEvent;
     public event Action ContainerUpdatedEvent;
     public event Action InventoryIsFullEvent { add { } remove { } }
@@ -1245,6 +1246,19 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     /// </summary>
     public void TakeFirstItem()
     {
+        TakeFirstItem(1);
+    }
+
+    // 동시 가공으로 함께 꺼낸 뒤 비게 된 슬롯(첫 슬롯 제외). TakeFirstItem 안에서만 잠깐 쓴다.
+    private readonly List<InventorySlot> bundleEmptiedSlots = new List<InventorySlot>(4);
+
+    /// <summary>
+    /// 첫 번째 슬롯에서 원목을 꺼내 가공 라인으로 보낸다. _maxCount가 2 이상이면("동시 가공" 특성) 같은 종류·등급의 원목을
+    /// 최대 그 수까지 함께 꺼내 한 묶음으로 보낸다(첫 슬롯에서 먼저, 모자라면 뒤쪽 같은 조합 슬롯에서). 모자라면 있는 만큼만 묶는다.
+    /// 꺼낸 수는 LogOutEvent의 두 번째 인자로 간다. _maxCount가 1이면 예전과 똑같이 한 개만 꺼낸다.
+    /// </summary>
+    public void TakeFirstItem(int _maxCount)
+    {
         if (containerSlots == null)
             return;
 
@@ -1257,6 +1271,27 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
             {
                 // 1. 해당 슬롯에서 상태 하나 추출 (가장 높은 등급 우선)
                 LogState takenState = slot.TakeOneItem();
+                int takenCount = 1;
+
+                // 1-1. 동시 가공: 같은 나무 종류·같은 등급만 더 꺼낸다(슬롯 하나가 한 조합이다).
+                bundleEmptiedSlots.Clear();
+                if (_maxCount > 1 && slot.itemData is LogItemData firstLog)
+                {
+                    for (int k = i; k < currentSlotCount && takenCount < _maxCount; k++)
+                    {
+                        var other = containerSlots[k];
+                        if (!(other.itemData is LogItemData otherLog)) continue;
+                        if (otherLog.treeType != firstLog.treeType || otherLog.logState != takenState) continue;
+
+                        while (other.count > 0 && takenCount < _maxCount)
+                        {
+                            other.TakeOneItem();
+                            ++takenCount;
+                        }
+
+                        if (k != i && other.count == 0) bundleEmptiedSlots.Add(other);
+                    }
+                }
                 // 보관함 -> 레일(가공 라인) 출고는 인벤토리 인출과 성격이 달라 전용 SFX를 따로 붙일
                 // 예정이므로 여기서는 OutItem을 재생하지 않는다.
                 // (캐릭터/NPC가 보관함으로 납품하는 경로의 OutItem은 그대로 유지)
@@ -1290,10 +1325,24 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                     containerSlots.Add(slot);
                 }
 
+                // 3-1. 동시 가공으로 함께 꺼내다 빈 뒤쪽 슬롯도 같은 방식으로 맨 뒤로 보낸다.
+                for (int k = 0; k < bundleEmptiedSlots.Count; k++)
+                {
+                    InventorySlot emptied = bundleEmptiedSlots[k];
+                    if (emptied.itemData is ItemData emptiedData)
+                    {
+                        itemDataPool.Release(emptiedData);
+                    }
+                    emptied.Setup(null, 0);
+                    containerSlots.Remove(emptied);
+                    containerSlots.Add(emptied);
+                }
+                bundleEmptiedSlots.Clear();
+
                 // 4. 이벤트 호출 및 결과 반환
                 ContainerUpdatedEvent?.Invoke();
 
-                LogOutEvent?.Invoke(resultData);
+                LogOutEvent?.Invoke(resultData, takenCount);
 
                 // LogOutEvent는 동기적으로 처리되고(구독자는 resultData의 필드만 읽어 즉시 LogItem을
                 // 생성함) 아무도 참조를 보관하지 않으므로, 디스패치가 끝난 이 시점에 풀로 반납해 재사용한다.

@@ -255,7 +255,8 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
                 treeType = cuttingItem.treeType,
                 logState = cuttingItem.logState,
                 durability = cuttingItem.durability,
-                color = cuttingItem.color // 컬러 저장
+                color = cuttingItem.color, // 컬러 저장
+                processBundleCount = ItemSaveData.ToSavedBundleCount(cuttingItem.ProcessBundleCount) // 동시 가공 묶음 수
             };
         }
 
@@ -302,6 +303,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
 
                 cuttingItem.transform.position = transform.position; // 커터 위치로 설정
                 cuttingItem.durability = _data.cuttingItemData.durability;
+                if (_data.cuttingItemData.ProcessBundleCount > 1) cuttingItem.SetProcessBundleCount(_data.cuttingItemData.ProcessBundleCount);
 
                 logToCut = data;
 

@@ -384,11 +384,12 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
     }
 
     /// <summary>원목 하나가 평가된 돈을 상점에 쌓는다. 쌓인 원목 수도 함께 센다(자동 입금 정산 금화 수).</summary>
-    public void InsertLogMoney(long _money)
+    // _logCount: 이 돈이 몇 개 원목 값인지(동시 가공 묶음이면 2 이상). 쌓인 원목 수가 수금 금화 수를 정한다.
+    public void InsertLogMoney(long _money, int _logCount = 1)
     {
         bool bStored = !bRemoteDepositRunning && 0 < _money;
         InsertMoney(_money);
-        if (bStored) ++storedLogCount;
+        if (bStored) storedLogCount += Mathf.Max(1, _logCount);
     }
 
     public long GetMoney()
@@ -424,13 +425,14 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
     /// <summary>
     /// 자동 입금 중 평가된 돈. 바로 이어서 부르는 PlayDepositVisual의 금화가 평가기 -> 상점 -> 캐릭터로 날아가 닿을 때 들어간다.
     /// </summary>
-    public void QueueRemoteDepositMoney(long _money)
+    public void QueueRemoteDepositMoney(long _money, int _logCount = 1)
     {
         if (0 >= _money) return;
+        int logCount = Mathf.Max(1, _logCount);
         pendingRemoteDepositMoney += _money;
         unassignedRemoteDepositMoney += _money;
-        ++pendingRemoteLogCount;
-        ++unassignedRemoteLogCount;
+        pendingRemoteLogCount += logCount;
+        unassignedRemoteLogCount += logCount;
     }
 
     public void SetRemoteDepositRunning(bool _bRunning)
