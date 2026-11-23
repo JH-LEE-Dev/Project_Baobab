@@ -12,7 +12,7 @@ using UnityEngine.UI;
 
 /// <summary>
 /// 도전과제 달성 팝업(B안, Docs/Roguelike/_Work/ChallengeToast_B_Plan.md) 구성기 · 미리 보기 · 18개 언어 검수.
-///   LumberBoy/UI/Build Roguelike Challenge Toast     UI_RoguelikeChallengeToast.prefab(284x48)을 만들고 UIView_RoguelikeHUD.prefab 오른쪽 위(여백 8px)에 붙여 challengeToast 필드를 연결한다.
+///   LumberBoy/UI/Build Roguelike Challenge Toast     UI_RoguelikeChallengeToast.prefab(284x48)을 만들고 UIView_RoguelikeHUD.prefab 오른쪽 아래(여백 8px, WorldHUD_Plan.md 11-1)에 붙여 challengeToast 필드를 연결한다.
 ///                                                    HUD 프리팹은 LoadPrefabContents로 열어 기존 ChallengeToast 자식만 바꾼다(RoguelikeHUDBuilder는 실행하지도 고치지도 않는다).
 ///   LumberBoy/UI/Preview Roguelike Challenge Toast   플레이 모드에서 HUD를 찾아 현재 언어의 테스트 제목 2개를 연속 Show 한다.
 ///   LumberBoy/UI/Validate Roguelike Challenge Toast  18개 언어 x (머리말 1 + 제목 7종)을 그 언어의 실제 TMP 폰트 에셋으로 재어 최대 폭 · 잉크 높이 · 아틀라스에 없는 글자 수를 콘솔 표로 출력한다.
@@ -110,11 +110,11 @@ public static class RoguelikeChallengeToastBuilder
             RectTransform rootRect = (RectTransform)root.transform;
             for (int i = rootRect.childCount - 1; 0 <= i; i--) UnityEngine.Object.DestroyImmediate(rootRect.GetChild(i).gameObject);
 
-            rootRect.anchorMin = Vector2.one;
-            rootRect.anchorMax = Vector2.one;
-            rootRect.pivot = Vector2.one;
+            rootRect.anchorMin = new Vector2(1.0f, 0.0f);
+            rootRect.anchorMax = new Vector2(1.0f, 0.0f);
+            rootRect.pivot = new Vector2(1.0f, 0.0f);
             rootRect.sizeDelta = new Vector2(UI_RoguelikeChallengeToast.Width, UI_RoguelikeChallengeToast.BandHeight + UI_RoguelikeChallengeToast.PanelVisibleHeight);
-            rootRect.anchoredPosition = new Vector2(-ScreenMargin, -ScreenMargin);
+            rootRect.anchoredPosition = new Vector2(-ScreenMargin, ScreenMargin);
 
             UI_RoguelikeChallengeToast toast = root.GetComponent<UI_RoguelikeChallengeToast>();
             if (null == toast) toast = root.AddComponent<UI_RoguelikeChallengeToast>();
@@ -233,10 +233,10 @@ public static class RoguelikeChallengeToastBuilder
             GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(toastPrefab, hudRoot.transform);
             instance.name = ToastObjectName;
             RectTransform rect = (RectTransform)instance.transform;
-            rect.anchorMin = Vector2.one;
-            rect.anchorMax = Vector2.one;
-            rect.pivot = Vector2.one;
-            rect.anchoredPosition = new Vector2(-ScreenMargin, -ScreenMargin);
+            rect.anchorMin = new Vector2(1.0f, 0.0f);
+            rect.anchorMax = new Vector2(1.0f, 0.0f);
+            rect.pivot = new Vector2(1.0f, 0.0f);
+            rect.anchoredPosition = new Vector2(-ScreenMargin, ScreenMargin);
             rect.SetAsLastSibling();
 
             SerializedObject viewSo = new SerializedObject(view);
