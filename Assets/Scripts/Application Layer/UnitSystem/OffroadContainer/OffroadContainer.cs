@@ -584,7 +584,6 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         StopRemoteTransfer();
         remoteTransportCheckTimer = 0f;
         remoteTransportLastActiveTime = -999f;
-        bRemoteWaitingForRoom = false;
         SetRemoteTransporting(false);
         ClearLogSwapRequest();
         swapForcedSlot = null;
@@ -1674,7 +1673,6 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         bRemoteTransportDeparted = false;
         bRemoteDeparting = false;
         bRemoteWasParked = false;
-        bRemoteWaitingForRoom = false;
         bAutoLoadStarted = false;
 
         // 자동 적재 모드(던전 전용) 여부가 바뀌었을 수 있다 - E 상호작용 가능 여부를 다시 맞춘다.
@@ -3047,10 +3045,6 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     private bool bRemoteTransportStarted = false;
     // 이번 마을 방문에서 떠나는 카메라 상승이 시작됐는지(숲 출발·메인메뉴 이탈). 켜지면 마을에 다시 도착할 때까지 보내지 않는다.
     private bool bRemoteTransportDeparted = false;
-    // 보관함이 가득 차 상자에 원목을 남긴 채 운반을 멈췄는지. 켜져 있으면 가공 라인이 한 칸씩 빼 갈 때마다 한 개씩
-    // 보내지 않고(그때마다 뚜껑·상자 UI가 열렸다 닫힌다), 보관함에 한 슬롯 분량의 자리가 난 뒤 몰아서 보낸다
-    // (CanResumeRemoteTransport). 마을에 도착한 직후의 첫 운반은 이 대기 없이 바로 보낸다.
-    private bool bRemoteWaitingForRoom = false;
     private readonly List<InventorySlot> remoteTransportCandidates = new List<InventorySlot>(SYSTEM_VAR.MAX_INVENTORY_CNT);
 
     // 전송이 쉬는 동안 보낼 원목이 생겼는지 다시 볼 간격.
@@ -3143,20 +3137,12 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             {
                 remoteTransportCheckTimer = REMOTE_TRANSPORT_CHECK_INTERVAL;
 
-                if (CanResumeRemoteTransport())
+                // 보관함이 가득 차 있어도 한 슬롯 분량의 자리를 기다리지 않는다 - 가공 라인이 빼 가서 자리가 하나라도
+                // 나면 그 자리만큼 바로 한 개씩 보낸다.
+                if (FindRemoteTransportSlot() != null)
                 {
-                    if (FindRemoteTransportSlot() != null)
-                    {
-                        bRemoteWaitingForRoom = false;
-                        remoteTransportLastActiveTime = Time.time;
-                        RequestRemoteTransfer();
-                    }
-                    else if (GetRemoteTransportableLogCount() > 0)
-                    {
-                        // 마을에 도착했을 때부터 보관함이 가득 차 있으면 운반이 시작되지 않아 대기에 들어가지 못한다.
-                        // 그대로 두면 첫 빈칸이 날 때 한 개만 따로 보내게 되므로 여기서도 대기에 들어간다.
-                        bRemoteWaitingForRoom = true;
-                    }
+                    remoteTransportLastActiveTime = Time.time;
+                    RequestRemoteTransfer();
                 }
             }
         }
@@ -3224,12 +3210,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             if (!UpdateRemoteTransportGate()) break;
 
             InventorySlot slot = FindRemoteTransportSlot();
-            if (slot == null)
-            {
-                // 보낼 원목이 남았는데 보관함이 받지 못해 멈추는 것이면, 다음은 자리가 넉넉히 난 뒤에 몰아서 보낸다.
-                bRemoteWaitingForRoom = GetRemoteTransportableLogCount() > 0;
-                break;
-            }
+            if (slot == null) break;
 
             StartCoroutine(TransferOneSlotVisualRoutine(slot, false, remoteTransportTarget));
             remoteLastTransferTime = Time.time;
@@ -3308,49 +3289,6 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         }
 
         return null;
-    }
-
-    /// <summary>
-    /// 가득 찬 보관함을 기다리던 중이면, 상자에 든 원목 중 한 조합(나무 종류·등급)이라도 보관함에 한 슬롯 분량만큼
-    /// 들어갈 자리가 났는지(상자에 그 조합이 그보다 적으면 그만큼). 자리는 조합별로 따진다 - 다른 종류 칸이 비어 있는
-    /// 것만으로는 상자 원목이 한 개씩만 들어가 다시 매번 뚜껑이 열린다. 기다리는 중이 아니면 언제든 true다.
-    /// </summary>
-    private bool CanResumeRemoteTransport()
-    {
-        if (!bRemoteWaitingForRoom) return true;
-
-        int maxPerSlot = remoteTransportTarget.GetMaxItemsPerSlot();
-        for (int i = 0; i < currentSlotCount; i++)
-        {
-            InventorySlot slot = inventorySlots[i];
-            if (!(slot.itemData is LogItemData logData) || slot.count <= 0) continue;
-            if (transferringSlots.Contains(slot)) continue;
-
-            int need = Mathf.Min(maxPerSlot, GetRemoteTransportableLogCount(logData));
-            if (remoteTransportTarget.GetAcceptableLogCount(logData) >= need) return true;
-        }
-
-        return false;
-    }
-
-    /// <summary>
-    /// 상자에서 원격 운반으로 보낼 수 있는 원목 수(플레이어가 꺼내 가는 중인 슬롯은 뺀다). _filter를 주면 그 조합
-    /// (나무 종류·등급)만 센다.
-    /// </summary>
-    private int GetRemoteTransportableLogCount(LogItemData _filter = null)
-    {
-        int total = 0;
-        for (int i = 0; i < currentSlotCount; i++)
-        {
-            InventorySlot slot = inventorySlots[i];
-            if (!(slot.itemData is LogItemData logData) || slot.count <= 0) continue;
-            if (transferringSlots.Contains(slot)) continue;
-            if (_filter != null && (logData.treeType != _filter.treeType || logData.logState != _filter.logState)) continue;
-
-            total += slot.count;
-        }
-
-        return total;
     }
 
     private static int CompareRemoteTransportOrder(InventorySlot _a, InventorySlot _b)
