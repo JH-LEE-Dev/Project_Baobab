@@ -213,22 +213,6 @@
             ]
         },
         {
-            "skillType": "TreeVitamin1",
-            "nameLocId": 201,
-            "levelBadge": "None",
-            "requiredPrestigeLevel": 0,
-            "gridX": 15,
-            "gridY": 0,
-            "parents": [
-                {
-                    "skillType": "BountifulTree6",
-                    "usePivot": false,
-                    "pivotX": 0,
-                    "pivotY": 0
-                }
-            ]
-        },
-        {
             "skillType": "SpeciesImprovement",
             "nameLocId": 340,
             "levelBadge": "None",
@@ -265,7 +249,7 @@
             "nameLocId": 342,
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
-            "gridX": 13,
+            "gridX": 15,
             "gridY": -6,
             "parents": [
                 {
@@ -281,8 +265,8 @@
             "nameLocId": 343,
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
-            "gridX": 11,
-            "gridY": 6,
+            "gridX": 13,
+            "gridY": 8,
             "parents": [
                 {
                     "skillType": "WoodenTransportBoxExpansion3",
@@ -297,7 +281,7 @@
             "nameLocId": 344,
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
-            "gridX": 13,
+            "gridX": 15,
             "gridY": 8,
             "parents": [
                 {
@@ -313,17 +297,11 @@
             "nameLocId": 345,
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
-            "gridX": 13,
-            "gridY": -4,
+            "gridX": 15,
+            "gridY": -12,
             "parents": [
                 {
-                    "skillType": "LogProcessingSpeed5",
-                    "usePivot": false,
-                    "pivotX": 0,
-                    "pivotY": 0
-                },
-                {
-                    "skillType": "SawmillLogStorageExpansion3",
+                    "skillType": "LogProcessingSpeed6",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -412,7 +390,7 @@
             "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": 6,
-            "gridY": -15,
+            "gridY": -17,
             "parents": [
                 {
                     "skillType": "Preheat1",
@@ -428,7 +406,7 @@
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
             "gridX": 8,
-            "gridY": -15,
+            "gridY": -17,
             "parents": [
                 {
                     "skillType": "Preheat1",
@@ -444,7 +422,7 @@
             "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": 4,
-            "gridY": -15,
+            "gridY": -17,
             "parents": [
                 {
                     "skillType": "EmberDropBonus2",
@@ -476,7 +454,7 @@
             "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": 10,
-            "gridY": -13,
+            "gridY": -17,
             "parents": [
                 {
                     "skillType": "OverheatGainBonus3",
@@ -492,7 +470,7 @@
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
             "gridX": 12,
-            "gridY": -15,
+            "gridY": -17,
             "parents": [
                 {
                     "skillType": "OverheatGainBonus3",
@@ -837,7 +815,7 @@
             "gridY": -13,
             "parents": [
                 {
-                    "skillType": "TreeHeatResistance1",
+                    "skillType": "OverheatGainBonus1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -850,7 +828,7 @@
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
             "gridX": 4,
-            "gridY": -13,
+            "gridY": -15,
             "parents": [
                 {
                     "skillType": "EmberDropBonus1",
@@ -866,7 +844,7 @@
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
             "gridX": 6,
-            "gridY": -13,
+            "gridY": -15,
             "parents": [
                 {
                     "skillType": "EmberDropBonus1",
@@ -881,11 +859,11 @@
             "nameLocId": 325,
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
-            "gridX": 6,
-            "gridY": -11,
+            "gridX": 8,
+            "gridY": -15,
             "parents": [
                 {
-                    "skillType": "OverheatGainBonus1",
+                    "skillType": "OverheatGainBonus2",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -1214,7 +1192,7 @@
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
             "gridX": 4,
-            "gridY": -11,
+            "gridY": -13,
             "parents": [
                 {
                     "skillType": "OverheatGainBonus1",
@@ -1499,8 +1477,8 @@
             "nameLocId": 284,
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
-            "gridX": -8,
-            "gridY": -13,
+            "gridX": -10,
+            "gridY": -15,
             "parents": [
                 {
                     "skillType": "StarMarkDamage2",
@@ -1519,6 +1497,18 @@
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
+                },
+                {
+                    "skillType": "ConstellationDamage2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "StarPathSpeedBoost2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
                 }
             ]
         },
@@ -1527,8 +1517,8 @@
             "nameLocId": 285,
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
-            "gridX": -10,
-            "gridY": -13,
+            "gridX": -12,
+            "gridY": -11,
             "parents": [
                 {
                     "skillType": "BarrierPenetration1",
@@ -1543,8 +1533,8 @@
             "nameLocId": 286,
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
-            "gridX": -8,
-            "gridY": -15,
+            "gridX": -6,
+            "gridY": -17,
             "parents": [
                 {
                     "skillType": "ManifestationBrand1",
@@ -1559,8 +1549,8 @@
             "nameLocId": 287,
             "levelBadge": "None",
             "requiredPrestigeLevel": 0,
-            "gridX": -10,
-            "gridY": -15,
+            "gridX": -12,
+            "gridY": -17,
             "parents": [
                 {
                     "skillType": "StarMarkDamage3",
@@ -1786,7 +1776,7 @@
             "levelBadge": "II",
             "requiredPrestigeLevel": 0,
             "gridX": -4,
-            "gridY": -13,
+            "gridY": -15,
             "parents": [
                 {
                     "skillType": "ConstellationDamage1",
@@ -1817,7 +1807,7 @@
             "nameLocId": 270,
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
-            "gridX": -8,
+            "gridX": -10,
             "gridY": -9,
             "parents": [
                 {

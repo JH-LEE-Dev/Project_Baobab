@@ -2085,7 +2085,7 @@ MonoBehaviour:
   bOverheatPermanent: 0
   overheatMaxValue: 100
   overheatDamagePerLevel: 0.02
-  overheatAxeAttackSpeedPerLevel: 0.005
+  overheatAxeAttackSpeedPerLevel: 0.002
   overheatTierThresholds: 220000004300000064000000
   overheatBurnRatios:
   - 0.02
@@ -2095,8 +2095,8 @@ MonoBehaviour:
   overheatBurnTickCount: 6
   overheatBurnTickInterval: 0.5
   shockWaveOverheatDurationBase: 1
-  shockWaveOverheatDurationPerLevel: 0.02
-  boomerangOverheatHitRadiusPerLevel: 0.02
+  shockWaveOverheatDurationPerLevel: 0.008
+  boomerangOverheatHitRadiusPerLevel: 0.008
   boomerangOverheatCooldownMul: 0.5
   droneOverheatChainBonus: 01000000020000000300000004000000
   droneOverheatChainRangeMul: 3

@@ -38,13 +38,13 @@ public class EmberItemController : MonoBehaviour
     // 과열이 오를수록 불씨 1개가 올리는 양이 줄어든다(GetGainEfficiency).
     //   과열 ≤ gainFalloffStart: 효율 1
     //   그 위: 효율 = gainMinEfficiency ^ ((과열 - gainFalloffStart) / (gainFloorStart - gainFalloffStart))  (지수 감소)
-    //   과열 ≥ gainFloorStart: 효율 gainMinEfficiency 유지
+    //   과열 ≥ gainFloorStart: gainMinEfficiency부터 시작하며, 90 이상은 별도 구간 효율 적용
     // 기본값(20 / 75 / 0.005)이면 50 부근에서 약 0.056.
     [Tooltip("과열 수치가 이 값까지는 불씨 효율 100%")]
     [SerializeField, Min(0f)] private float gainFalloffStart = 20f;
-    [Tooltip("과열 수치가 이 값 이상이면 최소 효율 유지(그 사이는 지수적으로 감소)")]
+    [Tooltip("과열 수치가 이 값 이상이면 기준 효율 유지(90 이상은 별도 구간 효율, 그 사이는 지수적으로 감소)")]
     [SerializeField, Min(0f)] private float gainFloorStart = 75f;
-    [Tooltip("과열이 아무리 높아도 남는 최소 효율")]
+    [Tooltip("지수 감소 끝의 기준 효율(기본 75~90 미만). 90 이상은 별도 구간 효율을 쓴다")]
     [SerializeField, Range(0.0001f, 1f)] private float gainMinEfficiency = 0.005f;
 
     [Header("입장 배치")]
@@ -522,11 +522,17 @@ public class EmberItemController : MonoBehaviour
     public float OverheatPerEmber => overheatPerEmber;
 
     /// <summary>
-    /// 지금 과열 수치(내부 소수 값)에서 불씨 1개의 효율(gainMinEfficiency~1). 불씨를 줍기 직전 값으로 계산한다.
-    /// 기본값: 0~20 효율 1, 20~75 효율 = 0.005 ^ ((과열 - 20) / 55)(50 부근 약 0.056), 75 이상 0.005.
+    /// 지금 과열 수치(내부 소수 값)에서 불씨 1개의 효율. 불씨를 줍기 직전 값으로 계산한다.
+    /// 기본값: 0~20 효율 1, 20~75 지수 감소, 75~90 미만 0.005. 90 이상은 구간별 고정 효율.
     /// </summary>
     public float GetGainEfficiency(float _overheatValue)
     {
+        if (_overheatValue >= 140f) return 0.00025f;
+        if (_overheatValue >= 130f) return 0.0005f;
+        if (_overheatValue >= 120f) return 0.001f;
+        if (_overheatValue >= 110f) return 0.0015f;
+        if (_overheatValue >= 100f) return 0.002f;
+        if (_overheatValue >= 90f) return 0.0025f;
         if (_overheatValue <= gainFalloffStart) return 1f;
 
         float minEfficiency = Mathf.Clamp(gainMinEfficiency, 0.0001f, 1f);
