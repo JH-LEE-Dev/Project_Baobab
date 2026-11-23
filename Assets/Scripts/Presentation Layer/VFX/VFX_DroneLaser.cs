@@ -64,6 +64,9 @@ namespace PresentationLayer.VFX
 
         private const float PixelsPerUnit = 32f;
         private const float PixelUnit = 1f / PixelsPerUnit;
+        // 발광 배율(2^Intensity)에 곱하는 값. 몸통·흰 코어 픽셀의 블룸을 예전의 80%로 낮춘다
+        // (URP 블룸 프리필터: 임계 = Mathf.GammaToLinearSpace(1.345) ≈ 1.9195, 무릎 = 임계 × 0.5, 실제 쓰는 Intensity 1.35 기준 2.549 -> 2.381).
+        private const float BloomBoostScale = 0.9342f;
         private const int MaxVertices = 60000; // UInt16 인덱스로 담는 정점 한도. 넘으면 버리지 않고 메쉬만 UInt32 인덱스로 바꾼다
 
         private const int KindMain = 0;
@@ -230,7 +233,7 @@ namespace PresentationLayer.VFX
 
         private void ApplyColor(Color _baseColor, float _intensity)
         {
-            boost = Mathf.Pow(2f, _intensity);
+            boost = Mathf.Pow(2f, _intensity) * BloomBoostScale;
             ComputeColors(_baseColor);
         }
 
