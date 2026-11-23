@@ -784,6 +784,10 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
         UpdateShopTwinkle(Time.deltaTime);
     }
 
+    // 자동 입금 금화가 캐릭터에 닿을 때의 카메라 흔들림(일반 획득 1f의 50%).
+    private const float REMOTE_DEPOSIT_SHAKE_INTENSITY = 0.5f;
+    private const float REMOTE_DEPOSIT_SHAKE_TIME = 0.08f;
+
     // 자동 입금 금화(상점 -> 캐릭터)의 비행·도착. 닿을 때 그 금화에 실린 원목 값을 넣는다.
     private void UpdateRemoteDepositCoins(float _deltaTime)
     {
@@ -799,7 +803,9 @@ public class ShopNPC : MonoBehaviour, IShopNPC, IShadowCaster
                 PayRemoteDepositMoney(fc.value, fc.logs);
 
                 character?.PlayItemAcquireBounce();
-                character?.PlayItemAcquireFlash();
+                // 자동 입금은 마을에 있는 동안 계속 들어오므로 카메라 흔들림을 일반 획득(PlayItemAcquireFlash의 1f, 0.08초)의 절반 세기로 건다.
+                // 더 센 흔들림(원목 보관함 넣기 등)이 돌고 있으면 약하게 끊지 않고 그대로 둔다.
+                if (null != character) CameraMoveController.Instance?.ShakeCameraIfStronger(REMOTE_DEPOSIT_SHAKE_INTENSITY, REMOTE_DEPOSIT_SHAKE_TIME);
                 // 수금 금화가 캐릭터에 박힐 때와 같은 진동(연속 전용 약한 파형).
                 Rumble.Play(EHapticEvent.ItemStream);
                 TryPlayCoinGetSound(fc.coin.transform.position);
