@@ -72,6 +72,10 @@ public sealed class QuakeChargeEffect
     private static readonly Color32 LavaOrange = new Color32(255, 82, 12, 0);
     private static readonly Color32 LavaCrimson = new Color32(177, 13, 6, 0);
     private static readonly Color32 LavaDark = new Color32(26, 3, 3, 0);
+    // 방출 고리의 흰 띠·밝은 노랑 띠. 색은 같고 발광 세기만 낮춰 블룸이 LavaWhite·LavaLight의 80%가 되게 했다
+    // (URP 블룸 프리필터: 임계 = GammaToLinearSpace(1.345) ≈ 1.972, 무릎 = 임계 × 0.5. 알파 255 -> 228, 90 -> 80).
+    private static readonly Color32 ReleaseRingWhite = new Color32(255, 255, 222, 228);
+    private static readonly Color32 ReleaseRingLight = new Color32(255, 206, 90, 80);
 
     private const string GroundSortingLayerName = "ShockWave";
     private const string AirSortingLayerName = "FlyingItem";
@@ -671,8 +675,8 @@ public sealed class QuakeChargeEffect
         DrawIsoBand(crimsonInner, darkInner, LavaDark, true);
         DrawIsoBand(orangeInner, crimsonInner, LavaCrimson, false);
         DrawIsoBand(lightInner, orangeInner, LavaOrange, false);
-        if (lightWidth > 0) DrawIsoBand(whiteInner, lightInner, LavaLight, false);
-        if (whiteWidth > 0) DrawIsoBand(edge, whiteInner, LavaWhite, false);
+        if (lightWidth > 0) DrawIsoBand(whiteInner, lightInner, ReleaseRingLight, false);
+        if (whiteWidth > 0) DrawIsoBand(edge, whiteInner, ReleaseRingWhite, false);
     }
 
     private void DrawReleaseAir()
