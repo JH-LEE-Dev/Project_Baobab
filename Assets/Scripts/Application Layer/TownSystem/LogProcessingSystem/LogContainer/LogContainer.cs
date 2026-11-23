@@ -114,6 +114,9 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     {
         public LogItem item;
         public bool fromCharacter;
+        // 묶음 발사(TransferBurstPacer)에서 첫 원목이 아닌 것. 같은 묶음은 같은 프레임에 착지하므로 착지 피드백
+        // (효과음·진동·흔들림·바운스)은 첫 원목만 내고 이 원목은 데이터만 커밋한다.
+        public bool bMuteFeedback;
     }
     private List<FlyingTransferItem> flyingItems = new List<FlyingTransferItem>(32);
     private HashSet<InventorySlot> transferringSlots = new HashSet<InventorySlot>();
@@ -354,31 +357,36 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 arrivalDataBuffer.logState = item.logState;
 
                 AddItemByData(arrivalDataBuffer, item.logState);
-                TriggerBounce();
-                
-                if (flyingData.fromCharacter)
+
+                // 묶음의 첫 원목이 같은 프레임에 이미 피드백을 냈다.
+                if (!flyingData.bMuteFeedback)
                 {
-                    CameraMoveController.Instance?.ShakeCamera(1f, 0.08f);
+                    TriggerBounce();
 
-                    // 원목이 상자에 박히는 순간. fromCharacter 가드가 곧 "캐릭터가 넣은 것"이라,
-                    // 벌목 NPC가 납품하는 동안에는 울리지 않는다.
-                    // 0.075초 간격으로 연달아 들어오므로 연속 전용(약한) 파형을 쓴다.
-                    Rumble.Play(EHapticEvent.ItemStream);
+                    if (flyingData.fromCharacter)
+                    {
+                        CameraMoveController.Instance?.ShakeCamera(1f, 0.08f);
+
+                        // 원목이 상자에 박히는 순간. fromCharacter 가드가 곧 "캐릭터가 넣은 것"이라,
+                        // 벌목 NPC가 납품하는 동안에는 울리지 않는다.
+                        // 0.075초 간격으로 연달아 들어오므로 연속 전용(약한) 파형을 쓴다.
+                        Rumble.Play(EHapticEvent.ItemStream);
+                    }
+
+                    // 마지막 납품 이후 depositPitchResetTimeout(초)가 넘게 흘렀다면 그 사이 흐름이
+                    // 실제로 끊긴 것으로 보고 피치를 초기화한다(콜라이더 Exit 이벤트에 의존하지 않음).
+                    if (Time.time - lastDepositPitchTime > depositPitchResetTimeout)
+                    {
+                        currentDepositPitch = DEPOSIT_PITCH_MIN;
+                    }
+                    lastDepositPitchTime = Time.time;
+
+                    // 컨테이너에 연속으로 넣을수록 피치/볼륨이 1.0~1.5 범위에서 선형으로 올라간다.
+                    float depositT = (currentDepositPitch - DEPOSIT_PITCH_MIN) / (DEPOSIT_PITCH_MAX - DEPOSIT_PITCH_MIN);
+                    float depositVolumeMul = Mathf.Lerp(1f, depositVolumeBoostMax, depositT);
+                    Sound.Play(SoundID.GetItem, transform.position, depositVolumeMul * GetSoundVolume(), true, currentDepositPitch);
+                    currentDepositPitch = Mathf.Clamp(currentDepositPitch + depositPitchStep, DEPOSIT_PITCH_MIN, DEPOSIT_PITCH_MAX);
                 }
-
-                // 마지막 납품 이후 depositPitchResetTimeout(초)가 넘게 흘렀다면 그 사이 흐름이
-                // 실제로 끊긴 것으로 보고 피치를 초기화한다(콜라이더 Exit 이벤트에 의존하지 않음).
-                if (Time.time - lastDepositPitchTime > depositPitchResetTimeout)
-                {
-                    currentDepositPitch = DEPOSIT_PITCH_MIN;
-                }
-                lastDepositPitchTime = Time.time;
-
-                // 컨테이너에 연속으로 넣을수록 피치/볼륨이 1.0~1.5 범위에서 선형으로 올라간다.
-                float depositT = (currentDepositPitch - DEPOSIT_PITCH_MIN) / (DEPOSIT_PITCH_MAX - DEPOSIT_PITCH_MIN);
-                float depositVolumeMul = Mathf.Lerp(1f, depositVolumeBoostMax, depositT);
-                Sound.Play(SoundID.GetItem, transform.position, depositVolumeMul * GetSoundVolume(), true, currentDepositPitch);
-                currentDepositPitch = Mathf.Clamp(currentDepositPitch + depositPitchStep, DEPOSIT_PITCH_MIN, DEPOSIT_PITCH_MAX);
 
                 logItemPoolManager.ReturnLogItem(item);
                 flyingItems.RemoveAt(i);
@@ -563,7 +571,13 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
             //
             // 발사 간격은 WaitForSeconds 대신 "다음 발사 예정 시각" 누적으로 맞춘다 - FPS에 따라 전송
             // 속도가 달라지던 문제. 이유는 OffroadContainer.TransferOneSlotVisualRoutine 주석 참고.
+            //
+            // 배율 200% 위에서는 간격을 더 줄이지 않고 한 번에 여러 개(묶음)를 같이 내보낸다(TransferBurstPacer).
+            // 묶음의 첫 원목이 막히면 여기서 끝내고, 둘째부터 막히면 묶음만 끝낸 뒤 한 간격 뒤 다음 묶음의 첫 원목에서
+            // 다시 판정한다(OffroadContainer.TransferOneSlotVisualRoutine과 같음).
             double nextFireTime = Time.timeAsDouble;
+            TransferBurstPacer burstPacer = default;
+            bool bStopTransfer = false;
             while (true)
             {
                 while (Time.timeAsDouble < nextFireTime)
@@ -571,57 +585,28 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                     yield return null;
                 }
 
-                if (_charSlot.count <= 0) break;
-
-                // CancelPlayerTransfer()로 끊긴 슬롯은 남은 개수를 더 발사하지 않는다(이미 발사된 것은 그대로 착지).
-                if (transferGeneration != playerTransferGeneration) break;
-
-                // 컨테이너가 꽉 찼는지 매번 체크 (비행 중인 아이템까지 고려)
-                if (!CanAddItemByData(sourceData)) break;
-
-                LogState takenState = _charSlot.TakeOneItem();
-                Sound.PlayUI(SoundID.OutItem);
-
-                if (characterInventoryManager != null)
+                int burstCount = burstPacer.NextCount(itemTransferSpeedMul);
+                for (int burstIndex = 0; burstIndex < burstCount; burstIndex++)
                 {
-                    characterInventoryManager.ItemRemoved();
+                    // 묶음의 첫 원목이 막히면 전송을 끝내고, 둘째부터 막히면 이번 묶음만 끝낸다.
+                    bool bLead = burstIndex == 0;
+
+                    if (_charSlot.count <= 0) { bStopTransfer = bLead; break; }
+
+                    // CancelPlayerTransfer()로 끊긴 슬롯은 남은 개수를 더 발사하지 않는다(이미 발사된 것은 그대로 착지).
+                    if (transferGeneration != playerTransferGeneration) { bStopTransfer = bLead; break; }
+
+                    // 컨테이너가 꽉 찼는지 매번 체크 (비행 중인 아이템까지 고려)
+                    if (!CanAddItemByData(sourceData)) { bStopTransfer = bLead; break; }
+
+                    LaunchDepositItem(_charSlot, sourceData, burstIndex, burstCount);
                 }
 
-                // 컨테이너로의 실제 데이터 커밋은 착지 시점(UpdateFlyingItems)에 한다. 발사 시점엔
-                // CanAddItemByData의 pendingCount 계산에 이 날아가는 아이템이 반영되어, 다른 조합이
-                // 같은 빈 슬롯을 이중으로 예약하는 것을 막아준다.
+                if (bStopTransfer) break;
 
-                // 시각적 비행 아이템 생성
-                LogItemData visualData = new LogItemData
-                {
-                    treeType = sourceData.treeType,
-                    logState = takenState,
-                    color = sourceData.color
-                };
-
-                LogItem flyingItem = logItemPoolManager.GetLogItem(visualData);
-                flyingItem.SetFlyingItemSortingLayer();
-                flyingItem.IsDropItem(false);
-
-                Vector3 start = charTransform != null ? charTransform.position : transform.position;
-                Vector3 end = inputTransform != null ? inputTransform.position : transform.position;
-
-                // 궤적 jitter를 대폭 줄여서 포물선 형태가 뭉개지지 않도록 수정
-                Vector3 trajectoryJitter = new Vector3(UnityEngine.Random.Range(-0.3f, 0.0f), UnityEngine.Random.Range(-0.2f, 0.0f), 0f);
-
-                // 회전 속도 및 방향 결정 (빠르지 않게: 90~270도/s 정도)
-                float rotationSpeed = UnityEngine.Random.Range(90f, 270f) * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
-
-                flyingItem.transform.position = start;
-
-                // 전용 전송 메서드 호출 (시점, 종점, 높이, 시간, 궤적 지터, 회전 속도)
-                // 비행 시간은 OffroadContainer와 동일하게 0.5초 고정.
-                flyingItem.TransferLaunch(start, end, UnityEngine.Random.Range(0.8f, 1.2f), UnityEngine.Random.Range(0.5f, 0.5f), trajectoryJitter, rotationSpeed);
-                flyingItems.Add(new FlyingTransferItem { item = flyingItem, fromCharacter = true });
-
-                ContainerUpdatedEvent?.Invoke();
-
-                nextFireTime = System.Math.Max(nextFireTime, Time.timeAsDouble - MAX_FLY_CATCHUP) + FLY_INTERVAL / Mathf.Max(0.01f, itemTransferSpeedMul);
+                // 간격은 TransferBurstPacer.GetInterval과 같은 값이지만 함수로 받지 않고 식 안에서 바로 나눈다 - 에디터 Mono는
+                // 식 안의 float 나눗셈을 double 정밀도로 계산해서, float를 돌려받으면 배율 200% 이하에서도 예전과 마지막 자리가 달라진다.
+                nextFireTime = System.Math.Max(nextFireTime, Time.timeAsDouble - MAX_FLY_CATCHUP) + FLY_INTERVAL / Mathf.Min(Mathf.Max(0.01f, itemTransferSpeedMul), TransferBurstPacer.MaxVisualSpeedMul);
             }
 
             // 슬롯이 비었다면 정리
@@ -641,6 +626,64 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         {
             transferringSlots.Remove(_charSlot);
         }
+    }
+
+    /// <summary>
+    /// TransferOneSlotVisualRoutine의 원목 한 개 발사(가방 -> 보관함). 자리 판정은 부른 쪽이 끝낸 상태다.
+    /// _burstIndex/_burstCount는 묶음 발사(TransferBurstPacer) 안의 순서다: 발사 효과음과 착지 피드백은 첫 원목만 내고,
+    /// 궤적 무작위 값(가로·세로 흔들림, 높이)은 범위를 묶음 개수만큼 나눠 원목끼리 겹쳐 보이지 않게 한다.
+    /// 묶음이 1개면 예전 한 개 발사와 같은 순서로 같은 무작위 함수를 부른다.
+    /// </summary>
+    private void LaunchDepositItem(InventorySlot _charSlot, LogItemData _sourceData, int _burstIndex, int _burstCount)
+    {
+        bool bLead = _burstIndex == 0;
+
+        LogState takenState = _charSlot.TakeOneItem();
+        if (bLead)
+        {
+            Sound.PlayUI(SoundID.OutItem);
+        }
+
+        if (characterInventoryManager != null)
+        {
+            characterInventoryManager.ItemRemoved();
+        }
+
+        // 컨테이너로의 실제 데이터 커밋은 착지 시점(UpdateFlyingItems)에 한다. 발사 시점엔
+        // CanAddItemByData의 pendingCount 계산에 이 날아가는 아이템이 반영되어, 다른 조합이
+        // 같은 빈 슬롯을 이중으로 예약하는 것을 막아준다.
+
+        // 시각적 비행 아이템 생성
+        LogItemData visualData = new LogItemData
+        {
+            treeType = _sourceData.treeType,
+            logState = takenState,
+            color = _sourceData.color
+        };
+
+        LogItem flyingItem = logItemPoolManager.GetLogItem(visualData);
+        flyingItem.SetFlyingItemSortingLayer();
+        flyingItem.IsDropItem(false);
+
+        Vector3 start = charTransform != null ? charTransform.position : transform.position;
+        Vector3 end = inputTransform != null ? inputTransform.position : transform.position;
+
+        // 궤적 jitter를 대폭 줄여서 포물선 형태가 뭉개지지 않도록 수정
+        // 묶음끼리는 가로는 앞에서부터, 세로와 높이는 뒤에서부터 칸을 나눠 서로 엇갈리게 한다.
+        int reverseIndex = _burstCount - 1 - _burstIndex;
+        Vector3 trajectoryJitter = new Vector3(TransferBurstPacer.Range(-0.3f, 0.0f, _burstIndex, _burstCount), TransferBurstPacer.Range(-0.2f, 0.0f, reverseIndex, _burstCount), 0f);
+
+        // 회전 속도 및 방향 결정 (빠르지 않게: 90~270도/s 정도)
+        float rotationSpeed = UnityEngine.Random.Range(90f, 270f) * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
+
+        flyingItem.transform.position = start;
+
+        // 전용 전송 메서드 호출 (시점, 종점, 높이, 시간, 궤적 지터, 회전 속도)
+        // 비행 시간은 OffroadContainer와 동일하게 0.5초 고정.
+        flyingItem.TransferLaunch(start, end, TransferBurstPacer.Range(0.8f, 1.2f, reverseIndex, _burstCount), UnityEngine.Random.Range(0.5f, 0.5f), trajectoryJitter, rotationSpeed);
+        flyingItems.Add(new FlyingTransferItem { item = flyingItem, fromCharacter = true, bMuteFeedback = !bLead });
+
+        ContainerUpdatedEvent?.Invoke();
     }
 
     // 로그를 실제로 슬롯에 커밋하는 시점이 착지 시점(UpdateFlyingItems)이므로, 아직 도착하지 않고
@@ -1061,7 +1104,10 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     /// 상자가 보관함에서 멀리 떨어져 있어 포물선 높이(_height)는 호출하는 쪽이 정한다.
     /// 캐릭터가 넣은 것이 아니므로 착지 때 카메라 흔들림·진동은 없다(운반 NPC 납품과 같음).
     /// </summary>
-    public bool TryRemoteDepositLogItemVisual(LogItemData _sourceData, Vector3 _fromWorldPos, float _height)
+    /// <param name="_burstIndex">운반 상자의 묶음 발사(TransferBurstPacer) 안 순서. 첫 원목만 착지 피드백을 내고,
+    /// 가로·세로 흔들림은 칸으로 나눠 뽑는다(높이는 운반 상자가 나눠 넘긴다).</param>
+    /// <param name="_burstCount">묶음 개수. 1이면 예전과 같은 무작위 값이다.</param>
+    public bool TryRemoteDepositLogItemVisual(LogItemData _sourceData, Vector3 _fromWorldPos, float _height, int _burstIndex = 0, int _burstCount = 1)
     {
         LogItemData visualData = new LogItemData
         {
@@ -1078,7 +1124,8 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         flyingItem.IsDropItem(false);
 
         Vector3 end = inputTransform != null ? inputTransform.position : transform.position;
-        Vector3 trajectoryJitter = new Vector3(UnityEngine.Random.Range(-0.3f, 0.0f), UnityEngine.Random.Range(-0.2f, 0.0f), 0f);
+        Vector3 trajectoryJitter = new Vector3(TransferBurstPacer.Range(-0.3f, 0.0f, _burstIndex, _burstCount),
+            TransferBurstPacer.Range(-0.2f, 0.0f, _burstCount - 1 - _burstIndex, _burstCount), 0f);
         float rotationSpeed = UnityEngine.Random.Range(90f, 270f) * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
 
         flyingItem.transform.position = _fromWorldPos;
@@ -1090,7 +1137,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         // 보관함 바로 위에서 줄어들게 한다.
         flyingItem.TransferLaunch(_fromWorldPos, end, _height, duration, trajectoryJitter, rotationSpeed,
             REMOTE_DEPOSIT_SHRINK_START);
-        flyingItems.Add(new FlyingTransferItem { item = flyingItem, fromCharacter = false });
+        flyingItems.Add(new FlyingTransferItem { item = flyingItem, fromCharacter = false, bMuteFeedback = _burstIndex != 0 });
 
         ContainerUpdatedEvent?.Invoke();
 
