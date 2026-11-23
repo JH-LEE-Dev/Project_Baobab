@@ -27,8 +27,6 @@ public class RoguelikeBalanceSO : ScriptableObject
     {
         [Tooltip("이 티어가 시작되는 웨이브(1부터). 첫 티어는 반드시 1.")]
         public int startWave;
-        [Tooltip("임계치 피해 1회의 스태미너 피해량.")]
-        public float staminaDamage;
     }
 
     [Serializable]
@@ -46,6 +44,8 @@ public class RoguelikeBalanceSO : ScriptableObject
         public float treeHp;
         [Tooltip("티어 안의 나무 종류 순번. 0 = 초기, 1 = 중간, 2 = 후반(기획서 7-1). 실제 종류는 RoguelikeSystem의 티어 지형 설정에 있다.")]
         public int treeKind;
+        [Tooltip("초당 스태미너 손실(기획서 v3.3 부록 A-2). 나무 수가 임계치 이상인 동안 이 값 × (1 − 감소 합) × 경과 시간을 깎는다. 언리밋 N은 N웨이브 줄 값을 쓴다.")]
+        public float staminaLossPerSecond;
     }
 
     [Serializable]
@@ -68,7 +68,7 @@ public class RoguelikeBalanceSO : ScriptableObject
     [Range(0f, 1f)] public float previousTreeKindShare = 0.3f;
 
     [Header("필드")]
-    [Tooltip("임계치 T. 필드의 나무 수가 이 값 이상이면 유예 타이머가 돈다.")]
+    [Tooltip("임계치 T. 필드의 나무 수가 이 값 이상이면 스태미너 손실이 시작된다.")]
     public int threshold = 50;
     [Tooltip("스폰 상한(필드 최대 나무 수). 임계치와 무관한 고정값이다(기획서 v2.6 3-1, 80그루). 계약 '인내의 시간'으로 T가 줄어도 그대로다. 제약: T ≤ 스폰 상한.")]
     public int spawnCap = 80;
@@ -89,10 +89,10 @@ public class RoguelikeBalanceSO : ScriptableObject
 
     [Header("스태미너")]
     public float maxStamina = 100f;
-    [Tooltip("T 이상이 된 뒤 첫 피해까지의 시간(초). 첫 피해 이후 반복 피해 간격도 같은 값이다(기획서 v2.7 3-2 '유예 시간 = 피해 간격').")]
-    public float graceTime = 4f;
-    [Tooltip("패시브 · 계약으로 유예 시간(= 피해 간격)이 늘어도 넘지 않는 상한(초). 압박 규칙이 무력화되지 않게 한다.")]
-    public float maxGraceTime = 15f;
+    [Tooltip("스태미너 손실 감소(패시브 + 인내의 시간) 합산 상한(%). 70이면 손실이 30% 밑으로 내려가지 않는다(기획서 v3.3 부록 A-5).")]
+    public float maxStaminaLossReducePercent = 70f;
+    [Tooltip("스태미너 바 경고: 남은 스태미너 ≤ 지금 초당 손실 × 이 초(손실 중이든 아니든). 예전 '한 번 맞으면 쓰러짐'(티어 피해 = 4초 분량)과 같은 기준이다.")]
+    public float lethalWarningSeconds = 4f;
     [Tooltip("계약 등으로 T가 줄어도 이 값 밑으로는 내려가지 않는다.")]
     public int minThreshold = 5;
 
@@ -206,41 +206,41 @@ public class RoguelikeBalanceSO : ScriptableObject
     {
         clearWave = 30;
 
-        // 부록 A-2(v2.7): (묶음 크기, 묶음 주기, 나무 HP, 목표 처치 수, 티어 안 나무 종류 순번). 스폰 주기 = 묶음 주기 ÷ 묶음 크기(참고용).
+        // 부록 A-2(v2.7, 마지막 열은 v3.3): (묶음 크기, 묶음 주기, 나무 HP, 목표 처치 수, 티어 안 나무 종류 순번, 초당 스태미너 손실). 스폰 주기 = 묶음 주기 ÷ 묶음 크기(참고용).
         // 1티어 3~7그루 / 3초, 2티어 7~14그루 / 2.5초, 3티어 14~21그루 / 3초, 4티어 21~30그루 / 2.5초. HP는 3티어 150 / 160 / 175, 4티어 380 / 500 / 580.
         // 목표 처치 수는 이전 웨이브보다 줄지 않는다(단조 규칙): 16 · 17웨이브만 공식값 240 / 265 대신 280 / 285.
         float[,] table =
         {
-            { 3f, 3f, 20f, 20f, 0f },
-            { 4f, 3f, 20f, 30f, 0f },
-            { 4f, 3f, 30f, 30f, 1f },
-            { 5f, 3f, 30f, 45f, 1f },
-            { 6f, 3f, 30f, 55f, 1f },
-            { 6f, 3f, 40f, 60f, 2f },
-            { 7f, 3f, 40f, 75f, 2f },
-            { 7f, 2.5f, 45f, 95f, 0f },
-            { 8f, 2.5f, 50f, 115f, 0f },
-            { 9f, 2.5f, 50f, 140f, 1f },
-            { 10f, 2.5f, 55f, 165f, 1f },
-            { 11f, 2.5f, 55f, 190f, 1f },
-            { 12f, 2.5f, 55f, 215f, 2f },
-            { 13f, 2.5f, 55f, 245f, 2f },
-            { 14f, 2.5f, 55f, 275f, 2f },
-            { 14f, 3f, 150f, 280f, 0f },
-            { 15f, 3f, 150f, 285f, 0f },
-            { 16f, 3f, 160f, 295f, 1f },
-            { 18f, 3f, 160f, 345f, 1f },
-            { 19f, 3f, 160f, 375f, 1f },
-            { 20f, 3f, 175f, 410f, 2f },
-            { 21f, 3f, 175f, 445f, 2f },
-            { 21f, 2.5f, 380f, 550f, 0f },
-            { 22f, 2.5f, 380f, 595f, 0f },
-            { 24f, 2.5f, 500f, 670f, 1f },
-            { 25f, 2.5f, 500f, 715f, 1f },
-            { 26f, 2.5f, 500f, 765f, 1f },
-            { 28f, 2.5f, 580f, 850f, 2f },
-            { 29f, 2.5f, 580f, 905f, 2f },
-            { 30f, 2.5f, 580f, 960f, 2f },
+            { 3f, 3f, 20f, 20f, 0f, 0.60f },
+            { 4f, 3f, 20f, 30f, 0f, 0.65f },
+            { 4f, 3f, 30f, 30f, 1f, 0.70f },
+            { 5f, 3f, 30f, 45f, 1f, 0.75f },
+            { 6f, 3f, 30f, 55f, 1f, 0.80f },
+            { 6f, 3f, 40f, 60f, 2f, 0.85f },
+            { 7f, 3f, 40f, 75f, 2f, 0.90f },
+            { 7f, 2.5f, 45f, 95f, 0f, 1.1f },
+            { 8f, 2.5f, 50f, 115f, 0f, 1.2f },
+            { 9f, 2.5f, 50f, 140f, 1f, 1.3f },
+            { 10f, 2.5f, 55f, 165f, 1f, 1.4f },
+            { 11f, 2.5f, 55f, 190f, 1f, 1.5f },
+            { 12f, 2.5f, 55f, 215f, 2f, 1.6f },
+            { 13f, 2.5f, 55f, 245f, 2f, 1.7f },
+            { 14f, 2.5f, 55f, 275f, 2f, 1.8f },
+            { 14f, 3f, 150f, 280f, 0f, 2.0f },
+            { 15f, 3f, 150f, 285f, 0f, 2.2f },
+            { 16f, 3f, 160f, 295f, 1f, 2.4f },
+            { 18f, 3f, 160f, 345f, 1f, 2.6f },
+            { 19f, 3f, 160f, 375f, 1f, 2.8f },
+            { 20f, 3f, 175f, 410f, 2f, 3.0f },
+            { 21f, 3f, 175f, 445f, 2f, 3.2f },
+            { 21f, 2.5f, 380f, 550f, 0f, 3.3f },
+            { 22f, 2.5f, 380f, 595f, 0f, 3.5f },
+            { 24f, 2.5f, 500f, 670f, 1f, 3.7f },
+            { 25f, 2.5f, 500f, 715f, 1f, 3.9f },
+            { 26f, 2.5f, 500f, 765f, 1f, 4.1f },
+            { 28f, 2.5f, 580f, 850f, 2f, 4.3f },
+            { 29f, 2.5f, 580f, 905f, 2f, 4.5f },
+            { 30f, 2.5f, 580f, 960f, 2f, 4.7f },
         };
 
         int rows = table.GetLength(0);
@@ -255,15 +255,16 @@ public class RoguelikeBalanceSO : ScriptableObject
                 treeHp = table[i, 2],
                 killTarget = (int)table[i, 3],
                 treeKind = (int)table[i, 4],
+                staminaLossPerSecond = table[i, 5],
             });
         }
 
         tiers = new List<TierRow>(4)
         {
-            new TierRow { startWave = 1, staminaDamage = 3f },
-            new TierRow { startWave = 8, staminaDamage = 6f },
-            new TierRow { startWave = 16, staminaDamage = 10f },
-            new TierRow { startWave = 23, staminaDamage = 15f },
+            new TierRow { startWave = 1 },
+            new TierRow { startWave = 8 },
+            new TierRow { startWave = 16 },
+            new TierRow { startWave = 23 },
         };
         previousTreeKindShare = 0.3f;
 
@@ -278,8 +279,8 @@ public class RoguelikeBalanceSO : ScriptableObject
         idleMoveReach = 1.5f;
 
         maxStamina = 100f;
-        graceTime = 4f;
-        maxGraceTime = 15f;
+        maxStaminaLossReducePercent = 70f;
+        lethalWarningSeconds = 4f;
         maxMoveSpeedPercent = 100f;
 
         unlimitHpGrowthPerWave = 0.35f;

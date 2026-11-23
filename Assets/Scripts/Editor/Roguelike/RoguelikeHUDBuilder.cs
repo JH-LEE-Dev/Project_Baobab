@@ -9,14 +9,14 @@ using UnityEngine.UI;
 /// 확정 시안(Docs/Roguelike/HUD_Polish)과 같은 픽셀로 좌측 하단(화면 여백 8px)에 막대를 세로로 쌓는다. 640x360 캔버스 좌표(왼쪽 위 원점, 윤곽 포함 크기):
 ///   WaveLabel     (7, 296)  깃발 16x16(4, 295) + 웨이브 숫자(잉크 왼쪽 19) + 진행 점 30칸. 언리밋은 금색 깃발 + 무한대 16x16(17, 295) + 번호(잉크 왼쪽 32) + 10칸   UI_RoguelikeWaveLabel
 ///   PressureStrip (7, 310)  T 표식(5x3 그림, 6x4 스프라이트, 그림 y 310) + 나무 아이콘 16x16(4, 310) + 임계치 바 112x8(19, 313) + 숫자(135, 313)   UI_RoguelikePressureStrip
-///   GraceTimer    (20, 321) 임계치 바에 붙은 2px 줄 110x3(안쪽 108x2, 스프라이트 110x4), 바 아래 윤곽(y 320)을 공유   UI_RoguelikeGraceTimer
+///   (LossRate)    초당 스태미너 손실 표시(-X.Y/s, 임계치 숫자 오른쪽 (159, 313))는 시안 확정 뒤에 만든다. 유예 줄(GraceTimer)은 v3.3에서 삭제됐다(oldNames가 옛 오브젝트를 지운다)
 ///   ThresholdBar  (7, 328)  도끼 아이콘 16x16(4, 326) + 처치 바 112x8(19, 329) + 숫자(135, 329)   UI_RoguelikeThresholdBar
 ///   StaminaBar    (7, 342)  번개 아이콘 16x16(4, 340. 사용자 그림) + 스태미너 바 112x10(19, 342), 1/4 · 1/2 · 3/4 눈금   UI_RoguelikeStaminaBar
 ///   DashCells     (131, 340) 대쉬 아이콘 16x16(131, 340) + 칸 14x9 그림 둘(x 146, 161, 그림 y 343, 스프라이트 14x10)   UI_RoguelikeDashCells
 ///   OwnedTray     우하단(변경 없음)
 /// HUD 아이콘 7종(HudIcon*.png)은 16x16 원본이고 구성기는 읽기만 한다(없으면 오류 로그). 나머지 스프라이트는 파일이 없을 때만 만들며, 가로 세로가 홀수인 그림은 오른쪽 열 / 위쪽 행에 투명 1px을 붙여 짝수로 만든다(원래 그림은 같은 픽셀에 남는다).
 /// 막대 윤곽 + 홈은 스프라이트(BarFrame)이고 안쪽(홈 + 채움 + 눈금)은 각 컴포넌트가 CPU로 그리는 RawImage다(RoguelikeBarPainter).
-/// 그림자는 HUD 실루엣을 왼쪽 아래(-1, -1)에 한 장만 복제한다: 실루엣 바깥을 이루는 그래픽(윤곽 · 아이콘 · 숫자 · 진행 점 · T 표식 · 유예 줄 윤곽)에만 UnityEngine.UI.Shadow를 붙이고
+/// 그림자는 HUD 실루엣을 왼쪽 아래(-1, -1)에 한 장만 복제한다: 실루엣 바깥을 이루는 그래픽(윤곽 · 아이콘 · 숫자 · 진행 점 · T 표식)에만 UnityEngine.UI.Shadow를 붙이고
 /// 막대 안쪽 그래픽(채움)에는 붙이지 않는다. 반투명 1px 픽셀은 이 그림자뿐이다.
 /// 스프라이트는 Assets/Graphics/Roguelike/hud/에 만든다(매번 같은 이름으로 덮어쓴다).
 /// </summary>
@@ -88,11 +88,10 @@ public static class RoguelikeHUDBuilder
         Sprite infinityIcon = LoadIcon("HudIconInfinity");
         if (null == treeIcon || null == axeIcon || null == flagIcon || null == flagGoldIcon || null == flagWhiteIcon || null == boltIcon || null == dashIcon || null == infinityIcon) return;
 
-        // 막대 윤곽 + 홈, T 표식, 유예 줄 윤곽(파일이 없을 때만 만든다. 홀수 크기는 투명 1px이 붙은 짝수로 만들어진다).
+        // 막대 윤곽 + 홈, T 표식(파일이 없을 때만 만든다. 홀수 크기는 투명 1px이 붙은 짝수로 만들어진다).
         Sprite frame112x8 = MakeFresh("BarFrame112x8", FramePixels(112, 8), 112, 8);
         Sprite frame112x10 = MakeFresh("BarFrame112x10", FramePixels(112, 10), 112, 10);
         Sprite frame14x9 = MakeFresh("BarFrame14x9", FramePixels(14, 9), 14, 9);
-        Sprite graceFrame = MakeFresh("GraceFrame110x3", GraceFramePixels(), 110, 3);
         Sprite tMarker = MakeFresh("TMarker", TMarkerPixels(), 5, 3);
 
         Sprite[] trayPlates =
@@ -164,18 +163,6 @@ public static class RoguelikeHUDBuilder
             stripSo.FindProperty("tickImage").objectReferenceValue = tick;
             stripSo.FindProperty("iconNumber").objectReferenceValue = treeNumber;
             stripSo.ApplyModifiedPropertiesWithoutUndo();
-
-            // ---- 유예 타이머(숫자 없음): 임계치 바 아래 윤곽(y 320)을 공유하는 2px 줄
-            Box graceBox = new Box(20, 321, 110, 3);
-            RectTransform graceRect = NewBox("GraceTimer", rootRect, canvasBox, graceBox);
-            // 유예 줄 윤곽 그림(110x3)은 위에 투명 1행이 붙은 110x4라 스프라이트 위 모서리가 한 줄 위(y 320)다.
-            NewSpriteImage("Background", graceRect, graceBox, graceFrame, 20, 320, true);
-            RawImage graceFill = NewRaw("Fill", graceRect, graceBox, 21, 321, 108, 2, false);
-
-            UI_RoguelikeGraceTimer grace = graceRect.gameObject.AddComponent<UI_RoguelikeGraceTimer>();
-            SerializedObject graceSo = new SerializedObject(grace);
-            graceSo.FindProperty("fillSurface").objectReferenceValue = graceFill;
-            graceSo.ApplyModifiedPropertiesWithoutUndo();
 
             // ---- 목표치 바(처치)
             Box killBox = new Box(7, 328, 160, 10);
@@ -266,7 +253,6 @@ public static class RoguelikeHUDBuilder
             viewSo.FindProperty("thresholdBar").objectReferenceValue = bar;
             viewSo.FindProperty("waveLabel").objectReferenceValue = wave;
             viewSo.FindProperty("pressureStrip").objectReferenceValue = strip;
-            viewSo.FindProperty("graceTimer").objectReferenceValue = grace;
             viewSo.FindProperty("staminaBar").objectReferenceValue = staminaBar;
             viewSo.FindProperty("dashCells").objectReferenceValue = dashCells;
             viewSo.FindProperty("ownedTray").objectReferenceValue = tray;
@@ -550,26 +536,6 @@ public static class RoguelikeHUDBuilder
 
             for (int x = 1; x < _w - 1; x++) pixels[y * _w + x] = 1 == y ? RoguelikeHudColors.GrooveTop : RoguelikeHudColors.Groove;
         }
-
-        return pixels;
-    }
-
-    /// <summary>유예 줄 윤곽 110x3: 옆 윤곽(0열 · 109열의 위 2행), 아래 윤곽(1~108열), 안쪽 108x2는 TR_D. 아래 두 모서리는 투명이다(위는 임계치 바 아래 윤곽을 공유).</summary>
-    private static Color32[] GraceFramePixels()
-    {
-        const int W = 110;
-        const int H = 3;
-        Color32[] pixels = new Color32[W * H];
-
-        for (int y = 0; y < 2; y++)
-        {
-            pixels[y * W] = RoguelikeHudColors.Outline;
-            pixels[y * W + W - 1] = RoguelikeHudColors.Outline;
-
-            for (int x = 1; x < W - 1; x++) pixels[y * W + x] = RoguelikeHudColors.GrooveTop;
-        }
-
-        for (int x = 1; x < W - 1; x++) pixels[2 * W + x] = RoguelikeHudColors.Outline;
 
         return pixels;
     }

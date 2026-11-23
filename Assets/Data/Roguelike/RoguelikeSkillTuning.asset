@@ -28,6 +28,7 @@ MonoBehaviour:
   axeExtraStrikeDelay: 0.1
   dashRechargeSeconds: 4
   offroadInterval: 6
+  offroadMinPreviewSeconds: 1.5
   offroadSpeed: 16
   offroadHitRadius: 0.9
   offroadDamage: 10
@@ -65,8 +66,6 @@ MonoBehaviour:
   dotTickIntervalMin: 0.2
   spinShockwaveSwingInterval: 3
   spinShockwaveDamage: 400
-  boomerangShockwaveCooldown: 0
-  boomerangShockwaveMergeRadius: 0.6
   spinBoomerangDamageMultiplier: 6
   spinBoomerangRadiusRatio: 1.5
   sporeComboMaxExplosionsPerFrame: 8

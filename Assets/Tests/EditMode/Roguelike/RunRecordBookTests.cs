@@ -72,4 +72,28 @@ public class RunRecordBookTests
         Assert.AreEqual(3, data.clearRanking[4].reachedWave);
         Assert.AreEqual(-1, lastRank);
     }
+
+    [Test]
+    public void BackfillCollection_FillsFromOldRecords_OnlyTargets_AndMarksSeen()
+    {
+        string[] targets = { "active_spin", "passive_grace", "combo_spin_boomerang", "ruby_patience" };
+        RoguelikeRecordData data = new RoguelikeRecordData();
+        data.challengeMaxedCardIds.Add("active_spin");
+        data.challengePrismCardIds.Add("retired_prism_card"); // 폐지된 카드(예: v3.3에서 삭제된 프리즘): 도감 목록에 없으니 넣지 않는다.
+        data.challengePrismCardIds.Add("combo_spin_boomerang");
+        RunRecordEntry entry = Entry(10, 100f);
+        entry.cards.Add(new RunRecordCard("passive_grace", 3));
+        entry.cards.Add(new RunRecordCard("active_spin", 7)); // 중복은 한 번만.
+        data.clearRanking.Add(entry);
+
+        Assert.IsTrue(data.BackfillCollection(targets));
+
+        CollectionAssert.AreEquivalent(new[] { "active_spin", "combo_spin_boomerang", "passive_grace" }, data.collectionCardIds);
+        CollectionAssert.AreEquivalent(data.collectionCardIds, data.collectionSeenCardIds);
+
+        // 이미 도감 기록이 있으면 다시 소급하지 않는다.
+        data.challengeRubyCardIds.Add("ruby_patience");
+        Assert.IsFalse(data.BackfillCollection(targets));
+        Assert.AreEqual(3, data.collectionCardIds.Count);
+    }
 }

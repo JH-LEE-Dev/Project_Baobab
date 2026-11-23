@@ -13,7 +13,7 @@ using UnityEngine.UI;
 
 /// <summary>
 /// 도전과제 창(시안 B 리본, Docs/Roguelike/_Work/ChallengeUI_B_Ribbon_Plan.md) 18개 언어 검수 · 리본 확대 이미지.
-///   LumberBoy/UI/Validate Roguelike Challenges   18개 언어 x (도전과제 제목 20 · 팁 8종 · 머리줄 문구)를 그 언어의 실제 TMP 폰트 에셋으로 재어
+///   LumberBoy/UI/Validate Roguelike Challenges   18개 언어 x (도전과제 제목 20 · 팁 9종 · 머리줄 문구)를 그 언어의 실제 TMP 폰트 에셋으로 재어
 ///       inkMax(기준선 위 + 아래 잉크 높이) · ribbonH(= 1 + 2 + inkMax + 2 + 1) · 최대 제목 폭 · 리본 끝 x(넘침) · 팁 줄 수 · 수치 아래 줄 칸 수 · 머리줄 잉크 · 아틀라스에 없는 글자 수를 콘솔 표로 출력한다.
 ///       리본 높이 15 · 17 · 19 리본을 실제 UI_ChallengeRibbon으로 그려 8배 확대 PNG로 Docs/Roguelike/_Work/ChallengeUI_Mockup/에 저장한다.
 /// 폰트 크기 · 잉크 측정은 런타임(UIView_RoguelikeChallenges.RefreshInkMetrics)과 같은 함수(UI_RoguelikeChallengeRow.MeasureInk)를 쓴다.
@@ -44,13 +44,14 @@ public static class RoguelikeChallengeListValidator
 
     private static readonly string[] PrismCardIds =
     {
-        "combo_spin_shockwave", "combo_boomerang_shockwave", "combo_spin_boomerang", "combo_spore_drone", "combo_spore_offroad", "combo_spore_shockwave", "combo_stella_drone",
+        "combo_spin_shockwave", "combo_spin_boomerang", "combo_spore_drone", "combo_spore_offroad", "combo_spore_shockwave", "combo_stella_drone",
     };
 
     private static readonly string[] TipKeys =
     {
         "Roguelike_Challenge_PrismAll_Tip", "Roguelike_Challenge_PrismCard_Tip", "Roguelike_Challenge_CardMaxAll_Tip", "Roguelike_Challenge_RubyAll_Tip",
         "Roguelike_Challenge_TreeN_Tip", "Roguelike_Challenge_UnlimitN_Tip", "Roguelike_Challenge_TierAll_Tip", "Roguelike_Challenge_Wave30_Tip",
+        "Roguelike_Challenge_CollectionAll_Tip",
     };
 
     // 도전과제 20종(RoguelikeChallenges.definitions와 같은 구성): 제목 키, {0} 인수(숫자 또는 카드 이름 키), 목표값(미달성 진행 수치 "n / 목표", 1 이하면 수치 없음)
@@ -67,10 +68,11 @@ public static class RoguelikeChallengeListValidator
     private static Spec[] BuildSpecs()
     {
         List<Spec> list = new List<Spec>(20);
-        list.Add(new Spec { titleKey = "Roguelike_Challenge_PrismAll_Title", goal = 7 });
+        list.Add(new Spec { titleKey = "Roguelike_Challenge_PrismAll_Title", goal = 6 });
         for (int i = 0; PrismCardIds.Length > i; i++) list.Add(new Spec { titleKey = "Roguelike_Challenge_PrismCard_Title", cardId = PrismCardIds[i], goal = 0 });
         list.Add(new Spec { titleKey = "Roguelike_Challenge_CardMaxAll_Title", goal = 17 });
         list.Add(new Spec { titleKey = "Roguelike_Challenge_RubyAll_Title", goal = 3 });
+        list.Add(new Spec { titleKey = "Roguelike_Challenge_CollectionAll_Title", goal = 0 });
         int[] trees = { 1000, 5000, 10000 };
         for (int i = 0; trees.Length > i; i++) list.Add(new Spec { titleKey = "Roguelike_Challenge_TreeN_Title", numberArg = trees[i].ToString("N0", CultureInfo.InvariantCulture), goal = trees[i] });
         int[] unlimits = { 5, 10, 15, 20, 25 };

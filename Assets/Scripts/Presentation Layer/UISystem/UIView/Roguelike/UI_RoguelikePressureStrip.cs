@@ -12,9 +12,10 @@ using UnityEngine.UI;
 /// [연출] 24Hz 틱, unscaled 시간, 알파 페이드 없음.
 ///   값 증가       채움 끝 열을 2틱 동안 밝은 줄 색으로.
 ///   T를 넘는 순간  T 표식(안쪽 열 + 위 표식)이 3틱 숨고 3틱 보이기를 2회.
-///   임계치 피해    채움 전체가 2틱 동안 WHITE. (흔들림은 없다)
-/// [숫자] T를 넘은 상태(유예 · 지속 피해)면 글자가 #FF9A80으로 물든다. 값이 바뀔 때만 다시 합성한다.
-/// [유예] 유예 시간 표현은 이 바가 아니라 바로 아래 UI_RoguelikeGraceTimer가 맡는다. 스태미너 바 경고와 붉은 화면은 UIView_HUD.SetRoguelikePressureWarning이 맡는다.
+///   손실 펄스      손실 중 1초마다(기획서 v3.3 3-2) 채움 전체가 2틱 동안 WHITE. (흔들림은 없다)
+/// [숫자] T를 넘은 상태(손실 중)면 글자가 #FF9A80으로 물든다. 값이 바뀔 때만 다시 합성한다.
+/// [손실] 유예는 없어졌다(v3.3).
+///   스태미너 바 경고와 붉은 화면은 UIView_HUD.SetRoguelikePressureWarning이 맡는다.
 /// </summary>
 public class UI_RoguelikePressureStrip : MonoBehaviour
 {
@@ -69,7 +70,7 @@ public class UI_RoguelikePressureStrip : MonoBehaviour
 
         }
 
-        // T를 넘는 순간(안전 -> 유예)에 T 표식을 깜빡인다.
+        // T를 넘는 순간(안전 -> 손실 중)에 T 표식을 깜빡인다.
         if (bWarn != bShownWarn)
         {
             bShownWarn = bWarn;
@@ -103,7 +104,7 @@ public class UI_RoguelikePressureStrip : MonoBehaviour
         bSnapNext = true;
     }
 
-    /// <summary>임계치 피해 1회: 채움 전체가 2틱 동안 하얗게 번쩍인다.</summary>
+    /// <summary>스태미너 손실 1초 펄스: 채움 전체가 2틱 동안 하얗게 번쩍인다.</summary>
     public void PlayDamaged()
     {
         flashStartTick = CurrentTick();

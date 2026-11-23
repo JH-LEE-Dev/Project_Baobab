@@ -12,6 +12,8 @@ public enum ERoguelikeChallengeKind
     TierAll = 5,
     Wave30 = 6,
     PrismCard = 7,
+    /// <summary>카드 도감 완성(기획서 v3.3 8-4). 도감 정본 목록(RoguelikeCollection)의 카드를 모두 한 번이라도 골랐다.</summary>
+    CollectionAll = 8,
 }
 
 /// <summary>도전과제 한 칸의 정의. id는 기록 파일에 저장되므로 한 번 정하면 바꾸지 않는다.</summary>
@@ -61,7 +63,6 @@ public static class RoguelikeChallenges
     {
         new RoguelikeChallengeDefinition("PrismAll", ERoguelikeChallengeKind.PrismAll, 0, LocKeys.RoguelikeUI.roguelikeChallengePrismAllTitle, LocKeys.RoguelikeUI.roguelikeChallengePrismAllTip),
         new RoguelikeChallengeDefinition("Prism_combo_spin_shockwave", ERoguelikeChallengeKind.PrismCard, 0, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTitle, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTip, "combo_spin_shockwave"),
-        new RoguelikeChallengeDefinition("Prism_combo_boomerang_shockwave", ERoguelikeChallengeKind.PrismCard, 0, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTitle, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTip, "combo_boomerang_shockwave"),
         new RoguelikeChallengeDefinition("Prism_combo_spin_boomerang", ERoguelikeChallengeKind.PrismCard, 0, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTitle, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTip, "combo_spin_boomerang"),
         new RoguelikeChallengeDefinition("Prism_combo_spore_drone", ERoguelikeChallengeKind.PrismCard, 0, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTitle, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTip, "combo_spore_drone"),
         new RoguelikeChallengeDefinition("Prism_combo_spore_offroad", ERoguelikeChallengeKind.PrismCard, 0, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTitle, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTip, "combo_spore_offroad"),
@@ -69,6 +70,7 @@ public static class RoguelikeChallenges
         new RoguelikeChallengeDefinition("Prism_combo_stella_drone", ERoguelikeChallengeKind.PrismCard, 0, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTitle, LocKeys.RoguelikeUI.roguelikeChallengePrismCardTip, "combo_stella_drone"),
         new RoguelikeChallengeDefinition("CardMaxAll", ERoguelikeChallengeKind.CardMaxAll, 0, LocKeys.RoguelikeUI.roguelikeChallengeCardMaxAllTitle, LocKeys.RoguelikeUI.roguelikeChallengeCardMaxAllTip),
         new RoguelikeChallengeDefinition("RubyAll", ERoguelikeChallengeKind.RubyAll, 0, LocKeys.RoguelikeUI.roguelikeChallengeRubyAllTitle, LocKeys.RoguelikeUI.roguelikeChallengeRubyAllTip),
+        new RoguelikeChallengeDefinition("CollectionAll", ERoguelikeChallengeKind.CollectionAll, 0, LocKeys.RoguelikeUI.roguelikeChallengeCollectionAllTitle, LocKeys.RoguelikeUI.roguelikeChallengeCollectionAllTip),
         new RoguelikeChallengeDefinition("Tree1000", ERoguelikeChallengeKind.TreeN, 1000, LocKeys.RoguelikeUI.roguelikeChallengeTreeNTitle, LocKeys.RoguelikeUI.roguelikeChallengeTreeNTip),
         new RoguelikeChallengeDefinition("Tree5000", ERoguelikeChallengeKind.TreeN, 5000, LocKeys.RoguelikeUI.roguelikeChallengeTreeNTitle, LocKeys.RoguelikeUI.roguelikeChallengeTreeNTip),
         new RoguelikeChallengeDefinition("Tree10000", ERoguelikeChallengeKind.TreeN, 10000, LocKeys.RoguelikeUI.roguelikeChallengeTreeNTitle, LocKeys.RoguelikeUI.roguelikeChallengeTreeNTip),
@@ -152,6 +154,8 @@ public sealed class RoguelikeChallengeTracker
 {
     private RoguelikeRecordData records;
     private int prismTotal;
+    // 현재 카드 DB의 프리즘 카드 id. PrismAll은 저장 목록의 개수가 아니라 이 id가 저장 목록에 있는 개수로 판정한다(폐지된 프리즘 id가 남은 옛 기록 대비).
+    private readonly List<string> prismCardIds = new List<string>(8);
     private int levelCardTotal;
     private int rubyTotal;
     private int tierTotal;
@@ -167,6 +171,7 @@ public sealed class RoguelikeChallengeTracker
         records = _records;
         tierTotal = _tierCount;
         prismTotal = 0;
+        prismCardIds.Clear();
         levelCardTotal = 0;
         rubyTotal = 0;
 
@@ -182,7 +187,10 @@ public sealed class RoguelikeChallengeTracker
                     case ECardKind.Active:
                     case ECardKind.Passive: levelCardTotal++; break;
                     case ECardKind.Ruby: rubyTotal++; break;
-                    case ECardKind.Prism: prismTotal++; break;
+                    case ECardKind.Prism:
+                        prismTotal++;
+                        prismCardIds.Add(card.cardId);
+                        break;
                 }
             }
         }
@@ -194,13 +202,14 @@ public sealed class RoguelikeChallengeTracker
 
         if (null != records)
         {
-            //소급: 프리즘 카드별 칸이 생기기 전에 해제한 카드는 challengePrismCardIds에만 남아 있으므로, 이미 조건을 채운 칸은 팝업 없이 조용히 달성 처리한다(저장은 다음 기존 저장 시점에 함께 남는다)
+            //소급: 프리즘 카드별 칸 · 도감 완성 칸이 생기기 전에 해제한 카드는 challengePrismCardIds · collectionCardIds(기록 소급)에만 남아 있으므로, 이미 조건을 채운 칸은 팝업 없이 조용히 달성 처리한다(저장은 다음 기존 저장 시점에 함께 남는다)
             for (int i = 0; i < clearedFlags.Length; i++)
             {
                 if (clearedFlags[i]) continue;
 
                 RoguelikeChallengeDefinition def = RoguelikeChallenges.Get(i);
-                if (ERoguelikeChallengeKind.PrismCard != def.kind || false == IsMet(in def)) continue;
+                if (ERoguelikeChallengeKind.PrismCard != def.kind && ERoguelikeChallengeKind.CollectionAll != def.kind) continue;
+                if (false == IsMet(in def)) continue;
 
                 clearedFlags[i] = true;
                 AddUnique(records.challengeClearedIds, def.id);
@@ -217,6 +226,10 @@ public sealed class RoguelikeChallengeTracker
         if (null == records || null == _purchase.card || string.IsNullOrEmpty(_purchase.card.cardId)) return;
 
         CardDefinitionSO card = _purchase.card;
+
+        // 도감: 레벨 · 종류와 무관하게 처음 고른 카드를 기록한다.
+        if (AddUnique(records.collectionCardIds, card.cardId)) Evaluate(ERoguelikeChallengeKind.CollectionAll);
+
         switch (card.kind)
         {
             case ECardKind.Active:
@@ -298,7 +311,7 @@ public sealed class RoguelikeChallengeTracker
     {
         switch (_def.kind)
         {
-            case ERoguelikeChallengeKind.PrismAll: return prismTotal > 0 && records.challengePrismCardIds.Count >= prismTotal;
+            case ERoguelikeChallengeKind.PrismAll: return 0 < prismTotal && CountOwnedPrisms() >= prismTotal;
             case ERoguelikeChallengeKind.CardMaxAll: return levelCardTotal > 0 && records.challengeMaxedCardIds.Count >= levelCardTotal;
             case ERoguelikeChallengeKind.RubyAll: return rubyTotal > 0 && records.challengeRubyCardIds.Count >= rubyTotal;
             case ERoguelikeChallengeKind.TreeN: return records.challengeTreesFelled >= _def.target;
@@ -306,8 +319,34 @@ public sealed class RoguelikeChallengeTracker
             case ERoguelikeChallengeKind.TierAll: return tierTotal > 0 && records.challengeBestTier >= tierTotal;
             case ERoguelikeChallengeKind.Wave30: return true;
             case ERoguelikeChallengeKind.PrismCard: return records.challengePrismCardIds.Contains(_def.cardId);
+            case ERoguelikeChallengeKind.CollectionAll: return CountCollected() >= RoguelikeCollection.CardIds.Length;
             default: return false;
         }
+    }
+
+    /// <summary>현재 DB의 프리즘 카드 중 저장 목록(challengePrismCardIds)에 있는 수. 목록 전체 개수는 폐지된 id가 섞여 있을 수 있어 쓰지 않는다.</summary>
+    private int CountOwnedPrisms()
+    {
+        int count = 0;
+        for (int i = 0; i < prismCardIds.Count; i++)
+        {
+            if (records.challengePrismCardIds.Contains(prismCardIds[i])) count++;
+        }
+
+        return count;
+    }
+
+    /// <summary>도감 정본 목록의 카드 중 한 번이라도 고른 수. 목록 밖 id(폐지된 카드)는 세지 않는다.</summary>
+    private int CountCollected()
+    {
+        int count = 0;
+        string[] targets = RoguelikeCollection.CardIds;
+        for (int i = 0; i < targets.Length; i++)
+        {
+            if (records.collectionCardIds.Contains(targets[i])) count++;
+        }
+
+        return count;
     }
 
     private static bool AddUnique(List<string> _list, string _value)

@@ -68,7 +68,7 @@ public class RoguelikeDebugWindow : EditorWindow
         EditorGUILayout.LabelField("웨이브", wave.bUnlimit ? $"Unlimit-{wave.unlimitIndex}" : $"{wave.waveNumber} (티어 {wave.tierIndex + 1})");
         EditorGUILayout.LabelField("처치", $"{_system.WaveKills} / {wave.killTarget}");
         EditorGUILayout.LabelField("필드 나무", $"{_system.FieldTreeCount} / T {_system.Threshold} (상한 {_system.SpawnCap})");
-        EditorGUILayout.LabelField("임계치 판정", $"{_system.PressureState}  유예 {_system.PressureGraceRatio:P0}  쿨다운 {_system.PressureCooldownRatio:P0}");
+        EditorGUILayout.LabelField("임계치 판정", $"{_system.PressureState}  초당 손실 {_system.PressureLossPerSecond:F2}");
         EditorGUILayout.LabelField("선택 횟수", _system.Build.PickCount.ToString());
         EditorGUILayout.LabelField("플레이 시간", $"{_system.PlayTimeSeconds:F1}초");
         EditorGUILayout.LabelField("초기 나무 / 나무 없이 이동", $"{wave.initialTrees}그루 / {_system.IdleMoveRatio:P0}");

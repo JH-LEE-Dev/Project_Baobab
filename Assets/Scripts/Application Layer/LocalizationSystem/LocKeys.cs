@@ -560,7 +560,6 @@ public static class LocKeys
         public const int roguelikeCardActiveStella = 37748942;
         public const int roguelikeCardActiveSporebomb = 37748943;
         public const int roguelikeCardComboSpinShockwave = 37748944;
-        public const int roguelikeCardComboBoomerangShockwave = 37748945;
         public const int roguelikeCardComboSpinBoomerang = 37748946;
         public const int roguelikeCardComboStellaDrone = 37748948;
         public const int roguelikeCardPassiveRange = 37748949;
@@ -583,7 +582,6 @@ public static class LocKeys
         public const int roguelikeCardActiveStellaDesc = 37749042;
         public const int roguelikeCardActiveSporebombDesc = 37749043;
         public const int roguelikeCardComboSpinShockwaveDesc = 37749044;
-        public const int roguelikeCardComboBoomerangShockwaveDesc = 37749045;
         public const int roguelikeCardComboSpinBoomerangDesc = 37749046;
         public const int roguelikeCardComboStellaDroneDesc = 37749048;
         public const int roguelikeCardPassiveRangeDesc = 37749049;
@@ -619,8 +617,7 @@ public static class LocKeys
         public const int roguelikeEffectStaminaRecoverPerWave = 37749154;
         public const int roguelikeEffectMaxStaminaAdd = 37749155;
         public const int roguelikeEffectMaxStaminaPercent = 37749156;
-        public const int roguelikeEffectGraceTimeAdd = 37749157;
-        public const int roguelikeEffectDamageCooldownAdd = 37749158;
+        public const int roguelikeEffectStaminaLossReducePercent = 37749334;
         public const int roguelikeEffectThresholdAdd = 37749159;
         public const int roguelikeEffectTreeSpawnRatePercent = 37749160;
         public const int roguelikeEffectStarMarkDurationAdd = 37749161;
@@ -635,7 +632,6 @@ public static class LocKeys
         public const int roguelikeEffectStarMarkDamageTakenAdd = 37749170;
         public const int roguelikeEffectUnitSeconds = 37749216;
         public const int roguelikeCardComboSpinShockwaveL1 = 37749236;
-        public const int roguelikeCardComboBoomerangShockwaveL1 = 37749237;
         public const int roguelikeCardComboSpinBoomerangL1 = 37749238;
         public const int roguelikeCardComboStellaDroneL1 = 37749240;
         public const int roguelikeCardPassiveDotSpeed = 37748959;
@@ -724,6 +720,19 @@ public static class LocKeys
         public const int roguelikeChallengePrismCardTitle = 37749318;
         public const int roguelikeChallengePrismCardTip = 37749319;
         public const int roguelikeChallengesClearedLabel = 37749320;
+        public const int roguelikeMenuCollection = 37749321;
+        public const int roguelikeCollectionTitle = 37749322;
+        public const int roguelikeCollectionFound = 37749323;
+        public const int roguelikeCollectionComplete = 37749324;
+        public const int roguelikeCollectionKindActive = 37749325;
+        public const int roguelikeCollectionKindPassive = 37749326;
+        public const int roguelikeCollectionKindPrism = 37749327;
+        public const int roguelikeCollectionKindRuby = 37749328;
+        public const int roguelikeCollectionUnfound = 37749329;
+        public const int roguelikeCollectionMaxReached = 37749330;
+        public const int roguelikeCollectionCompleteTitle = 37749331;
+        public const int roguelikeChallengeCollectionAllTitle = 37749332;
+        public const int roguelikeChallengeCollectionAllTip = 37749333;
     }
 
     public static class SaveCheckUI

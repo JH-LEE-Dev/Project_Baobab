@@ -38,9 +38,6 @@ public static class RoguelikeHudColors
     public static readonly RoguelikeBarPalette Ghost = new RoguelikeBarPalette(0xFFF4DC, 0xF3DCC6, 0xD9BCA4);
     public static readonly RoguelikeBarPalette Invincible = new RoguelikeBarPalette(0xFFF0B8, 0xF2CF5A, 0xB8902E);
     public static readonly RoguelikeBarPalette Flash = new RoguelikeBarPalette(0xFFF4DC, 0xFFF4DC, 0xFFF4DC);
-    // 유예 줄 · 쿨다운 줄은 2행(위, 아래)이라 light = 위, main = 아래다.
-    public static readonly RoguelikeBarPalette Grace = new RoguelikeBarPalette(0xC9A6FF, 0x9B6EE8, 0x9B6EE8);
-    public static readonly RoguelikeBarPalette Cooldown = new RoguelikeBarPalette(0xFFB487, 0xF07F45, 0xF07F45);
 
     public static readonly Color32 PipPassedTop = Hex(0xE6B450);
     public static readonly Color32 PipPassedBottom = Hex(0xA87A2C);

@@ -29,7 +29,8 @@ public struct WaveSpec
     /// <summary>티어 안에서 종류가 바뀌는 웨이브면 직전 종류 순번, 아니면 -1. 이 종류가 previousTreeKindShare만큼 섞인다.</summary>
     public int previousTreeKind;
     public float previousTreeKindShare;
-    public float staminaDamage;
+    /// <summary>초당 스태미너 손실(부록 A-2, 감소 반영 전). 언리밋 N은 N웨이브 줄 값.</summary>
+    public float staminaLossPerSecond;
 }
 
 /// <summary>밸런스 데이터에서 웨이브별 수치를 계산한다. 기획서 3-1, 7-1, 7-2, 부록 A-2.</summary>
@@ -44,13 +45,12 @@ public static class WaveSchedule
         spec.bUnlimit = spec.waveNumber > clearWave;
         spec.unlimitIndex = spec.bUnlimit ? spec.waveNumber - clearWave : 0;
 
-        // 언리밋 N은 N웨이브 줄(30을 넘으면 30웨이브 줄)의 티어 · 나무 종류 · 묶음 · 주기 · 목표 처치 수 · 피해량을 쓰고, 나무 HP만 웨이브마다 강해진다(기획서 v3.0 7-2 11-12).
+        // 언리밋 N은 N웨이브 줄(30을 넘으면 30웨이브 줄)의 티어 · 나무 종류 · 묶음 · 주기 · 목표 처치 수 · 초당 스태미너 손실을 쓰고, 나무 HP만 웨이브마다 강해진다(기획서 v3.0 7-2 11-12).
         // 그래서 언리밋도 본 런처럼 1티어부터 다시 돌고, 티어가 바뀌는 라운드에서 지형 전환이 나온다.
         int rowWave = spec.bUnlimit ? Mathf.Min(spec.unlimitIndex, clearWave) : spec.waveNumber;
         RoguelikeBalanceSO.WaveRow row = _balance.GetWaveRow(rowWave);
 
         spec.tierIndex = _balance.GetTierIndex(rowWave);
-        RoguelikeBalanceSO.TierRow tier = _balance.GetTier(spec.tierIndex);
 
         spec.killTarget = Mathf.Max(1, row.killTarget);
         spec.spawnInterval = Mathf.Max(0.01f, row.spawnInterval);
@@ -59,7 +59,7 @@ public static class WaveSchedule
         spec.initialTrees = TreeSpawnRules.InitialTreeCount(_balance.threshold, _balance.initialTreeThresholdRatio);
         spec.treeHp = Mathf.Max(1f, row.treeHp);
         spec.treeKind = Mathf.Clamp(row.treeKind, 0, RoguelikeBalanceSO.TreeKindsPerTier - 1);
-        spec.staminaDamage = tier.staminaDamage;
+        spec.staminaLossPerSecond = Mathf.Max(0f, row.staminaLossPerSecond);
 
         if (spec.bUnlimit)
         {

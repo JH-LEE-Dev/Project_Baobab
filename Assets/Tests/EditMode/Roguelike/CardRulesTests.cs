@@ -307,13 +307,18 @@ public class CardRulesTests
             Assert.AreEqual(hp[wave - 1], WaveSchedule.Get(balance, wave).treeHp, 0.001f, "웨이브 " + wave);
         }
 
-        Assert.AreEqual(3f, WaveSchedule.Get(balance, 1).staminaDamage);
-        Assert.AreEqual(15f, WaveSchedule.Get(balance, 30).staminaDamage);
+        // 기획서 v3.3 부록 A-2: 초당 스태미너 손실 0.60 → 4.7. 언리밋 N은 N웨이브 줄 값을 쓴다(Unlimit-3 = 3웨이브 0.70, Unlimit-25 = 25웨이브 3.7).
+        Assert.AreEqual(0.6f, WaveSchedule.Get(balance, 1).staminaLossPerSecond, 0.0001f);
+        Assert.AreEqual(1.1f, WaveSchedule.Get(balance, 8).staminaLossPerSecond, 0.0001f);
+        Assert.AreEqual(4.7f, WaveSchedule.Get(balance, 30).staminaLossPerSecond, 0.0001f);
+        Assert.AreEqual(0.7f, WaveSchedule.Get(balance, balance.clearWave + 3).staminaLossPerSecond, 0.0001f);
+        Assert.AreEqual(3.7f, WaveSchedule.Get(balance, balance.clearWave + 25).staminaLossPerSecond, 0.0001f);
         Assert.AreEqual(1f, WaveSchedule.Get(balance, 1).spawnInterval, 0.001f);
-        // 기획서 v2.6: 스폰 상한 80 고정(임계치 50과 무관), 유예 시간 = 피해 간격 4초(v2.7).
+        // 기획서 v2.6: 스폰 상한 80 고정(임계치 50과 무관). v3.3: 스태미너 손실 감소 합산 상한 70%, 손실 경고 4초.
         Assert.AreEqual(80, balance.SpawnCap);
         Assert.AreEqual(50, balance.threshold);
-        Assert.AreEqual(4f, balance.graceTime, 0.001f);
+        Assert.AreEqual(70f, balance.maxStaminaLossReducePercent, 0.001f);
+        Assert.AreEqual(4f, balance.lethalWarningSeconds, 0.001f);
     }
 
     [Test]
