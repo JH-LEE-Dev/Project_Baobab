@@ -41,7 +41,19 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     [Tooltip("보석 등급 원목의 절단 VFX 색. 나무 종류보다 우선 적용된다. 비워 두면 나무 종류 색을 그대로 쓴다.")]
     [SerializeField] private List<LogStateVFXColorData> logStateVFXColorDatas;
 
+    [Space(10)]
+    [Header("Processing")]
+    [Tooltip("원목 하나(동시 가공 묶음이면 묶음 하나)를 켜는 최소 시간(실제 초). 특성·가공 콤보로 속도가 아무리 빨라져도 " +
+             "이보다 빨리 끝나지 않는다. 너무 빨리 끝나면 커터 슬롯 UI에 원목 아이콘이 한두 프레임만 떠 보이지 않았다. " +
+             "속도가 이 시간보다 느린 동안에는 아무 영향이 없다. 0이면 제한 없음.")]
+    [SerializeField] private float minProcessingTime = 0.25f;
+
     private ParticleSystem.MinMaxGradient effectColor;
+
+    // 이 커터에 원목을 넣어 주는 입고벨트(레일). 다음에 켤 원목을 UI에 미리 보여 주는 데만 쓴다(읽기 전용).
+    private LogInBelt feedBelt;
+    // pendingLog가 돌려줄 데이터. 벨트의 LogOutEvent 데이터(가공 중 logToCut이 그대로 들고 있다)와 섞이지 않게 따로 둔다.
+    private readonly LogItemData pendingLogData = new LogItemData();
 
     // 내부 상태 및 컴포넌트 참조
     private LogItem cuttingItem;
@@ -112,7 +124,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         get
         {
             if (cuttingItem == null || !bIsCutting) return 0f;
-            return cuttingItem.durability / GetCurrentSpeed();
+            return cuttingItem.durability / GetCuttingSpeed();
         }
     }
 
@@ -121,7 +133,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         get
         {
             if (cuttingItem == null || !bIsCutting) return 0f;
-            return (maxDurability - cuttingItem.durability) / GetCurrentSpeed();
+            return (maxDurability - cuttingItem.durability) / GetCuttingSpeed();
         }
     }
 
@@ -130,11 +142,40 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         get
         {
             if (cuttingItem == null || !bIsCutting) return 0f;
-            return maxDurability / GetCurrentSpeed();
+            return maxDurability / GetCuttingSpeed();
+        }
+    }
+
+    /// <summary>입고벨트(레일)를 알려 준다. 다음에 켤 원목(pendingLog)을 읽는 데만 쓴다.</summary>
+    public void SetFeedBelt(LogInBelt _belt)
+    {
+        feedBelt = _belt;
+    }
+
+    /// <summary>
+    /// 레일에 올라와 다음에 이 커터로 들어올 원목(맨 앞 원목). 없으면 null. 돌려주는 객체는 부를 때마다 다시 채워
+    /// 쓰므로 들고 있지 말고 그 자리에서 읽을 것. 표시 전용이라 가공 동작과는 무관하다.
+    /// </summary>
+    public ILogItemData pendingLog
+    {
+        get
+        {
+            if (feedBelt == null) return null;
+
+            LogItem next = feedBelt.PeekNextItem();
+            if (next == null) return null;
+
+            pendingLogData.itemType = next.itemType;
+            pendingLogData.sprite = next.sprite;
+            pendingLogData.color = next.color;
+            pendingLogData.logState = next.logState;
+            pendingLogData.treeType = next.treeType;
+            return pendingLogData;
         }
     }
 
     ILogItemData ILogCutter.logToCut => logToCut;
+    ILogItemData ILogCutter.pendingLog => pendingLog;
     bool ILogCutter.bIsCutting => bIsCutting;
     float ILogCutter.elapsedProcessingTime => elapsedProcessingTime;
     float ILogCutter.totalProcessingTime => totalProcessingTime;
@@ -164,7 +205,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
             return;
         }
 
-        float currentSpeed = GetCurrentSpeed();
+        float currentSpeed = GetCuttingSpeed();
 
         // 1초에 1 * currentSpeed 만큼 내구도 감소
         float decreaseAmount = Time.deltaTime * currentSpeed;
@@ -402,6 +443,19 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         float speed = totalSpeedMultiplier;
         if (bPowerSupply && mapType != MapType.Town) speed *= powerSupplyMultiplier;
         return speed * globalSpeedMultiplier;
+    }
+
+    /// <summary>
+    /// 지금 원목을 실제로 켜는 속도. GetCurrentSpeed()가 지금 원목을 minProcessingTime보다 빨리 끝낼 만큼 빠르면
+    /// 그 시간에 맞춘 속도로 묶는다. 그보다 느리면 GetCurrentSpeed() 그대로라 예전과 같다.
+    /// 내구도 감소·남은/총 가공 시간·톱날 애니메이션이 모두 이 값을 쓴다(사운드 램프는 예전처럼 GetCurrentSpeed()).
+    /// </summary>
+    private float GetCuttingSpeed()
+    {
+        float speed = GetCurrentSpeed();
+        if (minProcessingTime > 0f && maxDurability > 0f)
+            speed = Mathf.Min(speed, maxDurability / minProcessingTime);
+        return speed;
     }
 
     // 커터 속도가 1배(기본값)일 때는 기존 그대로 0.4초짜리 피치 램프를 쓰고, 거기서 속도가
@@ -679,7 +733,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
                 // 가공 진행률 (0.0 ~ 1.0)
                 float progress = Mathf.Clamp01(1f - (cuttingItem.durability / maxDurability));
 
-                float currentSpeed = GetCurrentSpeed();
+                float currentSpeed = GetCuttingSpeed();
                 float totalTime = 0f < currentSpeed ? maxDurability / currentSpeed : 0f;
                 int cycleCount = GetCycleCount(totalTime);
 

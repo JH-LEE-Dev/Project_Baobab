@@ -413,6 +413,29 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             uiImage.sprite = _sprite;
     }
 
+    // 아이콘 그림의 원래(프리팹) 투명도. 처음 SetImageAlpha를 부를 때 읽어 둔다. 음수 = 아직 안 읽음.
+    private float baseImageAlpha = -1f;
+
+    /// <summary>
+    /// 아이콘 그림의 투명도를 원래 값의 _alpha배로 맞춘다(1 = 원래대로). 부르지 않는 슬롯은 아무것도 바뀌지 않는다.
+    /// </summary>
+    public void SetImageAlpha(float _alpha)
+    {
+        if (null == uiImage)
+            return;
+
+        if (0f > baseImageAlpha)
+            baseImageAlpha = uiImage.color.a;
+
+        Color _c = uiImage.color;
+        float _a = baseImageAlpha * Mathf.Clamp01(_alpha);
+        if (Mathf.Approximately(_c.a, _a))
+            return;
+
+        _c.a = _a;
+        uiImage.color = _c;
+    }
+
     public void UpdateBindSlotData(IInventorySlot _newSlot, int _maxCount = 99, bool _playInteraction = false, bool _allowGradeBurst = false)
     {
         maxItemCntPerSlot = _maxCount;
