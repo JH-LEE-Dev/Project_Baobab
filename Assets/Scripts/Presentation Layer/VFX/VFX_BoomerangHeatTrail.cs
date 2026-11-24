@@ -8,9 +8,13 @@ namespace PresentationLayer.VFX
     ///
     /// 구성
     /// 부메랑은 납작한 V자 칼날이 비스듬히 도는 회전면(가로로 긴 타원)이므로, 모든 방출은 이 타원 기준이고 진행 반대 방향(뒤쪽)에서만 일어난다.
-    /// 부메랑 위치에 붙어 같이 움직이거나 도는 요소는 없다. 모든 요소는 월드에 방출되어 지나간 자리에 남는다.
+    /// 불꽃 꼬리(3)만 부메랑 위치에 붙어 같이 움직이고, 나머지 요소는 월드에 방출되어 지나간 자리에 남는다.
     /// 1. 꼬리 입자: 이동 경로를 보간하며 타원 뒤쪽 중심에 여러 크기(`.`, 반지름 1~6px)의 원 덩어리 입자를 남긴다. 위로 떠오르며 일렁이고 흰색 -> 하늘색 -> 파랑 -> 진파랑 -> 보라로 식다가 점이 빠지며 사라진다.
     /// 2. 열기 불씨: `.`, 작은 원, 대시 불씨가 바깥으로 튀며 바람장에 휘날린다.
+    /// 3. 칼날 끝 불꽃 꼬리: 칼날 끝 두 곳에 붙은 불길이 본체와 같은 각도로 돌며, 회전 반대 방향으로 궤도 타원을 따라 휘어진 꼬리로 끌린다(불 돌리기처럼).
+    ///    꼬리는 끝으로 갈수록 가늘어지고 백열 -> 민트 -> 하늘 -> 청 -> 라일락으로 식으며(과열 충격파 OverheatShockWaveFx 불꽃 혀와 같은 색 단계),
+    ///    끝만 위로 살짝 날리고 점이 빠지며 흩어진다. 굵기·흔들림은 15fps로 이글거린다. 궤도 뒤쪽 절반은 본체 뒤, 앞쪽 절반은 본체 앞에 그린다.
+    ///    비행하는 동안만 그리고, 부메랑 그림 크기(몸에서 나올 때·들어올 때 연출 포함)를 따라 커지고 작아진다.
     /// 바닥 타일(용암, 물 등)은 종류가 다양하므로 바닥에 남는 자국은 만들지 않는다.
     ///
     /// 크기 대응: 입자 하나의 크기는 고정(반지름 최대 6px)이고, 부메랑 반경(R)에 비례해 방출 개수가 늘어난다.
@@ -30,6 +34,7 @@ namespace PresentationLayer.VFX
         private const int PuffCapacity = 400;
         private const int EmberCapacity = 80;
         private const int BodyQuadCapacity = 900;
+        private const int FrontQuadCapacity = 300;
         private const int LowLoadCount = 4;           // 동시 활성 수가 이 이상이면 저부하 모드
         private const int MaxCircleRadius = 6;        // 원 덩어리 입자의 최대 반지름(px)
         private const int AlwaysVisibleFrames = 3;    // 시작 직후 몇 프레임은 화면 안으로 본다
@@ -41,6 +46,24 @@ namespace PresentationLayer.VFX
         private const float PuffWind = 85.0f;         // 바람장 세기(px/s^2)
         private const float EllipseY = 0.42f;         // 회전면 타원의 세로/가로 비율(스프라이트의 비스듬한 회전면과 같다)
         private const float TeleportJumpPx = 400.0f;  // 한 프레임에 이만큼 튀면 이동으로 보지 않는다
+
+        // 칼날 끝 불꽃 꼬리. 색 단계는 과열 충격파(OverheatShockWaveFx.shader) 불꽃 혀와 같다.
+        private const float TongueFlickerFps = 15.0f;   // 꼬리 굵기·흔들림을 새로 뽑는 속도(초당 그림 수, 충격파 FLICKER_FPS와 같음)
+        // 칼날 끝이 도는 궤도: 본체 회전 윤곽(가로 반지름 48px 기준 끝 44px, 윗선 16~17px)에 맞춘 타원. 그림 반지름에 대한 비율.
+        private const float TailOrbitXRatio = 0.92f;
+        private const float TailOrbitYRatio = 0.35f;
+        // 꼬리 길이(궤도 각도, 라디안). 칼날 끝 두 곳 사이가 180도라 꼬리끼리 겹치지 않고, 본체 회전(60fps에서 한 프레임 36도,
+        // 30fps 저부하에서 72도)이 그 절반보다 작아 거꾸로 도는 듯 보이지 않는다.
+        private const float TailLengthRad = 2.0f;
+        private const float TailTipWidthRatio = 0.14f;  // 칼날 끝 꼬리 반지름(그림 반지름 비율, 최소 1.5px)
+        // 칼날 끝 꼬리 반지름 상한(px). 범위·과열로 부메랑이 커져도(최대 그림 반지름 약 67px) 끝이 흰 공처럼 부풀지 않고 불줄기로 남게 한다.
+        // 기본 크기(그림 반지름 16~30px)는 상한에 닿지 않아 그대로다.
+        private const float TailMaxTipWidthPx = 5.0f;
+        private const float TailLiftRatio = 0.3f;       // 꼬리 끝이 위로 날리는 높이(그림 반지름 비율)
+        private const float TailFrayStart = 0.6f;       // 꼬리 길이의 이 비율부터 끝까지 점이 빠지며 흩어진다
+        // 충격파 효과 재질(OverheatShockWaveFx.mat)의 발광 배율. 색을 이 재질 기준 밝기 그대로 옮긴다.
+        private const float ShockWaveGlowMin = 0.8f;
+        private const float ShockWaveGlowMax = 3.0f;
 
         // 톤 인덱스. 불꽃은 파랑 계열(과열 아우라와 같은 팔레트), 그을음은 발광이 없다.
         private const int ToneWhite = 0;
@@ -90,6 +113,8 @@ namespace PresentationLayer.VFX
 
         // 이펙트 종류별 공유 버퍼. 메인 스레드에서 한 번에 한 인스턴스만 채우고 올린다.
         private static readonly PixelQuadBuffer bodyBuffer = new PixelQuadBuffer(BodyQuadCapacity);
+        // 궤도 앞쪽 절반의 불꽃 꼬리(본체 앞에 그린다)
+        private static readonly PixelQuadBuffer frontBuffer = new PixelQuadBuffer(FrontQuadCapacity);
         private static readonly Color32[] toneColors = BuildToneColors();
         private static readonly int[][] circleHalfWidth = BuildCircleTable();
         private static int activeCount;
@@ -100,6 +125,8 @@ namespace PresentationLayer.VFX
         //내부 의존성
         private MeshRenderer bodyRenderer;
         private Mesh bodyMesh;
+        private MeshRenderer frontRenderer;
+        private Mesh frontMesh;
         // 꽉 차면 두 배로 늘리므로 readonly가 아니다(PuffCapacity/EmberCapacity는 처음 크기)
         private Puff[] puffs = new Puff[PuffCapacity];
         private Ember[] embers = new Ember[EmberCapacity];
@@ -131,12 +158,23 @@ namespace PresentationLayer.VFX
         private int appliedBodyOrder = int.MinValue;
         private int uploadedBodyVertexCount = -1;
         private ulong uploadedBodyHash;
+        private int appliedFrontOrder = int.MinValue;
+        private int uploadedFrontVertexCount = -1;
+        private ulong uploadedFrontHash;
         private bool bRangeValid;
         private float rangeMinX;
         private float rangeMinY;
         private float rangeMaxX;
         private float rangeMaxY;
         private bool bHasLiveParticles;
+
+        // 불꽃 꼬리: 지금 그림 크기의 가로 반지름(px), 비행 경과 시간(멈춤 동안은 흐르지 않음), 흔들림 시드(0~1)
+        private float tongueRadiusPx;
+        private float tongueElapsed;
+        private float tongueSeed;
+        private float tongueSpinTurns; // 본체가 지금까지 돈 바퀴 수(Feed로 받음). 칼날 끝 불꽃이 이 각도만큼 궤도를 따라 돈다.
+        // 백열, 민트, 하늘, 청, 라일락. 이 재질(BrandWrapGlow)의 발광 배율로 바꿔 충격파와 같은 최종 밝기가 되게 Initialize에서 만든다.
+        private Color32[] tongueColors;
 
         /// <summary>
         /// 독립 루트 오브젝트로 이펙트를 만든다. 부메랑의 Awake에서 호출하고 DontDestroyOnLoad는 호출 측이 건다.
@@ -159,6 +197,10 @@ namespace PresentationLayer.VFX
 
             bodyRenderer = CreateMeshChild("HeatTrail_Body", out bodyMesh);
             PixelQuadBuffer.ReserveMesh(bodyMesh, BodyQuadCapacity);
+            frontRenderer = CreateMeshChild("HeatTrail_Front", out frontMesh);
+            PixelQuadBuffer.ReserveMesh(frontMesh, FrontQuadCapacity);
+
+            tongueColors = BuildTongueColors(material);
 
             // 소팅은 Feed가 알려주는 부메랑 소팅을 따라간다.
 
@@ -197,6 +239,7 @@ namespace PresentationLayer.VFX
             {
                 activeCount++;
                 uploadedBodyVertexCount = -1;
+                uploadedFrontVertexCount = -1;
             }
 
             state = TrailState.Flying;
@@ -213,13 +256,20 @@ namespace PresentationLayer.VFX
             beginFrame = Time.frameCount;
             appliedBodyLayerID = int.MinValue;
             appliedBodyOrder = int.MinValue;
+            appliedFrontOrder = int.MinValue;
             randomState ^= unchecked((uint)Time.frameCount * 2654435761u) | 1u;
+            tongueElapsed = 0.0f;
+            tongueRadiusPx = 0.0f;
+            tongueSpinTurns = 0.0f;
+            // 꼬리 입자·불씨의 난수 순서를 바꾸지 않도록 난수를 뽑지 않고 지금 상태에서 읽기만 한다.
+            tongueSeed = ((randomState >> 8) & 0xFFFF) / 65535.0f;
         }
 
         /// <summary>
-        /// 이번 프레임 부메랑의 최종 위치와 정렬값, 판정 반경(유닛)을 알린다. 부메랑의 LateUpdate에서 호출한다.
+        /// 이번 프레임 부메랑의 최종 위치와 정렬값, 판정 반경(유닛), 지금 그림의 가로 반지름(유닛)을 알린다. 부메랑의 LateUpdate에서 호출한다.
+        /// 그림 반지름은 칼날 끝 불꽃 꼬리의 궤도·굵기에만 쓰고, 꼬리 입자·불씨는 판정 반경 기준 그대로다. _spinTurns는 본체가 지금까지 돈 바퀴 수다.
         /// </summary>
-        public void Feed(Vector3 _position, int _sortingLayerID, int _sortingOrder, float _radiusUnits)
+        public void Feed(Vector3 _position, int _sortingLayerID, int _sortingOrder, float _radiusUnits, float _visualRadiusUnits, float _spinTurns)
         {
             if (TrailState.Flying != state) return;
 
@@ -228,6 +278,8 @@ namespace PresentationLayer.VFX
             feedSortingLayerID = _sortingLayerID;
             feedSortingOrder = _sortingOrder;
             radiusPx = Mathf.Max(4.0f, _radiusUnits * PixelsPerUnit);
+            tongueRadiusPx = Mathf.Max(0.0f, _visualRadiusUnits * PixelsPerUnit);
+            tongueSpinTurns = _spinTurns;
         }
 
         public void SetPaused(bool _bPaused)
@@ -269,6 +321,8 @@ namespace PresentationLayer.VFX
         {
             if (null != bodyRenderer) bodyRenderer.enabled = false;
             uploadedBodyVertexCount = -1;
+            if (null != frontRenderer) frontRenderer.enabled = false;
+            uploadedFrontVertexCount = -1;
         }
 
         // ---------- 난수 / 노이즈 ----------
@@ -350,6 +404,48 @@ namespace PresentationLayer.VFX
             if (_u < 0.50f) return ToneBlue;
             if (_u < 0.80f) return ToneDeep;
             return ToneViolet;
+        }
+
+        // 충격파 불꽃 혀 색(OverheatShockWaveFx.mat의 rgb와 Output 발광 세기)을 이 재질의 발광 배율 기준으로 옮긴다.
+        // 최종 색 = rgb * lerp(GlowMin, GlowMax, 발광 세기)이므로, 목표 배율이 이 재질의 최소 배율보다 낮으면 rgb를 그만큼 어둡게 하고 발광 세기 0을 쓴다.
+        private static Color32[] BuildTongueColors(Material _material)
+        {
+            float glowMin = 1.0f;
+            float glowMax = 2.8f;
+            if (null != _material)
+            {
+                if (_material.HasProperty("_GlowMin")) glowMin = _material.GetFloat("_GlowMin");
+                if (_material.HasProperty("_GlowMax")) glowMax = _material.GetFloat("_GlowMax");
+            }
+
+            Color32[] colors = new Color32[5];
+            colors[0] = ShockWaveTongueColor(0.8392f, 0.9804f, 1.0f, 0.7f, glowMin, glowMax);    // 백열(_ColorWhite, 0.7)
+            colors[1] = ShockWaveTongueColor(0.4706f, 1.0f, 0.9255f, 0.15f, glowMin, glowMax);   // 민트(_ColorLight, 0.15)
+            colors[2] = ShockWaveTongueColor(0.3608f, 0.7843f, 1.0f, 0.0f, glowMin, glowMax);    // 하늘(_ColorMid)
+            colors[3] = ShockWaveTongueColor(0.1725f, 0.4706f, 1.0f, 0.0f, glowMin, glowMax);    // 청(_ColorDark)
+            colors[4] = ShockWaveTongueColor(0.4706f, 0.3608f, 1.0f, 0.0f, glowMin, glowMax);    // 라일락(_ColorLilac)
+            return colors;
+        }
+
+        private static Color32 ShockWaveTongueColor(float _r, float _g, float _b, float _glow, float _glowMin, float _glowMax)
+        {
+            float target = Mathf.Lerp(ShockWaveGlowMin, ShockWaveGlowMax, _glow);
+            float scale = 1.0f;
+            float alpha = 0.0f;
+            if (target >= _glowMin)
+            {
+                alpha = _glowMax > _glowMin ? (target - _glowMin) / (_glowMax - _glowMin) : 0.0f;
+            }
+            else if (0.0f < _glowMin)
+            {
+                scale = target / _glowMin;
+            }
+
+            return new Color32(
+                (byte)Mathf.RoundToInt(Mathf.Clamp01(_r * scale) * 255.0f),
+                (byte)Mathf.RoundToInt(Mathf.Clamp01(_g * scale) * 255.0f),
+                (byte)Mathf.RoundToInt(Mathf.Clamp01(_b * scale) * 255.0f),
+                GlowByte(alpha));
         }
 
         private static Color32 Tint(int _tone, float _glow)
@@ -638,12 +734,25 @@ namespace PresentationLayer.VFX
                 bodyRenderer.sortingOrder = bodyOrder;
             }
 
-            bodyBuffer.Clear();
+            // 앞쪽 불꽃 꼬리는 본체(order)와 그 위 효과 스프라이트(order + 1)보다 앞에 그린다.
+            int frontOrder = feedSortingOrder + 2;
+            if (feedSortingLayerID != frontRenderer.sortingLayerID || frontOrder != appliedFrontOrder)
+            {
+                appliedFrontOrder = frontOrder;
+                frontRenderer.sortingLayerID = feedSortingLayerID;
+                frontRenderer.sortingOrder = frontOrder;
+            }
 
+            bodyBuffer.Clear();
+            frontBuffer.Clear();
+
+            // 불꽃 꼬리를 먼저 깔아 꼬리 입자·불씨가 그 위에 얹힌다(충격파도 불씨가 불꽃 혀 위다).
+            DrawTongues();
             DrawPuffs();
             DrawEmbers();
 
             UploadBuffer(bodyBuffer, bodyMesh, bodyRenderer, ref uploadedBodyVertexCount, ref uploadedBodyHash);
+            UploadBuffer(frontBuffer, frontMesh, frontRenderer, ref uploadedFrontVertexCount, ref uploadedFrontHash);
         }
 
         // 정점 수와 내용 해시가 직전과 같으면 올리지 않는다. 메쉬 경계는 실제 그린 픽셀 범위(+1px)로 좁게 잡는다.
@@ -736,6 +845,152 @@ namespace PresentationLayer.VFX
             }
         }
 
+        // 칼날 끝 불꽃 꼬리: 칼날 끝 두 곳에 붙은 불길이 회전 반대 방향으로 궤도 타원을 따라 휘어진 꼬리로 끌린다(불 돌리기처럼).
+        // 궤도 각도 θ: 오른쪽 끝 0, 뒤쪽 가운데 π/2, 왼쪽 끝 π, 앞쪽 가운데 3π/2. 본체는 θ가 커지는 쪽(화면상 반시계)으로 돌고,
+        // 첫 프레임에 꺾인 곳이 앞쪽 가운데라 칼날 끝은 그로부터 ±90도인 0과 π에서 시작해 본체가 돈 각도(tongueSpinTurns)를 그대로 따라간다.
+        // 꼬리는 칼날 끝에서 뒤로 TailLengthRad만큼 이어지며 굵기가 가늘어지고, 색이 백열 -> 민트 -> 하늘 -> 청 -> 라일락으로 식고,
+        // 끝으로 갈수록 위로 날리고 점이 빠지며 흩어진다. 굵기·흔들림은 15fps로 다시 뽑아 이글거린다.
+        // 궤도 뒤쪽 절반(위)은 본체 뒤(bodyBuffer), 앞쪽 절반(아래)은 본체 앞(frontBuffer)에 그린다.
+        // 원을 바로 쿼드로 찍으면 겹침이 많아 작은 격자에 가장 뜨거운 색만 모은 뒤 가로로 이어지는 칸을 사각형 하나로 묶는다.
+        private void DrawTongues()
+        {
+            if (TrailState.Flying != state || false == bHeadValid || 1.0f > tongueRadiusPx) return;
+
+            float r = tongueRadiusPx;
+            float orbitX = TailOrbitXRatio * r;
+            float orbitY = TailOrbitYRatio * r;
+            float tipWidth = Mathf.Clamp(TailTipWidthRatio * r, 1.5f, TailMaxTipWidthPx);
+            float lift = TailLiftRatio * r;
+
+            // 격자: 궤도 + 꼬리 굵기 + 위로 날리는 높이를 덮는다. (gx0, gy0)이 격자 왼쪽 아래(부메랑 중심 기준 px).
+            int pad = Mathf.CeilToInt(tipWidth) + 3;
+            int gx0 = -Mathf.CeilToInt(orbitX) - pad;
+            int gy0 = -Mathf.CeilToInt(orbitY) - pad;
+            int gw = 2 * (Mathf.CeilToInt(orbitX) + pad) + 1;
+            int gh = 2 * Mathf.CeilToInt(orbitY) + Mathf.CeilToInt(lift) + 2 * pad + 1;
+            EnsureTailGrid(gw * gh);
+            for (int i = 0; i < gw * gh; i++)
+            {
+                tailGridBack[i] = TailEmpty;
+                tailGridFront[i] = TailEmpty;
+            }
+
+            float step = Mathf.Floor(tongueElapsed * TongueFlickerFps);
+            float spinPhase = tongueSpinTurns * TwoPi;
+            float ds = 0.6f / Mathf.Max(orbitX, 1.0f); // 궤도 위 한 표본 간격이 0.6px 안팎
+
+            for (int k = 0; k < 2; k++)
+            {
+                float tip = spinPhase + k * Mathf.PI;
+                for (float s = 0.0f; s <= TailLengthRad; s += ds)
+                {
+                    float u = s / TailLengthRad;                 // 0 = 칼날 끝, 1 = 꼬리 끝
+                    float angle = tip - s;
+                    float sin = Mathf.Sin(angle);
+                    float flicker = TongueHash(Mathf.Floor(s * orbitX / 3.0f) * 1.37f + k * 17.0f + step * 0.71f);
+                    float width = tipWidth * Mathf.Pow(1.0f - u, 0.8f) * (0.75f + 0.5f * flicker);
+                    float x = orbitX * Mathf.Cos(angle);
+                    float y = orbitY * sin + lift * u * u + (flicker - 0.5f) * 2.0f * u;
+                    StampTail(sin < 0.0f ? tailGridFront : tailGridBack, gx0, gy0, gw, gh, x, y, Mathf.Max(0.5f, width), u);
+                }
+            }
+
+            int cx = Mathf.RoundToInt(lastX);
+            int cy = Mathf.RoundToInt(lastY);
+            EmitTailGrid(tailGridBack, bodyBuffer, cx + gx0, cy + gy0, gw, gh);
+            EmitTailGrid(tailGridFront, frontBuffer, cx + gx0, cy + gy0, gw, gh);
+        }
+
+        private const byte TailEmpty = 255;
+        private static byte[] tailGridBack = new byte[0];
+        private static byte[] tailGridFront = new byte[0];
+
+        private static void EnsureTailGrid(int _size)
+        {
+            if (tailGridBack.Length >= _size) return;
+            tailGridBack = new byte[_size];
+            tailGridFront = new byte[_size];
+        }
+
+        // 꼬리 한 표본(중심 _x, _y, 반지름 _w px, 꼬리 위치 _u)을 격자에 찍는다. 칸마다 더 뜨거운(작은) 색 번호만 남긴다.
+        // 가장자리 한 칸은 한 단계 식은 색이고, 꼬리 끝 구간은 순서 디더로 점이 빠진다.
+        private static void StampTail(byte[] _grid, int _gx0, int _gy0, int _gw, int _gh, float _x, float _y, float _w, float _u)
+        {
+            int core = _u < 0.12f ? 0 : (_u < 0.3f ? 1 : (_u < 0.5f ? 2 : (_u < 0.75f ? 3 : 4)));
+            float fray = _u <= TailFrayStart ? 0.0f : (_u - TailFrayStart) / (1.0f - TailFrayStart);
+            float w2 = _w * _w;
+            float inner = _w - 1.0f;
+            float inner2 = inner > 0.0f ? inner * inner : -1.0f;
+
+            int x0 = Mathf.FloorToInt(_x - _w);
+            int x1 = Mathf.CeilToInt(_x + _w);
+            int y0 = Mathf.FloorToInt(_y - _w);
+            int y1 = Mathf.CeilToInt(_y + _w);
+            for (int py = y0; py <= y1; py++)
+            {
+                int gy = py - _gy0;
+                if (gy < 0 || gy >= _gh) continue;
+                float fy = py + 0.5f - _y;
+                for (int px = x0; px <= x1; px++)
+                {
+                    int gx = px - _gx0;
+                    if (gx < 0 || gx >= _gw) continue;
+                    float fx = px + 0.5f - _x;
+                    float d2 = fx * fx + fy * fy;
+                    if (d2 > w2 && 1.0f < _w) continue;
+                    if (0.0f < fray && Bayer4(px, py) < fray) continue;
+
+                    int color = (1.5f <= _w && d2 > inner2) ? Mathf.Min(4, core + 1) : core;
+                    int index = gy * _gw + gx;
+                    if (color < _grid[index]) _grid[index] = (byte)color;
+                }
+            }
+        }
+
+        // 격자를 행마다 훑어 같은 색이 가로로 이어지는 칸을 사각형 하나로 올린다.
+        private void EmitTailGrid(byte[] _grid, PixelQuadBuffer _buffer, int _ox, int _oy, int _gw, int _gh)
+        {
+            for (int gy = 0; gy < _gh; gy++)
+            {
+                int row = gy * _gw;
+                int gx = 0;
+                while (gx < _gw)
+                {
+                    byte color = _grid[row + gx];
+                    if (TailEmpty == color)
+                    {
+                        gx++;
+                        continue;
+                    }
+
+                    int start = gx;
+                    while (gx < _gw && _grid[row + gx] == color) gx++;
+                    AddRect(_buffer, _ox + start, _oy + gy, _ox + gx, _oy + gy + 1, tongueColors[color]);
+                }
+            }
+        }
+
+        // 4x4 순서 디더 문턱값(0~1). 과열 충격파 셰이더의 Bayer4와 같은 표다.
+        private static readonly float[] bayer4 =
+        {
+            0.5f / 16.0f, 8.5f / 16.0f, 2.5f / 16.0f, 10.5f / 16.0f,
+            12.5f / 16.0f, 4.5f / 16.0f, 14.5f / 16.0f, 6.5f / 16.0f,
+            3.5f / 16.0f, 11.5f / 16.0f, 1.5f / 16.0f, 9.5f / 16.0f,
+            15.5f / 16.0f, 7.5f / 16.0f, 13.5f / 16.0f, 5.5f / 16.0f,
+        };
+
+        private static float Bayer4(int _x, int _y)
+        {
+            return bayer4[((_y & 3) << 2) | (_x & 3)];
+        }
+
+        // 셰이더 Hash와 같은 식(frac(sin(n * 12.9898 + seed * 78.233) * 43758.5453))
+        private float TongueHash(float _n)
+        {
+            float v = Mathf.Sin(_n * 12.9898f + tongueSeed * 78.233f) * 43758.5453f;
+            return v - Mathf.Floor(v);
+        }
+
         // 불씨: 후반에는 `.`로 작아졌다 점멸하며 소멸한다. kind 1은 작은 원(반지름 1~2px), kind 2는 대시.
         private void DrawEmbers()
         {
@@ -780,6 +1035,7 @@ namespace PresentationLayer.VFX
             bool bHasFeed = bFed;
             bFed = false;
             elapsed += dt;
+            if (TrailState.Flying == state) tongueElapsed += dt;
 
             bool bLowLoad = LowLoadCount <= activeCount;
 
@@ -813,6 +1069,7 @@ namespace PresentationLayer.VFX
         private void OnDestroy()
         {
             if (null != bodyMesh) Destroy(bodyMesh);
+            if (null != frontMesh) Destroy(frontMesh);
 
             if (TrailState.Idle != state)
             {
