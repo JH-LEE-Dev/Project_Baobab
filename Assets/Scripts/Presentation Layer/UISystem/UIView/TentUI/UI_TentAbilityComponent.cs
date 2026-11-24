@@ -1832,6 +1832,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             case SkillCommandType.LogCapacityIncrease:
                 return 5f;
             case SkillCommandType.ProcessLineExpand:
+            case SkillCommandType.SimultaneousProcessing:
                 return 1f;
             case SkillCommandType.StaminaMaxIncrease:
                 return 100f;
@@ -1899,6 +1900,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             case SkillCommandType.AdvancedLogChance:
             case SkillCommandType.PerfectLogChance:
             case SkillCommandType.AutoLoadInRestArea:
+            case SkillCommandType.AutoLoadAnywhere:
             case SkillCommandType.WhirlWind:
             case SkillCommandType.Hello:
             case SkillCommandType.RemoteLogTransport:

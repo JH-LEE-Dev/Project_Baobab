@@ -471,8 +471,9 @@ public class AbilityHUD : MonoBehaviour
         }
         else
         {
-            // 꽃 성장과 숫자 팝은 끝까지 재생하되, MAX 게이지는 가득 찬 상태로 유지한다.
-            resetEffectSequence.AppendInterval(Mathf.Max(flowerStackPopDuration, resetDrainDuration));
+            // 꽃 성장과 숫자 팝은 끝까지 재생하며, MAX 게이지는 유지하고 색상만 원래대로 돌린다.
+            resetEffectSequence.Append(DOVirtual.Float(0f, 1f,
+                Mathf.Max(flowerStackPopDuration, resetDrainDuration), UpdateMaxColorReturn).SetEase(Ease.Linear));
         }
         resetEffectSequence.OnKill(RestoreResetExperienceEffectState);
         resetEffectSequence.OnComplete(CompleteResetEffect);
@@ -498,6 +499,16 @@ public class AbilityHUD : MonoBehaviour
                 90.0f,
                 false,
                 true);
+    }
+
+    private void UpdateMaxColorReturn(float _progress)
+    {
+        // 점멸의 마지막 색에서 이어서 복원해 색상이 멈추거나 다시 점멸하지 않게 한다.
+        fontMakerForBar?.SetGlyphColor(GetResetFontFlashColor(resetFlashTweenDuration, _progress));
+        if (null != maxExperienceImage)
+            maxExperienceImage.color = GetResetFontFlashColor(resetFlashTweenDuration, _progress);
+        if (null != fillImage)
+            fillImage.color = GetResetFillFlashColor(resetFlashTweenDuration, _progress);
     }
 
     private void UpdateResetDrain(float _progress)
