@@ -140,6 +140,10 @@ public enum SoundID
     Swing = 1971635652,
     GrassFootstep = -398605290,
     GroundFootstep = 872570553,
+    RareRevealBeat = -995468209,
+    RareRevealChime = -1694971305,
+    RareRevealTick = 1524996226,
+    RoguelikePressurePulse = -154550249,
 }
 
 public enum MixerID

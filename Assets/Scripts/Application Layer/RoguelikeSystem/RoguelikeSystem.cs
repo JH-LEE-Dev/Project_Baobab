@@ -274,9 +274,8 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     /// <summary>지금 스폰 상한(필드 최대 나무 수). 임계치와 무관한 고정값이다(기획서 v2.6 3-1, 80그루). 계약으로 임계치가 줄어도 그대로다.</summary>
     private int CurrentSpawnCap => null != balance ? balance.SpawnCap : 0;
     public EPressureState PressureState => pressure.State;
-    public float PressureGraceRatio => pressure.GraceRatio;
-    public float PressureCooldownRatio => pressure.CooldownRatio;
-    public bool PressureHitLethal => ERunPhase.WaveCombat == phase && null != character && character.pHealthComponent.GetCurrentStamina() <= currentWave.staminaDamage;
+    public float PressureLossPerSecond => pressure.LossPerSecond;
+    public bool PressureLossLethal => ERunPhase.WaveCombat == phase && null != character && null != balance && character.pHealthComponent.GetCurrentStamina() <= pressure.LossPerSecond * balance.lethalWarningSeconds;
     public bool IsCardSelectionOpen => shop.IsOpen;
     public bool IsFirstPick => shop.IsFirstPick;
     public IReadOnlyList<CardOffer> CurrentOffers => shop.Offers;

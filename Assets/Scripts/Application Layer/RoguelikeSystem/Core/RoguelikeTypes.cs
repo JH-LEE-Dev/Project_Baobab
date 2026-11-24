@@ -48,12 +48,12 @@ public enum ERoguelikeSkill
     SporeBomb = 7,
 }
 
-/// <summary>조합 카드(프리즘) 종류. 기획서 v2.5 6-2 "조합(프리즘) 7종".</summary>
+/// <summary>조합 카드(프리즘) 종류. 기획서 v2.5 6-2 "조합(프리즘)" (v3.3에서 부메랑 + 충격파가 빠져 6종).</summary>
 public enum ERoguelikeCombo
 {
     None = 0,
     SpinShockwave = 1,
-    BoomerangShockwave = 2,
+    // 2는 폐지된 부메랑 + 충격파 자리다. v3.3에서 삭제됐다. 다시 쓰지 않는다.
     SpinBoomerang = 3,
     // 4는 폐지된 스텔라 + 포자 수류탄(StellaSpore) 자리다. v2.5에서 삭제됐다. 다시 쓰지 않는다.
     StellaDrone = 5,
@@ -103,10 +103,7 @@ public enum ERunEffect
     MaxStaminaAdd = 14,
     /// <summary>최대 스태미너(%). 유리 대포 같은 감소는 음수.</summary>
     MaxStaminaPercent = 15,
-    /// <summary>임계치 초과 후 첫 피해까지의 유예 시간(초 가산).</summary>
-    GraceTimeAdd = 16,
-    /// <summary>반복 피해 간격(초 가산). v2.7에서 피해 쿨다운 증가 카드가 삭제되고 피해 간격 = 유예 시간이 되어 지금은 쓰지 않는다(GraceTimeAdd가 둘 다 올린다).</summary>
-    DamageCooldownAdd = 17,
+    // 16 · 17은 폐지된 유예 시간 · 피해 간격 자리다. v3.3에서 유예가 없어지고 스태미너 손실 감소로 바뀌었다. 다시 쓰지 않는다.
     // 18은 폐지된 골드 획득 증가(GoldGainPercent) 자리다. v2.4에서 골드가 없어졌다. 다시 쓰지 않는다.
     /// <summary>임계치 T(정수 가산). 인내의 시간은 음수.</summary>
     ThresholdAdd = 19,
@@ -153,6 +150,8 @@ public enum ERunEffect
     /// 피해%(DamagePercent)와 더하지 않고 곱하므로 공격력 증가 패시브가 붙어도 레벨별 비율이 유지된다.
     /// </summary>
     ShockwaveDamageScalePercent = 42,
+    /// <summary>임계치 초과 시 초당 스태미너 손실 감소(%). 공통 패시브 스태미너 손실 감소(MAX 35) + 계약 인내의 시간(50)을 더하고 밸런스 상한(70)으로 자른다(기획서 v3.3 6-3 · 6-4).</summary>
+    StaminaLossReducePercent = 43,
 
     // 새 효과는 이 위가 아니라 여기(맨 뒤)에 추가한다.
     Count,
@@ -175,15 +174,14 @@ public enum ERunPhase
     Entering = 10,
 }
 
-/// <summary>임계치 피해 판정 상태. 기획서 3-2 "피해 판정 흐름".</summary>
+/// <summary>임계치 스태미너 손실 판정 상태. 기획서 v3.3 3-2 "스태미너 손실 판정 흐름".</summary>
 public enum EPressureState
 {
-    /// <summary>나무 수가 T 미만. 피해 없음.</summary>
+    /// <summary>나무 수가 T 미만. 손실 없음.</summary>
     Safe = 0,
-    /// <summary>T 이상이 되어 유예 타이머가 흐르는 중.</summary>
-    Grace = 1,
-    /// <summary>첫 피해 이후 T 이상 유지. 쿨다운마다 반복 피해.</summary>
-    Damaging = 2,
+    // 1은 폐지된 유예(Grace) 자리다. v3.3에서 유예가 없어졌다. 다시 쓰지 않는다.
+    /// <summary>나무 수가 T 이상. 초당 스태미너 손실이 프레임마다 깎인다.</summary>
+    Losing = 2,
 }
 
 /// <summary>런이 끝난 방식.</summary>

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
@@ -40,6 +41,8 @@ public static class RoguelikeRecordRepository
             if (null == data) return new RoguelikeRecordData();
 
             data.EnsureValid();
+            // 도감 기록이 생기기 전 파일이면 도전과제 · 최근 · 랭킹 기록에서 소급한다(저장은 다음 기존 저장 시점에 함께 남는다).
+            data.BackfillCollection(RoguelikeCollection.CardIds);
             return data;
         }
         catch (Exception e)
@@ -47,6 +50,36 @@ public static class RoguelikeRecordRepository
             Debug.LogWarning(GamePaths.Redact($"[RoguelikeRecordRepository] 기록 파일이 손상되어 빈 기록으로 시작합니다: {e.Message}"));
             return new RoguelikeRecordData();
         }
+    }
+
+    /// <summary>
+    /// 도감 창을 닫을 때 부른다(기획서 v3.3 8-4). 기록을 읽고 → 이번에 앞면으로 보여 준 카드(_seenIds)를 본 카드 목록에 더하고
+    /// 최초 완성 축하를 보여 줬으면(_bCelebrated) 표시한 뒤 저장한다. 도감에 없는 id는 무시한다. 바뀐 것이 없으면 저장하지 않는다.
+    /// </summary>
+    public static void SaveCollectionSeen(List<string> _seenIds, bool _bCelebrated)
+    {
+        RoguelikeRecordData data = Load();
+        bool bChanged = false;
+
+        for (int i = 0; null != _seenIds && i < _seenIds.Count; i++)
+        {
+            string cardId = _seenIds[i];
+            if (string.IsNullOrEmpty(cardId) || data.collectionSeenCardIds.Contains(cardId)) continue;
+
+            // 도감 정본 목록에 있고 실제로 고른 적 있는 카드만 본 카드로 센다.
+            if (false == data.collectionCardIds.Contains(cardId)) continue;
+
+            data.collectionSeenCardIds.Add(cardId);
+            bChanged = true;
+        }
+
+        if (true == _bCelebrated && false == data.collectionCompleteCelebrated)
+        {
+            data.collectionCompleteCelebrated = true;
+            bChanged = true;
+        }
+
+        if (true == bChanged) Save(data);
     }
 
     public static void Save(RoguelikeRecordData _data)

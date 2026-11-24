@@ -521,7 +521,10 @@ public class UIView_HUD : UIView
 
         UI_RoguelikeStaminaBar _runBar = RunStaminaBar;
         if (null != _runBar)
+        {
             _runBar.UpdateValue(Mathf.Clamp01(newRatio));
+            _runBar.SetValues(_currentStemina, _maxStemina);
+        }
     }
 
     /// <summary>

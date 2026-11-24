@@ -153,7 +153,7 @@ public struct RoguelikeChallengeClearedSignal
     }
 }
 
-/// <summary>임계치 판정 상태가 바뀌었다(안전/유예/지속 피해).</summary>
+/// <summary>임계치 판정 상태가 바뀌었다(안전/손실 중).</summary>
 public struct RoguelikePressureStateChangedSignal
 {
     public EPressureState state;
@@ -163,13 +163,13 @@ public struct RoguelikePressureStateChangedSignal
     }
 }
 
-/// <summary>임계치 피해를 한 번 입었다.</summary>
-public struct RoguelikePressureDamagedSignal
+/// <summary>스태미너 손실 중 1초 펄스(들어가는 순간 첫 펄스, 이후 1초마다). 연출 신호이며 손실 계산과 무관하다.</summary>
+public struct RoguelikePressurePulseSignal
 {
-    public float damage;
-    public RoguelikePressureDamagedSignal(float _damage)
+    public float lossPerSecond;
+    public RoguelikePressurePulseSignal(float _lossPerSecond)
     {
-        damage = _damage;
+        lossPerSecond = _lossPerSecond;
     }
 }
 

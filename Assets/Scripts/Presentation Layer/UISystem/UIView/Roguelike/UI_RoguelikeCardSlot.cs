@@ -320,7 +320,7 @@ public class UI_RoguelikeCardSlot : MonoBehaviour
             if (0f <= d && d < RareBeatSeconds) shake = RareBeatShake[Mathf.Min(RareBeatShake.Length - 1, (int)(d * 30f))];
         }
 
-        // [효과음 지점] 희귀 두근 박자 (0 / 0.2 / 0.34초, 점점 빨라짐)
+        // 희귀 두근 박자 효과음은 UI_RoguelikeRareRevealFx.PlaySoundCues가 낸다(같은 박자표, 한 곳에서만).
         ApplyRareShake(shake);
     }
 
@@ -349,7 +349,7 @@ public class UI_RoguelikeCardSlot : MonoBehaviour
         }
 
         RevealedEvent?.Invoke(this);
-        // [효과음 지점] 희귀 팡(공개 순간)은 기존 AbilityAppear를 그대로 쓴다. 두근 박자 · 타다다닥 틱 · 만남 차임은 UI_RoguelikeRareRevealFx 주석 지점.
+        // 희귀 팡(공개 순간)은 기존 AbilityAppear를 그대로 쓴다. 두근 박자 · 타다다닥 틱 · 만남 차임은 UI_RoguelikeRareRevealFx.PlaySoundCues가 낸다.
         Sound.PlayUI(SoundID.AbilityAppear);
     }
 

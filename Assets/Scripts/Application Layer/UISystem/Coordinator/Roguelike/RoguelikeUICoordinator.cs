@@ -47,11 +47,11 @@ public sealed class RoguelikeUICoordinator
     private int lastTreeCount = -1;
     private int lastThreshold = -1;
     private EPressureState lastPressureState;
-    // 스태미너 바·붉은 화면 경고도 바뀔 때만 HUD에 넣는다(임계점을 넘었는지 / 한 번 맞으면 죽는지).
+    // 스태미너 바·붉은 화면 경고도 바뀔 때만 HUD에 넣는다(임계점을 넘었는지 / 손실 경고 초 안에 바닥나는지).
     private bool bLastPressureExceeded;
     private bool bLastPressureLethal;
-    private float lastGraceRatio = -1f;
-    private float lastCooldownRatio = -1f;
+    // 손실 펄스(1초마다)가 스태미너 바에 알리는 손실 비율. 최대 스태미너가 이 계층에 없어 스태미너 바의 최소 반응 비율(1%)로 고정한다.
+    private const float PressurePulseLossRatio = 0.01f;
     // 보관함 트레이 숫자판(레어 · 일반 장수)도 바뀔 때만 넣는다. -1이면 다음 계산 값을 반드시 넣는다.
     private int lastRareCount = -1;
     private int lastNormalCount = -1;
@@ -139,20 +139,17 @@ public sealed class RoguelikeUICoordinator
         int threshold = runInfo.Threshold;
         EPressureState state = runInfo.PressureState;
 
-        // 임계점 경고: 넘었으면 스태미너 바 + 붉은 화면, 아직 안 넘었어도 한 번 맞으면 죽는 상태면 스태미너 바만. 스태미너가 바뀔 때마다 달라질 수 있어 임계치 값 비교보다 먼저 본다.
+        // 임계점 경고: 넘었으면 스태미너 바 + 붉은 화면, 아직 안 넘었어도 남은 스태미너가 초당 손실 × 경고 초 이하면 스태미너 바만. 스태미너가 바뀔 때마다 달라질 수 있어 임계치 값 비교보다 먼저 본다.
         bool bExceeded = EPressureState.Safe != state;
-        bool bLethal = runInfo.PressureHitLethal;
+        bool bLethal = runInfo.PressureLossLethal;
         if (bExceeded != bLastPressureExceeded || bLethal != bLastPressureLethal)
         {
             bLastPressureExceeded = bExceeded;
             bLastPressureLethal = bLethal;
             if (null != mainHudUI) mainHudUI.SetRoguelikePressureWarning(bExceeded || bLethal, bExceeded);
         }
-        float grace = runInfo.PressureGraceRatio;
-        float cooldown = runInfo.PressureCooldownRatio;
 
-        if (treeCount == lastTreeCount && threshold == lastThreshold && state == lastPressureState
-            && Math.Abs(grace - lastGraceRatio) < 0.005f && Math.Abs(cooldown - lastCooldownRatio) < 0.005f)
+        if (treeCount == lastTreeCount && threshold == lastThreshold && state == lastPressureState)
         {
             return;
         }
@@ -160,10 +157,8 @@ public sealed class RoguelikeUICoordinator
         lastTreeCount = treeCount;
         lastThreshold = threshold;
         lastPressureState = state;
-        lastGraceRatio = grace;
-        lastCooldownRatio = cooldown;
 
-        hudUI.SetThreshold(treeCount, threshold, runInfo.SpawnCap, state, grace, cooldown);
+        hudUI.SetThreshold(treeCount, threshold, runInfo.SpawnCap, state);
     }
 
     private void SubscribeSignals()
@@ -171,7 +166,7 @@ public sealed class RoguelikeUICoordinator
         signalHub.Subscribe<RoguelikePhaseChangedSignal>(PhaseChanged);
         signalHub.Subscribe<RoguelikeWaveStartedSignal>(WaveStarted);
         signalHub.Subscribe<RoguelikeWaveProgressSignal>(WaveProgress);
-        signalHub.Subscribe<RoguelikePressureDamagedSignal>(PressureDamaged);
+        signalHub.Subscribe<RoguelikePressurePulseSignal>(PressurePulse);
         signalHub.Subscribe<RoguelikeCardSelectionOpenedSignal>(CardSelectionOpened);
         signalHub.Subscribe<RoguelikeOffersChangedSignal>(OffersChanged);
         signalHub.Subscribe<RoguelikeCardPurchasedSignal>(CardPurchased);
@@ -190,7 +185,7 @@ public sealed class RoguelikeUICoordinator
         signalHub.UnSubscribe<RoguelikePhaseChangedSignal>(PhaseChanged);
         signalHub.UnSubscribe<RoguelikeWaveStartedSignal>(WaveStarted);
         signalHub.UnSubscribe<RoguelikeWaveProgressSignal>(WaveProgress);
-        signalHub.UnSubscribe<RoguelikePressureDamagedSignal>(PressureDamaged);
+        signalHub.UnSubscribe<RoguelikePressurePulseSignal>(PressurePulse);
         signalHub.UnSubscribe<RoguelikeCardSelectionOpenedSignal>(CardSelectionOpened);
         signalHub.UnSubscribe<RoguelikeOffersChangedSignal>(OffersChanged);
         signalHub.UnSubscribe<RoguelikeCardPurchasedSignal>(CardPurchased);
@@ -372,9 +367,9 @@ public sealed class RoguelikeUICoordinator
         hudUI?.SetWaveProgress(_signal.killed, _signal.target);
     }
 
-    private void PressureDamaged(RoguelikePressureDamagedSignal _signal)
+    private void PressurePulse(RoguelikePressurePulseSignal _signal)
     {
-        hudUI?.PlayPressureDamaged(_signal.damage);
+        hudUI?.PlayPressurePulse(PressurePulseLossRatio);
     }
 
     private void CardSelectionOpened(RoguelikeCardSelectionOpenedSignal _signal)
@@ -436,15 +431,12 @@ public sealed class RoguelikeUICoordinator
         cardSelectUI.PlayPurchase(in purchase, runInfo.LastDiscardedOfferIndices, cardPresentationDoneHandler);
     }
 
+    /// <summary>카드 선택이 건너뛰어졌다(포기). 포기 시 닫는 연출 없이 즉시 닫는다(기획서 8-2, 10-2).</summary>
     private void CardSelectionSkipped(RoguelikeCardSelectionSkippedSignal _signal)
     {
-        if (null == cardSelectUI || false == cardSelectUI.IsVisible)
-        {
-            OnCardPresentationDone();
-            return;
-        }
+        if (null != cardSelectUI && cardSelectUI.IsVisible) ForceCloseCardSelection();
 
-        cardSelectUI.CloseSelection(cardPresentationDoneHandler);
+        OnCardPresentationDone();
     }
 
     /// <summary>

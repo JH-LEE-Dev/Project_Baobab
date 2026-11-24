@@ -143,8 +143,6 @@ public class RoguelikeSkillController : MonoBehaviour
     private bool bOffroadLandLanesDirty = true;
 
     private readonly List<IStaticCollidable> scanBuffer = new List<IStaticCollidable>(128);
-    // 부메랑+충격파: 이번 프레임에 이미 충격파를 낸 자리(가까운 자리는 하나로 합친다).
-    private readonly List<Vector3> boomerangShockwaveFired = new List<Vector3>(8);
     private readonly List<TreeObj> hitBuffer = new List<TreeObj>(64);
 
     private readonly List<RoguelikeStar> activeStars = new List<RoguelikeStar>(16);
@@ -181,9 +179,6 @@ public class RoguelikeSkillController : MonoBehaviour
     private float nextOffroadPickTime;
     private float nextOffroadHitShakeTime;
 
-    // 부메랑이 나무를 맞힌 자리(부메랑 + 충격파). 본편 판정 도중에 쌓이므로 UpdateCombos에서 처리한다.
-    private readonly List<Vector3> pendingBoomerangHits = new List<Vector3>(16);
-
     // 회전베기+부메랑: 부메랑 판정 주기(0.3초)가 돈 기록(그 순간 부메랑 위치 · 판정 반경). 나무를 맞혔는지와 무관하게 왕복 내내 쌓이고
     // 본편 판정 도중이라 UpdateCombos에서 처리한다. 부메랑 하나는 한 프레임에 한 번만 판정 주기가 돌아 기록 하나 = 부메랑 하나의 회전 1회다.
     private struct BoomerangTick
@@ -212,16 +207,12 @@ public class RoguelikeSkillController : MonoBehaviour
     private float nextSporeTime;
     // 웨이브가 시작되고 필드에 아직 나무가 생기지 않았다(주기형 액티브 첫 발동 대기, 기획서 v3.0 11-13 5-3).
     private bool bAwaitingFirstTree;
-    // 이번 웨이브의 오프로드 첫 발동(위치 표시 없이 바로 소환)이 아직 나가지 않았다.
-    private bool bOffroadFirstVolleyPending;
     // 이번 웨이브의 포자 수류탄 첫 투하가 아직 나가지 않았다(던질 나무가 없으면 짧은 간격으로 다시 시도한다).
     private bool bSporeFirstThrowPending;
     private const float SporeFirstRetrySeconds = 0.25f;
     private float nextBeamTime;
-    private float nextBoomerangShockwaveTime;
 
     private System.Action<Vector3> axeSwungHandler;
-    private System.Action<Vector3> boomerangHitHandler;
     private System.Action<Vector3, float> boomerangTickHandler;
     private System.Action<Transform, float> boomerangStartedHandler;
     private System.Action<Transform> boomerangEndedHandler;
@@ -263,13 +254,10 @@ public class RoguelikeSkillController : MonoBehaviour
         modifiers = _modifiers;
 
         axeSwungHandler = OnAxeSwung;
-        boomerangHitHandler = OnBoomerangHitTree;
         starHitHandler = OnStarHit;
 
         RunCombatHooks.AxeSwungEvent -= axeSwungHandler;
         RunCombatHooks.AxeSwungEvent += axeSwungHandler;
-        RunCombatHooks.BoomerangHitTreeEvent -= boomerangHitHandler;
-        RunCombatHooks.BoomerangHitTreeEvent += boomerangHitHandler;
 
         boomerangTickHandler = OnBoomerangTick;
         boomerangStartedHandler = OnBoomerangStarted;
@@ -298,7 +286,6 @@ public class RoguelikeSkillController : MonoBehaviour
     public void Release()
     {
         RunCombatHooks.AxeSwungEvent -= axeSwungHandler;
-        RunCombatHooks.BoomerangHitTreeEvent -= boomerangHitHandler;
         RunCombatHooks.BoomerangTickEvent -= boomerangTickHandler;
         RunCombatHooks.BoomerangStartedEvent -= boomerangStartedHandler;
         RunCombatHooks.BoomerangEndedEvent -= boomerangEndedHandler;
@@ -372,11 +359,10 @@ public class RoguelikeSkillController : MonoBehaviour
         bActive = true;
         starBlastHpCapRatio = _tierIndex >= tuning.stellaBlastCapFromTier ? Mathf.Max(0f, tuning.stellaBlastMaxHpRatio) : 0f;
         float now = Time.time;
-        // 주기형 액티브(오프로드 · 포자 수류탄)는 웨이브의 나무가 처음 생성된 순간 즉시 1회 발동하고 이후 발동 주기를 적용한다(기획서 v3.0 11-13 5-3).
+        // 주기형 액티브는 웨이브의 나무가 처음 생성된 순간 시작한다: 포자 수류탄은 즉시 1회 발동, 오프로드는 위치 표시 후 최소 예고 시간 뒤 소환. 이후 발동 주기를 적용한다(기획서 v3.3 G-8).
         // 첫 나무가 생길 때까지는 발동 시각을 미뤄 두고, Update가 필드에 나무가 생긴 것을 보면 그 순간으로 당긴다(초기 나무는 보통 이 직전에 이미 심겨 있다).
         bAwaitingFirstTree = true;
         nextOffroadTime = float.PositiveInfinity;
-        bOffroadFirstVolleyPending = true;
         bOffroadLanesPicked = false;
         nextOffroadPickTime = float.PositiveInfinity;
         RunCombatOverrides.SetDronePriorityTarget(droneStarTargetFinder);
@@ -387,7 +373,6 @@ public class RoguelikeSkillController : MonoBehaviour
         pendingRepeatBlasts.Clear();
         pendingSpinShockwaves.Clear();
         pendingAxeSwings = 0;
-        pendingBoomerangHits.Clear();
         pendingBoomerangTicks.Clear();
         pendingSporeExplosions.Clear();
         recentSporeExplosions.Clear();
@@ -434,7 +419,6 @@ public class RoguelikeSkillController : MonoBehaviour
         pendingStarHits.Clear();
         pendingRepeatBlasts.Clear();
         pendingSpinShockwaves.Clear();
-        pendingBoomerangHits.Clear();
         pendingBoomerangTicks.Clear();
         pendingSporeExplosions.Clear();
         recentSporeExplosions.Clear();
@@ -514,6 +498,7 @@ public class RoguelikeSkillController : MonoBehaviour
 
     /// <summary>
     /// 웨이브의 나무가 처음 생성된 순간 주기형 액티브(오프로드 · 포자 수류탄)의 첫 발동을 지금으로 당긴다(기획서 v3.0 11-13 5-3).
+    /// 포자 수류탄은 즉시 투하하고, 오프로드는 소환 위치 표시를 바로 시작해 최소 예고 시간(offroadMinPreviewSeconds) 뒤에 소환한다(기획서 v3.3 G-8).
     /// 두 번째부터는 각 액티브가 발동할 때 다시 잡는 발동 주기를 그대로 쓴다. 드론 자동 발사는 본편 드론이 새 타겟을 물면 짧은 예열(0.2초) 뒤 첫 발을 쏜다.
     /// </summary>
     private void UpdateFirstTreeTrigger(float _now)
@@ -523,8 +508,9 @@ public class RoguelikeSkillController : MonoBehaviour
         if (null != objectManager && false == HasHittableTree()) return;
 
         bAwaitingFirstTree = false;
-        nextOffroadTime = _now;
+        nextOffroadTime = _now + tuning.offroadMinPreviewSeconds;
         nextSporeTime = _now;
+        if (modifiers.IsSkillActive(ERoguelikeSkill.Offroad)) PickPendingOffroadLanes(_now);
     }
 
     /// <summary>필드에 벨 수 있는 나무가 한 그루라도 있는지(지난 웨이브에서 묘목으로 돌아간 나무는 세지 않는다).</summary>
@@ -539,16 +525,11 @@ public class RoguelikeSkillController : MonoBehaviour
         return false;
     }
 
-    // // 조합: 회전베기+충격파 / 부메랑+충격파 / 회전베기+부메랑
+    // // 조합: 회전베기+충격파 / 회전베기+부메랑
 
     private void OnAxeSwung(Vector3 _center)
     {
         if (bActive) pendingAxeSwings++;
-    }
-
-    private void OnBoomerangHitTree(Vector3 _treePosition)
-    {
-        if (bActive && pendingBoomerangHits.Count < 64) pendingBoomerangHits.Add(_treePosition);
     }
 
     private void OnBoomerangTick(Vector3 _position, float _hitRadius)
@@ -630,40 +611,6 @@ public class RoguelikeSkillController : MonoBehaviour
 
             pendingBoomerangTicks.Clear();
         }
-
-        if (pendingBoomerangHits.Count > 0)
-        {
-            bool bBoomerangShockwave = modifiers.IsComboActive(ERoguelikeCombo.BoomerangShockwave);
-            float mergeSqr = Mathf.Max(0f, tuning.boomerangShockwaveMergeRadius);
-            mergeSqr *= mergeSqr;
-            boomerangShockwaveFired.Clear();
-
-            for (int i = 0; i < pendingBoomerangHits.Count; i++)
-            {
-                Vector3 hit = pendingBoomerangHits[i];
-
-                // 부메랑 + 충격파: 맞은 나무 주변으로 충격파가 추가로 터진다(부메랑·충격파 기본 능력은 유지).
-                // 같은 프레임에 거의 같은 자리(붙어 선 나무를 한 번에 꿰뚫은 경우)면 하나로 합친다 - 같은 자리 충격파가 겹쳐 쌓이지 않게.
-                if (bBoomerangShockwave && _now >= nextBoomerangShockwaveTime && false == IsNearAny(boomerangShockwaveFired, hit, mergeSqr))
-                {
-                    nextBoomerangShockwaveTime = _now + tuning.boomerangShockwaveCooldown;
-                    boomerangShockwaveFired.Add(hit);
-                    Fire360ShockWave(hit);
-                }
-            }
-
-            pendingBoomerangHits.Clear();
-        }
-    }
-
-    private static bool IsNearAny(List<Vector3> _points, Vector3 _position, float _sqrDistance)
-    {
-        for (int i = 0; i < _points.Count; i++)
-        {
-            if ((_points[i] - _position).sqrMagnitude <= _sqrDistance) return true;
-        }
-
-        return false;
     }
 
     /// <summary>회전베기 + 충격파의 360도 충격파 그루당 피해. 조합 고정값 × 피해%(전역 · 조건부 · 충격파 전용, 다다익선 공격력 포함).</summary>
@@ -803,7 +750,8 @@ public class RoguelikeSkillController : MonoBehaviour
 
     private int MaxStars()
     {
-        int max = tuning.stellaBaseMaxStars + Mathf.RoundToInt(modifiers.GetForSkill(ERunEffect.CountAdd, ERoguelikeSkill.Stella));
+        // 다다익선(전역 CountAdd)은 스텔라에 적용하지 않는다(기획서 6-4). 스텔라 전용분만 더한다.
+        int max = tuning.stellaBaseMaxStars + Mathf.RoundToInt(modifiers.Get(ERunEffect.CountAdd, ERoguelikeSkill.Stella));
 
         // 스텔라+드론은 노바 조건(별 9개)까지 모여야 하므로 상한을 그 수 이상으로 연다.
         if (modifiers.IsComboActive(ERoguelikeCombo.StellaDrone)) max = Mathf.Max(max, tuning.stellaDroneNovaStars);
@@ -1019,7 +967,7 @@ public class RoguelikeSkillController : MonoBehaviour
         float radius = _baseRadius * RangeMul(ERoguelikeSkill.Stella);
         float damage = _baseDamage * DamageMul(ERoguelikeSkill.Stella);
 
-        DamageTreesInRadius(_center, radius, damage, true, true, starBlastHpCapRatio);
+        DamageTreesInRadius(_center, radius, damage, true, true, starBlastHpCapRatio, true);
     }
 
     private void DespawnStar(int _index, bool _bRebuildLinks)
@@ -1482,27 +1430,10 @@ public class RoguelikeSkillController : MonoBehaviour
     /// 오프로드 발동 주기(기획서 v2.8 6-1 · 5-5). 주기가 시작되면 이번에 소환될 위치를 미리 정해 주기 내내 표시하고(VFX_OffroadLane),
     /// 주기가 끝나는 순간(발동) 그 위치에 차량을 소환하며 표시를 걷는다. 미리 정한 위치는 그 사이 경로 위 나무가 쓰러져도 그대로 쓴다.
     /// 주기 시작에 후보가 없으면 표시 없이 주기 동안 다시 시도하고, 발동 시점에도 없으면 후보가 생길 때까지 짧은 간격으로 다시 시도한다.
-    /// 웨이브 첫 발동은 나무가 처음 생긴 순간(UpdateFirstTreeTrigger) 위치 표시 없이 바로 소환하고, 같은 프레임에 다음 주기의 위치 표시를 시작한다(기획서 v3.0 11-13 5-3).
+    /// 웨이브 첫 발동도 나무가 처음 생긴 순간(UpdateFirstTreeTrigger) 위치 표시를 시작해 일반 주기와 같은 경로(표시 → 소환)를 탄다(기획서 v3.3 G-8).
     /// </summary>
     private void UpdateOffroadCycle(float _now)
     {
-        if (bOffroadFirstVolleyPending)
-        {
-            if (_now < nextOffroadTime) return;
-
-            // 경로 위 나무가 없어 한 대도 못 내보냈으면 기존 재시도 간격 뒤에 다시 시도한다.
-            if (0 == StartOffroadVolley(_now, 1 + CountAdd(ERoguelikeSkill.Offroad)))
-            {
-                nextOffroadTime = _now + OffroadPickRetrySeconds;
-                return;
-            }
-
-            bOffroadFirstVolleyPending = false;
-            nextOffroadTime = _now + Interval(tuning.offroadInterval, ERoguelikeSkill.Offroad);
-            PickPendingOffroadLanes(_now);
-            return;
-        }
-
         if (false == bOffroadLanesPicked && _now >= nextOffroadPickTime) PickPendingOffroadLanes(_now);
         if (_now < nextOffroadTime || false == bOffroadLanesPicked) return;
 
@@ -1537,8 +1468,10 @@ public class RoguelikeSkillController : MonoBehaviour
         // 지금 달리는 차(방금 소환된 직전 발동분)의 차선은 되도록 피한다 - 같은 차선을 고르면 걷히는 표시 위에 새 표시가 겹쳐 표시가 안 지워진 것처럼 보인다.
         // 그래서 대수가 모자랄 때만 이번 발동 시각 전에 사라질 차의 차선을 더 고른다(그때까지 남아 있을 차와는 여전히 겹치지 않는다).
         int count = 1 + CountAdd(ERoguelikeSkill.Offroad);
+        // 위치를 늦게 정해도 최소 예고 시간은 보장한다. 차선 겹침 판단 시각과 남은 시간 모두 미룬 소환 시각을 쓴다.
+        float fireTime = Mathf.Max(nextOffroadTime, _now + tuning.offroadMinPreviewSeconds);
         PickOffroadLanes(count, radius, _now, false);
-        if (offroadLanePicks.Count < count) PickOffroadLanes(count, radius, nextOffroadTime, true);
+        if (offroadLanePicks.Count < count) PickOffroadLanes(count, radius, fireTime, true);
         if (0 == offroadLanePicks.Count)
         {
             nextOffroadPickTime = _now + OffroadPickRetrySeconds;
@@ -1546,6 +1479,7 @@ public class RoguelikeSkillController : MonoBehaviour
         }
 
         bOffroadLanesPicked = true;
+        nextOffroadTime = fireTime;
         float remaining = Mathf.Max(0f, nextOffroadTime - _now);
 
         for (int i = 0; i < offroadLanePicks.Count; i++)
@@ -1606,7 +1540,7 @@ public class RoguelikeSkillController : MonoBehaviour
         return offroadLanePicks.Count;
     }
 
-    /// <summary>위치 표시 없이 지금 바로 _count대를 내보내고 내보낸 대수를 돌려준다(웨이브 첫 발동 · 디버그).</summary>
+    /// <summary>위치 표시 없이 지금 바로 _count대를 내보내고 내보낸 대수를 돌려준다(에디터 디버그).</summary>
     private int StartOffroadVolley(float _now, int _count)
     {
         PickOffroadLanes(_count, tuning.offroadHitRadius * RangeMul(ERoguelikeSkill.Offroad), _now, false);
@@ -2142,8 +2076,10 @@ public class RoguelikeSkillController : MonoBehaviour
     /// <summary>
     /// 반경 안 나무에 피해를 준다. _hpCapRatio가 0보다 크면 한 그루가 이 한 번에 받는 최종 피해(별 표식 · 포자 증폭 배율 포함)를
     /// 그 나무 최대 HP × _hpCapRatio로 자른다(기획서 v2.5 A-4 스텔라 4티어 폭발 상한).
+    /// _bIsometric이 참이면 세로를 2배로 늘려 재는 아이소메트릭 거리(AttackComponent.GetIsometricDistSq와 같은 식)로 판정한다.
+    /// 화면에서 타원으로 그려지는 폭발 이펙트의 모양과 맞추기 위한 것이다(사전 스캔은 원 반경 그대로 - 타원은 원 안에 들어간다).
     /// </summary>
-    private void DamageTreesInRadius(Vector3 _center, float _radius, float _damage, bool _bMark, bool _bBatch = true, float _hpCapRatio = 0f)
+    private void DamageTreesInRadius(Vector3 _center, float _radius, float _damage, bool _bMark, bool _bBatch = true, float _hpCapRatio = 0f, bool _bIsometric = false)
     {
         if (null == CollisionSystem.Instance || _radius <= 0f) return;
 
@@ -2154,7 +2090,9 @@ public class RoguelikeSkillController : MonoBehaviour
         for (int i = 0; i < scanBuffer.Count; i++)
         {
             if (false == (scanBuffer[i] is TreeObj tree) || false == IsHittable(tree)) continue;
-            if (((Vector2)_center - tree.Position).sqrMagnitude > radiusSq) continue;
+            Vector2 offset = (Vector2)_center - tree.Position;
+            float dy = true == _bIsometric ? offset.y * 2f : offset.y;
+            if (offset.x * offset.x + dy * dy > radiusSq) continue;
             hitBuffer.Add(tree);
         }
 
@@ -2297,7 +2235,6 @@ public class RoguelikeSkillController : MonoBehaviour
     private void OnDestroy()
     {
         RunCombatHooks.AxeSwungEvent -= axeSwungHandler;
-        RunCombatHooks.BoomerangHitTreeEvent -= boomerangHitHandler;
         RunCombatHooks.BoomerangTickEvent -= boomerangTickHandler;
         RunCombatHooks.BoomerangStartedEvent -= boomerangStartedHandler;
         RunCombatHooks.BoomerangEndedEvent -= boomerangEndedHandler;

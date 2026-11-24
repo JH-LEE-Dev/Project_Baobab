@@ -261,7 +261,8 @@ public class UIView_RoguelikeCollection : UIView_RoguelikeModalBase
     [SerializeField] private UI_KeyboardImage[] keyGuideImages = new UI_KeyboardImage[0];
 
 #if UNITY_EDITOR
-    [Header("에디터 시험 토글 (G-10 Application Layer 필드가 들어오기 전 확인용 - 빌드에는 없다)")]
+    // 실제 기록이 없어도 연출(발견 · NEW 뒤집힘 · E9)을 눈으로 확인하려고 남겨 둔 에디터 전용 토글이다. 켜 두면 닫을 때 기록을 저장하지 않는다(IsDebugOverridden).
+    [Header("에디터 시험 토글 (연출 확인용 - 빌드에는 없다)")]
     [SerializeField, Tooltip("모든 칸을 발견한 상태로 연다.")] private bool debugAllFound;
     [SerializeField, Tooltip("최초 완성 축하(E9)를 재생한다(모든 칸 발견 포함).")] private bool debugCelebrate;
     [SerializeField, Range(0, 8), Tooltip("발견한 칸 앞에서부터 이 수만큼을 NEW(뒤집힘 + 배지)로 만든다. E9와는 함께 쓰지 않는다.")] private int debugNewCount;
@@ -425,6 +426,42 @@ public class UIView_RoguelikeCollection : UIView_RoguelikeModalBase
     public void SetStandaloneClose(bool _bStandalone)
     {
         bStandaloneClose = _bStandalone;
+    }
+
+    /// <summary>이번에 최초 완성 축하(E9)를 재생했다. 닫힌 뒤(ClosedEvent)에도 다음 OpenCollection까지 값이 남는다.</summary>
+    public bool IsCelebrated => bCelebrate;
+
+    /// <summary>
+    /// 에디터 시험 토글(모든 칸 발견 · 축하 · NEW 강제) 중이라 화면이 실제 기록과 다르다. 이때는 닫을 때 기록을 저장하지 않는다.
+    /// 빌드에서는 항상 false다.
+    /// </summary>
+    public bool IsDebugOverridden
+    {
+        get
+        {
+#if UNITY_EDITOR
+            return true == debugAllFound || true == debugCelebrate || 0 < debugNewCount;
+#else
+            return false;
+#endif
+        }
+    }
+
+    /// <summary>
+    /// 이번에 앞면으로 보여 준 칸의 cardId를 _output에 더한다(지우지 않는다). 발견한 칸 중 NEW 뒤집힘이 끝나기 전에 닫은 칸은 뺀다.
+    /// 닫힌 뒤(ClosedEvent)에도 읽을 수 있다. 저장은 호출한 쪽(메인메뉴)이 RoguelikeRecordRepository.SaveCollectionSeen으로 한다.
+    /// </summary>
+    public void CollectShownCardIds(List<string> _output)
+    {
+        if (null == _output) return;
+
+        for (int i = 0; slotCount > i; i++)
+        {
+            if (false == items[i].bFound) continue;
+            if (true == slotNew[i] && frame < slotFlip[i] + NewSwapOffset) continue;
+
+            _output.Add(items[i].cardId);
+        }
     }
 
     /// <summary>

@@ -13,10 +13,8 @@ public interface IRoguelikeRunInfo
     int Threshold { get; }
     int SpawnCap { get; }
     EPressureState PressureState { get; }
-    float PressureGraceRatio { get; }
-    float PressureCooldownRatio { get; }
-    /// <summary>웨이브 전투 중이고 현재 스태미너가 임계치 피해 1회(웨이브의 staminaDamage)보다 작거나 같아, 임계점을 넘어 한 번 맞으면 쓰러지는 상태인가. UI가 스태미너 바 경고를 미리 켜는 데 쓴다.</summary>
-    bool PressureHitLethal { get; }
+    /// <summary>웨이브 전투 중이고 현재 스태미너가 초당 손실 × 경고 초(밸런스 lethalWarningSeconds, 4초)보다 작거나 같아, 임계치를 넘기고 얼마 버티지 못하는 상태인가(손실 중이든 아니든). UI가 스태미너 바 경고를 미리 켜는 데 쓴다.</summary>
+    bool PressureLossLethal { get; }
 
     bool IsCardSelectionOpen { get; }
     bool IsFirstPick { get; }

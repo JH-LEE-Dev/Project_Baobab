@@ -81,6 +81,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private ITilemapDataProvider sceneTilemapDataProvider;
 
     public void TakeEnvironmentalStaminaDamage(float _amount) => healthComponent.DecreaseStaminaFlat(_amount);
+    /// <summary>로그라이크 임계치 스태미너 손실(초당). 프레임마다 부르며 피해 연출 이벤트를 올리지 않는다(펄스는 런 신호가 맡는다).</summary>
+    public void DrainRoguelikeStamina(float _perSecond) => healthComponent.ApplyEnvironmentalStaminaDrain(_perSecond);
     // 불씨를 주워 과열 수치를 올린다. 이미 최대면 효과가 없고 false.
     public bool AddOverheat(float _amount) => overheatComponent != null && overheatComponent.AddOverheat(_amount);
     public bool IsOverheatMax => overheatComponent != null && overheatComponent.IsMax;
