@@ -73,7 +73,7 @@ public readonly struct RoguelikeWorldHudThresholdFx
 
 /// <summary>
 /// 월드 HUD 1배 픽셀 페인터(WorldHUD_Plan.md 2-1). 순수 C# 클래스이고 world_hud_v6.py / world_hud_v6_extras.py의 그리기 규칙을 1:1로 옮겼다.
-///   띠(threshold_band / stamina_band + lift), 숫자 명패(number_label + with_shadow), 대쉬 칸(dash_row), 언리밋 표시(unlimit_label).
+///   띠(threshold_band / stamina_band + lift), 숫자 명패(number_label + with_label_shadow: 12장 B 단단한 그림자 = 불투명 #06222A (1, 2)), 대쉬 칸(dash_row), 언리밋 표시(unlimit_label).
 /// 요소마다 Color32[] 버퍼 하나가 있고(Unity 텍스처 순서 = 아래에서 위 행), 버퍼의 화면 위치는 RoguelikeWorldHudGeometry의 사각형이다.
 /// 버퍼 · 픽셀 목록은 생성자에서 한 번만 만들고 Paint 호출은 할당이 없다(숫자는 자릿수 분해로 글리프를 복사한다).
 /// 띠 픽셀 목록: 띠 영역(A0 &lt;= A &lt; A1, B0 &lt;= B &lt; B1)에 드는 픽셀을 한 번 모아 두고 그 목록만 다시 칠한다. 임계치 · 스태미너 띠가 같은 목록을 쓴다(스태미너는 x 반전).
@@ -498,7 +498,7 @@ public sealed class RoguelikeWorldHudPainter
         int width = ComposeLabel(iconTree, _trees, _threshold, true, _style);
 
         Array.Clear(thresholdLabelBuffer, 0, thresholdLabelBuffer.Length);
-        BlitWithShadow(labelTemp, RoguelikeWorldHudGeometry.LabelMaxWidth, width, RoguelikeWorldHudGeometry.LabelBodyHeight, thresholdLabelBuffer, in RoguelikeWorldHudGeometry.ThresholdLabelRect, RoguelikeWorldHudGeometry.CapLeftX - RoguelikeWorldHudGeometry.LabelGap - width, RoguelikeWorldHudGeometry.LabelTop);
+        BlitWithShadow(labelTemp, RoguelikeWorldHudGeometry.LabelMaxWidth, width, RoguelikeWorldHudGeometry.LabelBodyHeight, thresholdLabelBuffer, in RoguelikeWorldHudGeometry.ThresholdLabelRect, RoguelikeWorldHudGeometry.CapLeftX - RoguelikeWorldHudGeometry.LabelGap - width, RoguelikeWorldHudGeometry.LabelTop, RoguelikeWorldHudPalette.LabelShadowSolid, RoguelikeWorldHudGeometry.LabelShadowShiftX);
     }
 
     /// <summary>
@@ -510,7 +510,7 @@ public sealed class RoguelikeWorldHudPainter
         ComposeLabel(iconBolt, _current, _max, true, _style);
 
         Array.Clear(staminaLabelBuffer, 0, staminaLabelBuffer.Length);
-        BlitWithShadow(labelTemp, RoguelikeWorldHudGeometry.LabelMaxWidth, RoguelikeWorldHudGeometry.LabelMaxWidth, RoguelikeWorldHudGeometry.LabelBodyHeight, staminaLabelBuffer, in RoguelikeWorldHudGeometry.StaminaLabelRect, labelX, RoguelikeWorldHudGeometry.LabelTop);
+        BlitWithShadow(labelTemp, RoguelikeWorldHudGeometry.LabelMaxWidth, RoguelikeWorldHudGeometry.LabelMaxWidth, RoguelikeWorldHudGeometry.LabelBodyHeight, staminaLabelBuffer, in RoguelikeWorldHudGeometry.StaminaLabelRect, labelX, RoguelikeWorldHudGeometry.LabelTop, RoguelikeWorldHudPalette.LabelShadowSolid, RoguelikeWorldHudGeometry.LabelShadowShiftX);
 
         if (0 >= _dashCount) return;
 
@@ -522,7 +522,7 @@ public sealed class RoguelikeWorldHudPainter
         Array.Clear(dashTemp, 0, dashTemp.Length);
         BlitBitmap(iconDash, dashTemp, DashTempWidth, DashTempHeight, labelX - originX + ((iconBolt.width - iconDash.width) >> 1), (rowHeight - DashThickness - iconDash.height) >> 1);
         PaintDashRow(Mathf.Min(_dashCount, DashRowCellMax), in _dash0, in _dash1, labelX - originX + iconBolt.width + IconGap);
-        BlitWithShadow(dashTemp, DashTempWidth, DashTempWidth, DashTempHeight, staminaLabelBuffer, in RoguelikeWorldHudGeometry.StaminaLabelRect, originX, dashY);
+        BlitWithShadow(dashTemp, DashTempWidth, DashTempWidth, DashTempHeight, staminaLabelBuffer, in RoguelikeWorldHudGeometry.StaminaLabelRect, originX, dashY, RoguelikeWorldHudPalette.LabelShadow, 0);
     }
 
     /// <summary>남은 벌목 수(위 가운데, v8): 도끼 아이콘 + 남은 수 max(0, 목표 - 처치), 분모 없음. x 320 가운데, y WaveY.</summary>
@@ -531,7 +531,7 @@ public sealed class RoguelikeWorldHudPainter
         int width = ComposeLabel(iconAxe, _remaining, 0, false, _style);
 
         Array.Clear(killLabelBuffer, 0, killLabelBuffer.Length);
-        BlitWithShadow(labelTemp, RoguelikeWorldHudGeometry.LabelMaxWidth, width, RoguelikeWorldHudGeometry.LabelBodyHeight, killLabelBuffer, in RoguelikeWorldHudGeometry.KillLabelRect, RoguelikeWorldHudGeometry.ScreenWidth / 2 - width / 2, RoguelikeWorldHudGeometry.WaveY);
+        BlitWithShadow(labelTemp, RoguelikeWorldHudGeometry.LabelMaxWidth, width, RoguelikeWorldHudGeometry.LabelBodyHeight, killLabelBuffer, in RoguelikeWorldHudGeometry.KillLabelRect, RoguelikeWorldHudGeometry.ScreenWidth / 2 - width / 2, RoguelikeWorldHudGeometry.WaveY, RoguelikeWorldHudPalette.LabelShadowSolid, RoguelikeWorldHudGeometry.LabelShadowShiftX);
     }
 
     /// <summary>웨이브 숫자(좌상단, v8): 깃발 아이콘 + 현재 웨이브, 분모 없음. 왼쪽 끝 x WaveX, y WaveY.</summary>
@@ -540,7 +540,7 @@ public sealed class RoguelikeWorldHudPainter
         int width = ComposeLabel(iconFlag, _wave, 0, false, RoguelikeWorldHudDigitStyle.White);
 
         Array.Clear(waveLabelBuffer, 0, waveLabelBuffer.Length);
-        BlitWithShadow(labelTemp, RoguelikeWorldHudGeometry.LabelMaxWidth, width, RoguelikeWorldHudGeometry.LabelBodyHeight, waveLabelBuffer, in RoguelikeWorldHudGeometry.WaveLabelRect, RoguelikeWorldHudGeometry.WaveX, RoguelikeWorldHudGeometry.WaveY);
+        BlitWithShadow(labelTemp, RoguelikeWorldHudGeometry.LabelMaxWidth, width, RoguelikeWorldHudGeometry.LabelBodyHeight, waveLabelBuffer, in RoguelikeWorldHudGeometry.WaveLabelRect, RoguelikeWorldHudGeometry.WaveX, RoguelikeWorldHudGeometry.WaveY, RoguelikeWorldHudPalette.LabelShadowSolid, RoguelikeWorldHudGeometry.LabelShadowShiftX);
     }
 
     /// <summary>언리밋 웨이브 표시(좌상단, v8): 무한대 아이콘 + 단계 번호, 분모 없음. 웨이브 숫자와 같은 버퍼 · 같은 위치를 쓴다.</summary>
@@ -549,7 +549,7 @@ public sealed class RoguelikeWorldHudPainter
         int width = ComposeLabel(iconInfinity, _index, 0, false, RoguelikeWorldHudDigitStyle.White);
 
         Array.Clear(waveLabelBuffer, 0, waveLabelBuffer.Length);
-        BlitWithShadow(labelTemp, RoguelikeWorldHudGeometry.LabelMaxWidth, width, RoguelikeWorldHudGeometry.LabelBodyHeight, waveLabelBuffer, in RoguelikeWorldHudGeometry.WaveLabelRect, RoguelikeWorldHudGeometry.WaveX, RoguelikeWorldHudGeometry.WaveY);
+        BlitWithShadow(labelTemp, RoguelikeWorldHudGeometry.LabelMaxWidth, width, RoguelikeWorldHudGeometry.LabelBodyHeight, waveLabelBuffer, in RoguelikeWorldHudGeometry.WaveLabelRect, RoguelikeWorldHudGeometry.WaveX, RoguelikeWorldHudGeometry.WaveY, RoguelikeWorldHudPalette.LabelShadowSolid, RoguelikeWorldHudGeometry.LabelShadowShiftX);
     }
 
     /// <summary>남은 벌목 수 숫자 폭(그림자 제외, 아이콘 + 큰 숫자). 목표 달성 반짝이가 숫자 위 어디에서 나올지 정하는 데 쓴다. ComposeLabel의 폭 계산과 같다.</summary>
@@ -724,10 +724,10 @@ public sealed class RoguelikeWorldHudPainter
     }
 
     /// <summary>
-    /// with_shadow: 작업 버퍼(위에서 아래, 폭 _srcWidth)를 출력 버퍼의 화면 위치 (_screenX, _screenY)에 복사하고 실루엣을 (0, 2) 아래에 알파 90 그림자로 깐다.
-    /// 그림자 -> 본체 순서로 덮어쓴다.
+    /// with_shadow / with_label_shadow: 작업 버퍼(위에서 아래, 폭 _srcWidth)를 출력 버퍼의 화면 위치 (_screenX, _screenY)에 복사하고 실루엣을 (_shadowDx, LabelShadowDrop) 아래에 _shadowColor 그림자로 깐다.
+    /// 그림자 -> 본체 순서로 덮어쓴다. 숫자 라벨은 불투명 LabelShadowSolid + 오른쪽 LabelShadowShiftX(12장 B 단단한 그림자), 대쉬 칸은 반투명 LabelShadow + 0(원래대로).
     /// </summary>
-    private static void BlitWithShadow(Color32[] _src, int _srcStride, int _srcWidth, int _srcHeight, Color32[] _dst, in RoguelikeWorldHudRect _rect, int _screenX, int _screenY)
+    private static void BlitWithShadow(Color32[] _src, int _srcStride, int _srcWidth, int _srcHeight, Color32[] _dst, in RoguelikeWorldHudRect _rect, int _screenX, int _screenY, in Color32 _shadowColor, int _shadowDx)
     {
         for (int pass = 0; 2 > pass; pass++)
         {
@@ -738,10 +738,10 @@ public sealed class RoguelikeWorldHudPainter
                     Color32 pixel = _src[y * _srcStride + x];
                     if (0 == pixel.a) continue;
 
-                    int index = _rect.IndexOf(_screenX + x, _screenY + y + (0 == pass ? RoguelikeWorldHudGeometry.LabelShadowDrop : 0));
+                    int index = _rect.IndexOf(_screenX + x + (0 == pass ? _shadowDx : 0), _screenY + y + (0 == pass ? RoguelikeWorldHudGeometry.LabelShadowDrop : 0));
                     if (0 > index) continue;
 
-                    _dst[index] = 0 == pass ? RoguelikeWorldHudPalette.LabelShadow : pixel;
+                    _dst[index] = 0 == pass ? _shadowColor : pixel;
                 }
             }
         }

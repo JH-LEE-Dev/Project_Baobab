@@ -70,6 +70,8 @@ public static class RoguelikeWorldHudGeometry
     // 숫자 명패
     public const int LabelBodyHeight = 15;
     public const int LabelShadowDrop = 2;
+    // 숫자 그림자 오른쪽 이동(WorldHUD_Plan.md 12장 B 단단한 그림자: 불투명 #06222A, 오프셋 (1, 2)). 숫자 텍스처 사각형이 오른쪽으로 이만큼 늘어난다(글자 위치는 그대로).
+    public const int LabelShadowShiftX = 1;
     public const int LabelRectHeight = LabelBodyHeight + LabelShadowDrop + 1;
     public const int LabelMaxWidth = 70;
     // 번개 아이콘 열 아래 대쉬 칸까지 간격
@@ -97,10 +99,10 @@ public static class RoguelikeWorldHudGeometry
 
     public static readonly RoguelikeWorldHudRect ThresholdBandRect = new RoguelikeWorldHudRect(BandMinX, BandMinY, BandMaxX - BandMinX, BandMaxY - BandMinY);
     public static readonly RoguelikeWorldHudRect StaminaBandRect = new RoguelikeWorldHudRect(ScreenWidth - BandMaxX, BandMinY, BandMaxX - BandMinX, BandMaxY - BandMinY);
-    public static readonly RoguelikeWorldHudRect ThresholdLabelRect = new RoguelikeWorldHudRect(CapLeftX - LabelGap - LabelMaxWidth, LabelTop, LabelMaxWidth, LabelRectHeight);
-    public static readonly RoguelikeWorldHudRect StaminaLabelRect = new RoguelikeWorldHudRect(LabelRightX - DashLeftMargin, LabelTop, LabelMaxWidth + DashLeftMargin, LabelBodyHeight + DashGap + DashRectHeight + LabelShadowDrop);
-    public static readonly RoguelikeWorldHudRect WaveLabelRect = new RoguelikeWorldHudRect(WaveX, WaveY, LabelMaxWidth, LabelRectHeight);
-    public static readonly RoguelikeWorldHudRect KillLabelRect = new RoguelikeWorldHudRect(ScreenWidth / 2 - LabelMaxWidth / 2, WaveY, LabelMaxWidth, LabelRectHeight);
+    public static readonly RoguelikeWorldHudRect ThresholdLabelRect = new RoguelikeWorldHudRect(CapLeftX - LabelGap - LabelMaxWidth, LabelTop, LabelMaxWidth + LabelShadowShiftX, LabelRectHeight);
+    public static readonly RoguelikeWorldHudRect StaminaLabelRect = new RoguelikeWorldHudRect(LabelRightX - DashLeftMargin, LabelTop, LabelMaxWidth + DashLeftMargin + LabelShadowShiftX, LabelBodyHeight + DashGap + DashRectHeight + LabelShadowDrop);
+    public static readonly RoguelikeWorldHudRect WaveLabelRect = new RoguelikeWorldHudRect(WaveX, WaveY, LabelMaxWidth + LabelShadowShiftX, LabelRectHeight);
+    public static readonly RoguelikeWorldHudRect KillLabelRect = new RoguelikeWorldHudRect(ScreenWidth / 2 - LabelMaxWidth / 2, WaveY, LabelMaxWidth + LabelShadowShiftX, LabelRectHeight);
     public static readonly RoguelikeWorldHudRect FxBandRect = new RoguelikeWorldHudRect(FxBandMinX, 0, FxBandWidth, FxBandHeight);
     public static readonly RoguelikeWorldHudRect FxKillRect = new RoguelikeWorldHudRect(FxKillMinX, FxKillMinY, FxKillWidth, FxKillHeight);
 

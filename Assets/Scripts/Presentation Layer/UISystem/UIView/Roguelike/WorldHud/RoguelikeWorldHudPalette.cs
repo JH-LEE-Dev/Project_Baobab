@@ -37,6 +37,8 @@ public static class RoguelikeWorldHudPalette
     public static readonly Color32 Side2 = Hex(0x0A3B46);
     public static readonly Color32 BandShadow = new Color32(5, 45, 55, 80);
     public static readonly Color32 LabelShadow = new Color32(5, 45, 55, 90);
+    // 숫자 그림자(12장 B 단단한 그림자): 불투명 더 진한 남색. 대쉬 칸은 위의 LabelShadow(반투명)를 그대로 쓴다.
+    public static readonly Color32 LabelShadowSolid = Hex(0x06222A);
 
     // 테: 먼 쪽 밝게 / 옆 / 가까운 쪽 어둡게
     public static readonly RoguelikeWorldHudTone Rim = new RoguelikeWorldHudTone(0x46BAC4, 0x2A97A3, 0x1C7884);
