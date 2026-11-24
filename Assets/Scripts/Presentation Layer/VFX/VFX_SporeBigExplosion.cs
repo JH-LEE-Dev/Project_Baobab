@@ -26,7 +26,7 @@ namespace PresentationLayer.VFX
     [DisallowMultipleComponent]
     [RequireComponent(typeof(MeshFilter))]
     [RequireComponent(typeof(MeshRenderer))]
-    public class VFX_SporeBigExplosion : MonoBehaviour
+    public class VFX_SporeBigExplosion : MonoBehaviour, IPixelVfxDeferred
     {
         [Header("범위 (월드 유닛, 32 PPU 기준 1유닛 = 32px)")]
         [SerializeField, Tooltip("타원 범위의 가로 반지름. 피격 판정(sporeBigExplosionRange)과 같은 값이어야 한다. 세로는 0.5배. 재생 직전 SetRange로 덮어쓸 수 있다.")]
@@ -231,10 +231,47 @@ namespace PresentationLayer.VFX
         private static int[] ringBandW;
         private static bool bTablesPrewarmed;
 
-        private static readonly PixelQuadBuffer skyBuffer = new PixelQuadBuffer(QuadBudget, false);
-        private static readonly PixelQuadBuffer groundBuffer = new PixelQuadBuffer(2400, false);
-        private static readonly int[] linePixelX = new int[LineBufferSize];
-        private static readonly int[] linePixelY = new int[LineBufferSize];
+        // 스레드별 작업 버퍼. 그리기는 일꾼 스레드에서 돌 수 있어(ComputeDeferred) 스레드마다 하나씩 두고, 한 프레임에 여러 인스턴스가
+        // 한 버퍼에 구간을 이어 채운 뒤 반영 때 자기 구간만 메쉬에 올린다. 계산 묶음(PixelVfxWorkQueue.Serial)이 바뀌면 비운다.
+        // 버퍼는 모자라면 스스로 늘어나므로 처음 크기는 작게 잡는다(스레드 수만큼 생긴다).
+        private sealed class Work
+        {
+            [System.ThreadStatic] private static Work current;
+
+            public readonly PixelQuadBuffer sky = new PixelQuadBuffer(2400, false);
+            public readonly PixelQuadBuffer ground = new PixelQuadBuffer(2400, false);
+            public readonly int[] lineX = new int[LineBufferSize];
+            public readonly int[] lineY = new int[LineBufferSize];
+            private int serial;
+            private bool bUsed;
+
+            public static Work ForCurrentThread()
+            {
+                Work work = current;
+                if (null == work)
+                {
+                    work = new Work();
+                    current = work;
+                }
+
+                int queueSerial = PixelVfxWorkQueue.Serial;
+                if (false == work.bUsed || work.serial != queueSerial)
+                {
+                    work.bUsed = true;
+                    work.serial = queueSerial;
+                    work.sky.Clear();
+                    work.ground.Clear();
+                }
+
+                return work;
+            }
+        }
+
+        // 그리는 동안에만 쓰는 이 스레드의 작업 버퍼(DrawFrame이 잡고 끝나면 놓는다)
+        private PixelQuadBuffer skyBuffer;
+        private PixelQuadBuffer groundBuffer;
+        private int[] linePixelX;
+        private int[] linePixelY;
 
         // 내부 의존성
         private MeshFilter meshFilter;
@@ -282,6 +319,21 @@ namespace PresentationLayer.VFX
         private readonly int[] boundsMaxX = new int[2];
         private readonly int[] boundsMaxY = new int[2];
 
+        // 미뤄 둔 그리기(PixelVfxWorkQueue)가 쓸 값. LateUpdate에서 예전과 같은 시점에 읽어 둔다.
+        private int deferredSlot = -1;          // 대기열 자리. -1이면 미뤄 둔 그리기가 없다
+        private Vector3 deferredPosition;
+        private Matrix4x4 deferredWorldToLocal;
+        private bool bDeferredSplit;
+        private Matrix4x4 deferredGroundWorldToLocal;
+        private Vector3 deferredGroundPosition;
+        // 반영 때 메쉬에 올릴 구간
+        private PixelQuadBuffer skySegment;
+        private int skySegmentStart;
+        private int skySegmentCount;
+        private PixelQuadBuffer groundSegment;
+        private int groundSegmentStart;
+        private int groundSegmentCount;
+
         // 연막 세터 캐시: 마지막으로 쓴 값과 같으면 Transform/SpriteRenderer 세터를 부르지 않는다
         private readonly int[] puffLastX = new int[PuffTotal];
         private readonly int[] puffLastY = new int[PuffTotal];
@@ -312,6 +364,7 @@ namespace PresentationLayer.VFX
         /// </summary>
         public void SetRange(float _radiusUnits)
         {
+            CompleteDeferred();
             overrideRange = _radiusUnits;
         }
 
@@ -321,6 +374,7 @@ namespace PresentationLayer.VFX
         /// </summary>
         public void SetTier(int _tier)
         {
+            CompleteDeferred();
             overrideTier = Mathf.Clamp(_tier, 0, 3);
         }
 
@@ -1017,7 +1071,7 @@ namespace PresentationLayer.VFX
         }
 
         // 정수 격자 직선(Bresenham) + L자 모서리 제거. 결과 픽셀 수를 돌려준다(버퍼를 넘으면 0).
-        private static int BuildLine(int _x0, int _y0, int _x1, int _y1)
+        private int BuildLine(int _x0, int _y0, int _x1, int _y1)
         {
             int dx = Mathf.Abs(_x1 - _x0);
             int dy = Mathf.Abs(_y1 - _y0);
@@ -1324,13 +1378,21 @@ namespace PresentationLayer.VFX
 
         // ---------- 한 프레임 ----------
 
-        private void RebuildMesh()
+        // 이번 프레임 그림을 이 스레드의 작업 버퍼에 새 구간으로 채운다(일꾼 스레드에서 불릴 수 있다). 예전 RebuildMesh에서 메쉬에 올리는
+        // 부분과 연막 갱신만 뺀 것이고, 위치·변환은 LateUpdate에서 읽어 둔 값을 쓴다.
+        private void DrawFrame()
         {
-            Vector3 pos = transform.position;
-            bool bSplit = null != groundMesh;
+            Work work = Work.ForCurrentThread();
+            skyBuffer = work.sky;
+            groundBuffer = work.ground;
+            linePixelX = work.lineX;
+            linePixelY = work.lineY;
 
-            skyBuffer.Clear();
-            skyBuffer.SetWorldTransform(transform.worldToLocalMatrix, pos.z);
+            Vector3 pos = deferredPosition;
+            bool bSplit = bDeferredSplit;
+
+            skySegmentStart = skyBuffer.BeginSegment();
+            skyBuffer.SetWorldTransform(deferredWorldToLocal, pos.z);
 
             bRunActive = false;
             for (int b = 0; b < 2; b++)
@@ -1344,8 +1406,8 @@ namespace PresentationLayer.VFX
             PixelQuadBuffer groundTarget = skyBuffer;
             if (true == bSplit)
             {
-                groundBuffer.Clear();
-                groundBuffer.SetWorldTransform(groundMeshRenderer.transform.worldToLocalMatrix, pos.z);
+                groundSegmentStart = groundBuffer.BeginSegment();
+                groundBuffer.SetWorldTransform(deferredGroundWorldToLocal, pos.z);
                 groundTarget = groundBuffer;
             }
 
@@ -1376,19 +1438,40 @@ namespace PresentationLayer.VFX
 
             FlushRun();
 
-            // 메쉬 경계는 실제로 그린 픽셀 범위로 좁게 잡는다(GPU 프러스텀 컬링이 효과를 내게 한다)
-            skyBuffer.Upload(mesh, 0);
-            ApplyTightBounds(mesh, transform.position, 0);
-            if (false == meshRenderer.enabled) meshRenderer.enabled = true;
-
+            skySegmentCount = skyBuffer.VertexCount - skySegmentStart;
+            skySegment = skyBuffer;
             if (true == bSplit)
             {
-                groundBuffer.Upload(groundMesh, 0);
-                ApplyTightBounds(groundMesh, groundMeshRenderer.transform.position, 1);
+                groundSegmentCount = groundBuffer.VertexCount - groundSegmentStart;
+                groundSegment = groundBuffer;
+            }
+
+            skyBuffer = null;
+            groundBuffer = null;
+            linePixelX = null;
+            linePixelY = null;
+            activeBuffer = null;
+        }
+
+        // 채워 둔 구간을 메쉬에 올리고 연막을 갱신한다(주 스레드). 예전 RebuildMesh의 끝부분 그대로다.
+        private void CommitFrame()
+        {
+            // 메쉬 경계는 실제로 그린 픽셀 범위로 좁게 잡는다(GPU 프러스텀 컬링이 효과를 내게 한다)
+            skySegment.UploadRange(mesh, 0, skySegmentStart, skySegmentCount);
+            ApplyTightBounds(mesh, deferredPosition, 0);
+            if (false == meshRenderer.enabled) meshRenderer.enabled = true;
+
+            if (true == bDeferredSplit)
+            {
+                groundSegment.UploadRange(groundMesh, 0, groundSegmentStart, groundSegmentCount);
+                ApplyTightBounds(groundMesh, deferredGroundPosition, 1);
                 if (false == groundMeshRenderer.enabled) groundMeshRenderer.enabled = true;
             }
 
-            UpdatePuffs(t);
+            skySegment = null;
+            groundSegment = null;
+
+            UpdatePuffs(elapsed - PreTime);
         }
 
         // 이번 프레임에 그린 월드 픽셀 범위를 메쉬 로컬 경계로 바꿔 적용한다(값이 바뀔 때만 쓴다).
@@ -1709,7 +1792,7 @@ namespace PresentationLayer.VFX
         {
             if (null == puffRenderers) return;
 
-            float z = transform.position.z;
+            float z = deferredPosition.z;
 
             for (int i = 0; i < puffRenderers.Length; i++)
             {
@@ -1815,6 +1898,7 @@ namespace PresentationLayer.VFX
 
         private void OnEnable()
         {
+            CompleteDeferred();
             appliedRootSortingLayerID = int.MinValue;
             appliedRootSortingOrder = int.MinValue;
             bBeginPending = true;
@@ -1879,11 +1963,43 @@ namespace PresentationLayer.VFX
                 return;
             }
 
-            RebuildMesh();
+            // 그리기는 유니티 API를 쓰지 않는 계산이라 미뤄서 일꾼 스레드에서 돌리고(ComputeDeferred), 메쉬 올리기와 연막 갱신은 그 뒤
+            // 주 스레드에서 한다(ApplyDeferred). 여기서는 그리기가 읽을 유니티 상태를 예전과 같은 시점에 읽어 둔다.
+            deferredPosition = transform.position;
+            deferredWorldToLocal = transform.worldToLocalMatrix;
+            bDeferredSplit = null != groundMesh;
+            if (true == bDeferredSplit)
+            {
+                Transform groundTransform = groundMeshRenderer.transform;
+                deferredGroundWorldToLocal = groundTransform.worldToLocalMatrix;
+                deferredGroundPosition = groundTransform.position;
+            }
+
+            deferredSlot = PixelVfxWorkQueue.Enqueue(this);
+        }
+
+        // 미뤄 둔 그리기. 일꾼 스레드에서 불릴 수 있다: 이 인스턴스의 데이터, 로딩 때 만들어 둔 읽기 전용 표, 이 스레드의 작업 버퍼만 쓴다.
+        void IPixelVfxDeferred.ComputeDeferred()
+        {
+            DrawFrame();
+        }
+
+        // 미뤄 둔 그리기의 결과를 반영한다(주 스레드)
+        void IPixelVfxDeferred.ApplyDeferred()
+        {
+            deferredSlot = -1;
+            CommitFrame();
+        }
+
+        // 미뤄 둔 그리기가 있으면 지금 끝낸다(꺼지거나 다시 시작되기 전에: 예전에는 LateUpdate에서 이미 끝나 있던 일이다)
+        private void CompleteDeferred()
+        {
+            if (0 <= deferredSlot) PixelVfxWorkQueue.CompleteNow(deferredSlot, this);
         }
 
         private void OnDisable()
         {
+            CompleteDeferred();
             overrideRange = 0.0f;
             overrideTier = 0;
 

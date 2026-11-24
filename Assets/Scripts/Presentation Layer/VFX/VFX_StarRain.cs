@@ -28,7 +28,7 @@ namespace PresentationLayer.VFX
     [DisallowMultipleComponent]
     [RequireComponent(typeof(MeshFilter))]
     [RequireComponent(typeof(MeshRenderer))]
-    public class VFX_StarRain : MonoBehaviour
+    public class VFX_StarRain : MonoBehaviour, IPixelVfxDeferred
     {
         /// <summary>낙하 수 상한. 판정 쪽도 같은 값으로 제한한다.</summary>
         public const int MaxCount = 100;
@@ -131,8 +131,14 @@ namespace PresentationLayer.VFX
             public int worldMaxY;
         }
 
-        private static readonly Layer groundLayer = new Layer { buffer = new PixelQuadBuffer(1600) };
-        private static readonly Layer airLayer = new Layer { buffer = new PixelQuadBuffer(1600) };
+        // 격자와 버퍼는 인스턴스마다 둔다(그리기가 일꾼 스레드에서 돌 수 있다 - ComputeDeferred). 예전에는 모든 인스턴스가 한 벌을 같이 썼고
+        // 격자 크기는 가장 최근에 시작한 유성우의 범위로 잡혔으므로(SetupLayers), 그 크기를 정적으로 기억해 두고 매 프레임 자기 격자에 맞춘다.
+        private static int sharedLayerMinX;
+        private static int sharedLayerMinY;
+        private static int sharedLayerMaxX;
+        private static int sharedLayerMaxY;
+        private Layer groundLayer;
+        private Layer airLayer;
         private static readonly Unit[] scratchUnits = new Unit[MaxCount];
         private static readonly int[] FlashArms = { 28, 21, 14, 8, 4 };
         private static readonly int[] PillarHeights = { 46, 32, 18, 8 };
@@ -176,6 +182,14 @@ namespace PresentationLayer.VFX
         private Vector3 cullingCenter;
         private Vector3 cullingSize = new Vector3(10.0f, 10.0f, PixelVfxCulling.BoundsDepth);
 
+        // 미뤄 둔 그리기(PixelVfxWorkQueue)가 쓸 값. LateUpdate에서 예전과 같은 시점에 읽어 둔다.
+        private int deferredSlot = -1;          // 대기열 자리. -1이면 미뤄 둔 그리기가 없다
+        private Vector3 deferredPosition;
+        private Matrix4x4 deferredWorldToLocal;
+        private bool bDeferredGround;
+        private Matrix4x4 deferredGroundWorldToLocal;
+        private Vector3 deferredGroundPosition;
+
         public int ImpactCount => unitCount;
 
         // 퍼블릭 초기화 및 제어 메서드
@@ -200,6 +214,7 @@ namespace PresentationLayer.VFX
         /// <param name="_tier">1 씨앗, 2 꽃, 3 나무(강조색과 큰 별 개수)</param>
         public void Play(int _count, float _duration, float _radius, int _seed, int _tier)
         {
+            CompleteDeferred();
             requestedDuration = Mathf.Clamp(_duration, MinDuration, MaxDuration);
             requestedCount = ClampCount(_count, requestedDuration);
             requestedRadius = Mathf.Clamp(_radius, 1.0f, 6.0f);
@@ -255,6 +270,9 @@ namespace PresentationLayer.VFX
         {
             if (true == bInitialized) return;
             bInitialized = true;
+
+            groundLayer = new Layer { buffer = new PixelQuadBuffer(1600) };
+            airLayer = new Layer { buffer = new PixelQuadBuffer(1600) };
 
             meshFilter = GetComponent<MeshFilter>();
             meshRenderer = GetComponent<MeshRenderer>();
@@ -364,8 +382,11 @@ namespace PresentationLayer.VFX
             int minY = -Mathf.CeilToInt(-OffsetY + ry) - 90;
             int maxY = Mathf.CeilToInt(ry) + 50;
 
-            PrepareLayer(groundLayer, minX, minY, maxX, maxY);
-            PrepareLayer(airLayer, minX, minY, maxX, maxY);
+            // 격자 크기는 모든 인스턴스가 같이 쓴다(예전의 공용 격자와 같다). 자기 격자에는 LateUpdate가 매 프레임 맞춘다.
+            sharedLayerMinX = minX;
+            sharedLayerMinY = minY;
+            sharedLayerMaxX = maxX;
+            sharedLayerMaxY = maxY;
 
             // 화면 밖 판단 범위(시전자 발밑 기준 월드 유닛). y는 위쪽이 +이므로 부호를 뒤집는다.
             float centerX = originPixelX + (minX + maxX) * 0.5f;
@@ -1042,10 +1063,12 @@ namespace PresentationLayer.VFX
 
         // ---------- 한 프레임 ----------
 
-        private void RebuildMesh()
+        // 이번 프레임 그림을 격자에 그리고 버퍼에 채운다(일꾼 스레드에서 불릴 수 있다). 예전 RebuildMesh에서 메쉬에 올리는 부분만 뺀 것이고,
+        // 위치·변환은 LateUpdate에서 읽어 둔 값을 쓴다.
+        private void DrawFrame()
         {
             float ft = elapsed * TicksPerSecond;
-            Vector3 pos = transform.position;
+            Vector3 pos = deferredPosition;
 
             // 동시에 진행 중인 낙하가 많으면(짧은 지속시간에 낙하 수가 많을 때) 보조 연출을 덜어 쿼드 예산을 넘지 않게 한다.
             int active = 0;
@@ -1063,31 +1086,35 @@ namespace PresentationLayer.VFX
                 DrawUnit(units[i], ft);
             }
 
-            bool bGround = null != groundMesh;
+            bool bGround = bDeferredGround;
 
             Layer skyTarget = airLayer;
             Layer groundTarget = true == bGround ? groundLayer : airLayer;
 
             airLayer.buffer.Clear();
-            airLayer.buffer.SetWorldTransform(transform.worldToLocalMatrix, pos.z);
+            airLayer.buffer.SetWorldTransform(deferredWorldToLocal, pos.z);
             ResetWorldBounds(airLayer);
 
             if (true == bGround)
             {
                 groundLayer.buffer.Clear();
-                groundLayer.buffer.SetWorldTransform(groundMeshRenderer.transform.worldToLocalMatrix, pos.z);
+                groundLayer.buffer.SetWorldTransform(deferredGroundWorldToLocal, pos.z);
                 ResetWorldBounds(groundLayer);
             }
 
             // 바닥 메쉬가 없으면 모두 공중 메쉬 하나로 그린다(폴백). 바닥을 먼저 넣어 나중에 그리는 공중이 위에 오게 한다.
             EmitLayer(groundLayer, groundTarget.buffer, quadBudget);
             EmitLayer(airLayer, skyTarget.buffer, quadBudget);
+        }
 
-            UploadMesh(airLayer.buffer, airMesh, meshRenderer, transform.position, airLayer, ref airUploadedVertexCount, ref airUploadedHash);
+        // 채워 둔 버퍼를 메쉬에 올린다(주 스레드). 예전 RebuildMesh의 끝부분 그대로다.
+        private void CommitFrame()
+        {
+            UploadMesh(airLayer.buffer, airMesh, meshRenderer, deferredPosition, airLayer, ref airUploadedVertexCount, ref airUploadedHash);
 
-            if (true == bGround)
+            if (true == bDeferredGround)
             {
-                UploadMesh(groundLayer.buffer, groundMesh, groundMeshRenderer, groundMeshRenderer.transform.position, groundLayer, ref groundUploadedVertexCount, ref groundUploadedHash);
+                UploadMesh(groundLayer.buffer, groundMesh, groundMeshRenderer, deferredGroundPosition, groundLayer, ref groundUploadedVertexCount, ref groundUploadedHash);
             }
         }
 
@@ -1229,6 +1256,7 @@ namespace PresentationLayer.VFX
 
         private void OnEnable()
         {
+            CompleteDeferred();
             appliedRootSortingLayerID = int.MinValue;
             appliedRootSortingOrder = int.MinValue;
             bBeginPending = true;
@@ -1284,11 +1312,46 @@ namespace PresentationLayer.VFX
                 return;
             }
 
-            RebuildMesh();
+            // 그리기는 유니티 API를 쓰지 않는 계산이라 미뤄서 일꾼 스레드에서 돌리고(ComputeDeferred), 메쉬 올리기는 그 뒤 주 스레드에서 한다
+            // (ApplyDeferred). 여기서는 그리기가 읽을 유니티 상태를 예전과 같은 시점에 읽어 두고, 격자를 지금의 공용 크기에 맞춘다.
+            PrepareLayer(groundLayer, sharedLayerMinX, sharedLayerMinY, sharedLayerMaxX, sharedLayerMaxY);
+            PrepareLayer(airLayer, sharedLayerMinX, sharedLayerMinY, sharedLayerMaxX, sharedLayerMaxY);
+
+            deferredPosition = transform.position;
+            deferredWorldToLocal = transform.worldToLocalMatrix;
+            bDeferredGround = null != groundMesh;
+            if (true == bDeferredGround)
+            {
+                Transform groundTransform = groundMeshRenderer.transform;
+                deferredGroundWorldToLocal = groundTransform.worldToLocalMatrix;
+                deferredGroundPosition = groundTransform.position;
+            }
+
+            deferredSlot = PixelVfxWorkQueue.Enqueue(this);
+        }
+
+        // 미뤄 둔 그리기. 일꾼 스레드에서 불릴 수 있다: 이 인스턴스의 데이터(격자·버퍼 포함)와 읽기 전용 표만 쓴다.
+        void IPixelVfxDeferred.ComputeDeferred()
+        {
+            DrawFrame();
+        }
+
+        // 미뤄 둔 그리기의 결과를 메쉬에 올린다(주 스레드)
+        void IPixelVfxDeferred.ApplyDeferred()
+        {
+            deferredSlot = -1;
+            CommitFrame();
+        }
+
+        // 미뤄 둔 그리기가 있으면 지금 끝낸다(꺼지거나 다시 시작되기 전에: 예전에는 LateUpdate에서 이미 끝나 있던 일이다)
+        private void CompleteDeferred()
+        {
+            if (0 <= deferredSlot) PixelVfxWorkQueue.CompleteNow(deferredSlot, this);
         }
 
         private void OnDisable()
         {
+            CompleteDeferred();
             bPlaySet = false;
             HideAll();
         }
