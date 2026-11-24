@@ -29,6 +29,8 @@ public class EmberItem : Item, IStaticCollidable
     public int Layer => gameObject.layer;
 
     public ItemMoveState MoveState => state;
+    // 흡입 중 빨려가는 대상(흡입 중이 아니면 null)
+    public Transform SuckTarget => suckTarget;
     public bool bGrounded { get; private set; }
 
     // 관리용 인덱스. PoolIndex는 꺼내 쓰는 중인 전체 목록, UpdateIndex는 매 프레임 갱신하는 목록(-1이면 빠져 있음).
@@ -397,6 +399,17 @@ public class EmberItem : Item, IStaticCollidable
         if (state != ItemMoveState.Dropped) return;
 
         StartSucking(_target);
+    }
+
+    /// <summary>
+    /// 흡입 중인 불씨가 빨려갈 대상을 바꾼다(용암숲 기믹 안내 중 캐릭터 대신 과열 게이지 UI 자리로). 움직임 공식은 그대로다.
+    /// 흡입 중이 아니면 아무것도 하지 않는다.
+    /// </summary>
+    public void RedirectSuck(Transform _target)
+    {
+        if (state != ItemMoveState.Sucking || _target == null) return;
+
+        suckTarget = _target;
     }
 
     private void StartSucking(Transform _target)

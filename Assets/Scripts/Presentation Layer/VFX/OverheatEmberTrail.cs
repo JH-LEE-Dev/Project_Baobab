@@ -145,6 +145,33 @@ namespace PresentationLayer.VFX
             count++;
         }
 
+        /// <summary>
+        /// 나이 0인 새 점을 머리에 더한다(크기 배율은 직전 머리의 값). 기록이 없으면 아무것도 하지 않는다.
+        /// 불씨가 마지막 스텝 뒤에 움직인 채 꺼질 때(획득) 도착 자리까지 꼬리를 잇는 데 쓴다.
+        /// </summary>
+        public void AddHead(float _x, float _y)
+        {
+            if (0 == count) return;
+
+            float scale = points[count - 1].scale;
+            if (count >= HistoryCapacity)
+            {
+                for (int i = 1; i < count; i++) points[i - 1] = points[i];
+                count--;
+            }
+
+            points[count] = new Point { x = _x, y = _y, age = 0.0f, scale = scale };
+            count++;
+        }
+
+        /// <summary>기록을 _target에 그대로 복사한다(_target의 기존 기록은 지운다). 꺼진 불씨의 꼬리를 잔여 드라이버가 이어 그릴 때 쓴다.</summary>
+        public void CopyTo(OverheatEmberTrail _target)
+        {
+            System.Array.Copy(points, _target.points, count);
+            _target.count = count;
+            _target.uploadedQuadCount = -1;
+        }
+
         /// <summary>꼬리 심선: 최근 0.16초 위치에 1px 점을 새것부터 찍는다. 같은 칸이 이어지면 한 번만 찍는다.</summary>
         public void DrawCore(PixelPainter _painter, Color32[] _tones)
         {
