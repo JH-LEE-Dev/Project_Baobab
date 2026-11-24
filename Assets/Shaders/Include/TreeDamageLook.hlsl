@@ -28,7 +28,7 @@
 // A: 숯불 깜빡임 박자(0~1, 두 픽셀 묶음마다 다르다)
 TEXTURE2D(_TreeDamagePatternTex);
 // 나무 그림의 금 모양(그림 크기의 가로 TreeCrackVariantCount배, 모양이 가로로 이어 붙어 있다). 그림 픽셀 좌표로 그대로 읽는다.
-// R(x255): 아래 2비트 = 종류(0 = 금 아님, 1 = 금의 심, 2 = 심 옆의 달궈진 가장자리),
+// R(x255): 아래 2비트 = 종류(0 = 금 아님, 1 = 금의 심, 2 = 심 옆의 달궈진 가장자리, 3 = 외곽선을 건너는 이음매),
 //          위 6비트 = 열기(0~TreeCrackHeatLevels -> 0~1, 수관 금은 1, 밑동 금은 수관에서 멀어질수록 식는다)
 // G: 이 픽셀이 보이기 시작하는 깎임 정도(0~1)
 // B: 금을 따라 시작 자리에서 잰 거리(픽셀, /255) - 빛이 바깥으로 흐르는 박자
@@ -42,7 +42,8 @@ static const float TreeDamagePatternSize = 144.0;
 
 // ── 금 ──
 // 금은 그림의 한 자리(수관 아래쪽 가운데, 도끼가 닿는 쪽)에서 갈라져 깎일수록 바깥으로 뻗어 나간다.
-// 모양은 그림의 수정 조각을 따라 미리 구워 둔다(조각 안에서만 지나가고, 외곽선 뒤로 숨었다가 다음 조각에서 어긋나 나온다).
+// 모양은 그림의 수정 조각을 따라 미리 구워 둔다(조각을 따라 지나가고, 외곽선을 건너는 자리는 한 톤 가라앉은 붉은 이음매로
+// 이어져 금 줄기가 끊기지 않으면서도 앞 조각 뒤로 지나가는 것처럼 보이며, 다음 조각에서 어긋나 나온다).
 // 나무 그림에는 원래 빛나는 점이 많이 박혀 있어서(하이라이트 그림), 금은 한 자리에서 이어져 자라는 1픽셀 줄기로 그리고
 // 빛이 줄기를 따라 바깥으로 흐르게 해 제자리에서 반짝이는 점들과 구분한다.
 // 금 모양 가짓수. TreeCrackMaskTexture.VariantCount와 같아야 한다.
@@ -51,6 +52,8 @@ static const int TreeCrackVariantCount = 4;
 static const float TreeCrackHeatLevels = 63.0;
 // 식은 금(열기 0)의 밝기 배율. 밑동 금은 수관에서 내려오며 식어 어둡고 붉게 사그라든다.
 static const float TreeCrackCoolBrightness = 0.55;
+// 외곽선을 건너는 이음매의 밝기(갓 난 틈 색 기준). 블룸 임계값 아래의 붉은 주황이라 심처럼 번지지 않는다.
+static const float TreeCrackSeamBrightness = 0.75;
 // 금의 끝이 처음 보이기 시작해 다 드러날 때까지 필요한 깎임 폭(금 끝이 흐릿하게 자라난다)
 static const float TreeCrackFadeIn = 0.08;
 // 금이 드러난 뒤 이만큼 더 깎이면 갓 난 붉은 틈에서 하얗게 달군 심으로 다 달아오른다(오래된 금일수록 밝다).
@@ -142,7 +145,7 @@ half3 ApplyTreeDamageCracks(half3 _color, float2 _texel, float2 _texSize, float 
 
     half4 mask = LOAD_TEXTURE2D(_TreeCrackMaskTex, maskTexel);
 
-    // 아래 2비트 = 종류(0 = 금 아님, 1 = 심, 2 = 가장자리), 위 6비트 = 열기
+    // 아래 2비트 = 종류(0 = 금 아님, 1 = 심, 2 = 가장자리, 3 = 이음매), 위 6비트 = 열기
     uint code = (uint)round(mask.r * 255.0);
     uint kind = code & 3u;
     if (0u == kind)
@@ -172,6 +175,13 @@ half3 ApplyTreeDamageCracks(half3 _color, float2 _texel, float2 _texSize, float 
     {
         half3 core = lerp(TreeCrackEdgeColor, TreeCrackCoreColor, (half)(age * heat)) * (half)(glow * lerp(TreeCrackCoolBrightness, 1.0, heat));
         return lerp(_color, core, (half)shown);
+    }
+
+    // 이음매는 하얗게 달아오르지 않고 붉은 틈 색으로만 이어 준다.
+    if (3u == kind)
+    {
+        half3 seam = TreeCrackEdgeColor * (half)(glow * TreeCrackSeamBrightness * lerp(TreeCrackCoolBrightness, 1.0, heat));
+        return lerp(_color, seam, (half)shown);
     }
 
     float rimBlend = lerp(TreeCrackRimBlend, TreeCrackRimBlendCritical, critical);
