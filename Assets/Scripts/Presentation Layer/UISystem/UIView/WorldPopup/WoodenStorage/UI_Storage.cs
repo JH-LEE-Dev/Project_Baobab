@@ -65,6 +65,12 @@ public class UI_Storage : MonoBehaviour
     private int defaultGridConstraintCount;
     private bool isFourColumns = false; // 가로 4칸 고정 배치(8칸 4x2, 12칸 4x3) 중인지
 
+    // 거리 투명도. 운반 상자처럼 보관함이 투명도를 정해 주면(IStoragePopupAlphaSource) 슬롯 배경(slotBackground)의 CanvasGroup에 곱한다.
+    // 교체 인디케이터는 배경의 형제(Visuals 아래)라 흐려지지 않고 뚜렷하게 남는다. 팝다운 모션은 Visuals의 CanvasGroup을
+    // 움직이므로 이 값과 섞이지 않고 곱해진다. 배경에 CanvasGroup이 없으면 처음 흐려질 때 붙인다.
+    private IStoragePopupAlphaSource popupAlphaSource;
+    private CanvasGroup distanceAlphaGroup;
+
 
     // //퍼블릭 초기화 및 제어 메서드
 
@@ -133,6 +139,7 @@ public class UI_Storage : MonoBehaviour
     public void BindStorage(IInventory _storage)
     {
         storage = _storage;
+        popupAlphaSource = _storage as IStoragePopupAlphaSource;
         if (null != storage)
             UpdateMaxSlotCount(storage.inventorySlots.Count);
     }
@@ -442,6 +449,7 @@ public class UI_Storage : MonoBehaviour
         }
 
         SnapToPerfectPixel();
+        ApplyDistanceAlpha();
 
         if (null != omp)
         {
@@ -691,8 +699,37 @@ public class UI_Storage : MonoBehaviour
 
     // //유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
 
+    /// <summary>
+    /// 보관함이 정해 주는 거리 투명도를 슬롯 배경 CanvasGroup에 반영합니다(교체 인디케이터는 제외).
+    /// 보관함이 정하지 않으면 아무것도 하지 않습니다.
+    /// </summary>
+    private void ApplyDistanceAlpha()
+    {
+        if (null == popupAlphaSource || null == slotBackground)
+            return;
+
+        float _alpha = popupAlphaSource.PopupAlpha;
+
+        if (null == distanceAlphaGroup)
+        {
+            // 한 번도 흐려진 적이 없으면 건드리지 않는다(1이면 손대지 않은 것과 같다).
+            if (1f <= _alpha)
+                return;
+
+            distanceAlphaGroup = slotBackground.GetComponent<CanvasGroup>();
+            if (null == distanceAlphaGroup)
+                distanceAlphaGroup = slotBackground.AddComponent<CanvasGroup>();
+        }
+
+        if (distanceAlphaGroup.alpha != _alpha)
+            distanceAlphaGroup.alpha = _alpha;
+    }
+
     private void Update()
     {
+        if (true == IsOpening)
+            ApplyDistanceAlpha();
+
         if (true == IsOpening && null != rect && null != storage && null != playerTransform && true == useDynamicPositioning)
         {
             Vector3 _storagePos = storage.GetTransform().position;

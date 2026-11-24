@@ -279,6 +279,8 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         conPos.y += 0.25f;
         offroadContainer.transform.position = conPos;
         offroadContainer.SetVisualTransform(containerObject.transform);
+        // 상자가 이 차량 옆에 놓였으니 슬롯 UI 거리 투명도도 이 차량의 휴식 범위를 기준으로 한다.
+        offroadContainer.SetRestAreaCircle(staminaRecoverCircle);
         containerObject.transform.position = containerDropPoint.position;
         offroadContainer.EnableCollision();
 
