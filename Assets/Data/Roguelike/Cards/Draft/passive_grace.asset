@@ -21,31 +21,27 @@ MonoBehaviour:
   exclusiveGroup: 0
   levels:
   - effects:
-    - effect: 16
+    - effect: 43
       skill: 0
-      value: 0.2
+      value: 4
   - effects:
-    - effect: 16
+    - effect: 43
       skill: 0
-      value: 0.3
+      value: 5
   - effects:
-    - effect: 16
+    - effect: 43
       skill: 0
-      value: 0.4
+      value: 7
   - effects:
-    - effect: 16
+    - effect: 43
       skill: 0
-      value: 0.5
+      value: 9
   - effects:
-    - effect: 16
+    - effect: 43
       skill: 0
-      value: 0.6
+      value: 10
   comboMaterialA: {fileID: 0}
   comboMaterialB: {fileID: 0}
   comboType: 0
   suppressedSkills: 
-  designerNote: "[\uCD08\uC548] \uAE30\uD68D\uC11C 3-3 \uCE74\uB4DC. \uB808\uBCA8\uBCC4
-    \uD6A8\uACFC\xB7\uB4F1\uAE09\xB7\uAC00\uACA9\uC740 \uBBF8\uC815\uC774\uB77C \uC2DC\uC2A4\uD15C
-    \uD655\uC778\uC6A9 \uC784\uC2DC \uC218\uCE58\uB2E4. \uCE74\uB4DC \uAE30\uD68D(8\uC7A5
-    \uC591\uC2DD)\uC73C\uB85C \uB36E\uC5B4\uC4F8 \uAC83. \uC720\uC608 \uC2DC\uAC04
-    \uC99D\uAC00(\uC0C1\uD55C\uC740 \uBC38\uB7F0\uC2A4 maxGraceTime)."
+  designerNote: "[초안] 스태미너 손실 감소(v3.3, 누적 −4/−9/−16/−25/−35%, 합산 상한은 밸런스 maxStaminaLossReducePercent)."

@@ -97,6 +97,7 @@ public class UIView_MainMenu : UIView
     private Action roguelikeCollectionClosedCallback;
     private Action cachedOnRoguelikeCollectionViewClosed;
     private readonly List<RoguelikeCollectionViewData> roguelikeCollectionBuffer = new List<RoguelikeCollectionViewData>(32);
+    private readonly List<string> roguelikeCollectionSeenBuffer = new List<string>(32);
     private bool bOpenRoguelikeMenuOnShow;
     private readonly List<RoguelikeRecordViewData> roguelikeClearRankingBuffer = new List<RoguelikeRecordViewData>(5);
     private readonly List<RoguelikeRecordViewData> roguelikeUnlimitRankingBuffer = new List<RoguelikeRecordViewData>(5);
@@ -997,8 +998,8 @@ public class UIView_MainMenu : UIView
         roguelikeCollectionView.transform.SetAsLastSibling();
         roguelikeCollectionClosedCallback = _onClosed;
 
-        RoguelikeCollectionViewBuilder.Build(RoguelikeRecordRepository.Load(), roguelikeCardDatabase, roguelikeCollectionView.CollectionCardIds, roguelikeCollectionBuffer);
-        roguelikeCollectionView.OpenCollection(roguelikeCollectionBuffer);
+        RoguelikeCollectionViewBuilder.Build(RoguelikeRecordRepository.Load(), roguelikeCardDatabase, roguelikeCollectionView.CollectionCardIds, roguelikeCollectionBuffer, out bool bCelebrate);
+        roguelikeCollectionView.OpenCollection(roguelikeCollectionBuffer, bCelebrate);
         return true;
     }
 
@@ -1006,6 +1007,14 @@ public class UIView_MainMenu : UIView
     {
         // 도감 창도 로그라이크 모달 공통 입력(RoguelikeModalInput)을 쓰므로 기록 창과 같이 메인메뉴 기본 상태(이동 잠금 해제)로 되돌린다.
         if (null != viewCtx && null != viewCtx.inputManager) viewCtx.inputManager.PauseMove(false);
+
+        // 이번에 앞면으로 보여 준 카드와 최초 완성 축하를 기록에 남긴다(다음에 열 때 NEW · E9가 반복되지 않게, 기획서 v3.3 8-4).
+        if (null != roguelikeCollectionView && false == roguelikeCollectionView.IsDebugOverridden)
+        {
+            roguelikeCollectionSeenBuffer.Clear();
+            roguelikeCollectionView.CollectShownCardIds(roguelikeCollectionSeenBuffer);
+            RoguelikeRecordRepository.SaveCollectionSeen(roguelikeCollectionSeenBuffer, roguelikeCollectionView.IsCelebrated);
+        }
 
         Action callback = roguelikeCollectionClosedCallback;
         roguelikeCollectionClosedCallback = null;

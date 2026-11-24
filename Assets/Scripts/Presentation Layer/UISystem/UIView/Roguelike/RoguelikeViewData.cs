@@ -102,7 +102,7 @@ public struct RoguelikeCollectionViewData
     public bool bFound;
     /// <summary>한 번이라도 MAX를 찍은 레벨 있는 카드(금 칸 + MAX 배지).</summary>
     public bool bMaxed;
-    /// <summary>지난번 도감을 닫은 뒤 새로 고른 카드(뒤집힘 연출 + NEW 배지). Application Layer 필드(G-10) 전에는 항상 false다.</summary>
+    /// <summary>지난번 도감을 닫은 뒤 새로 고른 카드(뒤집힘 연출 + NEW 배지). 발견했고 collectionSeenCardIds에 없는 카드다.</summary>
     public bool bNew;
 }
 

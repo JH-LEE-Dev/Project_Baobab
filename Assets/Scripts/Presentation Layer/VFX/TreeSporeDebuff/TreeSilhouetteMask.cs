@@ -20,11 +20,21 @@ namespace PresentationLayer.VFX
         public int minY;
         public int maxY;
         public Vector2 pivot;
+        // 불투명 픽셀마다 나무 그림 안에서의 밝기 순위(0 = 가장 어두운 외곽선·덩어리 경계, 1 = 가장 밝은 하이라이트). 못 읽은 그림은 0.5.
+        // 장식이 나무 그림의 명암과 잎 덩어리 경계를 따라가게 하는 데 쓴다.
+        public float[] tone;
 
         public bool IsSolid(int _x, int _y)
         {
             if (_x < 0 || _y < 0 || width <= _x || height <= _y) return false;
             return solid[_y * width + _x];
+        }
+
+        /// <summary>밝기 순위(마스크 밖은 1: 어두운 경계로 치지 않는다).</summary>
+        public float Tone(int _x, int _y)
+        {
+            if (false == IsSolid(_x, _y)) return 1.0f;
+            return tone[_y * width + _x];
         }
     }
 
@@ -52,6 +62,8 @@ namespace PresentationLayer.VFX
             data.width = width;
             data.height = height;
             data.solid = new bool[Mathf.Max(1, width * height)];
+            data.tone = new float[data.solid.Length];
+            for (int i = 0; i < data.tone.Length; i++) data.tone[i] = 0.5f;
             data.pivot = _sprite.pivot;
             data.minX = width;
             data.minY = height;
@@ -73,10 +85,17 @@ namespace PresentationLayer.VFX
                 RenderTexture.active = previous;
 
                 NativeArray<Color32> pixels = readback.GetRawTextureData<Color32>();
+                int[] histogram = new int[256];
+                int solidCount = 0;
                 for (int i = 0; i < pixels.Length; i++)
                 {
                     bool bSolid = SolidAlphaThreshold < pixels[i].a;
                     data.solid[i] = bSolid;
+                    if (true == bSolid)
+                    {
+                        histogram[Luma(pixels[i])]++;
+                        solidCount++;
+                    }
 
                     if (true == bSolid)
                     {
@@ -89,11 +108,33 @@ namespace PresentationLayer.VFX
                     }
                 }
 
+                // 밝기 순위: 더 어두운 픽셀 수 + 같은 밝기의 절반을 전체로 나눈 값(그림의 명암 단계가 몇 개든 0~1로 고르게 퍼진다)
+                if (0 < solidCount)
+                {
+                    float[] rank = new float[256];
+                    int below = 0;
+                    for (int l = 0; l < 256; l++)
+                    {
+                        rank[l] = (below + histogram[l] * 0.5f) / solidCount;
+                        below += histogram[l];
+                    }
+
+                    for (int i = 0; i < pixels.Length; i++)
+                    {
+                        if (true == data.solid[i]) data.tone[i] = rank[Luma(pixels[i])];
+                    }
+                }
+
                 RenderTexture.ReleaseTemporary(temp);
             }
 
             cache[_sprite] = data;
             return data;
+        }
+
+        private static int Luma(Color32 _c)
+        {
+            return (_c.r * 77 + _c.g * 150 + _c.b * 29) >> 8;
         }
 
         private static Texture2D GetReadbackTexture(int _width, int _height)

@@ -23,11 +23,11 @@ using UnityEngine.UI;
 ///   설명은 잘라 쓰지 않는다: 모든 보유 카드의 설명 높이를 열 때 한 번 재서 패널 크기를 고정하고(호버를 옮겨도 화면이 움직이지 않는다),
 ///   화면 높이에 들어가지 않는 카드가 있으면 경고를 남긴다.
 ///
-/// [열기 · 닫기 연출 - RoguelikeOwnedCardsMotion] 우하단 HUD 트레이(SetTray로 연결)에서 책이 펼쳐지고, 닫힐 때 같은 칸으로 접혀 들어간다. 입자 · 탄성 없음, unscaled 시간.
+/// [열기 · 닫기 연출 - RoguelikeOwnedCardsMotion] 우상단 HUD 트레이(SetTray로 연결)에서 책이 펼쳐지고, 닫힐 때 같은 칸으로 접혀 들어간다. 입자 · 탄성 없음, unscaled 시간.
 ///   열기: 딤 → 책이 트레이 칸에서 확장 → 제목 · 키 안내 · 카드(왼쪽부터 폭이 펼쳐짐) · 설명이 차례로 나타난다.
 ///   닫기: 설명 · 제목이 먼저 사라지고 카드가 오른쪽부터 접힌 뒤 책이 트레이 칸으로 수렴한다. 수렴이 끝나는 순간 창이 꺼지고 트레이가 도착 반응(UI_RoguelikeOwnedCardTray)을 이어받는다.
 ///   연출 중에는 카드 · 설명이 마우스를 받지 않고 패드 포커스는 열기가 끝난 뒤에 건다. 닫기를 연출 없이 하려면 HideImmediate(시스템이 강제로 닫을 때), 연출 중 Hide는 한 번만 먹는다(열기 중이면 열기가 끝난 뒤).
-///   트레이가 연결되지 않았으면 우하단(가장자리 8칸) 기본 위치로 줄어들고 트레이 반응만 빠진다.
+///   트레이가 연결되지 않았으면 우상단(오른쪽 가장자리 8칸) 기본 위치로 줄어들고 트레이 반응만 빠진다.
 ///   창이 HUD보다 위 캔버스라서, 열려 있는 동안 트레이를 창의 맨 위 레이어(trayLayer)로 옮겨 딤 · 책 위에 보이게 하고 닫기 도착 직후 HUD로 돌려보낸다.
 ///   뷰를 만들며 Show한 바로 그 프레임에 Hide하면(RoguelikeSystem.OpenViews) 연출 없이 즉시 닫는다.
 ///
@@ -94,10 +94,11 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
     private const float InfoSlidePixels = 8f;
     // 연출에서 순서를 매기는 카드 수(목록 첫 화면에 보이는 만큼). 그 뒤 카드는 같이 움직인다.
     private const int MotionCellLimit = 10;
-    // 트레이가 연결되지 않았을 때 줄어들 칸(HUD 트레이 기본 배치: 우하단 가장자리 8칸, 34x19).
+    // 트레이가 연결되지 않았을 때 줄어들 칸(HUD 트레이 기본 배치: 우상단, 오른쪽 가장자리 8칸 · 판 위 끝 y 14, 34x19).
     private const float FallbackTrayWidth = 34f;
     private const float FallbackTrayHeight = 19f;
     private const float FallbackTrayMargin = 8f;
+    private const float FallbackTrayTop = 14f;
 
     // 문구 키(RoguelikeUI.json)
     private const string TitleKey = "Roguelike_OwnedCards_Title";
@@ -207,7 +208,7 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
     }
 
     /// <summary>
-    /// 우하단 HUD 트레이를 연결한다(UIView_RoguelikeHUD.OwnedTray). 연결하면 창이 이 칸에서 펼쳐지고 이 칸으로 접히며, 트레이가 열기 · 닫기 반응을 낸다. null이면 기본 위치를 쓰고 트레이 반응은 없다.
+    /// 우상단 HUD 트레이를 연결한다(UIView_RoguelikeHUD.OwnedTray). 연결하면 창이 이 칸에서 펼쳐지고 이 칸으로 접히며, 트레이가 열기 · 닫기 반응을 낸다. null이면 기본 위치를 쓰고 트레이 반응은 없다.
     /// </summary>
     public void SetTray(UI_RoguelikeOwnedCardTray _tray)
     {
@@ -878,7 +879,7 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
         for (int i = 0; i < cellCount; i++) cells[i].RevealFull();
     }
 
-    /// <summary>책이 줄어들 칸(Content 왼쪽 위 기준 정수 픽셀)을 정한다. 트레이가 연결되어 있고 켜져 있으면 그 칸, 아니면 우하단 기본 칸.</summary>
+    /// <summary>책이 줄어들 칸(Content 왼쪽 위 기준 정수 픽셀)을 정한다. 트레이가 연결되어 있고 켜져 있으면 그 칸, 아니면 우상단 기본 칸.</summary>
     private void ResolveTrayRect()
     {
         RectTransform source = null != tray ? tray.TrayRect : null;
@@ -904,7 +905,7 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
 
         trayTargetRect = new Rect(
             screen.width - FallbackTrayMargin - FallbackTrayWidth - left,
-            screen.height - FallbackTrayMargin - FallbackTrayHeight - top,
+            FallbackTrayTop - top,
             FallbackTrayWidth,
             FallbackTrayHeight);
     }

@@ -7,9 +7,11 @@ namespace PresentationLayer.VFX
     /// 포자 대폭발에 맞아 받는 피해가 늘어난(증폭) 나무의 상시 디버프 이펙트를 한곳에서 그리는 관리자. 씬에 하나만 있고 첫 Apply 때 프리팹에서 만들어진다.
     ///
     /// 구성(나무가 많아져도 비용이 늘지 않게 한곳으로 모은다)
-    /// - 나무 오버레이(나무 Top의 자식 SpriteRenderer 1개): 어두운 체커 디더, 각진 얼룩, 줄무늬 몸통, 균열 선을 미리 구운 스프라이트. 나무 색은 바꾸지 않는다.
+    /// - 나무 오버레이(나무 Top의 자식 SpriteRenderer 1개): 어두운 체커 디더, 각진 얼룩, 줄무늬 몸통(위가 굵고 끝에 방울 머리), 균열 선을 미리 구운 스프라이트. 나무 색은 바꾸지 않는다.
+    ///   나무 본체와 같은 바람 흔들림 셰이더(TreeSporeDebuffOverlay)로 그려 흔들리는 나무에 픽셀 단위로 붙어 있다.
     /// - 바닥 링(스프라이트 1개) + 공유 바닥 메쉬: 점선 링은 구운 스프라이트, 링을 따라 도는 밝은 구간과 바닥 싹은 공유 메쉬.
     /// - 공유 상단 메쉬: 아래를 가리키는 표식(단계 수만큼), 맺혔다 떨어지는 독액, 떨어지는 부패 조각, 줄무늬/균열의 흐르는 빛, 타격 반응.
+    ///   쿼드마다 나무 피벗을 실어 셰이더(TreeSporeDebuffSway)가 나무와 같이 흔든다(바닥에 떨어져 튄 독액만 고정).
     ///
     /// 비용 관리
     /// - 모든 갱신은 24Hz 틱에서만 한다(틱이 같고 변화가 없으면 아무것도 하지 않는다).
@@ -33,8 +35,21 @@ namespace PresentationLayer.VFX
         private static readonly int[] SproutSlots = { 0, 3, 5, 7 };
         private static readonly int[] FlakeSlots = { 0, 3, 5, 7 };
 
+        // 상단 메쉬 경계에 더하는 여백(픽셀). 셰이더가 흔드는 만큼(수 픽셀) 경계 밖으로 나가 컬링되지 않게 한다.
+        private const int TopBoundsSwayMargin = 8;
+
+        private static readonly int EnableWindSwayID = Shader.PropertyToID("_EnableWindSway");
+        private static readonly int[] SwayParamIDs =
+        {
+            Shader.PropertyToID("_SwayPositionAmplitude"),
+            Shader.PropertyToID("_SwayRotationAmplitude"),
+            Shader.PropertyToID("_SwayMainSpeed"),
+            Shader.PropertyToID("_SwayDetailSpeed"),
+            Shader.PropertyToID("_SwayDetailWeight"),
+        };
+
         private static readonly PixelQuadBuffer groundBuffer = new PixelQuadBuffer(QuadBudget / 3);
-        private static readonly PixelQuadBuffer topBuffer = new PixelQuadBuffer(QuadBudget);
+        private static readonly TreeSporeDebuffSwayBuffer topBuffer = new TreeSporeDebuffSwayBuffer(QuadBudget);
 
         private sealed class Entry
         {
@@ -60,6 +75,12 @@ namespace PresentationLayer.VFX
             public bool bVisible;
             public bool bFull;
             public float distance;
+            // 나무 Top 렌더러의 지금 바람 흔들림 값(켜짐 + 진폭·속도 5개). 오버레이에 마지막으로 넣은 값과 비교해 바뀔 때만 다시 쓴다.
+            public float swayEnable;
+            public readonly float[] swayParams = new float[5];
+            public bool bOverlaySwayApplied;
+            public float overlaySwayEnable;
+            public readonly float[] overlaySwayParams = new float[5];
         }
 
         public static TreeSporeDebuffVfxManager Instance { get; private set; }
@@ -70,8 +91,10 @@ namespace PresentationLayer.VFX
         [SerializeField] private MeshRenderer groundMeshRenderer;
         [SerializeField] private MeshFilter topMeshFilter;
         [SerializeField] private MeshRenderer topMeshRenderer;
-        [SerializeField, Tooltip("오버레이/바닥 링 스프라이트용 머티리얼(무조명 스프라이트)")]
+        [SerializeField, Tooltip("바닥 링 스프라이트용 머티리얼(무조명 스프라이트)")]
         private Material spriteMaterial;
+        [SerializeField, Tooltip("나무 오버레이 스프라이트용 머티리얼(나무 본체와 같이 바람에 흔들리는 무조명 스프라이트)")]
+        private Material overlayMaterial;
 
         [Header("정렬")]
         [SerializeField] private string groundSortingLayerName = "ShockWave";
@@ -100,13 +123,18 @@ namespace PresentationLayer.VFX
         private Color32[] midColors;
         private Color32[] deepColors;
         private Color32 outlineColor;
+        private MaterialPropertyBlock readBlock;
+        private MaterialPropertyBlock writeBlock;
+        // 상단 메쉬 머티리얼에 마지막으로 넣은 흔들림 진폭·속도(나무 머티리얼 값이 다르면 맞춰 넣는다)
+        private readonly float[] topMeshSwayParams = new float[5];
+        private bool bTopMeshSwayApplied;
 
         // 상태 변수
         private int lastTick = -1;
         private bool bDirty;
         private bool bWarnedMissing;
 
-        private PixelQuadBuffer activeBuffer;
+        // 지금 그리는 메쉬(0 = 바닥 PixelQuadBuffer, 1 = 상단 흔들림 버퍼). 경계 배열 번호와 같다.
         private int activeBounds;
         private bool bRunActive;
         private int runX0;
@@ -240,6 +268,7 @@ namespace PresentationLayer.VFX
             if (null != _e.overlay)
             {
                 _e.overlay.enabled = false;
+                _e.overlay.SetPropertyBlock(null);
                 _e.overlay.transform.SetParent(transform, false);
                 overlayPool.Push(_e.overlay);
                 _e.overlay = null;
@@ -272,6 +301,15 @@ namespace PresentationLayer.VFX
             _e.bVisible = false;
             _e.bFull = false;
             _e.distance = 0.0f;
+            _e.swayEnable = 0.0f;
+            _e.bOverlaySwayApplied = false;
+            _e.overlaySwayEnable = 0.0f;
+            for (int i = 0; i < _e.swayParams.Length; i++)
+            {
+                _e.swayParams[i] = 0.0f;
+                _e.overlaySwayParams[i] = 0.0f;
+            }
+
             entryPool.Push(_e);
         }
 
@@ -365,6 +403,7 @@ namespace PresentationLayer.VFX
                 Bounds b = e.topSprite.bounds;
                 e.baseX = Mathf.RoundToInt(b.min.x * PixelsPerUnit);
                 e.baseY = Mathf.RoundToInt(b.min.y * PixelsPerUnit);
+                ReadSway(e);
 
                 int gx = e.baseX + Mathf.RoundToInt(e.mask.pivot.x);
                 int gy = e.baseY + Mathf.RoundToInt(e.mask.pivot.y);
@@ -399,6 +438,8 @@ namespace PresentationLayer.VFX
                     if (null == e.overlay)
                     {
                         e.overlay = GetRenderer(overlayPool, "DebuffOverlay");
+                        if (null != overlayMaterial && e.overlay.sharedMaterial != overlayMaterial) e.overlay.sharedMaterial = overlayMaterial;
+                        e.bOverlaySwayApplied = false;
                         e.overlay.transform.SetParent(e.topSprite.transform, false);
                         e.overlay.transform.localPosition = Vector3.zero;
                         e.overlay.transform.localRotation = Quaternion.identity;
@@ -415,6 +456,7 @@ namespace PresentationLayer.VFX
                     if (e.overlay.sortingLayerID != overlayLayer) e.overlay.sortingLayerID = overlayLayer;
                     int overlayOrder = e.tree.treeVisualComponent.GetTopHighlightSortingOrder() + 2;
                     if (e.overlay.sortingOrder != overlayOrder) e.overlay.sortingOrder = overlayOrder;
+                    ApplyOverlaySway(e);
                     if (false == e.overlay.enabled) e.overlay.enabled = true;
                 }
                 else if (null != e.overlay && true == e.overlay.enabled)
@@ -424,12 +466,92 @@ namespace PresentationLayer.VFX
             }
         }
 
-        // ---------- 그리기 도우미(런 병합) ----------
+        // ---------- 바람 흔들림 맞추기 ----------
 
-        private void SetActive(PixelQuadBuffer _buffer, int _boundsIndex)
+        // 나무 Top 렌더러가 지금 쓰는 흔들림 값을 읽는다(블록에 덮어쓴 값이 있으면 그것, 없으면 머티리얼 값). 보석 나무처럼 흔들림을 끈 나무는 켜짐이 0이다.
+        private void ReadSway(Entry _e)
+        {
+            Material material = _e.topSprite.sharedMaterial;
+            _e.topSprite.GetPropertyBlock(readBlock);
+            _e.swayEnable = ReadFloat(material, EnableWindSwayID, 0.0f);
+            for (int i = 0; i < SwayParamIDs.Length; i++) _e.swayParams[i] = ReadFloat(material, SwayParamIDs[i], 0.0f);
+        }
+
+        private float ReadFloat(Material _material, int _id, float _fallback)
+        {
+            if (true == readBlock.HasFloat(_id)) return readBlock.GetFloat(_id);
+            if (null != _material && true == _material.HasProperty(_id)) return _material.GetFloat(_id);
+            return _fallback;
+        }
+
+        // 오버레이 블록에 나무와 같은 흔들림 값을 넣는다(지난번에 넣은 값과 다를 때만).
+        private void ApplyOverlaySway(Entry _e)
+        {
+            bool bSame = true == _e.bOverlaySwayApplied && _e.overlaySwayEnable == _e.swayEnable;
+            for (int i = 0; i < SwayParamIDs.Length && true == bSame; i++) bSame = _e.overlaySwayParams[i] == _e.swayParams[i];
+            if (true == bSame) return;
+
+            writeBlock.Clear();
+            writeBlock.SetFloat(EnableWindSwayID, _e.swayEnable);
+            for (int i = 0; i < SwayParamIDs.Length; i++) writeBlock.SetFloat(SwayParamIDs[i], _e.swayParams[i]);
+            _e.overlay.SetPropertyBlock(writeBlock);
+
+            _e.bOverlaySwayApplied = true;
+            _e.overlaySwayEnable = _e.swayEnable;
+            for (int i = 0; i < SwayParamIDs.Length; i++) _e.overlaySwayParams[i] = _e.swayParams[i];
+        }
+
+        // 상단 메쉬는 진폭·속도를 머티리얼 하나로 쓰므로(나무 머티리얼들의 값이 같다) 흔들림이 켜진 첫 나무의 값을 넣는다.
+        private void ApplyTopMeshSway()
+        {
+            Entry source = null;
+            for (int i = 0; i < entries.Count; i++)
+            {
+                Entry e = entries[i];
+                if (true == e.bVisible && null != e.layout && 0.5f <= e.swayEnable)
+                {
+                    source = e;
+                    break;
+                }
+            }
+
+            if (null == source) return;
+
+            bool bSame = true == bTopMeshSwayApplied;
+            for (int i = 0; i < SwayParamIDs.Length && true == bSame; i++) bSame = topMeshSwayParams[i] == source.swayParams[i];
+            if (true == bSame) return;
+
+            writeBlock.Clear();
+            for (int i = 0; i < SwayParamIDs.Length; i++)
+            {
+                writeBlock.SetFloat(SwayParamIDs[i], source.swayParams[i]);
+                topMeshSwayParams[i] = source.swayParams[i];
+            }
+
+            topMeshRenderer.SetPropertyBlock(writeBlock);
+            bTopMeshSwayApplied = true;
+        }
+
+        // 이 나무에 붙은 상단 메쉬 쿼드가 나무와 같이 흔들리게 피벗(Top 렌더러 위치)·배율·방식을 정한다.
+        private void BeginTreeSway(Entry _e)
         {
             FlushRun();
-            activeBuffer = _buffer;
+            Transform top = _e.topSprite.transform;
+            Vector3 scale = top.lossyScale;
+            topBuffer.SetSway(top.position, new Vector2(scale.x, scale.y), 0.5f <= _e.swayEnable ? TreeSporeDebuffSwayBuffer.ModeSway : TreeSporeDebuffSwayBuffer.ModeQuakeOnly);
+        }
+
+        private void SetTopSwayMode(float _mode)
+        {
+            FlushRun();
+            topBuffer.SetMode(_mode);
+        }
+
+        // ---------- 그리기 도우미(런 병합) ----------
+
+        private void SetActive(int _boundsIndex)
+        {
+            FlushRun();
             activeBounds = _boundsIndex;
         }
 
@@ -438,7 +560,8 @@ namespace PresentationLayer.VFX
             if (false == bRunActive) return;
 
             bRunActive = false;
-            activeBuffer.AddWorldRect(runX0, runY, runX1, runY + 1, runColor);
+            if (0 == activeBounds) groundBuffer.AddWorldRect(runX0, runY, runX1, runY + 1, runColor);
+            else topBuffer.AddWorldRect(runX0, runY, runX1, runY + 1, runColor);
 
             int b = activeBounds;
             if (runX0 < boundsMinX[b]) boundsMinX[b] = runX0;
@@ -468,24 +591,6 @@ namespace PresentationLayer.VFX
             runColor = _color;
         }
 
-        private void Plus(int _x, int _y, Color32 _color)
-        {
-            Dot(_x, _y, _color);
-            Dot(_x + 1, _y, _color);
-            Dot(_x - 1, _y, _color);
-            Dot(_x, _y + 1, _color);
-            Dot(_x, _y - 1, _color);
-        }
-
-        private void Cross(int _x, int _y, Color32 _color)
-        {
-            Dot(_x, _y, _color);
-            Dot(_x + 1, _y + 1, _color);
-            Dot(_x - 1, _y - 1, _color);
-            Dot(_x + 1, _y - 1, _color);
-            Dot(_x - 1, _y + 1, _color);
-        }
-
         // ---------- 나무별 그리기 ----------
 
         private void DrawEntry(Entry _e, float _t)
@@ -499,7 +604,7 @@ namespace PresentationLayer.VFX
             int gy = _e.baseY + Mathf.RoundToInt(_e.mask.pivot.y);
 
             // ---- 바닥 메쉬: 링을 따라 도는 밝은 구간, 싹 ----
-            SetActive(groundBuffer, 0);
+            SetActive(0);
 
             int ringCount = TreeDebuffRing.PointCount(tier);
             int head = (int)(_t * 20.0f) % ringCount;
@@ -531,32 +636,26 @@ namespace PresentationLayer.VFX
                     int x = gx + (int)(Mathf.Cos(a) * rx * r);
                     int y = gy + (int)(Mathf.Sin(a) * ry * r);
 
-                    if (1 == frame) Dot(x, y, mid);
-                    else if (2 == frame) { Plus(x, y, mid); Dot(x, y, light); }
-                    else if (3 == frame) Cross(x, y, light);
-                    else if (4 == frame) { Plus(x, y, mid); Dot(x, y, deep); }
-                    else Dot(x, y, deep);
+                    // 땅에서 포자 한 알이 피어올라 옆으로 살짝 흘러가며 흐려진다(반짝이는 십자 없이 한 점)
+                    int drift = 4 <= frame ? (0 == ((h >> 18) & 1u) ? -1 : 1) : 0;
+                    if (1 == frame) Dot(x, y, deep);
+                    else if (2 == frame) { Dot(x, y, deep); Dot(x, y + 1, mid); }
+                    else if (3 == frame) Dot(x, y + 2, light);
+                    else if (4 == frame) Dot(x + drift, y + 3, mid);
+                    else Dot(x + drift, y + 4, deep);
                 }
             }
 
-            // ---- 상단 메쉬 ----
-            SetActive(topBuffer, 1);
+            // ---- 상단 메쉬(나무와 같이 흔들린다) ----
+            SetActive(1);
+            BeginTreeSway(_e);
 
             float hitAge = _t - _e.hitTime;
             int hitFrame = (0.0f <= hitAge && hitAge < 0.8f) ? (int)(hitAge * 24.0f) : -1;
 
             if (true == _e.bFull)
             {
-                // 줄무늬를 따라 흘러내리는 빛
-                for (int s = 0; s < layout.streakCount; s++)
-                {
-                    int len = layout.streakLength[s];
-                    int fl = (int)(_t * 12.0f) % (len + 5);
-                    if (len <= fl) continue;
-                    int sx = layout.streakX[s];
-                    int sy = layout.streakTopY[s] - fl;
-                    if (true == _e.mask.IsSolid(sx, sy)) Dot(_e.baseX + sx, _e.baseY + sy, light);
-                }
+                for (int s = 0; s < layout.streakCount; s++) DrawStreakFlow(_e, s, _t, light, mid);
 
                 // 균열: 빛이 지나가고, 타격 직후에는 전체가 번쩍인다
                 for (int c = 0; c < layout.crackCount; c++)
@@ -584,40 +683,109 @@ namespace PresentationLayer.VFX
             DrawMark(_e, _t, hitFrame, light, mid);
         }
 
+        // 줄무늬를 따라 흘러내리는 빛. 끈적하게 천천히 출발해 점점 빨라지는 두 칸짜리 방울이 경로를 따라 내려가고, 끝에 닿으면 방울 머리가 잠깐 부푼다.
+        // 줄무늬마다 주기·출발 시각이 달라 한꺼번에 움직이지 않는다.
+        private void DrawStreakFlow(Entry _e, int _s, float _t, Color32 _light, Color32 _mid)
+        {
+            TreeDebuffLayout layout = _e.layout;
+            int len = layout.streakLength[_s];
+            if (len < 2) return;
+
+            uint h = Hash(_e.seed + (uint)(_s * 7841) + 0x51u);
+            float period = 1.6f + (h % 9u) * 0.1f;
+            float offset = ((h >> 8) % 100u) / 100.0f * period;
+            float p = ((_t + offset) % period) / period;
+
+            const float TravelEnd = 0.6f;
+            int last = len - 1;
+            if (p < TravelEnd)
+            {
+                float u = p / TravelEnd;
+                int idx = Mathf.Min(last, (int)(Mathf.Pow(u, 1.7f) * (last + 1)));
+                int x = layout.streakPathX[_s, idx];
+                int y = layout.streakPathY[_s, idx];
+                Dot(_e.baseX + x, _e.baseY + y, _light);
+                if (0 < idx) Dot(_e.baseX + layout.streakPathX[_s, idx - 1], _e.baseY + layout.streakPathY[_s, idx - 1], _light);
+                if (idx < layout.streakWide[_s] && true == _e.mask.IsSolid(x + 1, y)) Dot(_e.baseX + x + 1, _e.baseY + y, _mid);
+                return;
+            }
+
+            if (p < TravelEnd + 0.15f)
+            {
+                int x = layout.streakPathX[_s, last];
+                int y = layout.streakPathY[_s, last];
+                Dot(_e.baseX + x, _e.baseY + y, _light);
+                if (true == _e.mask.IsSolid(x, y - 1)) Dot(_e.baseX + x, _e.baseY + y - 1, _mid);
+            }
+        }
+
         private void DrawDrips(Entry _e, float _t, int _groundY, Color32 _light, Color32 _mid, Color32 _deep)
         {
             TreeDebuffLayout layout = _e.layout;
             for (int d = 0; d < layout.dripCount; d++)
             {
                 uint h = Hash(_e.seed + (uint)(d * 4241));
-                float period = 1.4f + (h % 6u) * 0.1f;
+                float period = 1.8f + (h % 6u) * 0.1f;
                 float offset = ((h >> 8) % 100u) / 100.0f * period;
                 float p = (_t + offset) % period;
                 int x = _e.baseX + layout.dripX[d];
                 int y0 = _e.baseY + layout.dripY[d];
                 int yl = _groundY + (int)((h >> 16) % 4u) - 1;
 
-                if (p < 0.2f)
+                // 맺힘: 가장자리에서 천천히 늘어지며 아래쪽이 무겁게 부풀고(오른쪽 그늘), 마지막엔 목이 가늘어진 뒤 떨어진다
+                const float SwellTime = 0.45f;
+                if (p < SwellTime)
                 {
-                    int len = (int)(p / 0.2f * 3.0f) + 1;
-                    for (int k = 0; k <= len; k++) Dot(x, y0 - k, k == len ? _light : _mid);
+                    int stage = Mathf.Min(3, (int)(p / SwellTime * 4.0f));
+                    if (0 == stage)
+                    {
+                        Dot(x, y0, _mid);
+                    }
+                    else if (1 == stage)
+                    {
+                        Dot(x, y0, _mid);
+                        Dot(x, y0 - 1, _light);
+                    }
+                    else if (2 == stage)
+                    {
+                        Dot(x, y0, _mid);
+                        Dot(x, y0 - 1, _mid);
+                        Dot(x, y0 - 2, _light);
+                        Dot(x + 1, y0 - 2, _deep);
+                    }
+                    else
+                    {
+                        Dot(x, y0, _mid);
+                        Dot(x, y0 - 1, _deep);
+                        Dot(x, y0 - 2, _mid);
+                        Dot(x, y0 - 3, _light);
+                        Dot(x + 1, y0 - 3, _deep);
+                    }
+
                     continue;
                 }
 
-                float f = p - 0.2f;
+                float f = p - SwellTime;
                 float dist = (y0 - 3) - yl;
                 if (dist <= 0.0f) continue;
+
+                // 떨어진 직후 가장자리에 남은 한 칸이 잠깐 매달렸다 들어간다
+                if (f < 0.1f) Dot(x, y0, _mid);
 
                 float tLand = Mathf.Sqrt(2.0f * dist / FallGravity);
                 if (f < tLand)
                 {
+                    // 빠를수록 길게 늘어진 방울(밝은 머리, 중간색 꼬리, 떨어진 지 조금 지나면 흐린 잔상)
                     int y = Mathf.RoundToInt(y0 - 3 - 0.5f * FallGravity * f * f);
                     Dot(x, y, _light);
                     Dot(x, y + 1, _mid);
-                    Dot(x, y + 3, _deep);
+                    if (0.08f < f) Dot(x, y + 2, _mid);
+                    if (0.05f < f) Dot(x, y + 4, _deep);
                 }
                 else
                 {
+                    // 바닥에 닿은 뒤는 나무와 같이 흔들리지 않는다
+                    SetTopSwayMode(TreeSporeDebuffSwayBuffer.ModeStatic);
                     int s = (int)((f - tLand) * 12.0f);
                     if (0 == s)
                     {
@@ -626,16 +794,21 @@ namespace PresentationLayer.VFX
                     }
                     else if (1 == s)
                     {
-                        Cross(x - 3, yl + 1, _mid);
-                        Cross(x + 3, yl + 1, _mid);
-                    }
-                    else if (2 == s)
-                    {
-                        Dot(x - 4, yl, _deep);
-                        Dot(x + 4, yl, _deep);
+                        // 작은 물방울 두 알이 양옆으로 튀어 오르고 웅덩이는 가운데로 줄어든다
+                        Dot(x - 1, yl, _mid);
+                        Dot(x, yl, _mid);
+                        Dot(x + 1, yl, _mid);
                         Dot(x - 2, yl + 2, _mid);
                         Dot(x + 2, yl + 2, _mid);
                     }
+                    else if (2 == s)
+                    {
+                        Dot(x, yl, _deep);
+                        Dot(x - 3, yl + 1, _deep);
+                        Dot(x + 3, yl + 1, _deep);
+                    }
+
+                    BeginTreeSway(_e);
                 }
             }
         }
@@ -685,16 +858,10 @@ namespace PresentationLayer.VFX
                 int y = _e.baseY + layout.flakeY[spot] + DirY[dir] * dist - grav;
                 Color32 c = a < 0.1f ? _light : (a < 0.4f ? _mid : _deep);
 
+                // 큰 조각은 두 칸짜리 덩어리(깜빡이는 십자 반짝임 대신 아래가 그늘진 부스러기)
+                Dot(x, y, c);
                 bool bBig = 0u == ((h >> 12) & 3u) && a < 0.4f;
-                if (true == bBig)
-                {
-                    if (0 != ((int)(a * 24.0f) & 1)) Cross(x, y, c);
-                    else Plus(x, y, c);
-                }
-                else
-                {
-                    Dot(x, y, c);
-                }
+                if (true == bBig) Dot(x, y - 1, _deep);
             }
         }
 
@@ -742,7 +909,6 @@ namespace PresentationLayer.VFX
             groundBuffer.Clear();
             groundBuffer.SetWorldTransform(Matrix4x4.identity, 0.0f);
             topBuffer.Clear();
-            topBuffer.SetWorldTransform(Matrix4x4.identity, 0.0f);
 
             bRunActive = false;
             for (int b = 0; b < 2; b++)
@@ -766,8 +932,9 @@ namespace PresentationLayer.VFX
             ApplyTightBounds(groundMesh, 0);
             groundMeshRenderer.enabled = 0 < groundBuffer.VertexCount;
 
-            topBuffer.Upload(topMesh, 0);
+            topBuffer.Upload(topMesh);
             ApplyTightBounds(topMesh, 1);
+            ApplyTopMeshSway();
             topMeshRenderer.enabled = 0 < topBuffer.VertexCount;
         }
 
@@ -780,10 +947,12 @@ namespace PresentationLayer.VFX
             }
             else
             {
-                float minX = boundsMinX[_index] / PixelsPerUnit;
-                float minY = boundsMinY[_index] / PixelsPerUnit;
-                float maxX = boundsMaxX[_index] / PixelsPerUnit;
-                float maxY = boundsMaxY[_index] / PixelsPerUnit;
+                // 상단 메쉬는 셰이더가 나무와 같이 흔드는 만큼 여백을 둔다
+                int margin = 1 == _index ? TopBoundsSwayMargin : 0;
+                float minX = (boundsMinX[_index] - margin) / PixelsPerUnit;
+                float minY = (boundsMinY[_index] - margin) / PixelsPerUnit;
+                float maxX = (boundsMaxX[_index] + margin) / PixelsPerUnit;
+                float maxY = (boundsMaxY[_index] + margin) / PixelsPerUnit;
                 bounds = new Bounds(new Vector3((minX + maxX) * 0.5f, (minY + maxY) * 0.5f, 0.0f), new Vector3(maxX - minX + 0.1f, maxY - minY + 0.1f, PixelVfxCulling.BoundsDepth));
             }
 
@@ -835,6 +1004,8 @@ namespace PresentationLayer.VFX
             }
 
             outlineColor = TreeDebuffPalette.VertexOutline();
+            readBlock = new MaterialPropertyBlock();
+            writeBlock = new MaterialPropertyBlock();
         }
 
         private void LateUpdate()

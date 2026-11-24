@@ -765,7 +765,7 @@ namespace Diagnostics.VfxGolden
 
     /// <summary>
     /// Boomerang의 과열 꼬리: VFX_BoomerangHeatTrail.Create(M_BoomerangHeatTrail) + DontDestroyOnLoad → 비행 시작 Begin
-    /// → LateUpdate마다 Feed(위치, 스프라이트 소팅, hitRadius 0.5) → 멈춤 SetPaused → 회수 시 SetPaused(false) + End(남은 꼬리 소멸).
+    /// → LateUpdate마다 Feed(위치, 스프라이트 소팅, hitRadius 0.5, 그림 반지름 0.5, 회전 바퀴 수) → 멈춤 SetPaused → 회수 시 SetPaused(false) + End(남은 꼬리 소멸).
     /// 이펙트가 GetHashCode(인스턴스 ID)로 난수를 시드해 실행마다 달라지므로, 만든 직후 randomState만 케이스 시드로 고정한다.
     /// </summary>
     public class SkillBoomerangHeatTrailCase : VfxGoldenCase
@@ -821,7 +821,8 @@ namespace Diagnostics.VfxGolden
             float t = _moveFrame / 62.0f;
             float angle = t * Mathf.PI * 2.0f;
             Vector3 position = new Vector3(-3.0f + 3.0f * (1.0f - Mathf.Cos(angle)), 1.3f * Mathf.Sin(angle), 0.0f);
-            trail.Feed(position, objectsLayerId, SkillGoldenUtil.RoguelikeOrder(position), HitRadius);
+            // 회전 바퀴 수는 본체 애니메이션(24fps, 4프레임에 한 바퀴)을 60fps 진행 프레임으로 환산한 값.
+            trail.Feed(position, objectsLayerId, SkillGoldenUtil.RoguelikeOrder(position), HitRadius, HitRadius, _moveFrame * (24.0f / 60.0f) / 4.0f);
         }
     }
 

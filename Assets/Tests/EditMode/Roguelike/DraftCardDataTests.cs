@@ -27,18 +27,18 @@ public class DraftCardDataTests
     }
 
     [Test]
-    public void DraftDatabase_Has27CardsInPlannedKinds()
+    public void DraftDatabase_Has26CardsInPlannedKinds()
     {
-        // 기획서 v2.7: 액티브 7 · 조합 7 · 공통 패시브 10(피해 쿨다운 증가 삭제) · 계약 3.
+        // 기획서 v3.3: 액티브 7 · 조합 6(부메랑 + 충격파 삭제) · 공통 패시브 10(피해 쿨다운 증가 삭제) · 계약 3.
         CardDatabaseSO db = AssetDatabase.LoadAssetAtPath<CardDatabaseSO>("Assets/Data/Roguelike/RoguelikeCardDatabase_Draft.asset");
         int[] counts = new int[4];
         for (int i = 0; i < db.Count; i++) counts[(int)db.Get(i).kind]++;
 
-        Assert.AreEqual(27, db.Count);
+        Assert.AreEqual(26, db.Count);
         Assert.AreEqual(7, counts[(int)ECardKind.Active]);
         Assert.AreEqual(10, counts[(int)ECardKind.Passive]);
         Assert.AreEqual(3, counts[(int)ECardKind.Ruby]);
-        Assert.AreEqual(7, counts[(int)ECardKind.Prism]);
+        Assert.AreEqual(6, counts[(int)ECardKind.Prism]);
     }
 
     [Test]
@@ -75,10 +75,9 @@ public class DraftCardDataTests
     [Test]
     public void Prisms_HaveExclusiveGroupsFromSection54()
     {
-        // 포자 조합(포자 수류탄 + 드론 / 오프로드 / 충격파)과 삼각 조합(회전베기+충격파, 부메랑+충격파, 회전베기+부메랑)은 각각 한 판에 한 장.
+        // 포자 조합(포자 수류탄 + 드론 / 오프로드 / 충격파)과 삼각 조합(회전베기+충격파, 회전베기+부메랑)은 각각 한 판에 한 장.
         Assert.AreEqual(Load("combo_spore_drone").exclusiveGroup, Load("combo_spore_offroad").exclusiveGroup);
         Assert.AreEqual(Load("combo_spore_drone").exclusiveGroup, Load("combo_spore_shockwave").exclusiveGroup);
-        Assert.AreEqual(Load("combo_spin_shockwave").exclusiveGroup, Load("combo_boomerang_shockwave").exclusiveGroup);
         Assert.AreEqual(Load("combo_spin_shockwave").exclusiveGroup, Load("combo_spin_boomerang").exclusiveGroup);
         Assert.AreNotEqual(0, Load("combo_spore_drone").exclusiveGroup);
         Assert.AreNotEqual(0, Load("combo_spin_shockwave").exclusiveGroup);
@@ -311,12 +310,21 @@ public class DraftCardDataTests
         Assert.AreEqual(60f, ResolveAtLevel("passive_movespeed", 5).Get(ERunEffect.MoveSpeedPercent), 0.001f);
         Assert.AreEqual(25f, ResolveAtLevel("passive_stamina_recover", 5).Get(ERunEffect.StaminaRecoverPerWave), 0.001f);
         Assert.AreEqual(50f, ResolveAtLevel("passive_max_stamina", 5).Get(ERunEffect.MaxStaminaAdd), 0.001f);
-        // 기획서 v2.7: 유예 시간 증가(= 피해 간격) +0.2 / +0.5 / +0.9 / +1.4 / +2.0초.
-        float[] grace = { 0.2f, 0.5f, 0.9f, 1.4f, 2f };
+        // 기획서 v3.3: 스태미너 손실 감소 누적 −4 / −9 / −16 / −25 / −35%.
+        float[] reduce = { 4f, 9f, 16f, 25f, 35f };
         for (int level = 1; level <= 5; level++)
         {
-            Assert.AreEqual(grace[level - 1], ResolveAtLevel("passive_grace", level).Get(ERunEffect.GraceTimeAdd), 0.001f, "유예 " + level);
+            Assert.AreEqual(reduce[level - 1], ResolveAtLevel("passive_grace", level).Get(ERunEffect.StaminaLossReducePercent), 0.001f, "손실 감소 " + level);
         }
+    }
+
+    [Test]
+    public void RubyPatience_BigStaminaLossReduce_AndThresholdDown()
+    {
+        // 기획서 v3.3: 인내의 시간 = 스태미너 손실 −50%(초안) / 임계치 T −10. 패시브 MAX(35)와 합쳐 85지만 밸런스 상한(70)에서 잘린다.
+        RunModifiers mods = ResolveAtLevel("ruby_patience", 1);
+        Assert.AreEqual(50f, mods.Get(ERunEffect.StaminaLossReducePercent), 0.001f);
+        Assert.AreEqual(-10f, mods.Get(ERunEffect.ThresholdAdd), 0.001f);
     }
 
     [Test]

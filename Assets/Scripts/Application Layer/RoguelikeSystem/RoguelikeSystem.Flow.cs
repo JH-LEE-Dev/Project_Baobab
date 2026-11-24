@@ -487,7 +487,7 @@ public partial class RoguelikeSystem
         TierFieldData field = GetTierField(_spec.tierIndex);
         treeRules.SetTreeTypes(field.GetTreeType(_spec.treeKind),
             _spec.previousTreeKind >= 0 ? field.GetTreeType(_spec.previousTreeKind) : TreeType.None, _spec.previousTreeKindShare);
-        ConfigurePressure();
+        ConfigurePressure(_spec.staminaLossPerSecond);
 
         // 임계치의 절반이 솟아난 채로 웨이브가 시작되고(솟아나는 연출이 시작 신호, 목표 처치 수에 포함), 이후 스폰은 목표 처치 수와
         // 상관없이 웨이브가 끝날 때까지 묶음 단위로 스폰 상한(80 고정)까지 계속된다(총량 제한 없음). 생성 위치는 필드 곳곳에 분산. 기획서 v2.5 3-1.
@@ -523,7 +523,7 @@ public partial class RoguelikeSystem
         {
             UpdateConditionalBonuses();
 
-            int hits = pressure.Tick(Time.deltaTime, FieldTreeCount);
+            bool bLosing = 0f < pressure.Tick(Time.deltaTime, FieldTreeCount, out bool bPulse);
             MeasureIdleMove(ref waveCombatSeconds, ref waveIdleMoveSeconds);
 
             if (pressure.State != prevState)
@@ -532,12 +532,9 @@ public partial class RoguelikeSystem
                 signalHub.Publish(new RoguelikePressureStateChangedSignal(prevState));
             }
 
-            if (hits > 0 && null != character)
-            {
-                float damage = _spec.staminaDamage * hits;
-                signalHub.Publish(new RoguelikePressureDamagedSignal(damage));
-                character.TakeEnvironmentalStaminaDamage(damage);
-            }
+            // 손실 중에는 프레임마다 초당 손실을 깎는다(피해 연출 이벤트 없음). 1초 펄스는 연출 신호만 낸다.
+            if (true == bLosing && null != character) character.DrainRoguelikeStamina(pressure.LossPerSecond);
+            if (true == bPulse) signalHub.Publish(new RoguelikePressurePulseSignal(pressure.LossPerSecond));
 
             yield return null;
         }
@@ -927,8 +924,8 @@ public partial class RoguelikeSystem
         effectApplier.SetBaseMaxStamina(balance.maxStamina);
         effectApplier.Apply(modifiers);
 
-        // 첫 웨이브 전(카드 선택 동안)에도 HUD가 이번 판의 임계치·스폰 상한을 읽도록 맞춘다. 웨이브마다 다시 맞춘다(WaveCombatRoutine).
-        ConfigurePressure();
+        // 첫 웨이브 전(카드 선택 동안)에도 HUD가 이번 판의 임계치·스폰 상한·초당 손실을 읽도록 1웨이브 값으로 맞춘다. 웨이브마다 다시 맞춘다(WaveCombatRoutine).
+        ConfigurePressure(WaveSchedule.Get(balance, 1).staminaLossPerSecond);
 
         unitLogicManager.SetCharacterStaminaState(false, 0f, 0f);
         unitLogicManager.CharacterSleep();
@@ -938,15 +935,15 @@ public partial class RoguelikeSystem
         signalHub.Publish(new RoguelikeModifiersChangedSignal());
     }
 
-    private void ConfigurePressure()
+    private void ConfigurePressure(float _baseLossPerSecond)
     {
         int cap = balance.SpawnCap;
         // 임계치는 스폰 상한(80 고정)을 넘지 않는다. 스폰 상한은 임계치가 줄어도 그대로다(기획서 v2.6 3-1).
         int threshold = Mathf.Clamp(balance.threshold + Mathf.RoundToInt(modifiers.Get(ERunEffect.ThresholdAdd)), Mathf.Max(1, balance.minThreshold), cap);
-        // 유예 시간 = 반복 피해 간격(기획서 v2.7 3-2). 유예 시간 증가 패시브 · 인내의 시간 계약이 둘을 같은 값으로 올린다.
-        float grace = Mathf.Clamp(balance.graceTime + modifiers.Get(ERunEffect.GraceTimeAdd), 0f, balance.maxGraceTime);
+        // 초당 손실 = 웨이브 값 × (1 − 감소 합). 감소 합(스태미너 손실 감소 패시브 + 인내의 시간 계약)은 밸런스 상한으로 자른다(기획서 v3.3 3-2 · 6-4).
+        float loss = StaminaPressureLogic.ReducedLoss(_baseLossPerSecond, modifiers.Get(ERunEffect.StaminaLossReducePercent), balance.maxStaminaLossReducePercent);
 
-        pressure.Configure(threshold, grace, Mathf.Max(0.1f, grace));
+        pressure.Configure(threshold, loss);
         pressure.Reset();
     }
 

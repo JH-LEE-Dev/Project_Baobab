@@ -95,6 +95,15 @@ public class RoguelikeRecordData
     /// <summary>도달한 가장 높은 언리밋 번호(Unlimit-N의 N, 0은 기록 없음).</summary>
     public int challengeBestUnlimit;
 
+    // // 카드 도감(기획서 v3.3 8-4, 부록 C-3 G-10). 도전과제 필드와 같이 없는 필드는 EnsureValid가 채우므로 기록 파일 버전은 올리지 않는다.
+
+    /// <summary>한 번이라도 고른 카드의 cardId(레벨 · 종류와 무관). 도감 칸의 발견 판정에 쓴다.</summary>
+    public List<string> collectionCardIds = new List<string>();
+    /// <summary>도감에서 앞면으로 보여 준 카드의 cardId(NEW 판정용). collectionCardIds에는 있고 여기에는 없으면 NEW다.</summary>
+    public List<string> collectionSeenCardIds = new List<string>();
+    /// <summary>최초 도감 완성 축하(E9)를 이미 보여 줬는지.</summary>
+    public bool collectionCompleteCelebrated;
+
     /// <summary>JsonUtility 역직렬화 직후 비어 있을 수 있는 리스트를 채운다.</summary>
     public void EnsureValid()
     {
@@ -105,6 +114,60 @@ public class RoguelikeRecordData
         if (null == challengeMaxedCardIds) challengeMaxedCardIds = new List<string>();
         if (null == challengeRubyCardIds) challengeRubyCardIds = new List<string>();
         if (null == challengePrismCardIds) challengePrismCardIds = new List<string>();
+        if (null == collectionCardIds) collectionCardIds = new List<string>();
+        if (null == collectionSeenCardIds) collectionSeenCardIds = new List<string>();
         if (challengeTreesFelled < 0) challengeTreesFelled = 0;
+    }
+
+    /// <summary>
+    /// 도감 기록이 생기기 전 기록 파일의 소급. collectionCardIds가 비어 있을 때만, 도전과제 목록 · 최근 기록 · 랭킹의 카드 중
+    /// _collectionTargets(도감 정본 목록)에 있는 것을 중복 없이 넣고 본 카드(collectionSeenCardIds)에도 넣는다(옛 카드에 NEW가 무더기로 붙지 않게).
+    /// 이 폴더(Baobab.Roguelike)는 도감 정본 목록(RoguelikeCollection)을 볼 수 없어 목록을 인자로 받는다. EnsureValid 뒤에 부른다.
+    /// 무언가 채웠으면 true.
+    /// </summary>
+    public bool BackfillCollection(IReadOnlyList<string> _collectionTargets)
+    {
+        if (null == _collectionTargets || 0 < collectionCardIds.Count) return false;
+
+        BackfillFrom(challengeMaxedCardIds, _collectionTargets);
+        BackfillFrom(challengeRubyCardIds, _collectionTargets);
+        BackfillFrom(challengePrismCardIds, _collectionTargets);
+        if (true == bHasRecent) BackfillFromEntry(recent, _collectionTargets);
+        for (int i = 0; i < clearRanking.Count; i++) BackfillFromEntry(clearRanking[i], _collectionTargets);
+        for (int i = 0; i < unlimitRanking.Count; i++) BackfillFromEntry(unlimitRanking[i], _collectionTargets);
+
+        for (int i = 0; i < collectionCardIds.Count; i++)
+        {
+            if (false == collectionSeenCardIds.Contains(collectionCardIds[i])) collectionSeenCardIds.Add(collectionCardIds[i]);
+        }
+
+        return 0 < collectionCardIds.Count;
+    }
+
+    private void BackfillFrom(List<string> _source, IReadOnlyList<string> _targets)
+    {
+        if (null == _source) return;
+
+        for (int i = 0; i < _source.Count; i++) BackfillCard(_source[i], _targets);
+    }
+
+    private void BackfillFromEntry(RunRecordEntry _entry, IReadOnlyList<string> _targets)
+    {
+        if (null == _entry || null == _entry.cards) return;
+
+        for (int i = 0; i < _entry.cards.Count; i++) BackfillCard(_entry.cards[i].cardId, _targets);
+    }
+
+    private void BackfillCard(string _cardId, IReadOnlyList<string> _targets)
+    {
+        if (string.IsNullOrEmpty(_cardId) || collectionCardIds.Contains(_cardId)) return;
+
+        for (int i = 0; i < _targets.Count; i++)
+        {
+            if (_targets[i] != _cardId) continue;
+
+            collectionCardIds.Add(_cardId);
+            return;
+        }
     }
 }

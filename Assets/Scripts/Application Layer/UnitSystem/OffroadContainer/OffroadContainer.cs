@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
+public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH, IStoragePopupAlphaSource
 {
     public event Action ItemTransferToContainerEvent;
 
@@ -2895,6 +2895,69 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     private bool IsRestAreaOpened()
     {
         return character != null && character.statComponent != null && character.statComponent.staminaRecoverAmount > 0f;
+    }
+
+    // ── 슬롯 UI 거리 투명도 ──
+    //
+    // 휴식 특성을 찍으면 던전에서 상자 슬롯 UI가 휴식 범위 어디서든 열려(자동 적재) 칸이 많을수록 반대쪽 나무를 가린다.
+    // 나무를 베지 않는 상자 사정권·휴식 범위 가운데에서는 그대로 보여 주고, 휴식 범위 바깥쪽(나무를 볼 곳)으로 갈수록 흐리게 한다.
+    // 마을이거나 휴식 특성이 없으면 항상 1이라 기존 표시와 같다.
+
+    [Header("Slot UI Distance Fade")]
+    [Tooltip("휴식 범위 타원 중심 0 ~ 경계 1 기준, 이 거리까지는 슬롯 UI를 그대로(1) 보여 준다.")]
+    [SerializeField, Range(0f, 0.99f)] private float popupFadeStart = 0.5f;
+    [Tooltip("휴식 범위 경계(와 그 밖)에서 슬롯 UI의 투명도.")]
+    [SerializeField, Range(0f, 1f)] private float popupMinAlpha = 0.3f;
+
+    // 지금 상자가 놓인 차량의 휴식 범위. 차량이 상자를 제자리에 놓을 때(OffroadVehicleObj.ResetObject) 알려 준다.
+    private StaminaRecoverCircle restAreaCircle;
+
+    public void SetRestAreaCircle(StaminaRecoverCircle _restAreaCircle)
+    {
+        restAreaCircle = _restAreaCircle;
+    }
+
+    /// <summary>
+    /// 상자 슬롯 UI에 곱할 투명도. 상자 사정권 안이거나 휴식 범위 가운데(popupFadeStart 안)면 1이고, 휴식 범위 경계로 갈수록
+    /// popupMinAlpha까지 내려간다. 두 거리 모두 휴식 범위 타원 크기로 나눈 값이라, 상자 사정권을 벗어나는 순간에도 끊기지 않고
+    /// 사정권 가장자리에서부터 같은 폭으로 흐려진다(둘 중 더 가까운 쪽 기준).
+    /// </summary>
+    public float PopupAlpha
+    {
+        get
+        {
+            if (bInTown || restAreaCircle == null || !IsRestAreaOpened()) return 1f;
+
+            float fadeWidth = 1f - popupFadeStart;
+            if (fadeWidth <= 0f) return 1f;
+
+            // 휴식 범위 판정(StaminaRecoverCircle)과 같은 발밑 기준.
+            float restDist = restAreaCircle.GetNormalizedDistance(character.transform.position);
+            float tRest = Mathf.Clamp01((restDist - popupFadeStart) / fadeWidth);
+            float tBox = Mathf.Clamp01(GetBoxRangeNormalizedDistance() / fadeWidth);
+
+            return Mathf.Lerp(1f, popupMinAlpha, Mathf.Min(tRest, tBox));
+        }
+    }
+
+    // 캐릭터 콜라이더가 상자 사정권(트리거 콜라이더)에서 떨어진 거리를 휴식 범위 타원 크기로 나눈 값. 겹치면 0이다.
+    // 사정권 판정(OnTrigger의 bPhysicalOverlapped)과 같은 두 콜라이더 사이 거리라 겹치기 시작하는 지점에서 0이 된다.
+    private float GetBoxRangeNormalizedDistance()
+    {
+        if (col == null || character.col == null || !col.enabled || !col.gameObject.activeInHierarchy) return float.MaxValue;
+
+        ColliderDistance2D distance = col.Distance(character.col);
+        if (!distance.isValid) return float.MaxValue;
+        if (distance.isOverlapped || distance.distance <= 0f) return 0f;
+
+        float radiusX = restAreaCircle.radiusX;
+        float radiusY = restAreaCircle.radiusY;
+        if (radiusX <= 0f || radiusY <= 0f) return float.MaxValue;
+
+        Vector2 gap = distance.pointB - distance.pointA;
+        float x = gap.x / radiusX;
+        float y = gap.y / radiusY;
+        return Mathf.Sqrt((x * x) + (y * y));
     }
 
     public void SetAutoLoadInRestArea(bool _bActive)

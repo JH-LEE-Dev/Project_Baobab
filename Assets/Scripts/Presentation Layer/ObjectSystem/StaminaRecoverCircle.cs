@@ -165,6 +165,18 @@ public class StaminaRecoverCircle : MonoBehaviour
         return ((diff.x * diff.x) / (radiusX * radiusX)) + ((diff.y * diff.y) / (radiusY * radiusY)) <= 1f;
     }
 
+    /// <summary>
+    /// 바닥 기준 _point가 휴식 구역 타원 중심에서 얼마나 떨어져 있는지(중심 0, 타원 경계 1, 밖은 1보다 큼).
+    /// Update의 타원 판정과 같은 식의 제곱근이라, 1 이하면 판정상 안쪽이다.
+    /// </summary>
+    public float GetNormalizedDistance(Vector3 _point)
+    {
+        if (radiusX <= 0f || radiusY <= 0f) return float.MaxValue;
+
+        Vector3 diff = _point - GetCenter();
+        return Mathf.Sqrt(((diff.x * diff.x) / (radiusX * radiusX)) + ((diff.y * diff.y) / (radiusY * radiusY)));
+    }
+
     private void OnValidate()
     {
         if (restAreaVisual != null) restAreaVisual.transform.localPosition = centerOffset;

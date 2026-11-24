@@ -51,6 +51,7 @@ MonoBehaviour:
   topMeshFilter: {fileID: 5166971061441610230}
   topMeshRenderer: {fileID: 6614957438269052767}
   spriteMaterial: {fileID: 2100000, guid: 58792fce1aeea8e4a8bbce0041826271, type: 2}
+  overlayMaterial: {fileID: 2100000, guid: 025f6eca567b5514ea21128630cb5be6, type: 2}
   groundSortingLayerName: ShockWave
   groundSpriteOrder: 0
   groundMeshOrder: 1
@@ -214,7 +215,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 25ea0354f3f628443900c169e8e08d2b, type: 2}
+  - {fileID: 2100000, guid: 93e03d1d25f38b041814e81a1bcfecf1, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

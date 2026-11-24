@@ -763,6 +763,23 @@ public class LogInBelt : MonoBehaviour
     }
 
     /// <summary>
+    /// 다음에 벨트 끝으로 나갈 원목. 끝에서 빠져나가는 중인 원목이 있으면 그것, 없으면 벨트 위 맨 앞 원목.
+    /// 원목은 들어온 순서대로 같은 속도로 가므로 리스트 맨 앞이 가장 앞선 원목이다. 없으면 null.
+    /// </summary>
+    public LogItem PeekNextItem()
+    {
+        for (int i = 0; i < deactivatingItems.Count; i++)
+        {
+            if (deactivatingItems[i].item != null) return deactivatingItems[i].item;
+        }
+        for (int i = 0; i < activeItems.Count; i++)
+        {
+            if (activeItems[i].item != null) return activeItems[i].item;
+        }
+        return null;
+    }
+
+    /// <summary>
     /// 이 원목이 지금 속도대로 가면 벨트 끝(퇴출 시작)까지 몇 초 남았는지 어림한다. 가속 중이면 가속 구간까지 셈한다.
     /// 벨트 위에 없거나 벨트가 서 있으면(멈출 예정이면) false. 연출 시간을 벨트 길이·속도에 맞추는 데만 쓴다.
     /// </summary>

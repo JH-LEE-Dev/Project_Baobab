@@ -14,7 +14,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
     /// [연출] 등장/퇴장은 unscaled 시간, 그 밖의 반응(차오름 · 번쩍임 · 출렁임 · 뽀잉 · 불티)과 바 셰이더는 scaled 시간이라 ESC 일시정지 동안 멈춘다.
     ///   등장   화면 아래 밖에서 바 → 공격력 줄 → 공격속도 줄 순서로 튀어 오른다(OutBack). 올라오며 길쭉해졌다가 도착하며 납작해지고 탄성 있게 제자리로.
     ///   퇴장   살짝 위로 움찔하며 납작해졌다가 길쭉해지며 화면 아래로 빨려 내려간다(InBack). 공격속도 줄 → 공격력 줄 → 바 순서.
-    ///   수치↑  숫자 뽀잉, 바가 1px 단위로 차오른다. 배율 표시가 바뀐 줄은 줄째로 뽀잉.
+    ///   수치↑  숫자 뽀잉, 바와 숫자가 같은 스프링으로 실제 값을 따라간다(바는 1px 단위로 살짝 넘쳤다 돌아옴, 숫자는 넘지 않음). 배율 표시가 바뀐 줄은 줄째로 뽀잉.
     ///   단계↑  바가 출렁이며 하얗게 번쩍이고 불티가 한꺼번에 터진다. 최대치(MAX)가 되면 한 번 더 번쩍이고 숫자 색이 바뀐다.
     ///   최대치↑ 특성으로 최대치가 오르면 바가 위로 늘어났다 돌아오며 번쩍이고, 채움이 새 비율로 내려앉는다. MAX 숫자 색은 풀린다.
     ///
@@ -111,7 +111,10 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         [SerializeField] private float exitDuration = 0.26f;
 
         [Header("Value Feedback")]
-        [SerializeField] private float fillDuration = 0.25f;
+        [Tooltip("채움 스프링 진동수(Hz). 높을수록 빨리 따라간다")]
+        [SerializeField] private float fillFrequency = 3.2f;
+        [Tooltip("채움 스프링 감쇠비. 1이면 넘침 없음, 낮을수록 목표를 살짝 넘었다 돌아온다")]
+        [SerializeField] private float fillDampingRatio = 0.65f;
         [SerializeField] private float numberPopScale = 1.4f;
         [SerializeField] private float rowPopScale = 1.2f;
         [SerializeField] private float popDuration = 0.32f;
@@ -126,7 +129,6 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         private RectTransform[] slideTargets;
         private Vector2[] slideBasePositions;
         private Sequence slideSequence;
-        private Tween fillTween;
         private Tween flashTween;
         private Sequence levelPopSequence;
         private Sequence damagePopSequence;
@@ -135,8 +137,6 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
         private Action<int> cachedOnLevelChanged;
         private Action<float> cachedOnMaxChanged;
-        private DOGetter<float> cachedGetFillPixels;
-        private DOSetter<float> cachedSetFillPixels;
         private DOGetter<float> cachedGetFlashAlpha;
         private DOSetter<float> cachedSetFlashAlpha;
         private TweenCallback cachedOnSlideOutCompleted;
@@ -147,6 +147,19 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         private bool bInitialized = false;
         private bool bVisible = false;
         private float fillPixels = 0f;
+        private float fillVelocity = 0f;
+        private float fillTargetPixels = 0f;
+        private bool bFillFollowing = false;
+        private float numberValue = 0f;
+        private float numberVelocity = 0f;
+        private int numberTargetLevel = 0;
+        private float numberMaxValue = 100f;
+        private bool bNumberTargetMax = false;
+        private int numberFromShown = 0;
+        private int shownNumber = 0;
+        private bool bNumberFollowing = false;
+        private int appliedNumber = -1;
+        private Color appliedNumberTint = Color.clear;
         private float flashAlpha = 0f;
         private int shownLevel = -1;
         private int shownStage = -1;
@@ -173,8 +186,6 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
             cachedOnLevelChanged = OnOverheatLevelChanged;
             cachedOnMaxChanged = OnOverheatMaxChanged;
-            cachedGetFillPixels = GetFillPixels;
-            cachedSetFillPixels = SetFillPixels;
             cachedGetFlashAlpha = GetFlashAlpha;
             cachedSetFlashAlpha = SetFlashAlpha;
             cachedOnSlideOutCompleted = OnSlideOutCompleted;
@@ -437,11 +448,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             int _damageHundredths = Mathf.RoundToInt(_damage * 100f);
             int _speedHundredths = Mathf.RoundToInt(_speed * 100f);
 
-            if (null != levelNumber)
-            {
-                levelNumber.SetInt(_level);
-                levelNumber.SetTint(true == _bMax ? maxNumberColor : (4 <= _stage ? hotNumberColor : Color.white));
-            }
+            SetNumberTarget(_level, _maxValue, _bMax, _bAnimate);
 
             if (null != damageNumber)
                 damageNumber.SetMultiplier(_damageHundredths);
@@ -566,31 +573,137 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                 _target = Mathf.Clamp(Mathf.RoundToInt(FillInnerHeight * _ratio), 1, FillInnerHeight);
             }
 
-            if (null != fillTween && true == fillTween.IsActive())
-                fillTween.Kill();
-            fillTween = null;
+            fillTargetPixels = _target;
 
             if (false == _bAnimate)
             {
-                SetFillPixels(_target);
+                SnapFill();
                 return;
             }
 
-            fillTween = DOTween.To(cachedGetFillPixels, cachedSetFillPixels, _target, fillDuration)
-                .SetEase(Ease.OutQuad);
+            // 진행 중인 속도는 그대로 두고 목표만 바꿔, 연달아 오를 때도 끊기지 않고 이어서 따라간다.
+            bFillFollowing = true;
         }
 
-        private float GetFillPixels()
+        private void SnapFill()
         {
-            return fillPixels;
+            bFillFollowing = false;
+            fillVelocity = 0f;
+            SetFillPixels(fillTargetPixels);
+        }
+
+        // 채움을 목표 높이로 스프링처럼 끌어간다. 정지에서 가속해 출발하고 목표를 살짝 넘었다 돌아와 쫀득하게 멈춘다.
+        private void UpdateFillSpring(float _dt)
+        {
+            float _x = fillPixels;
+
+            if (true == StepSpring(ref _x, ref fillVelocity, fillTargetPixels, _dt, 0.05f, 0.5f))
+            {
+                SnapFill();
+                return;
+            }
+
+            SetFillPixels(_x);
+        }
+
+        // 수치 숫자도 바와 같은 스프링으로 굴러간다. 숨김 · 등장 중이면 연출 없이 바로 맞춘다.
+        private void SetNumberTarget(int _level, float _maxValue, bool _bMax, bool _bAnimate)
+        {
+            // 지금 보이는 숫자에서 새 목표까지만 보이게 한다(도중에 방향이 바뀌어도 건너뛰거나 실제로 없던 값이 보이지 않음).
+            numberFromShown = shownNumber;
+            numberTargetLevel = _level;
+            numberMaxValue = _maxValue;
+            bNumberTargetMax = _bMax;
+
+            if (false == _bAnimate)
+            {
+                SnapNumber();
+                return;
+            }
+
+            bNumberFollowing = true;
+            ApplyNumber();
+        }
+
+        private void SnapNumber()
+        {
+            bNumberFollowing = false;
+            numberVelocity = 0f;
+            numberValue = numberTargetLevel;
+            ApplyNumber();
+        }
+
+        private void UpdateNumberSpring(float _dt)
+        {
+            if (true == StepSpring(ref numberValue, ref numberVelocity, numberTargetLevel, _dt, 0.02f, 0.5f))
+            {
+                SnapNumber();
+                return;
+            }
+
+            ApplyNumber();
+        }
+
+        // 숫자는 바와 달리 목표를 넘어가 보이지 않게, 출발한 숫자와 목표 사이로 자른다.
+        // 색도 지금 보이는 숫자 기준: 4단계에 들어서면 달아오른 색, 실제 수치에 도착했고 MAX면 MAX 색.
+        private void ApplyNumber()
+        {
+            int _shown = Mathf.Clamp(Mathf.RoundToInt(numberValue),
+                Mathf.Min(numberFromShown, numberTargetLevel), Mathf.Max(numberFromShown, numberTargetLevel));
+            shownNumber = _shown;
+
+            if (null == levelNumber)
+                return;
+
+            if (_shown != appliedNumber)
+            {
+                appliedNumber = _shown;
+                levelNumber.SetInt(_shown);
+            }
+
+            Color _tint = true == bNumberTargetMax && _shown == numberTargetLevel
+                ? maxNumberColor
+                : (4 <= GetGaugeStage(_shown, numberMaxValue) ? hotNumberColor : Color.white);
+
+            if (_tint != appliedNumberTint)
+            {
+                appliedNumberTint = _tint;
+                levelNumber.SetTint(_tint);
+            }
+        }
+
+        // 스프링 한 프레임. scaled 시간이라 일시정지 동안 멈추고, 프레임이 길면 잘게 나눠 적분해 튀지 않게 한다.
+        // 목표에 충분히 가까워지고 거의 멈췄으면 true(호출한 쪽이 목표로 딱 맞춘다).
+        private bool StepSpring(ref float _x, ref float _velocity, float _target, float _dt, float _posEpsilon, float _velEpsilon)
+        {
+            if (0f >= _dt)
+                return false;
+
+            float _omega = 2f * Mathf.PI * Mathf.Max(0.01f, fillFrequency);
+            float _k = _omega * _omega;
+            float _c = 2f * Mathf.Max(0f, fillDampingRatio) * _omega;
+
+            int _steps = Mathf.Clamp(Mathf.CeilToInt(_dt * 120f), 1, 8);
+            float _h = Mathf.Min(_dt, 1f / 15f) / _steps;
+
+            for (int i = 0; i < _steps; i++)
+            {
+                float _a = _k * (_target - _x) - _c * _velocity;
+                _velocity += _a * _h;
+                _x += _velocity * _h;
+            }
+
+            return Mathf.Abs(_target - _x) < _posEpsilon && Mathf.Abs(_velocity) < _velEpsilon;
         }
 
         // 1px 단위로만 차오른다(셰이더가 정수 px 높이로 채운다).
+        // 스프링이 넘치는 값은 내부에 그대로 두고 그릴 때만 바 안쪽으로 자른다(과열 1 이상이면 최소 1px).
         private void SetFillPixels(float _pixels)
         {
             fillPixels = _pixels;
 
-            int _px = Mathf.RoundToInt(_pixels);
+            int _minPx = 0f < fillTargetPixels ? 1 : 0;
+            int _px = Mathf.Clamp(Mathf.RoundToInt(_pixels), _minPx, FillInnerHeight);
 
             if (_px == appliedFillPx)
                 return;
@@ -671,10 +784,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
         private void KillValueTweens()
         {
-            if (null != fillTween && true == fillTween.IsActive())
-                fillTween.Kill();
-            fillTween = null;
-
+            // 채움 · 숫자 스프링은 여기서 끊지 않는다. 퇴장 중에도 끝까지 따라가고, 바로 맞출 때는 SyncImmediate가 맞춘다.
             if (null != flashTween && true == flashTween.IsActive())
                 flashTween.Kill();
             flashTween = null;
@@ -708,6 +818,15 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         }
 
         // //유니티 라이프사이클 이벤트 함수
+
+        private void Update()
+        {
+            if (true == bFillFollowing)
+                UpdateFillSpring(Time.deltaTime);
+
+            if (true == bNumberFollowing)
+                UpdateNumberSpring(Time.deltaTime);
+        }
 
         private void OnDisable()
         {

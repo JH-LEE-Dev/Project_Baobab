@@ -12,6 +12,9 @@ public class UI_TreeCutter : MonoBehaviour
     [SerializeField] private HUD_ProgressBar progressBar;
     [SerializeField] private Vector3 offset;
 
+    [Tooltip("커터가 쉬는 동안 레일에 올라와 다음에 들어올 원목을 슬롯에 미리 보여 줄 때의 아이콘 투명도(0~1).")]
+    [SerializeField, Range(0f, 1f)] private float pendingLogAlpha = 0.4f;
+
     // //내부 의존성
     private const float SLOT_Y_STEP = 27f;
     private const float BASE_TOP_Y = 35f;
@@ -263,7 +266,8 @@ public class UI_TreeCutter : MonoBehaviour
         {
             lineIndex = _lineIdx,
             slot = slotInstance,
-            progressBar = progressBarInstance
+            progressBar = progressBarInstance,
+            owner = this
         };
 
         return unit;
@@ -349,6 +353,7 @@ public class UI_TreeCutter : MonoBehaviour
             for (int i = 0; i < slotUnits.Count; i++)
             {
                 slotUnits[i]?.UpdateProgress();
+                slotUnits[i]?.UpdatePendingLog();
             }
         }
     }
@@ -368,6 +373,11 @@ public class UI_TreeCutter : MonoBehaviour
         public HUD_ProgressBar progressBar;
         public ILogCutter logCutter;
         public ILogItemData cachedItemData;
+        public UI_TreeCutter owner;
+
+        // 커터가 쉬는 동안 레일 위 다음 원목을 반투명하게 보여 주는 중이면 true. 그 그림을 기억해 매 프레임 다시 쓰지 않는다.
+        private bool bShowingPending = false;
+        private Sprite pendingSprite;
 
         public void BindLogCutter(ILogCutter _logCutter)
         {
@@ -400,14 +410,20 @@ public class UI_TreeCutter : MonoBehaviour
         private void OnCuttingDone()
         {
             ResetData();
+            // 가공이 끝나면 레일에서 기다리던 다음 원목을 바로 반투명하게 보여 준다(다음 프레임까지 빈 칸이 끼지 않게).
+            UpdatePendingLog();
         }
 
         public void BindItemData(ILogItemData _itemData)
         {
             cachedItemData = _itemData;
+            bShowingPending = false;
+            pendingSprite = null;
 
             if (null != slot)
             {
+                slot.SetImageAlpha(1f);
+
                 if (null != _itemData)
                 {
                     slot.UpdateImage(_itemData.sprite, Color.white);
@@ -426,9 +442,14 @@ public class UI_TreeCutter : MonoBehaviour
         public void ResetData()
         {
             cachedItemData = null;
+            bShowingPending = false;
+            pendingSprite = null;
 
             if (null != slot)
+            {
                 slot.ResetData();
+                slot.SetImageAlpha(1f);
+            }
 
             if (null != progressBar)
                 progressBar.SetActivate(false);
@@ -441,14 +462,58 @@ public class UI_TreeCutter : MonoBehaviour
                 slot.UpdateImage(cachedItemData.sprite, Color.white);
                 slot.UpdateRarityEffect(cachedItemData);
             }
+            else if (true == bShowingPending)
+            {
+                bShowingPending = false;
+                UpdatePendingLog();
+            }
         }
 
         public void SyncWithCutter()
         {
             if (null != logCutter && null != logCutter.logToCut && true == logCutter.bIsCutting)
+            {
                 BindItemData(logCutter.logToCut);
+            }
             else
+            {
                 ResetData();
+                UpdatePendingLog();
+            }
+        }
+
+        /// <summary>
+        /// 커터가 쉬는 동안(가공 중인 원목이 없을 때) 레일에 올라와 다음에 들어올 원목을 아이콘 투명도를 낮춰 보여 준다.
+        /// 레일이 비면 칸을 비운다. 가공이 시작되면 CuttingStartEvent가 원래 투명도로 그 원목을 다시 그린다.
+        /// 등급 효과(테두리·반짝임)와 진행 바는 가공이 시작될 때만 켠다.
+        /// </summary>
+        public void UpdatePendingLog()
+        {
+            if (null == slot || null == logCutter)
+                return;
+
+            // 가공 중인 원목을 보여 주는 중이면 건드리지 않는다.
+            if (null != cachedItemData || true == logCutter.bIsCutting)
+                return;
+
+            ILogItemData _pending = logCutter.pendingLog;
+            Sprite _sprite = null != _pending ? _pending.sprite : null;
+
+            if (null == _sprite)
+            {
+                if (true == bShowingPending)
+                    ResetData();
+                return;
+            }
+
+            if (true == bShowingPending && ReferenceEquals(pendingSprite, _sprite))
+                return;
+
+            bShowingPending = true;
+            pendingSprite = _sprite;
+
+            slot.UpdateImage(_sprite, Color.white);
+            slot.SetImageAlpha(null != owner ? owner.pendingLogAlpha : 0.4f);
         }
 
         public void UpdateProgress()

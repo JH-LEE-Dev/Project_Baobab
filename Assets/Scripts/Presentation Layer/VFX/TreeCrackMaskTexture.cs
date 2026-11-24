@@ -5,15 +5,16 @@ using UnityEngine;
 /// 4스테이지 돌처럼 생긴 나무(수정 기둥이 모인 모양)가 깎일 때 그리는 금의 모양을 나무 그림마다 미리 구워 둔 텍스처(렌더링 전용).
 /// 예전에는 그림과 상관없는 격자 무늬를 나무 위에 깔아 금이 조각 모양·앞뒤 가림을 무시하고 아무 데나 지나갔다.
 /// 이제는 그림을 한 번 읽어 외곽선(가장 어두운 색)으로 나뉜 조각을 찾고, 도끼가 닿는 밑동 쪽 한 자리에서 금 몇 줄이 갈라져 나가게 만든다.
-/// - 금은 조각 안에서만 그린다. 외곽선 위는 건너뛰므로 금이 앞 조각 뒤로 숨었다가 다음 조각에서 1픽셀 어긋나 다시 나온다.
+/// - 금은 조각을 따라 그리고, 조각 사이 외곽선을 건너는 픽셀은 어두운 붉은 이음매로 그린다. 금 줄기가 끊기지 않고 이어지면서도
+///   외곽선 자리에서 한 톤 가라앉아 앞 조각 뒤로 지나가는 것처럼 보이고, 다음 조각에서는 1픽셀 어긋나 나온다.
 /// - 길쭉한 조각 안에서는 조각의 결(긴 방향)을 따라 조금씩 휜다. 조각 테두리 픽셀은 되도록 피해 금이 외곽선 빛처럼 보이지 않게 한다.
-/// - 다른 금에 닿으면 거기서 합쳐지고 끝난다(금끼리 나란히 붙어 덩어리지지 않는다). 외곽선 사이에 1픽셀만 남는 토막은 버린다.
+/// - 다른 금에 닿으면 거기서 합쳐지고 끝난다(금끼리 나란히 붙어 덩어리지지 않는다). 걸음 사이에 2픽셀 틈이 생기면 한 픽셀을 메운다.
 /// - 많이 깎이면 이미 난 금에서 짧은 금이 더 갈라진다.
 /// - 밑동 그림은 수관에서 내려온 금이 이어지듯 짧은 한 줄만, 늦게 나고 아래로 갈수록 식어 사그라든다.
 /// 같은 그림을 쓰는 나무끼리 금이 겹치지 않게 모양을 몇 가지(VariantCount) 만들어 가로로 이어 붙이고, 나무마다 하나를 고른다(셰이더가 무늬 위치 값으로 고른다).
 ///
 /// 채널 (TreeDamageLook.hlsl의 설명과 같아야 한다)
-/// R: 아래 2비트 = 종류(0 = 금 아님, 1 = 금의 심, 2 = 심 옆의 달궈진 가장자리 - 조각 안쪽 픽셀만),
+/// R: 아래 2비트 = 종류(0 = 금 아님, 1 = 금의 심, 2 = 심 옆의 달궈진 가장자리 - 조각 안쪽 픽셀만, 3 = 외곽선을 건너는 이음매),
 ///    위 6비트 = 열기(0~63 -> 0~1, 수관 금은 1, 밑동 금은 아래로 갈수록 낮다)
 /// G: 이 픽셀이 보이기 시작하는 깎임 정도(0~1)
 /// B: 금을 따라 시작 자리에서 잰 거리(픽셀) - 빛이 바깥으로 흐르는 박자
@@ -23,9 +24,9 @@ public static class TreeCrackMaskTexture
 {
     // 그림 하나에 만드는 금 모양 수. 셰이더의 TreeCrackVariantCount와 같아야 한다.
     public const int VariantCount = 4;
-    // 모양마다 쓰는 씨앗. 씨앗 20개를 실제 나무 그림(라바샙·흑요석 수관 + 밑동)에 그려 보고, 금이 한쪽에 몰리거나 일찍 끊기지 않고
-    // 수관 전체로 고르게 퍼지는 것 중 서로 다른 모양 넷을 골랐다.
-    private static readonly int[] VariantSeeds = { 1, 12, 14, 18 };
+    // 모양마다 쓰는 씨앗. 씨앗 20개를 실제 나무 그림(라바샙·흑요석 수관 + 밑동)에 그려 보고, 금이 나란히 뭉치지 않고
+    // 줄기에서 가지가 갈라지듯 수관 전체로 퍼지는 것 중 서로 다른 모양 넷을 골랐다.
+    private static readonly int[] VariantSeeds = { 12, 15, 18, 20 };
     // 그림이 바뀌어 첫 금이 일찍 끊기면 금이 거의 없는 모양이 나올 수 있다. 금의 심이 조각 픽셀의 이 비율보다 적으면
     // 씨앗을 바꿔(RetrySeedStep씩) 몇 번 더 만들어 보고, 그래도 모자라면 그중 가장 많은 것을 쓴다.
     private const double MinCoreRatio = 0.06;
@@ -83,6 +84,7 @@ public static class TreeCrackMaskTexture
 
     private const byte KindCore = 1;
     private const byte KindRim = 2;
+    private const byte KindSeam = 3;
 
     private static readonly Dictionary<Texture, Texture2D> cache = new Dictionary<Texture, Texture2D>();
 
@@ -167,6 +169,14 @@ public static class TreeCrackMaskTexture
         public int Y;
         public double Appear;
         public double Flow;
+        public bool Seam;
+    }
+
+    private struct SeamPixel
+    {
+        public int X;
+        public int Y;
+        public double Distance;
     }
 
     private struct BranchRequest
@@ -546,7 +556,8 @@ public static class TreeCrackMaskTexture
             int steps = 0;
             bool bEntered = _depth > 0;
             List<CrackPoint> points = new List<CrackPoint>();
-            int segmentStart = 0;
+            // 지나는 중인 외곽선 픽셀. 다음 조각에 들어가면 이음매로 그리고, 그 전에 끝나면 버린다(그림 바깥 테두리는 빛나지 않게).
+            List<SeamPixel> seamPixels = new List<SeamPixel>();
             List<BranchRequest> branches = new List<BranchRequest>();
             double px = _x;
             double py = _y;
@@ -570,11 +581,16 @@ public static class TreeCrackMaskTexture
                 bEntered = true;
 
                 int id2 = ShardAt(ix, iy);
-                // 외곽선 위는 그리지 않고 지나간다(앞 조각 뒤로 숨는다).
+                // 외곽선 위는 바로 그리지 않고 모아 둔다.
                 if (0 == id2)
                 {
                     outlineRun++;
                     if (outlineRun > MaxOutlineRun) break;
+                    int last = seamPixels.Count - 1;
+                    if (last < 0 || seamPixels[last].X != ix || seamPixels[last].Y != iy)
+                    {
+                        seamPixels.Add(new SeamPixel { X = ix, Y = iy, Distance = distance });
+                    }
                     continue;
                 }
                 outlineRun = 0;
@@ -583,8 +599,6 @@ public static class TreeCrackMaskTexture
                 {
                     if (-1 != currentShard)
                     {
-                        CloseSegment(points, segmentStart);
-                        segmentStart = points.Count;
                         if (NextRandom() < StopAtShard) break;
 
                         // 다음 조각에서는 1픽셀 어긋나 나온다(조각마다 앞뒤 깊이가 다르다).
@@ -626,13 +640,24 @@ public static class TreeCrackMaskTexture
                 // 다른 금에 닿으면 합쳐지고 끝난다.
                 bool bFree = distance - _flow > 2.0;
                 int pixel = iy * width + ix;
-                if (bFree && KindCore == kind[pixel] && owner[pixel] != _parent) break;
+                if (bFree && IsCrack(pixel) && owner[pixel] != _parent) break;
 
                 double appearAt = System.Math.Min(_appear + (distance - _flow) / Reach * spread, MaxAppear);
-                if (0 == points.Count || points[points.Count - 1].X != ix || points[points.Count - 1].Y != iy)
+                if (seamPixels.Count > 0)
                 {
-                    points.Add(new CrackPoint { X = ix, Y = iy, Appear = appearAt, Flow = distance });
+                    // 금이 이미 시작된 뒤에 건넌 외곽선만 잇는다(처음 그림에 들어올 때 지나는 바깥 테두리는 그리지 않는다).
+                    if (points.Count > 0)
+                    {
+                        for (int i = 0; i < seamPixels.Count; i++)
+                        {
+                            SeamPixel seam = seamPixels[i];
+                            double seamAppear = System.Math.Min(_appear + (seam.Distance - _flow) / Reach * spread, MaxAppear);
+                            AddPoint(points, seam.X, seam.Y, seamAppear, seam.Distance, true);
+                        }
+                    }
+                    seamPixels.Clear();
                 }
+                AddPoint(points, ix, iy, appearAt, distance, false);
 
                 if (bFree && (TouchesOtherCrack(ix, iy, _parent) || TouchesItself(points, ix, iy))) break;
 
@@ -681,15 +706,13 @@ public static class TreeCrackMaskTexture
                 }
             }
 
-            CloseSegment(points, segmentStart);
-
             for (int i = 0; i < points.Count; i++)
             {
                 CrackPoint point = points[i];
                 int pixel = point.Y * width + point.X;
-                if (KindCore != kind[pixel] || appear[pixel] > point.Appear)
+                if (false == IsCrack(pixel) || appear[pixel] > point.Appear)
                 {
-                    kind[pixel] = KindCore;
+                    kind[pixel] = point.Seam ? KindSeam : KindCore;
                     appear[pixel] = point.Appear;
                     flow[pixel] = point.Flow;
                     phase[pixel] = _phase;
@@ -706,13 +729,34 @@ public static class TreeCrackMaskTexture
             return points;
         }
 
-        // 두 외곽선 사이에 1픽셀만 남은 토막은 금이 아니라 점으로 보여 버린다(첫 토막은 남긴다).
-        private static void CloseSegment(List<CrackPoint> _points, int _segmentStart)
+        // 금 픽셀을 하나 더한다. 앞 픽셀과 2픽셀 떨어져 있으면(조각을 옮기며 옆으로 비켜난 걸음) 사이 한 픽셀을 메워 줄이 끊기지 않게 한다.
+        private void AddPoint(List<CrackPoint> _points, int _x, int _y, double _appear, double _flow, bool _bSeam)
         {
-            if (_segmentStart > 0 && _points.Count - _segmentStart == 1)
+            int count = _points.Count;
+            if (count > 0)
             {
-                _points.RemoveAt(_points.Count - 1);
+                CrackPoint last = _points[count - 1];
+                if (last.X == _x && last.Y == _y) return;
+
+                int dx = _x - last.X;
+                int dy = _y - last.Y;
+                if (System.Math.Max(System.Math.Abs(dx), System.Math.Abs(dy)) == 2)
+                {
+                    int mx = last.X + System.Math.Sign(dx);
+                    int my = last.Y + System.Math.Sign(dy);
+                    if (OpaqueAt(mx, my))
+                    {
+                        _points.Add(new CrackPoint { X = mx, Y = my, Appear = _appear, Flow = _flow, Seam = 0 == ShardAt(mx, my) });
+                    }
+                }
             }
+            _points.Add(new CrackPoint { X = _x, Y = _y, Appear = _appear, Flow = _flow, Seam = _bSeam });
+        }
+
+        // 금의 심이나 이음매
+        private bool IsCrack(int _pixel)
+        {
+            return KindCore == kind[_pixel] || KindSeam == kind[_pixel];
         }
 
         private bool TouchesOtherCrack(int _x, int _y, int _parent)
@@ -726,7 +770,7 @@ public static class TreeCrackMaskTexture
                     int y = _y + dy;
                     if (x < 0 || x >= width || y < 0 || y >= height) continue;
                     int pixel = y * width + x;
-                    if (KindCore == kind[pixel] && owner[pixel] != _parent) return true;
+                    if (IsCrack(pixel) && owner[pixel] != _parent) return true;
                 }
             }
             return false;
@@ -748,13 +792,13 @@ public static class TreeCrackMaskTexture
             double maxFlow = 0.0;
             for (int i = 0; i < kind.Length; i++)
             {
-                if (KindCore == kind[i] && flow[i] > maxFlow) maxFlow = flow[i];
+                if (IsCrack(i) && flow[i] > maxFlow) maxFlow = flow[i];
             }
             maxFlow = System.Math.Max(maxFlow, 1.0);
 
             for (int i = 0; i < kind.Length; i++)
             {
-                if (KindCore != kind[i]) continue;
+                if (false == IsCrack(i)) continue;
                 double h = TrunkHeatTop - flow[i] / maxFlow * (TrunkHeatTop - TrunkHeatEnd);
                 heat[i] = System.Math.Min(System.Math.Max(h, 0.0), 1.0);
             }

@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 /// <summary>
 /// 도전과제 달성 팝업(B안 - Docs/Roguelike/_Work/ChallengeToast_B_Plan.md, 승인된 움직임 기준 구현 ChallengeToast_B_Sim.html).
-/// 화면 오른쪽 위(여백 8px)에 284x48 한 줄 고정: 금색 머리띠(284x22, 밑줄 2px 포함) + 그 아래 4px 겹쳐 내려오는 어두운 판(278x30, 보이는 높이 26).
+/// 화면 오른쪽 아래(여백 8px, WorldHUD_Plan.md 11-1)에 284x48 한 줄 고정: 금색 머리띠(284x22, 밑줄 2px 포함) + 그 아래 4px 겹쳐 내려오는 어두운 판(278x30, 보이는 높이 26).
 /// 머리띠에 깃발 + 머리말(Roguelike_Challenge_ClearedToast), 판에 제목(호출 측이 번역해 넘긴 문자열)을 한 줄로 보인다.
 ///
 /// 시간표(60fps 틱, 정수 픽셀, unscaled): 0~0.20 띠가 가운데에서 펼쳐짐(흰 -> 크림 -> 금), 0.12~0.34 판이 내려옴(OutBack),

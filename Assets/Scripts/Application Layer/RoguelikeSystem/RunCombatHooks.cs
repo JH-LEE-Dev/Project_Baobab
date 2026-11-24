@@ -14,9 +14,6 @@ public static class RunCombatHooks
     /// <summary>도끼를 한 번 휘둘렀다(맞혔는지와 무관). 인자는 공격 판정 중심.</summary>
     public static event Action<Vector3> AxeSwungEvent;
 
-    /// <summary>부메랑이 나무를 맞혔다(부메랑 + 충격파). 인자는 맞은 나무 위치.</summary>
-    public static event Action<Vector3> BoomerangHitTreeEvent;
-
     /// <summary>부메랑 판정 주기(damageInterval)가 돌았다(나무를 맞혔는지와 무관, 가는 길 · 멈춤 · 돌아오는 길 모두). 인자는 부메랑 위치, 판정 반경.
     /// 부메랑 하나는 한 프레임에 한 번만 판정 주기가 돈다.</summary>
     public static event Action<Vector3, float> BoomerangTickEvent;
@@ -39,8 +36,6 @@ public static class RunCombatHooks
     /// <summary>충격파가 나무를 맞혔다(포자 충격파). 인자는 맞은 나무 위치.</summary>
     public static event Action<Vector3> ShockWaveHitTreeEvent;
 
-    public static bool HasBoomerangHitTreeListener => null != BoomerangHitTreeEvent;
-
     public static bool HasBoomerangTickListener => null != BoomerangTickEvent;
 
     public static bool HasDroneLaserListener => null != DroneLaserEvent;
@@ -50,11 +45,6 @@ public static class RunCombatHooks
     public static void NotifyAxeSwung(Vector3 _center)
     {
         AxeSwungEvent?.Invoke(_center);
-    }
-
-    public static void NotifyBoomerangHitTree(Vector3 _treePosition)
-    {
-        BoomerangHitTreeEvent?.Invoke(_treePosition);
     }
 
     public static void NotifyBoomerangTick(Vector3 _position, float _hitRadius)
@@ -90,7 +80,6 @@ public static class RunCombatHooks
     public static void ClearAll()
     {
         AxeSwungEvent = null;
-        BoomerangHitTreeEvent = null;
         BoomerangTickEvent = null;
         BoomerangStartedEvent = null;
         BoomerangEndedEvent = null;

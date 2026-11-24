@@ -143,7 +143,7 @@ public class UIView_KeyBinding : UIView
 
 `ERebindableAction`이라는 이름 자체는 코드 식별자일 뿐이므로, 화면에 보여줄 한글 라벨(예: `Interaction` → "상호작용")은 UI 쪽에서 별도 매핑 테이블이나 로컬라이징 키로 관리해야 합니다.
 
-> `SwitchMode`/`AxeMode`/`RifleMode`/`Reload`/`AimCorrection`은 목록에 없습니다. `.inputactions` 에셋엔 액션이 남아 있지만 `InputReader`가 구독하지 않아 실제로는 아무 기능도 하지 않는 죽은 바인딩(예전 무기 전환 시스템의 잔재)이라 리바인딩 대상에서 제외했습니다.
+> `SwitchMode`/`AxeMode`/`RifleMode`/`Reload`/`AimCorrection`은 목록에 없습니다. 예전에는 `.inputactions` 에셋에 액션이 남아 있었지만 `InputReader`가 구독하지 않는 죽은 바인딩(예전 무기 전환 시스템의 잔재)이라 리바인딩 대상에서 제외했고, 지금은 에셋에서도 삭제되었습니다.
 
 ## 5. 주의사항
 

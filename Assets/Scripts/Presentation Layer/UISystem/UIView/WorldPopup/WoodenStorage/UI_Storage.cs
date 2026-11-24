@@ -65,6 +65,16 @@ public class UI_Storage : MonoBehaviour
     private int defaultGridConstraintCount;
     private bool isFourColumns = false; // 가로 4칸 고정 배치(8칸 4x2, 12칸 4x3) 중인지
 
+    // 거리 투명도. 운반 상자처럼 보관함이 투명도를 정해 주면(IStoragePopupAlphaSource) 배경 판 그림과 각 슬롯에 곱한다.
+    // 교체 대상 슬롯(테두리가 깜빡이는 칸)과 교체 인디케이터는 흐리게 하지 않아 뚜렷하게 남는다. 테두리는 슬롯 그림(SlotImg)의
+    // 그림자 효과라 테두리만 따로 뺄 수 없어서 대상 칸 전체를 그대로 둔다.
+    // 배경의 CanvasGroup은 슬롯까지 함께 흐려지므로 쓰지 않고, 배경 판은 자기 CanvasRenderer 알파, 슬롯은 슬롯마다 붙인
+    // CanvasGroup으로 흐린다. 팝다운 모션은 Visuals의 CanvasGroup을 움직이므로 이 값들과 섞이지 않고 곱해진다.
+    private IStoragePopupAlphaSource popupAlphaSource;
+    private bool bDistanceAlphaTouched = false; // 한 번이라도 흐렸는지(그 전에는 아무것도 붙이거나 바꾸지 않는다)
+    private CanvasRenderer slotBackgroundRenderer;
+    private readonly List<CanvasGroup> slotAlphaGroups = new List<CanvasGroup>();
+
 
     // //퍼블릭 초기화 및 제어 메서드
 
@@ -133,6 +143,7 @@ public class UI_Storage : MonoBehaviour
     public void BindStorage(IInventory _storage)
     {
         storage = _storage;
+        popupAlphaSource = _storage as IStoragePopupAlphaSource;
         if (null != storage)
             UpdateMaxSlotCount(storage.inventorySlots.Count);
     }
@@ -384,6 +395,9 @@ public class UI_Storage : MonoBehaviour
                 }
             }
         }
+
+        // 교체 대상 칸이 바뀌었으니 거리 투명도(대상 칸만 뚜렷하게)를 바로 맞춘다.
+        ApplyDistanceAlpha();
     }
 
     /// <summary>
@@ -417,6 +431,9 @@ public class UI_Storage : MonoBehaviour
                 sharedSwapIndicator.Hide();
             }
         }
+
+        // 교체 대상 칸이 없어졌으니 그 칸도 다른 칸과 같은 거리 투명도로 돌린다.
+        ApplyDistanceAlpha();
     }
 
     public void OnShow()
@@ -442,6 +459,7 @@ public class UI_Storage : MonoBehaviour
         }
 
         SnapToPerfectPixel();
+        ApplyDistanceAlpha();
 
         if (null != omp)
         {
@@ -691,8 +709,65 @@ public class UI_Storage : MonoBehaviour
 
     // //유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
 
+    /// <summary>
+    /// 보관함이 정해 주는 거리 투명도를 배경 판과 슬롯에 반영합니다. 교체 대상 슬롯과 교체 인디케이터는 1로 둡니다.
+    /// 보관함이 정하지 않으면 아무것도 하지 않습니다.
+    /// </summary>
+    private void ApplyDistanceAlpha()
+    {
+        if (null == popupAlphaSource || null == slotBackground)
+            return;
+
+        float _alpha = popupAlphaSource.PopupAlpha;
+
+        // 한 번도 흐려진 적이 없으면 건드리지 않는다(1이면 손대지 않은 것과 같다).
+        if (false == bDistanceAlphaTouched)
+        {
+            if (1f <= _alpha)
+                return;
+
+            bDistanceAlphaTouched = true;
+        }
+
+        if (null == slotBackgroundRenderer)
+            slotBackgroundRenderer = slotBackground.GetComponent<CanvasRenderer>();
+        if (null != slotBackgroundRenderer && slotBackgroundRenderer.GetAlpha() != _alpha)
+            slotBackgroundRenderer.SetAlpha(_alpha);
+
+        if (null == storageSlots)
+            return;
+
+        int _count = storageSlots.Count;
+        for (int _i = 0; _i < _count; ++_i)
+        {
+            UI_InventorySlot _slot = storageSlots[_i];
+            if (null == _slot)
+                continue;
+
+            while (slotAlphaGroups.Count <= _i)
+                slotAlphaGroups.Add(null);
+
+            CanvasGroup _group = slotAlphaGroups[_i];
+            if (null == _group)
+            {
+                _group = _slot.GetComponent<CanvasGroup>();
+                if (null == _group)
+                    _group = _slot.gameObject.AddComponent<CanvasGroup>();
+                slotAlphaGroups[_i] = _group;
+            }
+
+            // 교체 대상 칸은 테두리와 함께 뚜렷하게 둔다.
+            float _slotAlpha = (_i == currentSwapSlotIndex) ? 1f : _alpha;
+            if (_group.alpha != _slotAlpha)
+                _group.alpha = _slotAlpha;
+        }
+    }
+
     private void Update()
     {
+        if (true == IsOpening)
+            ApplyDistanceAlpha();
+
         if (true == IsOpening && null != rect && null != storage && null != playerTransform && true == useDynamicPositioning)
         {
             Vector3 _storagePos = storage.GetTransform().position;

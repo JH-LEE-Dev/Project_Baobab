@@ -24,6 +24,8 @@ using UnityEngine.UI;
 public class UI_RoguelikeRareRevealFx : MonoBehaviour
 {
     // 시간표(희귀 카드 시작 기준 초)
+    // 효과음 지점을 이만큼(초)보다 오래 전에 지나쳤으면(프레임이 크게 끊김) 소리를 내지 않는다. 한꺼번에 몰려 터지는 것을 막는다.
+    private const float CueStaleSeconds = 0.25f;
     public const float TeaseSeconds = 0.45f;
     public const float RevealSeconds = 0.65f;       // 두근 0.45 + 접힘 0.2
     private const float TraceStartSeconds = 0.99f;  // 두근 0.45 + 뒤집기 0.5 + 0.04
@@ -252,6 +254,8 @@ public class UI_RoguelikeRareRevealFx : MonoBehaviour
     private Vector2 lastRootPosition = new Vector2(float.NaN, 0.0f);
     private int lastTick = int.MinValue;
     private Color32 silhouetteColor;
+    // 효과음 지점을 지나쳤는지 가르는 직전 시각. 같은 지점의 효과음이 프레임 경계에서 두 번 나지 않게 한다.
+    private float cueTime;
 
     /// <summary>재생 중(지연 대기 포함)이면 true. Stop 전까지 유지 단계가 계속된다.</summary>
     public bool IsPlaying => bPlaying;
@@ -276,6 +280,7 @@ public class UI_RoguelikeRareRevealFx : MonoBehaviour
 
         palette = Palettes[_gradeIndex];
         time = -_teaseDelay;
+        cueTime = time - 0.0001f;
         bPlaying = true;
         alpha = 1.0f;
         silhouetteColor = new Color32(0, 0, 0, 0);
@@ -300,6 +305,7 @@ public class UI_RoguelikeRareRevealFx : MonoBehaviour
         if (false == bPlaying) return;
 
         time += _dt;
+        PlaySoundCues();
         alpha = _alpha;
         flipWidth = _flipWidth;
         liftPixels = Mathf.Max(0, _flipLift);
@@ -333,6 +339,36 @@ public class UI_RoguelikeRareRevealFx : MonoBehaviour
     }
 
     // 일반 비즈니스 로직 및 내부 메서드
+
+    /// <summary>
+    /// 이번 프레임에 지나친 효과음 지점에서 소리를 낸다(임시 연결 - 전용 클립 수급 후 교체, 기획서 C-2).
+    /// 두근 박자(BeatTimes) = RareRevealBeat, 타다다닥 박자(TraceSteps 1 ~ 마지막 직전) = RareRevealTick(박자 j마다 피치 1 + j/12), 만남 = RareRevealChime.
+    /// 팡(공개 순간)은 슬롯이 기존 AbilityAppear로 내므로 여기서 내지 않는다.
+    /// </summary>
+    private void PlaySoundCues()
+    {
+        float from = cueTime;
+        float to = time;
+        cueTime = to;
+
+        for (int i = 0; i < BeatTimes.Length; i++)
+        {
+            if (true == IsCueCrossed(BeatTimes[i], from, to)) Sound.PlayUI(SoundID.RareRevealBeat);
+        }
+
+        int n = TraceSteps.Length - 1;
+        for (int j = 1; j < n; j++)
+        {
+            if (true == IsCueCrossed(TraceStartSeconds + TraceSteps[j], from, to)) Sound.PlayUI(SoundID.RareRevealTick, 1.0f, 1.0f + j / 12.0f);
+        }
+
+        if (true == IsCueCrossed(MeetSeconds, from, to)) Sound.PlayUI(SoundID.RareRevealChime);
+    }
+
+    private static bool IsCueCrossed(float _eventTime, float _from, float _to)
+    {
+        return _from < _eventTime && _eventTime <= _to && _to - _eventTime <= CueStaleSeconds;
+    }
 
     private void EnsureInitialized()
     {
@@ -725,7 +761,7 @@ public class UI_RoguelikeRareRevealFx : MonoBehaviour
         {
             float spike = Spike(time, 0.08f);
             float a = 0.25f + 0.45f * Clamp01(time / TeaseSeconds) + 0.5f * spike;
-            // [효과음 지점] 희귀 두근 박자 (박자 0 / 0.2 / 0.34초, 점점 빨라짐)
+            // 두근 박자 효과음은 PlaySoundCues가 낸다.
             if (null != edgeGlow) edgeGlow.Show(shakePixels, CenterY + liftPixels, flipWidth + 1 + 2 * EdgeCentreOffset, CardRows + 1 + 2 * EdgeCentreOffset, 0.0f, Glow(m0, Mathf.Min(1.0f, a * 0.8f)));
         }
         else
@@ -768,7 +804,7 @@ public class UI_RoguelikeRareRevealFx : MonoBehaviour
             float u = q / GhostDuration[i];
             float s = 1.0f + (GhostMaxScale[i] - 1.0f) * EaseOut(u);
             float a = Mathf.Pow(1.0f - u, 1.6f) * 0.6f * GhostWeight[i];
-            // [효과음 지점] 팡 (공개 순간 R = 0.65초)
+            // 팡(공개 순간 R = 0.65초) 효과음은 슬롯의 AbilityAppear가 낸다.
             if (i < ghostWide.Length && null != ghostWide[i]) ghostWide[i].Show(0.0f, CenterY, GhostWideWidth * s, GhostWideHeight * s, 0.0f, Glow(m0, a));
             if (i < ghostCore.Length && null != ghostCore[i]) ghostCore[i].Show(0.0f, CenterY, GhostCoreWidth * s, GhostCoreHeight * s, 0.0f, Glow(Lerp(White, m0, 0.3f + 0.7f * u), a * 0.5f));
         }
@@ -815,7 +851,7 @@ public class UI_RoguelikeRareRevealFx : MonoBehaviour
         float k = 0.06f > dm ? 1.0f : Mathf.Exp(-(dm - 0.06f) / 0.1f);
         float w = CardWidth + 2.0f;
         float h = CardRows + 2.0f;
-        // [효과음 지점] 만남 차임 (만남 = 0.99 + 0.404초)
+        // 만남 차임 효과음은 PlaySoundCues가 낸다.
         if (null != meetHalo) meetHalo.Show(0.0f, CenterY, w + 2.0f * MeetCentreOffset, h + 2.0f * MeetCentreOffset, 0.0f, Glow(MainColor(0.0f), k));
         if (null != meetLine) meetLine.Show(0.0f, CenterY, w + 2.0f * MeetCentreOffset, h + 2.0f * MeetCentreOffset, 0.0f, Glow(palette.core, k));
     }
@@ -1039,7 +1075,7 @@ public class UI_RoguelikeRareRevealFx : MonoBehaviour
                 PathPoint(headD, dir, out float pu, out float pv);
                 GlowDot(pu, pv, 11.0f, Lerp(m0, White, 0.5f), 0.9f);
                 Pix(ShapePlus5, pu, pv, White);
-                // [효과음 지점] 타다다닥 틱(박자 j, 점점 높아짐)
+                // 타다다닥 틱 효과음은 PlaySoundCues가 낸다.
             }
         }
 

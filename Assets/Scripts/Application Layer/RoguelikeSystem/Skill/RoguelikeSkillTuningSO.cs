@@ -52,6 +52,8 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     [Header("오프로드")]
     [Tooltip("소환 주기(초). 공격속도%로 빨라진다.")]
     public float offroadInterval = 6f;
+    [Tooltip("소환 위치 표시를 최소 이만큼(초) 보여 준 뒤에 소환한다. 웨이브 첫 발동과 위치를 늦게 정한 주기에도 적용된다(기획서 v3.3 G-8).")]
+    public float offroadMinPreviewSeconds = 1.5f;
     [Tooltip("돌진 최고 속도(월드/초). 오프로드 IV의 돌진 속도 증가(MoveSpeedPercent, 오프로드 전용)가 곱해진다.")]
     public float offroadSpeed = 16f;
     [Tooltip("돌진 판정 폭(반경). 범위%로 넓어진다(오프로드 IV).")]
@@ -134,12 +136,6 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     public int spinShockwaveSwingInterval = 3;
     [Tooltip("360도 충격파 한 번 발동의 그루당 피해(기획서 v2.8 6-2: 400, 두 카드 MAX 합 230 이상 · 프리즘 기준 380 이상). 충격파 카드의 레벨별 피해 배율 대신 이 값을 쓰고, 피해%(다다익선 공격력 포함)는 곱한다. 다다익선의 발동 +1이면 같은 자리에서 한 번 더 발동한다.")]
     public float spinShockwaveDamage = 400f;
-
-    [Header("조합: 부메랑 + 충격파")]
-    [Tooltip("부메랑에 맞은 나무마다 충격파가 터진다(기획서). 0이면 타격마다, 값을 주면 그 간격(초) 안의 타격은 건너뛴다(밸런스용).")]
-    public float boomerangShockwaveCooldown = 0f;
-    [Tooltip("같은 프레임에 이 거리(월드) 안에서 터지는 충격파는 하나로 합친다. 붙어 선 나무를 한 번에 꿰뚫어도 같은 자리에 충격파가 겹쳐 쌓이지 않게 한다.")]
-    public float boomerangShockwaveMergeRadius = 0.6f;
 
     [Header("조합: 회전베기 + 부메랑")]
     [Tooltip("회전베기 반경 = 부메랑 판정 반경 × 이 값(기획서 v3.0 11-13, 1.5 - 부메랑보다 확실히 크다). 부메랑 범위 카드 · 패시브만 반영되고 도끼 · 회전베기 범위는 반영되지 않는다.")]

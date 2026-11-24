@@ -58,16 +58,21 @@ namespace PresentationLayer.VFX
                 }
             }
 
+            // 줄무늬: 위쪽 굵은 구간은 몸통(중간색) + 오른쪽 그늘, 아래로 갈수록 한 칸으로 가늘어지고, 끝은 다시 부푼 방울 머리(오른쪽·아래 그늘).
+            // 맨 위에서 두 번째 칸은 젖은 반짝임.
+            Color32 light = TreeDebuffPalette.LightRaw(_tier);
             for (int s = 0; s < _layout.streakCount; s++)
             {
                 int len = _layout.streakLength[s];
+                int wide = _layout.streakWide[s];
                 for (int k = 0; k < len; k++)
                 {
-                    int x = _layout.streakX[s];
-                    int y = _layout.streakTopY[s] - k;
-                    if (false == _mask.IsSolid(x, y)) break;
-                    pixels[y * w + x] = mid;
-                    if (k < len * 0.6f && true == _mask.IsSolid(x + 1, y)) pixels[y * w + x + 1] = deep;
+                    int x = _layout.streakPathX[s, k];
+                    int y = _layout.streakPathY[s, k];
+                    bool bHead = k == len - 1 && 4 <= len;
+                    pixels[y * w + x] = (1 == k && 5 <= len) ? light : mid;
+                    if ((k < wide || true == bHead) && true == _mask.IsSolid(x + 1, y)) pixels[y * w + x + 1] = deep;
+                    if (true == bHead && true == _mask.IsSolid(x, y - 1)) pixels[(y - 1) * w + x] = deep;
                 }
             }
 
