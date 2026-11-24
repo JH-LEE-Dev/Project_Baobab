@@ -134,6 +134,8 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
     private const float SortAheadOfMain = 0.04f;
     // 층층이 쌓인 쌍둥이는 한 층 위일수록 이만큼 더 앞에 그려 아래층 위에 얹혀 보이게 한다(2칸씩).
     private const float SortAheadPerStack = 0.02f;
+    // 쌍둥이가 튀어나오는 소리는 이 층까지만 음이 올라간다(1~4층 상승, 5층부터는 4층과 같은 음).
+    private const int RevealPitchMaxLayer = 4;
 
     private enum ETwinState
     {
@@ -333,8 +335,9 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
             vfx.PlayReveal(_twin.body.transform.position, cutterPos + (Vector3)cutterBladeOffset, outDir);
         }
 
+        // 4층까지만 한 칸씩 올라가고 그 위로는 4층 음높이를 유지한다.
         float pitch = Random.Range(0.97f, 1.04f);
-        if (_twin.stackIndex > 0) pitch *= GetChimePitch(_twin.stackIndex + 1);
+        if (_twin.stackIndex > 0) pitch *= GetChimePitch(Mathf.Min(_twin.stackIndex + 1, RevealPitchMaxLayer));
         Sound.Play(revealSound, mainPos, revealVolume, pitchOverride: pitch);
     }
 
