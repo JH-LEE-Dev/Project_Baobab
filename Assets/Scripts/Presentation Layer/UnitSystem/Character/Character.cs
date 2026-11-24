@@ -758,6 +758,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             armComponent.axeComponent.AttackEvent -= attackComponent.Attack;
             armComponent.axeComponent.AttackEvent += attackComponent.Attack;
 
+            armComponent.axeComponent.SwingStartedEvent -= attackComponent.PlaySwingPunch;
+            armComponent.axeComponent.SwingStartedEvent += attackComponent.PlaySwingPunch;
+
             attackComponent.AttackSuccessEvent -= armComponent.axeComponent.DecreaseDurability;
             attackComponent.AttackSuccessEvent += armComponent.axeComponent.DecreaseDurability;
 
@@ -804,6 +807,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             attackComponent.AttackSuccessEvent -= armComponent.axeComponent.DecreaseDurability;
             attackComponent.ShockWaveOnlyHitEvent -= armComponent.axeComponent.DecreaseDurabilityWithoutCombo;
             armComponent.axeComponent.AttackEvent -= attackComponent.Attack;
+            armComponent.axeComponent.SwingStartedEvent -= attackComponent.PlaySwingPunch;
             healthComponent.StaminaIsEmptyEvent -= StaminaIsEmpty;
         }
     }

@@ -45,6 +45,9 @@ public class ArmComponent : PComponent, IArmComponent
     {
         bWhirlwindSpinning = true;
         whirlwindSpinStartZ = transform.eulerAngles.z;
+
+        // 팔이 한 바퀴 도는 동안 팔 좌표계에 붙은 휘두르기 궤적이 같이 돌지 않게 지운다(회전 베기 VFX가 대신 나온다).
+        if (null != axeComponent) axeComponent.StopSwingTrail();
     }
 
     // _degrees: 시작 각도로부터 누적 회전량 (반시계 +)

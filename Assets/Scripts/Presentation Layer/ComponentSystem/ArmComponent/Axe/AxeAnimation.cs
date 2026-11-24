@@ -49,6 +49,9 @@ public class AxeAnimation : MonoBehaviour
         cachedLocalRotationSetter = x => target.localRotation = x;
     }
 
+    /// <summary>스윙 한 번이 도끼에 더하는 로컬 회전(도). 음수면 시계 방향. 휘두르기 궤적 연출이 호의 길이·방향으로 쓴다.</summary>
+    public float SwingRotationZ => endRotationZ;
+
     private Transform cachedRotationTarget;
     private DG.Tweening.Core.DOGetter<Quaternion> cachedLocalRotationGetter;
     private DG.Tweening.Core.DOSetter<Quaternion> cachedLocalRotationSetter;

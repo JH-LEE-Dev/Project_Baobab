@@ -13,6 +13,8 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     public event Action DurabilityRepairedEvent;
     // 공격 리듬 콤보 수가 바뀔 때(현재 콤보, 강제 초기화 여부). 강제 초기화는 무기가 꺼지며 상태를 정리한 경우다.
     public event Action<int, bool> AttackComboChangedEvent;
+    // 스윙을 시작한 순간(휘두르는 소리와 같은 시점, 나무를 맞혔는지와 무관). 공격 범위 표시기의 튕김 연출용이다.
+    public event Action SwingStartedEvent;
 
     // 외부 의존성
     [SerializeField] private Sprite halfDurabilityAxe;
@@ -29,6 +31,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     private Sprite targetSprite;
     private Sprite appliedSprite; // LateUpdate가 마지막으로 렌더러에 넣은 스프라이트(이 컴포넌트만 도끼 스프라이트를 쓴다)
     private Transform armRootTransform; // transform.parent.parent(캐릭터 팔 기준점) - 계층은 런타임에 바뀌지 않으므로 1회 캐싱
+    private PresentationLayer.VFX.VFX_AxeSwingTrail swingTrail; // 휘두를 때 도끼날 바깥에 남는 반달 궤적(그림 전용)
 
     // 공격 리듬 콤보
     private int attackComboStack = 0;
@@ -58,6 +61,13 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         }
 
         UpdateSpriteByDurability();
+
+        // 궤적은 캐릭터 SortingGroup(Base Visuals) 바로 아래에 둔다: 회전·스케일이 없어 픽셀 격자에 맞고, 몸·도끼와 같은 그룹 안에서 정렬된다.
+        if (null == swingTrail)
+        {
+            UnityEngine.Rendering.SortingGroup visualGroup = GetComponentInParent<UnityEngine.Rendering.SortingGroup>();
+            if (null != visualGroup) swingTrail = PresentationLayer.VFX.VFX_AxeSwingTrail.Create(visualGroup.transform);
+        }
     }
 
     public override void SetFacingDir(Transform _attackTransform)
@@ -140,6 +150,8 @@ public class AxeComponent : WeaponComponent, IAxeComponent
             axeAnimation.ResetPose();
         }
 
+        StopSwingTrail();
+
         bAttacked = false;
 
         if (bIsSpeedReduced)
@@ -192,6 +204,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         Sound.Play(SoundID.Swing, transform.position);
         if (null == cachedOnAttackImpact) cachedOnAttackImpact = OnAttackImpact;
         axeAnimation.PlaySwing(cachedOnAttackImpact);
+        PlaySwingFeedback();
 
         if (!bIsSpeedReduced)
         {
@@ -221,6 +234,24 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         if (null == cachedOnAttackFinish) cachedOnAttackFinish = OnAttackFinish;
         axeAnimation.PlayReturn(cachedOnAttackFinish);
         attackCoolDownCoroutine = StartCoroutine(AttackCoolDownRoutine());
+    }
+
+    // 휘두르기 연출(그림 전용, 판정·타이밍 무관): 도끼날 궤적을 그리고, 공격 범위 표시기를 튕기도록 알린다.
+    private void PlaySwingFeedback()
+    {
+        Transform arm = transform.parent;
+        if (null != swingTrail && null != arm)
+        {
+            swingTrail.Play(transform, arm, spriteRenderer, axeAnimation.SwingRotationZ, sortingOrder);
+        }
+
+        SwingStartedEvent?.Invoke();
+    }
+
+    /// <summary>진행 중인 휘두르기 궤적을 바로 지운다(스윙 취소·회전 베기처럼 도끼가 다른 연출로 넘어갈 때).</summary>
+    public void StopSwingTrail()
+    {
+        if (null != swingTrail && swingTrail.IsPlaying) swingTrail.StopImmediate();
     }
 
     // 스윙마다 새 Action을 만들지 않도록 한 번만 만든다(AxeAnimation은 받은 콜백을 부르기만 한다).
@@ -443,6 +474,8 @@ public class AxeComponent : WeaponComponent, IAxeComponent
             axeAnimation.ResetPose();
         }
 
+        StopSwingTrail();
+
         bAttacked = false;
         bSwingBeforeImpact = false;
         bLeftButtonClicked = false;
@@ -527,6 +560,9 @@ public class AxeComponent : WeaponComponent, IAxeComponent
             appliedSprite = targetSprite;
             spriteRenderer.sprite = targetSprite;
         }
+
+        // 스윙 도중 도끼가 몸 앞/뒤로 바뀌면 궤적 정렬도 따라간다(SetFacingDir가 Update에서 sortingOrder를 정한다).
+        if (null != swingTrail && swingTrail.IsPlaying) swingTrail.SetSortOffset(sortingOrder);
     }
 
     public void SetbCanAttack(bool _boolean)
