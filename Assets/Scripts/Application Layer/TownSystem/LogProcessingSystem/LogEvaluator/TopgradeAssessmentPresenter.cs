@@ -291,7 +291,9 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
         float bobPhase = 0f;
         for (int i = 0; i < twinCount; i++)
         {
-            Twin twin = SpawnTwin(_main, i);
+            // 반짝임은 튀어나오는 순간(PlayTwinReveal)에 붙인다. 차례를 기다리는 쌍둥이는 크기 0으로 숨지만
+            // 반짝임 파티클은 부모 크기를 따르지 않아(Local 스케일) 미리 붙이면 커터 입구에서 먼저 반짝인다.
+            Twin twin = SpawnTwin(_main, i, false);
             if (twin == null) return;
 
             // 층층이 쌓인 쌍둥이가 따로 까딱거리면 탑이 벌어져 보이므로 모두 첫 쌍둥이와 같은 박자로 까딱인다.
@@ -317,6 +319,9 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
     // 쌍둥이가 커터에서 튀어나오는 순간의 불티·톱밥과 소리. 여럿이면 한 층 위일수록 소리가 한 칸씩 높아진다(차임 음계).
     private void PlayTwinReveal(Twin _twin)
     {
+        // 보석 등급이면 벨트 원목처럼 반짝임도 붙는다(튀어나오기 전에는 보이지 않으므로 지금 붙인다).
+        _twin.body.PlayGemShiny();
+
         Vector3 mainPos = _twin.lastMainPos;
         if (vfx != null)
         {
@@ -350,7 +355,7 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
             float bobPhase = 0f;
             for (int k = 0; k < twinCount; k++)
             {
-                Twin twin = SpawnTwin(main, k);
+                Twin twin = SpawnTwin(main, k, true);
                 if (twin == null) break;
 
                 if (k == 0) bobPhase = twin.bobPhase;
@@ -366,14 +371,15 @@ public class TopgradeAssessmentPresenter : MonoBehaviour
         scratchItems.Clear();
     }
 
-    private Twin SpawnTwin(LogItem _main, int _stackIndex)
+    // _bShinyNow: 보석 등급 반짝임을 지금 붙일지. 커터에서 튀어나오는 쌍둥이는 false(PlayTwinReveal이 붙인다).
+    private Twin SpawnTwin(LogItem _main, int _stackIndex, bool _bShinyNow)
     {
         LogItem body = pool.GetLogItem(_main.treeType, _main.logState);
         if (body == null) return null;
 
         // 원목과 똑같이 생긴 제재목. 보석 등급이면 벨트 원목처럼 반짝임도 붙는다.
         body.SetTimberSprite();
-        body.PlayGemShiny();
+        if (_bShinyNow) body.PlayGemShiny();
 
         Twin twin = twinPool.Count > 0 ? twinPool.Pop() : new Twin();
         twin.main = _main;
