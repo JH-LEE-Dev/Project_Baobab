@@ -129,6 +129,8 @@ namespace PresentationLayer.VFX
 
             public readonly PixelQuadBuffer buffer = new PixelQuadBuffer(QuadBudget);
             public readonly PixelQuadBuffer glowBuffer = new PixelQuadBuffer(GlowQuadBudget);
+            // 드랍 빛 꼬리 정점(OverheatEmberTrail.ComputeRibbon이 채운다)
+            public readonly OverheatEmberTrail.RibbonScratch ribbon = new OverheatEmberTrail.RibbonScratch();
             private int serial;
             private bool bUsed;
 
@@ -148,6 +150,7 @@ namespace PresentationLayer.VFX
                     work.serial = queueSerial;
                     work.buffer.Clear();
                     work.glowBuffer.Clear();
+                    work.ribbon.Clear();
                 }
 
                 return work;
@@ -231,6 +234,7 @@ namespace PresentationLayer.VFX
         private int deferredSortLayer;                  // 바닥에 있을 때 따를 정렬(LateUpdate에서 읽은 값)
         private int deferredSortOrder;
         private Matrix4x4 deferredTrailWorldToLocal;    // 드랍 꼬리 메쉬의 월드 -> 로컬 변환
+        private bool bDeferredHasTrail;            // 꼬리 렌더러와 메쉬가 있다(LateUpdate에서 확인)
         private bool bDeferredHasGlow;                  // 바닥 빛 렌더러가 있다
         private bool bDeferredGlowRendererEnabled;      // LateUpdate 시점에 바닥 빛 렌더러가 켜져 있었다
         private bool bDeferredMesh;                     // 이번 프레임에 불덩이·불티 메쉬를 다시 그린다
@@ -655,13 +659,14 @@ namespace PresentationLayer.VFX
             painter.Dot(x, y, _color);
         }
 
-        // 드랍 빛 꼬리: 기록이 있거나 직전까지 그렸을 때만 다시 만든다. 스텝이 끝난 뒤(반영 때) 부르고, 변환은 LateUpdate에서 읽어 둔 값을 쓴다.
+        // 드랍 빛 꼬리: 기록이 있거나 직전까지 그렸을 때만 다시 만든다. 정점은 스텝이 끝난 뒤 ComputeDeferred가 채워 뒀고
+        // (변환은 LateUpdate에서 읽어 둔 값), 여기(반영 때)서는 메쉬에 올리기만 한다.
         private void RebuildTrail()
         {
             if (null == trailRenderer || null == trailMesh) return;
             if (false == trail.bHasPoints && false == trailRenderer.enabled) return;
 
-            trail.BuildRibbon(trailMesh, trailRenderer, deferredTrailWorldToLocal, trailDuration, trailIntensity, trailWidth, trailMaterialIntensity);
+            trail.UploadRibbon(trailMesh, trailRenderer);
         }
 
         // 드랍 비행 판단. 불씨 상태를 읽지 않고 루트 스케일과 Visual(부모) 높이로 정한다.
@@ -770,6 +775,12 @@ namespace PresentationLayer.VFX
 
             Work work = Work.ForCurrentThread();
             if (true == bDeferredMesh) DrawMeshSegment(work);
+            // 드랍 빛 꼬리 정점. 기록이 없으면 채울 것이 없고, 올릴지는 반영 때(RebuildTrail) 정한다.
+            if (true == bDeferredRedraw && true == bDeferredHasTrail)
+            {
+                trail.ComputeRibbon(work.ribbon, deferredTrailWorldToLocal, trailDuration, trailIntensity, trailWidth, trailMaterialIntensity);
+            }
+
             if (true == bDeferredGlow) DrawGlowSegment(work);
         }
 
@@ -956,7 +967,8 @@ namespace PresentationLayer.VFX
                 bMeshesHidden = false;
                 RebuildMesh(scale, pos.z);
                 // 드랍 꼬리(RebuildTrail)는 스텝 결과를 읽으므로 스텝 뒤에 만든다. 변환만 여기서 읽어 둔다.
-                if (null != trailRenderer && null != trailMesh) deferredTrailWorldToLocal = trailTransform.worldToLocalMatrix;
+                bDeferredHasTrail = null != trailRenderer && null != trailMesh;
+                if (true == bDeferredHasTrail) deferredTrailWorldToLocal = trailTransform.worldToLocalMatrix;
                 lastDrawPosition = pos;
                 lastDrawScale = scale;
             }

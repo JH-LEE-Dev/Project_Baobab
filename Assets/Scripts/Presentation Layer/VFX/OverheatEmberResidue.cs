@@ -44,6 +44,9 @@ namespace PresentationLayer.VFX
             public float materialIntensity;
             public MeshRenderer renderer;
             public Mesh mesh;
+            // 이번 프레임에 빛 꼬리 메쉬를 다시 만든다(LateUpdate가 켜고, 올린 뒤 끈다). 변환은 LateUpdate에서 읽어 둔 값을 쓴다.
+            public bool bPendingBuild;
+            public Matrix4x4 worldToLocal;
         }
 
         // 도메인 리로드를 끈 Enter Play Mode 설정에서도 이전 세션의 입자/드라이버 참조가 남지 않도록 플레이 시작마다 비운다.
@@ -156,6 +159,8 @@ namespace PresentationLayer.VFX
         {
             // 드라이버는 하나뿐이라 버퍼도 하나다. 채우는 것은 일꾼 스레드에서 할 수 있지만(ComputeDeferred) 이 드라이버만 쓴다.
             private static readonly PixelQuadBuffer buffer = new PixelQuadBuffer(QuadBudget);
+            // 빛 꼬리 정점 작업 버퍼. 드라이버가 하나뿐이고 한 번에 한 스레드만 채운다.
+            private static readonly OverheatEmberTrail.RibbonScratch ribbonScratch = new OverheatEmberTrail.RibbonScratch();
 
             // 내부 의존성
             private readonly PixelPainter painter = new PixelPainter();
@@ -210,6 +215,9 @@ namespace PresentationLayer.VFX
 
                 if (0 == particles.Count && false == bHasRibbon)
                 {
+                    // 등록하지 않는 프레임: 방금 다 사그라든 꼬리의 메쉬 정리(렌더러 끄기)를 여기서 바로 끝낸다
+                    ComputeRibbons();
+                    UploadRibbons();
                     if (true == meshRenderer.enabled) meshRenderer.enabled = false;
                     meshVertexCount = -1;
                     return;
@@ -225,6 +233,9 @@ namespace PresentationLayer.VFX
             // 미뤄 둔 그리기: 버퍼를 채운다(일꾼 스레드에서 불릴 수 있다). 예전 LateUpdate의 Begin ~ Draw 그대로다.
             void IPixelVfxDeferred.ComputeDeferred()
             {
+                // 빛 꼬리 정점(예전에는 LateUpdate에서 메쉬까지 한 번에 만들었다). 메쉬에는 ApplyDeferred가 올린다.
+                ComputeRibbons();
+
                 painter.Begin(buffer, Matrix4x4.identity, 0.0f);
 
                 // 꼬리 심선은 입자 뒤에 깐다(불씨 본체와 같은 순서)
@@ -237,7 +248,34 @@ namespace PresentationLayer.VFX
                 particles.Draw(painter, tones, darks, smoke);
             }
 
-            // 넘겨받은 빛 꼬리를 늙히고 각자 메쉬에 다시 그린다(주 스레드). 다 사그라든 자리는 비운다. 아직 그릴 꼬리가 있으면 true.
+            // 다시 만들 빛 꼬리의 정점을 작업 버퍼에 채운다(일꾼 스레드에서 불릴 수 있다)
+            private void ComputeRibbons()
+            {
+                ribbonScratch.Clear();
+                for (int i = 0; i < ribbons.Count; i++)
+                {
+                    RibbonSlot slot = ribbons[i];
+                    if (false == slot.bPendingBuild) continue;
+
+                    slot.trail.ComputeRibbon(ribbonScratch, slot.worldToLocal, slot.duration, slot.intensity, slot.width, slot.materialIntensity);
+                }
+            }
+
+            // 채워 둔 빛 꼬리 정점을 각자 메쉬에 올린다(주 스레드)
+            private void UploadRibbons()
+            {
+                for (int i = 0; i < ribbons.Count; i++)
+                {
+                    RibbonSlot slot = ribbons[i];
+                    if (false == slot.bPendingBuild) continue;
+
+                    slot.bPendingBuild = false;
+                    slot.trail.UploadRibbon(slot.mesh, slot.renderer);
+                }
+            }
+
+            // 넘겨받은 빛 꼬리를 늙히고 다시 만들 준비를 한다(주 스레드: 렌더러 값 맞추기, 변환 읽기). 정점 계산과 메쉬 올리기는 미룬다
+            // (ComputeRibbons / UploadRibbons). 다 사그라든 자리는 비운다. 아직 그릴 꼬리가 있으면 true.
             private bool UpdateRibbons(float _dt)
             {
                 bool bAny = false;
@@ -254,8 +292,8 @@ namespace PresentationLayer.VFX
                     if (slot.renderer.sortingLayerID != slot.sortingLayerID) slot.renderer.sortingLayerID = slot.sortingLayerID;
                     if (slot.renderer.sortingOrder != slot.sortingOrder) slot.renderer.sortingOrder = slot.sortingOrder;
 
-                    slot.trail.BuildRibbon(slot.mesh, slot.renderer, slot.renderer.transform.worldToLocalMatrix, slot.duration, slot.intensity,
-                        slot.width, slot.materialIntensity);
+                    slot.worldToLocal = slot.renderer.transform.worldToLocalMatrix;
+                    slot.bPendingBuild = true;
 
                     if (false == slot.trail.bHasPoints)
                     {
@@ -291,6 +329,7 @@ namespace PresentationLayer.VFX
             void IPixelVfxDeferred.ApplyDeferred()
             {
                 deferredSlot = -1;
+                UploadRibbons();
                 painter.Commit(mesh, meshRenderer, ref meshHash, ref meshVertexCount);
             }
 
