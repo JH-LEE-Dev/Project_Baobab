@@ -3322,6 +3322,19 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         return bHitAny;
     }
 
+    /// <summary>
+    /// 이번 원정에서 포자 대폭발이 일어날 수 있으면, 맞은 나무에 붙는 디버프 이펙트의 준비(나무 그림 실루엣 읽기, 텍스처 굽기,
+    /// 렌더러 생성)를 미리 해 둔다. 첫 대폭발 프레임에 몰리던 것을 나무 초기 스폰이 끝난 로딩 시점으로 옮길 뿐이라 결과는 같다.
+    /// 본편 원정 시작(InDungeonSystem.OnTreesReady)에서만 부른다.
+    /// </summary>
+    public void PrewarmSporeDebuffVfx()
+    {
+        if (0 >= sporePotionTierThisRun) return;
+
+        float damageAmplify = (3 == sporePotionTierThisRun) ? sporeBigExplosionTier3DamageAmplify : (2 == sporePotionTierThisRun) ? sporeBigExplosionTier2DamageAmplify : sporeBigExplosionTier1DamageAmplify;
+        PresentationLayer.VFX.TreeSporeDebuffVfx.Prewarm(activeTrees, damageAmplify);
+    }
+
     private float GetSporeBigExplosionChance(int _tier)
     {
         return (3 == _tier) ? sporeBigExplosionTier3Chance : (2 == _tier) ? sporeBigExplosionTier2Chance : sporeBigExplosionTier1Chance;

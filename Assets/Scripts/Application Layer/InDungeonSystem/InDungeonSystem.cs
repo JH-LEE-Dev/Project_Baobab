@@ -347,6 +347,9 @@ public class InDungeonSystem : MonoBehaviour
 
     private void OnTreesReady()
     {
+        // 화면이 아직 가려져 있는 지금, 전투 중 처음 켜질 때 준비가 몰리는 이펙트를 미리 준비한다.
+        inDungeonObjectManager.PrewarmSporeDebuffVfx();
+
         inDungeonObjectManager.ReadyPortal();
         inDungeonProductionManager.Offroad_DI(inDungeonObjectManager.offroadVehicle);
 

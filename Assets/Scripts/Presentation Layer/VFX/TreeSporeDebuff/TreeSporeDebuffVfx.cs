@@ -31,6 +31,17 @@ namespace PresentationLayer.VFX
             manager.Register(_tree, TierFromAmplify(_amplify));
         }
 
+        /// <summary>
+        /// 원정 로딩 때 부른다: 이번 원정의 증폭률(_amplify)로 걸릴 단계의 준비를 미리 해 둔다(TreeSporeDebuffVfxManager.Prewarm).
+        /// 부르지 않아도 동작은 같고, 첫 Apply 프레임에 준비가 몰릴 뿐이다.
+        /// </summary>
+        public static void Prewarm(System.Collections.Generic.List<TreeObj> _trees, float _amplify)
+        {
+            if (_amplify <= 0.0f) return;
+
+            TreeSporeDebuffVfxManager.Prewarm(_trees, TierFromAmplify(_amplify));
+        }
+
         public static void Clear(TreeObj _tree)
         {
             TreeSporeDebuffVfxManager manager = TreeSporeDebuffVfxManager.Instance;
