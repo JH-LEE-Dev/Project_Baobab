@@ -141,7 +141,7 @@ public class EmberItemController : MonoBehaviour
         if (vfxComponent != null) vfxComponent.Initialize();
 
         emberPool = new ObjectPool<EmberItem>(
-            createFunc: CreateEmberItem,
+            createFunc: TakeOrCreateEmberItem,
             actionOnGet: OnGetEmberItem,
             actionOnRelease: OnReleaseEmberItem,
             actionOnDestroy: OnDestroyEmberItem,
@@ -172,6 +172,8 @@ public class EmberItemController : MonoBehaviour
         ClearAll();
 
         bEnabledThisRun = emberItemPrefab != null && false == _bStageGimmicksDisabled && (_bEverywhere || enabledMapTypes.Contains(_mapType));
+        // 이번 원정에 불씨가 나오면 로딩 중인 지금 여유분을 만들어 둔다(전투 중 대량 벌목 프레임의 생성을 줄인다).
+        if (true == bEnabledThisRun) PrewarmReserve();
         dropMultiplierThisRun = Mathf.Max(0f, _dropMultiplier);
         canSpawnMore = _canSpawnMore;
         isBlockedPosition = _isBlockedPosition;
@@ -726,6 +728,54 @@ public class EmberItemController : MonoBehaviour
     }
 
     // ── 풀 ──
+
+    // 미리 만들어 둘 불씨 수와 획득·소멸 이펙트 수. 실측(모든 특성·전리품, 3단계 숲, 2026-11-24~25)으로 원정 시작 뒤 몇 초 안에
+    // 불씨 190~600개, 획득 이펙트 190~420개, 소멸 이펙트 5~32개가 전투 중에 새로 만들어졌다(불씨 개당 약 0.12ms, 이펙트 개당 약 0.2ms.
+    // 초기 배치 한 프레임에 135~225개, 그 뒤 프레임당 수십 개).
+    private const int PrewarmEmberCount = 640;
+    private const int PrewarmAcquireVfxCount = 448;
+    private const int PrewarmExpireVfxCount = 32;
+
+    // 미리 만들어 둔 불씨(아직 한 번도 쓰지 않은 것). 풀이 비어 새 불씨가 필요해지면 여기서 먼저 만든 것부터 꺼낸다(TakeOrCreateEmberItem).
+    // 예전에는 그 순간에 새로 만들었으므로, n번째로 만든 불씨가 n번째로 처음 쓰이는 것은 그대로이고 만드는 시점만 로딩으로 옮겨진다.
+    private readonly Queue<EmberItem> reserveEmbers = new Queue<EmberItem>(PrewarmEmberCount);
+
+    /// <summary>
+    /// 아직 쓰지 않은 불씨가 PrewarmEmberCount개가 되도록 미리 만들고, 획득·소멸 이펙트 풀도 미리 늘려 둔다.
+    /// 원정 시작(BeginRun, 로딩 중)에 불씨가 나오는 원정에서만 부른다. 만드는 것은 전투 중에 새로 만들어졌을 것과 같다
+    /// (같은 CreateEmberItem - 꺼진 채로 만들어진다 / 이펙트 풀의 같은 생성 함수). 앞선 원정에서 남은 여유분이 있으면 모자란 만큼만 만든다.
+    /// </summary>
+    private void PrewarmReserve()
+    {
+        if (emberPool == null || emberItemPrefab == null) return;
+
+        // 풀에 이미 쉬고 있는 불씨(앞선 원정에서 쓰고 돌려받은 것)도 다음 요청에 쓰이므로 그만큼은 덜 만든다.
+        int need = PrewarmEmberCount - emberPool.CountInactive - reserveEmbers.Count;
+        for (int i = 0; i < need; i++)
+        {
+            EmberItem item = CreateEmberItem();
+            if (item == null) break;
+            reserveEmbers.Enqueue(item);
+        }
+
+        if (vfxComponent != null)
+        {
+            vfxComponent.EnsurePoolSize(acquireVfxTag, PrewarmAcquireVfxCount);
+            vfxComponent.EnsurePoolSize(expireVfxTag, PrewarmExpireVfxCount);
+        }
+    }
+
+    // 풀이 비었을 때 불리는 생성 함수. 미리 만들어 둔 것이 있으면 먼저 만든 것부터 내주고, 없으면 예전처럼 그 자리에서 만든다.
+    private EmberItem TakeOrCreateEmberItem()
+    {
+        while (0 < reserveEmbers.Count)
+        {
+            EmberItem item = reserveEmbers.Dequeue();
+            if (item != null) return item;
+        }
+
+        return CreateEmberItem();
+    }
 
     private EmberItem CreateEmberItem()
     {

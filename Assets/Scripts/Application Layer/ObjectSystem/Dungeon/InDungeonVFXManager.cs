@@ -434,6 +434,21 @@ public class InDungeonVFXManager : MonoBehaviour
     /// </summary>
     private void PrewarmCombatVfxPools()
     {
+        // 이름표로 재생하는 이펙트 풀(VFXComponent)도, 첫 원정에서 재생 시점에 늘던 만큼을 미리 만들어 둔다.
+        // 실측(모든 특성·전리품, 3단계 숲, 2026-11-24~25)으로 원정 초반에 새로 만들어진 수: 열기 방출 31~54, 보호막 불꽃·파편 42~47,
+        // 포자막 파괴 17~44(종 다른 것 9), 포자 대폭발 8~11, 희귀 임팩트 4~19, 별자리 신성 7~8(개당 0.2~0.3ms). 재생하지 않으므로 그리거나 울리지 않는다.
+        if (null != vfxComponent)
+        {
+            vfxComponent.EnsurePoolSize("TreeHeatEmitEffect", 56);
+            vfxComponent.EnsurePoolSize("TreeBarrierSparkEffect", 48);
+            vfxComponent.EnsurePoolSize("TreeBarrierShatterEffect", 48);
+            vfxComponent.EnsurePoolSize("SporeShieldBrokenEffect", 48);
+            vfxComponent.EnsurePoolSize("SporeShieldBrokenEffect_Bellpine", 12);
+            vfxComponent.EnsurePoolSize("SporeBigExplosionEffect", 12);
+            vfxComponent.EnsurePoolSize("RareImpact_Gold", 20);
+            vfxComponent.EnsurePoolSize("ConstellationNovaEffect", 8);
+        }
+
         PrewarmPool(sporeExplosionVfxPool, SporeExplosionVfxPrewarmCount, sporeExplosionVfxPoolMaxSize);
         PrewarmPool(treeStarMarkGroundPool, TreeStarMarkGroundPrewarmCount, treeStarMarkGroundPoolMaxSize);
         PrewarmPool(treeTransformVfxPool, TreeTransformVfxPrewarmCount, treeTransformVfxPoolMaxSize);

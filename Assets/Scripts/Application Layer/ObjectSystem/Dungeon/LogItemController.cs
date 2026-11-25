@@ -79,7 +79,7 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
         BuildAuraPools();
 
         logPool = new ObjectPool<LogItem>(
-            createFunc: CreateLogItem,
+            createFunc: TakeOrCreateLogItem,
             actionOnGet: OnGetLogItem,
             actionOnRelease: OnReleaseLogItem,
             actionOnDestroy: OnDestroyLogItem,
@@ -121,6 +121,10 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
         {
             logPool.Release(CreateLogItem());
         }
+
+        // 풀에 넣는 수(위)는 그대로 두고, 그보다 더 필요해질 원목은 여유분 줄에 만들어 둔다(아래 [여유분] 참고).
+        bReserveEnabled = true;
+        FillReserve(PrewarmReserveLogItemCount, int.MaxValue);
 
         PrewarmAuraPools();
     }
@@ -224,8 +228,47 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
         }
     }
 
+    // [여유분] 풀이 비어 새 원목이 필요해지면 예전에는 그 순간에 만들었다(대량 벌목 프레임에 수십 개, 2.4~5.6ms. 실측 2026-11-24~25).
+    // 이제는 미리 만들어 둔 여유분에서 먼저 만든 것부터 꺼낸다(TakeOrCreateLogItem). n번째로 만든 원목이 n번째로 처음 쓰이는 것은
+    // 예전과 같고 만드는 시점만 앞당겨진다. 여유분은 던전 준비 때 PrewarmReserveLogItemCount개를 만들고, 전투 중에
+    // ReserveLogItemCount 아래로 내려가면 프레임마다 TopUpLogItemsPerFrame개씩 다시 채운다(한 프레임에 몰아서 만들지 않는다).
+    // 여유분의 원목은 꺼 둔 채로 두며 활성 목록·풀을 거치지 않는다. 풀에서 꺼낼 때 켜지는 것은 미리 만든 원목(PrewarmPool)과 같다.
+    private const int PrewarmReserveLogItemCount = 400;
+    private const int ReserveLogItemCount = 160;
+    private const int TopUpLogItemsPerFrame = 6;
+    private readonly Queue<LogItem> reserveItems = new Queue<LogItem>(PrewarmReserveLogItemCount);
+    private bool bReserveEnabled;
+
+    // 여유분이 _target개가 될 때까지 최대 _maxCreate개를 만든다.
+    private void FillReserve(int _target, int _maxCreate)
+    {
+        int need = _target - reserveItems.Count;
+        if (_maxCreate < need) need = _maxCreate;
+
+        for (int i = 0; i < need; i++)
+        {
+            LogItem item = CreateLogItem();
+            item.gameObject.SetActive(false);
+            reserveItems.Enqueue(item);
+        }
+    }
+
+    // 풀이 비었을 때 불리는 생성 함수. 여유분이 있으면 먼저 만든 것부터 내주고, 없으면 예전처럼 그 자리에서 만든다.
+    private LogItem TakeOrCreateLogItem()
+    {
+        while (0 < reserveItems.Count)
+        {
+            LogItem item = reserveItems.Dequeue();
+            if (item != null) return item;
+        }
+
+        return CreateLogItem();
+    }
+
     private void Update()
     {
+        if (true == bReserveEnabled && reserveItems.Count < ReserveLogItemCount) FillReserve(ReserveLogItemCount, TopUpLogItemsPerFrame);
+
         float deltaTime = Time.deltaTime;
 
         // 최적화: 가시 영역 내의 아이템만 업데이트
