@@ -276,10 +276,21 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
         {
             using var _profile = PickupProfilerMarkers.LogItemsUpdate.Auto();
 
-            // ManualUpdate 중 아이템이 해제(Release)되어 리스트가 변형될 수 있으므로 역순 순회
-            for (int i = activeItemsForUpdate.Count - 1; i >= 0; i--)
+            // 이 루프 안에서 원목이 한꺼번에 습득되면 인벤토리 UI가 개수만큼 같은 갱신을 되풀이한다. 루프를 구간으로
+            // 표시해 두면 UI가 결과가 같은 갱신을 구간 끝에서 한 번에 처리한다(ItemPickupBatch 참고).
+            ItemPickupBatch.Begin();
+
+            try
             {
-                activeItemsForUpdate[i].ManualUpdate(deltaTime);
+                // ManualUpdate 중 아이템이 해제(Release)되어 리스트가 변형될 수 있으므로 역순 순회
+                for (int i = activeItemsForUpdate.Count - 1; i >= 0; i--)
+                {
+                    activeItemsForUpdate[i].ManualUpdate(deltaTime);
+                }
+            }
+            finally
+            {
+                ItemPickupBatch.End();
             }
         }
 

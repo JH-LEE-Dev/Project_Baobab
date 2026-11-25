@@ -81,6 +81,13 @@ public class UI_Inventory : MonoBehaviour
     private int previousLogCount = 0;
     private bool isFirstDataBind = true;
 
+    // 원목 갱신 구간(ItemPickupBatch) 안에서 미뤄 둔 획득 갱신. 구간이 끝나면 한 번에 처리한다(FlushPendingItemAdded).
+    private int pendingItemAddedCount = 0;       // 미뤄 둔 획득 횟수
+    private int pendingRedDotActivateCount = 0;  // 그 사이 빨간 점을 켰어야 하는 횟수(같은 프레임의 세 번째부터는 두 번째와 결과가 같아 2까지만 센다)
+    private int pendingLogCount = 0;             // 마지막으로 미룬 시점의 원목 개수(previousLogCount가 될 값)
+    private int pendingItemCount = 0;            // 마지막으로 미룬 시점의 용량바 값
+    private int pendingMaxCapacity = 0;
+
     // 교체 대상 슬롯 정보. 가방이 닫혀 있는 동안에도 값은 그대로 유지한다.
     private LogSwapSlotInfo logSwapInfo = LogSwapSlotInfo.None;          // 인벤토리 쪽: 버려질 가방 슬롯
     private LogSwapSlotInfo outgoingSwapInfo = LogSwapSlotInfo.None;     // 상자 쪽: 상자로 넘어갈 가방 슬롯
@@ -174,6 +181,9 @@ public class UI_Inventory : MonoBehaviour
 
         LogSwapExecutedEvent -= HandleLogSwapExecuted;
         LogSwapExecutedEvent += HandleLogSwapExecuted;
+
+        ItemPickupBatch.Ended -= FlushPendingItemAdded;
+        ItemPickupBatch.Ended += FlushPendingItemAdded;
     }
 
     private UI_InventorySlot CreateSlotInstance()
@@ -224,6 +234,8 @@ public class UI_Inventory : MonoBehaviour
 
     public void BindData(IInventory _inventory, IMoneyData _moneyData)
     {
+        FlushPendingItemAdded();
+
         inventory = _inventory;
         moneyData = _moneyData;
 
@@ -235,6 +247,8 @@ public class UI_Inventory : MonoBehaviour
 
     public void UpdateMaxSlotCount(int _cnt)
     {
+        FlushPendingItemAdded();
+
         if (null == uiSlotPrefab || null == invBackground)
             return;
 
@@ -253,6 +267,8 @@ public class UI_Inventory : MonoBehaviour
 
     public void SendDeleteItem(IInventorySlot _inData)
     {
+        FlushPendingItemAdded();
+
         if (null == inventory)
             return;
 
@@ -262,6 +278,8 @@ public class UI_Inventory : MonoBehaviour
 
     public void Refresh() //저장 파일 로드할 때도 호출됨.
     {
+        FlushPendingItemAdded();
+
         if (null != inventory)
             UpdateSlots(inventory.inventorySlots);
 
@@ -353,12 +371,16 @@ public class UI_Inventory : MonoBehaviour
 
     public void PlayCapacityFeedback()
     {
+        FlushPendingItemAdded();
+
         if (null != capacityBar)
             capacityBar.PlayFeedbackAnimation();
     }
 
     public void PlayCapacityRemoveFeedback()
     {
+        FlushPendingItemAdded();
+
         if (null != capacityBar)
             capacityBar.PlayRemoveFeedbackAnimation();
     }
@@ -456,6 +478,8 @@ public class UI_Inventory : MonoBehaviour
     /// </summary>
     public void SetInventoryVisibleForRun(bool _bVisible)
     {
+        FlushPendingItemAdded();
+
         if (null != uiBackpack)
             uiBackpack.gameObject.SetActive(_bVisible);
 
@@ -575,8 +599,168 @@ public class UI_Inventory : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// 아이템 획득 갱신(InventoryShowEvent + PlayCapacityFeedback)을 원목 갱신 구간이 끝날 때까지 미룰 수 있으면 미루고 true를
+    /// 돌려준다. false면 호출부가 예전대로 바로 갱신한다.
+    ///
+    /// 흡입 반경이 넓으면 한 프레임에 원목 수십 개가 들어와 같은 갱신이 그 수만큼 되풀이된다. 이미 묶여 있는 슬롯에 개수만
+    /// 늘어난 획득은 슬롯 자신이 SlotUpdatedEvent로 먼저 맞춰 두므로 전체 갱신의 슬롯 처리는 아무것도 바꾸지 않는다. 그런 슬롯은
+    /// 건너뛰고, 남는 일(빨간 점, 원목 개수 기록, 용량바, 획득 연출)은 구간 끝에서 한 번에 한다. 한 프레임 안이라 트윈이 그 사이에
+    /// 진행되지 않으므로 결과는 하나씩 처리한 것과 같다. 새 슬롯에 처음 들어온 경우처럼 고쳐 그려야 하는 슬롯은 그 슬롯만
+    /// 그 자리에서 예전과 같은 처리를 하고, 가방이 열려 있을 때의 교체 표시 갱신도 그 자리에서 한다(이미 전부 꺼져 있으면 생략).
+    /// 다음 경우에는 미루지 않는다:
+    ///   - 구간 밖, 첫 데이터 바인딩
+    ///   - 원목이 하나도 없음(빨간 점을 끄는 경로), 용량이 범위를 벗어나거나 미뤄 둔 값보다 줄어듦
+    /// </summary>
+    public bool TryDeferItemAdded()
+    {
+        if (false == ItemPickupBatch.IsActive)
+            return false;
+
+        if (null == inventory || null == capacityBar || true == isFirstDataBind)
+            return false;
+
+        IReadOnlyList<IInventorySlot> _items = inventory.inventorySlots;
+        if (null == _items)
+            return false;
+
+        int _current = inventory.currentItemCount;
+        int _max = inventory.maxCapacity;
+        if (0 >= _max || 0 > _current || _max < _current)
+            return false;
+
+        // 용량바는 값이 늘기만 하는 동안에는 마지막 값으로 한 번 갱신한 것과 하나씩 갱신한 것이 같다.
+        if (0 < pendingItemAddedCount && (_max != pendingMaxCapacity || _current < pendingItemCount))
+            return false;
+
+        int _itemCount = inventory.currentSlotCnt;
+        int _maxPerSlot = inventory.maxItemCntPerSlot;
+        int _maxSlots = inventorySlots.Count;
+
+        // 원목 개수(전체 갱신이 세는 것과 같은 범위)와 빨간 점 판정. 슬롯을 건드리기 전에, 미루지 못하는 경우를 먼저 가린다.
+        int _logCount = 0;
+        int _countable = Mathf.Min(_itemCount, Mathf.Min(_items.Count, _maxSlots));
+
+        for (int _i = 0; _countable > _i; ++_i)
+        {
+            IInventorySlot _item = _items[_i];
+
+            if (null != _item && null != _item.itemData && ItemType.Log == _item.itemData.itemType)
+                _logCount += _item.count;
+        }
+
+        // 가방이 열려 있는 동안에는 빨간 점을 켜지 않는다(전체 갱신과 같은 조건).
+        int _prevLogCount = 0 < pendingItemAddedCount ? pendingLogCount : previousLogCount;
+        bool _bActivateRedDot = _logCount > _prevLogCount && false == IsOpening;
+
+        if (false == _bActivateRedDot && 0 >= _logCount)
+            return false;
+
+        // 슬롯: 전체 갱신이 해도 달라지지 않는 슬롯은 건너뛰고, 달라지는 슬롯(새 슬롯에 처음 들어온 경우 등)만 전체 갱신이
+        // 하던 처리를 그대로 지금 한다. 슬롯끼리는 서로 영향을 주지 않으므로 전부 처리한 것과 결과가 같다.
+        bool _bAnySwapOutline = false;
+
+        for (int _i = 0; _maxSlots > _i; ++_i)
+        {
+            UI_InventorySlot _slot = inventorySlots[_i];
+            if (null == _slot)
+                continue;
+
+            IInventorySlot _item = _items.Count > _i ? _items[_i] : null;
+            bool _bActive = _itemCount > _i;
+
+            if (false == _slot.IsBindUpToDate(_item, _maxPerSlot, _bActive))
+            {
+                _slot.gameObject.SetActive(_bActive);
+                _slot.UpdateBindSlotData(_item, _maxPerSlot, false, true);
+            }
+
+            if (false == _slot.IsSwapOutlineOff)
+                _bAnySwapOutline = true;
+        }
+
+        // 가방이 열려 있으면 전체 갱신이 끝에서 교체 표시를 다시 맞춘다. 슬롯 테두리와 표시기만 건드려 미뤄 둔 것과 겹치지 않으므로
+        // 지금 한다. 교체 대상이 없어 "전부 끄기"만 하는 경우에 이미 전부 꺼져 있으면(가득 찬 가방이 열려 있는 흔한 상태) 생략한다.
+        if (true == IsOpening && (true == _bAnySwapOutline || false == IsSwapDisplayAlreadyCleared()))
+            HandleLogSwapInfoChanged();
+
+        ++pendingItemAddedCount;
+
+        if (true == _bActivateRedDot && 2 > pendingRedDotActivateCount)
+            ++pendingRedDotActivateCount;
+
+        pendingLogCount = _logCount;
+        pendingItemCount = _current;
+        pendingMaxCapacity = _max;
+
+        return true;
+    }
+
+    /// <summary>
+    /// 가방이 열려 있을 때의 HandleLogSwapInfoChanged가 지금 아무것도 바꾸지 않는 경우인지. 슬롯 테두리가 전부 꺼져 있다는 것은
+    /// 호출부가 확인한 뒤에 부른다. 표시를 켜는 경로는 여기서 다루지 않는다(false → 호출부가 그대로 실행).
+    /// </summary>
+    private bool IsSwapDisplayAlreadyCleared()
+    {
+        int _slotIndex = -1;
+
+        if (true == IsOutgoingSwapReady)
+            _slotIndex = OutgoingSlotIndex;
+        else if (true == IsLogSwapReady)
+            _slotIndex = logSwapInfo.slotIndex;
+
+        if (0 <= _slotIndex)
+        {
+            // 열리는 연출 중에는 원래도 아무것도 하지 않고, 그 밖에 대상 슬롯이 있으면 표시를 켜는 경로다.
+            if (true == isOpenAnimated)
+                return true;
+
+            if (inventorySlots.Count > _slotIndex)
+                return false;
+        }
+
+        // ClearAllSwapIndicators(false)가 하는 일: 대상 기록 지우기, 슬롯 테두리 끄기(호출부가 확인), 표시기 숨기기.
+        if (-1 != currentSwapSlotIndex)
+            return false;
+
+        return null == sharedSwapIndicator || true == sharedSwapIndicator.IsHideRedundant;
+    }
+
+    /// <summary>
+    /// TryDeferItemAdded가 미뤄 둔 획득 갱신을 처리한다. 원목 갱신 구간이 끝난 직후(ItemPickupBatch.Ended)에 불리고,
+    /// 같은 상태를 읽거나 바꾸는 진입점들도 들어가기 전에 먼저 부른다(순서 유지).
+    /// 하는 일과 순서는 미루지 않았을 때 획득 한 번이 하던 것과 같다: 빨간 점 → 원목 개수 기록 → 용량바 → 획득 연출.
+    /// </summary>
+    private void FlushPendingItemAdded()
+    {
+        if (0 >= pendingItemAddedCount)
+            return;
+
+        int _activateCount = pendingRedDotActivateCount;
+        pendingItemAddedCount = 0;
+        pendingRedDotActivateCount = 0;
+
+        if (null != newAlertRedDot)
+        {
+            // 꺼져 있던 점은 첫 번째에 등장 연출, 두 번째부터 뽀잉 연출로 바뀐다. 세 번째부터는 두 번째를 끊고 똑같이 다시 만드는 것이라 생략한다.
+            for (int _i = 0; _activateCount > _i; ++_i)
+                newAlertRedDot.Activate();
+        }
+
+        previousLogCount = pendingLogCount;
+
+        if (null != capacityBar)
+        {
+            capacityBar.transform.localScale = Vector3.one;
+            capacityBar.UpdateCapacityTwice(pendingItemCount, pendingMaxCapacity);
+            capacityBar.PlayFeedbackAnimation();
+        }
+    }
+
     public void InventoryShowEvent()
     {
+        FlushPendingItemAdded();
+
         // 예전에는 슬롯 갱신 끝에서 한 번, 여기서 한 번, 같은 값으로 용량바를 두 번 갱신했다. 결과는 그대로 두고
         // 두 번째 갱신 자리에서 한 번에 처리한다(UI_InventoryCapacityBar.UpdateCapacityTwice 참고). 사이에 끼는
         // 교체 표시 갱신과 크기 초기화는 용량바의 게이지·트윈을 건드리지 않으므로 순서를 옮겨도 결과가 같다.
@@ -600,6 +784,8 @@ public class UI_Inventory : MonoBehaviour
 
     public void MapChanged(MapType _currentMap)
     {
+        FlushPendingItemAdded();
+
         CurrentMapType = _currentMap;
 
         CloseInvAndAnimSkip();
@@ -695,6 +881,8 @@ public class UI_Inventory : MonoBehaviour
 
     public void OnHide()
     {
+        FlushPendingItemAdded();
+
         ClearAllSwapIndicators(false);
 
         bool _wasOpening = IsOpening || isOpenAnimated;
@@ -723,6 +911,8 @@ public class UI_Inventory : MonoBehaviour
 
     public void OnShow()
     {
+        FlushPendingItemAdded();
+
         if (true == isOpenAnimated)
             return;
 
@@ -771,6 +961,10 @@ public class UI_Inventory : MonoBehaviour
     /// </summary>
     public void Release()
     {
+        ItemPickupBatch.Ended -= FlushPendingItemAdded;
+        pendingItemAddedCount = 0;
+        pendingRedDotActivateCount = 0;
+
         LogSwapInfoChangedEvent -= HandleLogSwapInfoChanged;
         LogSwapExecutedEvent -= HandleLogSwapExecuted;
         ClearAllSwapIndicators(true);
@@ -809,6 +1003,8 @@ public class UI_Inventory : MonoBehaviour
 
     private void LateUpdate()
     {
+        FlushPendingItemAdded();
+
         UpdateIconsPosition();
     }
 

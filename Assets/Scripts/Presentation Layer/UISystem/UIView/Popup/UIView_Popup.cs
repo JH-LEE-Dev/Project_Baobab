@@ -276,6 +276,10 @@ public class UIView_Popup : UIView
     {
         using var _profile = PickupProfilerMarkers.InventoryUIItemAdded.Auto();
 
+        // 원목 갱신 루프 안에서 연달아 들어오는 획득은, 결과가 같다고 확인될 때만 루프 끝에서 한 번에 처리한다.
+        if (null != uiInventory && true == uiInventory.TryDeferItemAdded())
+            return;
+
         InventoryShowEvent();
         // uiInventory?.UpdateNotification();
         uiInventory?.PlayCapacityFeedback();

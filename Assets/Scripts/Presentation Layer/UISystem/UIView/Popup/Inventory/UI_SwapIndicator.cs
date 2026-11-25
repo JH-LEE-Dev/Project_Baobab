@@ -256,6 +256,10 @@ public class UI_SwapIndicator : MonoBehaviour
 
     public bool IsActiveAndShowing => true == gameObject.activeInHierarchy && (IndicatorState.Appearing == currentState || IndicatorState.Looping == currentState);
 
+    /// <summary>지금 Hide()를 불러도 아무 일도 일어나지 않는 상태(사라지는 중이거나, 숨겨져 꺼져 있음)인지.</summary>
+    public bool IsHideRedundant => IndicatorState.Disappearing == currentState
+        || (IndicatorState.Hidden == currentState && false == gameObject.activeSelf);
+
     /// <summary>
     /// 인디케이터가 이미 활성화된 상태에서 부모 팝업의 오픈 연출 완료 등으로 슬롯의 최종 월드 좌표가 안착되었을 때,
     /// 애니메이션을 중단하지 않고 기준 위치(baseAnchoredPosition)만 정확하게 재동기화합니다.
