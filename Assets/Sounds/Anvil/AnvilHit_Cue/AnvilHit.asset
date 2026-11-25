@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b1cb7eb645fca748b1f61ec4d7a2dc4, type: 3}
+  m_Name: AnvilHit
+  m_EditorClassIdentifier: Assembly-CSharp::AudioCueData
+  clips:
+  - {fileID: 8300000, guid: 69dd958931660cf419a518faf94e4027, type: 3}
+  - {fileID: 8300000, guid: a833a03cb8d6f2344a70a412da0f3210, type: 3}
+  - {fileID: 8300000, guid: bd5f2a26231931641ac612707497c162, type: 3}
+  - {fileID: 8300000, guid: f8548509f31344c4cb832c6ceb02d808, type: 3}
+  clipVolumes: []
+  playAllClips: 0
+  minPitch: 0.95
+  maxPitch: 1.05
+  minVolumeModifier: 0.9
+  maxVolumeModifier: 1.1

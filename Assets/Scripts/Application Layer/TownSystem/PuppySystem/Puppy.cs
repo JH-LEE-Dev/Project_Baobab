@@ -407,6 +407,7 @@ public class Puppy : MonoBehaviour
     /// <summary>주인이 상호작용했다. 흰색 + 뽀잉 연출(+ 하트) 후 상황에 맞는 행동으로 바꾼다.</summary>
     public void Interact()
     {
+        Sound.Play(SoundID.ToySqueaker, transform.position);
         popEffect.Play();
         heartEffect.Play(Position);
 
