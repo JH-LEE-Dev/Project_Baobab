@@ -156,16 +156,24 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     public float sporeOffroadSpacing = 1.5f;
     [Tooltip("포자 충격파: 충격파 그림에 곱하는 색. 충격파 그림이 흰색이라 이 색이 그대로 보인다. 기본은 본편 포자 대폭발 팔레트의 초록(143, 217, 138).")]
     public Color sporeShockwaveColor = new Color(143f / 255f, 217f / 255f, 138f / 255f, 1f);
+    [Tooltip("포자 프리즘 조합(역병 드론·방역차·포자 파동) 활성화 시 대폭발 1회 기본 피해(DotMul 반영). 비조합 기본 투하는 sporeExplosionDamage(0)를 유지한다.")]
+    public float sporeComboExplosionDamage = 180f;
+    [Tooltip("포자 프리즘 조합 활성화 시 오염 지속 피해 틱 배율.")]
+    public float sporeComboDotMultiplier = 4.5f;
+    [Tooltip("방역차(포자 수류탄 + 오프로드) 활성화 시 오프로드 소환 주기 배율.")]
+    public float sporeOffroadIntervalMultiplier = 0.6f;
+    [Tooltip("방역차(포자 수류탄 + 오프로드) 활성화 시 차량 돌진 직접 피해 배율.")]
+    public float sporeOffroadDamageMultiplier = 6f;
 
     [Header("조합: 스텔라 + 드론")]
     [Tooltip("이음선 레이저의 판정 폭과 이음선 하나당 피해. 발사 주기는 따로 없고 드론 레이저 발사 주기(공격속도 반영)를 그대로 쓴다(기획서 v2.8 6-2).")]
-    public float stellaDroneBeamWidth = 0.6f;
-    public float stellaDroneBeamDamage = 40f;
+    public float stellaDroneBeamWidth = 0.9f;
+    public float stellaDroneBeamDamage = 120f;
     [Tooltip("섬 위 고정 칸(9칸)이 이 수만큼 별로 차면 노바(기획서 9개). 노바는 섬 중심에서 섬 전체를 치는 고정 크기다(기획서 v3.0 6-2).")]
     public int stellaDroneNovaStars = 9;
-    public float stellaDroneNovaDamage = 600f;
-    [Tooltip("별 생성 간격(초). 별이 생기면 이 시간 동안은 나무를 부숴도 별 생성 판정을 하지 않는다 - 나무가 한꺼번에 많이 부서져도 이 간격에 별 1개(기획서 v3.0 11-12 6-2, 0.35초).")]
-    public float stellaDroneStarSpawnDelay = 0.35f;
+    public float stellaDroneNovaDamage = 6000f;
+    [Tooltip("별 생성 간격(초). 별이 생기면 이 시간 동안은 나무를 부숴도 별 생성 판정을 하지 않는다 - 나무가 한꺼번에 많이 부서져도 이 간격에 별 1개(기획서 v3.0 11-12 6-2, 0.25초).")]
+    public float stellaDroneStarSpawnDelay = 0.25f;
     [Tooltip("노바 지연(초). 고정 칸이 모두 별로 찬 뒤 이 시간이 지나야 노바가 터진다. 그동안 이음선 레이저는 계속 쏜다(기획서 v3.0 11-12 6-2, 초안 1.0초).")]
     public float stellaDroneNovaDelay = 1f;
     [Tooltip("별 고정 칸의 안쪽 비율(0~1). 섬 3×3 격자 칸을 섬 가장자리에서 이 비율만큼 중심 쪽으로 당긴다(기획서 v3.0 6-2, 초안 0.9).")]

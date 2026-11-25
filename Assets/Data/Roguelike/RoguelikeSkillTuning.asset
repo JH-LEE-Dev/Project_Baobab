@@ -74,12 +74,16 @@ MonoBehaviour:
   sporeComboMergeRadius: 0.6
   sporeOffroadSpacing: 1.5
   sporeShockwaveColor: {r: 0.56078434, g: 0.8509804, b: 0.5411765, a: 1}
+  sporeComboExplosionDamage: 180
+  sporeComboDotMultiplier: 4.5
+  sporeOffroadIntervalMultiplier: 0.6
+  sporeOffroadDamageMultiplier: 6
   stellaDroneBeamInterval: 1.2
-  stellaDroneBeamWidth: 0.6
-  stellaDroneBeamDamage: 40
+  stellaDroneBeamWidth: 0.9
+  stellaDroneBeamDamage: 120
   stellaDroneNovaStars: 9
-  stellaDroneNovaDamage: 600
-  stellaDroneStarSpawnDelay: 0.35
+  stellaDroneNovaDamage: 6000
+  stellaDroneStarSpawnDelay: 0.25
   stellaDroneNovaDelay: 1
   stellaDroneSlotInset: 0.9
   stellaDroneLoneStarInterval: 1.5

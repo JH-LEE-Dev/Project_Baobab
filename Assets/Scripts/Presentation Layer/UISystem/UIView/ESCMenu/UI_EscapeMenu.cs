@@ -304,7 +304,12 @@ public class UI_EscapeMenu : MonoBehaviour
             buttonAppearCallbacks[i] = _btn.PlayAppearAnimation;
             buttonDisappearCallbacks[i] = _btn.PlayDisappearAnimation;
             buttonAppearSoundCallbacks[i] = GetButtonSoundCallback(i);
-            _contentHeight += _btn.RectTransform.rect.height;
+            float _btnHeight = _btn.RectTransform.rect.height;
+            if (0f >= _btnHeight)
+            {
+                _btnHeight = _btn.RectTransform.sizeDelta.y;
+            }
+            _contentHeight += _btnHeight;
 
             Navigation _nav = new Navigation();
             _nav.mode = Navigation.Mode.Explicit;
@@ -313,10 +318,10 @@ public class UI_EscapeMenu : MonoBehaviour
             _btn.navigation = _nav;
         }
 
+        // 버튼이 25px라 개수가 홀수면 위아래 끝이 .5px에 걸린다. 홀수일 때 0.5px 올려 모든 경계를 정수 픽셀에 맞춘다.
+        float _offsetY = 1 == (_count & 1) ? 0.5f : 0f;
         if (null != buttonContainer)
         {
-            // 버튼이 25px라 개수가 홀수면 위아래 끝이 .5px에 걸린다. 홀수일 때 0.5px 올려 모든 경계를 정수 픽셀에 맞춘다.
-            float _offsetY = 1 == (_count & 1) ? 0.5f : 0f;
             buttonContainer.anchoredPosition = new Vector2(buttonContainer.anchoredPosition.x, _offsetY);
 
             // 꺼진 계층에서는 레이아웃이 계산되지 않는다. 그 경우는 켜질 때(PlayOpenProduction) 다시 맞춘다.
@@ -326,7 +331,7 @@ public class UI_EscapeMenu : MonoBehaviour
             }
         }
 
-        LayoutBGStrips(_contentHeight);
+        LayoutBGStrips(_contentHeight, _offsetY);
 
         bButtonLayoutDirty = false == gameObject.activeInHierarchy;
     }
@@ -346,14 +351,15 @@ public class UI_EscapeMenu : MonoBehaviour
     }
 
     /// <summary>
-    /// 버튼 영역 높이에 맞춰 BG 띠 수와 위치를 정한다. 띠 높이는 BG_0 기준이다.
-    /// 본편 100px = 5줄(y 40 ~ -40, 기존과 같음), 로그라이크 125px = 7줄(y 60 ~ -60). 모자라면 마지막 띠를 복제해 늘리고 남는 띠는 끈다.
+    /// 버튼 영역 높이와 중심 Y 오프셋에 맞춰 BG 띠 수·높이·위치를 정한다.
+    /// 본편 100px = 5줄 × 20px(y 40 ~ -40), 로그라이크 125px = 5줄 × 25px(y 50.5 ~ -49.5, 상·하 경계 +63 ~ -62).
+    /// 모자라면 마지막 띠를 복제해 늘리고 남는 띠는 끈다.
     /// </summary>
-    private void LayoutBGStrips(float _contentHeight)
+    private void LayoutBGStrips(float _contentHeight, float _offsetY)
     {
         if (0 >= bgPiecePool.Count || 0f >= bgStripHeight) return;
 
-        int _count = Mathf.Max(1, Mathf.CeilToInt(_contentHeight / bgStripHeight));
+        ResolveBGStripLayout(_contentHeight, out int _count, out float _stripHeight);
         while (bgPiecePool.Count < _count)
         {
             AppendBGStrip();
@@ -364,7 +370,7 @@ public class UI_EscapeMenu : MonoBehaviour
             bgPieces = new EscapeMenuBGPiece[_count];
         }
 
-        float _topY = (_count - 1) * 0.5f * bgStripHeight;
+        float _topY = _offsetY + (_count - 1) * 0.5f * _stripHeight;
         for (int i = 0; bgPiecePool.Count > i; i++)
         {
             EscapeMenuBGPiece _piece = bgPiecePool[i];
@@ -377,9 +383,51 @@ public class UI_EscapeMenu : MonoBehaviour
             if (false == _bActive) continue;
 
             bgPieces[i] = _piece;
+            _piece.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _stripHeight);
             Vector2 _pos = _piece.rectTransform.anchoredPosition;
-            _piece.rectTransform.anchoredPosition = new Vector2(_pos.x, _topY - i * bgStripHeight);
+            _piece.rectTransform.anchoredPosition = new Vector2(_pos.x, _topY - i * _stripHeight);
         }
+    }
+
+    /// <summary>버튼 영역 높이와 같은 전체 높이를 이루도록 띠 수와 띠 높이를 정한다(정수 픽셀 경계 유지).</summary>
+    private void ResolveBGStripLayout(float _contentHeight, out int _count, out float _stripHeight)
+    {
+        if (0f >= _contentHeight || 0f >= bgStripHeight)
+        {
+            _count = 1;
+            _stripHeight = Mathf.Max(1f, bgStripHeight);
+            return;
+        }
+
+        int _totalHeight = Mathf.RoundToInt(_contentHeight);
+        if (0 < _totalHeight && 0.01f >= Mathf.Abs(_contentHeight - _totalHeight))
+        {
+            int _baseCount = Mathf.Max(1, Mathf.RoundToInt(_contentHeight / bgStripHeight));
+            int _maxDelta = Mathf.Max(_baseCount - 1, _totalHeight - _baseCount);
+            for (int _delta = 0; _maxDelta >= _delta; _delta++)
+            {
+                int _minusCount = _baseCount - _delta;
+                if (1 <= _minusCount && 0 == (_totalHeight % _minusCount))
+                {
+                    _count = _minusCount;
+                    _stripHeight = (float)(_totalHeight / _minusCount);
+                    return;
+                }
+
+                if (0 == _delta) continue;
+
+                int _plusCount = _baseCount + _delta;
+                if (_totalHeight >= _plusCount && 0 == (_totalHeight % _plusCount))
+                {
+                    _count = _plusCount;
+                    _stripHeight = (float)(_totalHeight / _plusCount);
+                    return;
+                }
+            }
+        }
+
+        _count = Mathf.Max(1, Mathf.RoundToInt(_contentHeight / bgStripHeight));
+        _stripHeight = _contentHeight / _count;
     }
 
     /// <summary>마지막 BG 띠를 복제해 풀 끝에 붙인다(이름 BG_n). 한 번 만들면 계속 재사용한다.</summary>
