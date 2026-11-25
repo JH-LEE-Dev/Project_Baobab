@@ -14,6 +14,12 @@ public enum ERoguelikeChallengeKind
     PrismCard = 7,
     /// <summary>카드 도감 완성(기획서 v3.3 8-4). 도감 정본 목록(RoguelikeCollection)의 카드를 모두 한 번이라도 골랐다.</summary>
     CollectionAll = 8,
+    /// <summary>언리밋 제외 WAVE 30을 스태미너 손실 0으로 클리어.</summary>
+    NoDamageWave30 = 9,
+    /// <summary>언리밋 제외 WAVE 30을 프리즘 카드 없이 클리어.</summary>
+    NoPrismWave30 = 10,
+    /// <summary>한 판에서 프리즘 카드를 2장 보유.</summary>
+    ActiveMaster = 11,
 }
 
 /// <summary>도전과제 한 칸의 정의. id는 기록 파일에 저장되므로 한 번 정하면 바꾸지 않는다.</summary>
@@ -81,6 +87,9 @@ public static class RoguelikeChallenges
         new RoguelikeChallengeDefinition("Unlimit25", ERoguelikeChallengeKind.UnlimitN, 25, LocKeys.RoguelikeUI.roguelikeChallengeUnlimitNTitle, LocKeys.RoguelikeUI.roguelikeChallengeUnlimitNTip),
         new RoguelikeChallengeDefinition("TierAll", ERoguelikeChallengeKind.TierAll, 0, LocKeys.RoguelikeUI.roguelikeChallengeTierAllTitle, LocKeys.RoguelikeUI.roguelikeChallengeTierAllTip),
         new RoguelikeChallengeDefinition("Wave30", ERoguelikeChallengeKind.Wave30, 0, LocKeys.RoguelikeUI.roguelikeChallengeWave30Title, LocKeys.RoguelikeUI.roguelikeChallengeWave30Tip),
+        new RoguelikeChallengeDefinition("NoDamageWave30", ERoguelikeChallengeKind.NoDamageWave30, 0, LocKeys.RoguelikeUI.roguelikeChallengeNoDamageWave30Title, LocKeys.RoguelikeUI.roguelikeChallengeNoDamageWave30Tip),
+        new RoguelikeChallengeDefinition("NoPrismWave30", ERoguelikeChallengeKind.NoPrismWave30, 0, LocKeys.RoguelikeUI.roguelikeChallengeNoPrismWave30Title, LocKeys.RoguelikeUI.roguelikeChallengeNoPrismWave30Tip),
+        new RoguelikeChallengeDefinition("ActiveMaster", ERoguelikeChallengeKind.ActiveMaster, 0, LocKeys.RoguelikeUI.roguelikeChallengeActiveMasterTitle, LocKeys.RoguelikeUI.roguelikeChallengeActiveMasterTip),
     };
 
     public static int Count => definitions.Length;
@@ -162,6 +171,9 @@ public sealed class RoguelikeChallengeTracker
 
     private readonly bool[] clearedFlags = new bool[RoguelikeChallenges.Count];
     private readonly List<int> newlyCleared = new List<int>(RoguelikeChallenges.Count);
+    private int runPrismCount;
+    private bool bRunNoStaminaDamage;
+    private bool bRunNoPrism;
 
     /// <summary>직전 판정 호출에서 새로 달성한 도전과제 인덱스(정의 순서).</summary>
     public IReadOnlyList<int> NewlyCleared => newlyCleared;
@@ -217,10 +229,13 @@ public sealed class RoguelikeChallengeTracker
         }
 
         newlyCleared.Clear();
+        runPrismCount = 0;
+        bRunNoStaminaDamage = false;
+        bRunNoPrism = false;
     }
 
-    /// <summary>카드를 고른 순간(CardShop.TryBuy 성공). 프리즘 해제 · MAX 도달 · 루비 선택을 센다.</summary>
-    public void OnCardPurchased(in CardPurchaseResult _purchase)
+    /// <summary>카드를 고른 순간(CardShop.TryBuy 성공). 프리즘 해제 · MAX 도달 · 루비 선택 · 액티브 마스터를 센다.</summary>
+    public void OnCardPurchased(in CardPurchaseResult _purchase, int _runPrismCount = 0)
     {
         newlyCleared.Clear();
         if (null == records || null == _purchase.card || string.IsNullOrEmpty(_purchase.card.cardId)) return;
@@ -248,6 +263,8 @@ public sealed class RoguelikeChallengeTracker
                     Evaluate(ERoguelikeChallengeKind.PrismAll);
                     Evaluate(ERoguelikeChallengeKind.PrismCard);
                 }
+                runPrismCount = System.Math.Max(_runPrismCount, 1);
+                Evaluate(ERoguelikeChallengeKind.ActiveMaster);
                 break;
         }
     }
@@ -282,13 +299,19 @@ public sealed class RoguelikeChallengeTracker
         }
     }
 
-    /// <summary>30웨이브를 클리어한 순간(런 클리어).</summary>
-    public void OnRunCleared()
+    /// <summary>30웨이브를 클리어한 순간(런 클리어, 언리밋 모드 제외).</summary>
+    public void OnRunCleared(bool _bNoStaminaDamage = false, bool _bNoPrism = false)
     {
         newlyCleared.Clear();
         if (null == records) return;
 
+        bRunNoStaminaDamage = _bNoStaminaDamage;
+        bRunNoPrism = _bNoPrism;
         Evaluate(ERoguelikeChallengeKind.Wave30);
+        Evaluate(ERoguelikeChallengeKind.NoDamageWave30);
+        Evaluate(ERoguelikeChallengeKind.NoPrismWave30);
+        bRunNoStaminaDamage = false;
+        bRunNoPrism = false;
     }
 
     /// <summary>_kind 종류의 칸 중 아직 달성하지 않았고 조건을 채운 칸을 달성 처리한다.</summary>
@@ -320,6 +343,9 @@ public sealed class RoguelikeChallengeTracker
             case ERoguelikeChallengeKind.Wave30: return true;
             case ERoguelikeChallengeKind.PrismCard: return records.challengePrismCardIds.Contains(_def.cardId);
             case ERoguelikeChallengeKind.CollectionAll: return CountCollected() >= RoguelikeCollection.CardIds.Length;
+            case ERoguelikeChallengeKind.NoDamageWave30: return true == bRunNoStaminaDamage;
+            case ERoguelikeChallengeKind.NoPrismWave30: return true == bRunNoPrism;
+            case ERoguelikeChallengeKind.ActiveMaster: return 2 <= runPrismCount;
             default: return false;
         }
     }

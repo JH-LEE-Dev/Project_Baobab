@@ -160,6 +160,7 @@ public class GameInstaller : MonoBehaviour
 
         // 세이브 로드가 소지금을 덮어쓰므로, 캐릭터 프리팹의 디버그 소지금은 로드 후 한 번 더 적용해야 한다.
         unitSystem.ApplyDebugStartMoney();
+        PublishRelicSkillHudState(false, false);
         gameplayUIInstaller.Refresh();
     }
 
@@ -184,6 +185,7 @@ public class GameInstaller : MonoBehaviour
             unitSystem.SetWhereIsCharacter(true);
             // 대시는 본편 전리품("원목 보험 증서") 효과라 로그라이크에서는 쓰지 않는다.
             unitSystem.SetDashTier(0);
+            PublishRelicSkillHudState(true, false);
             roguelikeSystem?.StartSession();
         }
         else if (_sceneChangeData.currentScene == SceneType.DungeonScene)
@@ -196,6 +198,7 @@ public class GameInstaller : MonoBehaviour
             // 대시는 "원목 보험 증서" 전리품 효과다. 영구 획득 여부와 프레스티지 성장 단계로 켠다(0이면 미보유).
             // 원정 도중 얻거나 단계가 오르면 여기서, 즉 다음 숲 방문(재도전 포함)부터 적용된다.
             unitSystem.SetDashTier(inDungeonSystem.inDungeonObjectManager.GetLootGrowthTier(LootType.LostAndFoundBox));
+            PublishRelicSkillHudState(false, true);
         }
         else
         {
@@ -209,6 +212,7 @@ public class GameInstaller : MonoBehaviour
             unitSystem.SetWhereIsCharacter(false);
             // 마을에서도 던전과 같은 기준(영구 획득 여부·프레스티지 성장 단계)으로 대시를 켠다.
             unitSystem.SetDashTier(inDungeonSystem.inDungeonObjectManager.GetLootGrowthTier(LootType.LostAndFoundBox));
+            PublishRelicSkillHudState(false, false);
 
             // 마을 도착(최초 진입/이어하기 포함) 시점 자동저장.
             signalHub.Publish(new AutoSaveRequestedSignal(AutoSaveReason.ArriveTown));
@@ -287,6 +291,19 @@ public class GameInstaller : MonoBehaviour
     private void SaveGame()
     {
         saveManager.SaveGameData();
+    }
+
+    private void PublishRelicSkillHudState(bool _bForceHide, bool _bDungeonRun)
+    {
+        if (null == signalHub || null == inDungeonSystem || null == inDungeonSystem.inDungeonObjectManager)
+            return;
+
+        InDungeonObjectManager _objMgr = inDungeonSystem.inDungeonObjectManager;
+        bool _bMeteor = false == _bForceHide && (true == _bDungeonRun ? _objMgr.IsMeteorShowerActiveThisRun : _objMgr.bHasAcquiredStarCompass);
+        bool _bQuake = false == _bForceHide && (true == _bDungeonRun ? _objMgr.IsQuakeActiveThisRun : _objMgr.bHasAcquiredObsidianCharm);
+
+        signalHub.Publish(RelicSkillHudSignal.SetCharge(ERelicSkillHudId.MeteorShower, _bMeteor, 0, _objMgr.MeteorShowerMaxStack));
+        signalHub.Publish(RelicSkillHudSignal.SetCharge(ERelicSkillHudId.Earthquake, _bQuake, 0, _objMgr.QuakeMaxStack));
     }
 
     private void BindEvents()

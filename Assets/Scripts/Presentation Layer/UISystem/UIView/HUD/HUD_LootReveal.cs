@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using TMPro;
 using DG.Tweening;
+using DG.Tweening.Core;
 using UnityEngine;
 using UnityEngine.UI;
 using PresentationLayer.VFX;
@@ -11,8 +12,8 @@ using PresentationLayer.VFX;
 /// <summary>
 /// 전리품 획득 시 화면 전체를 덮으며 등장하는 시네마틱 스타일의 정보 표시 UI입니다.
 /// 연출은 4단계로 구성됩니다:
-///   1단계 - 프로시저럴 그리드 셀들이 중앙에서 좌우로 순차 점등
-///   2단계 - 마스킹된 기둥 이미지가 부들부들 떨리며 빠르게 상승
+///   1단계 - 배경 가로 띠 조각들이 중앙에서 상하/좌우 대칭(CenterOutward)으로 확장
+///   2단계 - 마스킹된 기둥 이미지가 빠르게 상승
 ///   3단계 - VFX 이펙트 + 전리품 이미지 뽀잉 등장
 ///   4단계 - 전리품 이름 → 설명 텍스트 마스킹 슬라이드 등장
 /// </summary>
@@ -21,17 +22,23 @@ public class HUD_LootReveal : MonoBehaviour
     // ─── References ──────────────────────────────────────────────────────────
     [Header("── References ──────────────────────────────────────────────────")]
     [SerializeField] private CanvasGroup rootCanvasGroup;
-    [SerializeField] private RectTransform bgRoot;          // 그리드 셀 생성 부모
+    [SerializeField] private RectTransform bgRoot;          // 콘텐츠 마스크 루트(DimBG)
+    [SerializeField] private CanvasGroup contentCanvasGroup;// DimBG 내부 콘텐츠 페이드용 그룹
 
     [Header("── DataBase ────────────────────────────────────────────────────")]
     [SerializeField] private LootItemTypeDataBase lootDataBase;
 
-    // ─── Tetris BG (Procedural Grid / Shader) ────────────────────────────────
-    [Header("── Tetris BG (Procedural Grid / Shader) ──────────────────────────")]
-    [SerializeField] private Image bgDissolveImage;         // 디졸브 셰이더(UI_PixelDissolve)가 적용된 머티리얼을 가진 이미지
-    [SerializeField] private int gridSize = 12;             // 세로축(Row) 기준 픽셀 조각 개수 (가로축은 비율에 맞춰 자동 계산)
-    [SerializeField] private float bgRevealDuration = 0.8f; // 확산에 걸리는 총 시간
-    [SerializeField] private Ease bgRevealEase = Ease.OutQuad;
+    // ─── Slice BG (UI_EscapeMenu CenterOutward 통일) ─────────────────────────
+    [Header("── Slice BG (CenterOutward) ────────────────────────────────────")]
+    [SerializeField] private RectTransform sliceBgRoot;     // 가로 띠(BG_0..) 부모 루트
+    [SerializeField] private int sliceCount = 6;            // 슬라이스 분할 개수(132 / 6 = 22px)
+    [SerializeField] private float bgOpenDuration = 0.25f;  // 조각 1개 확장/축소 시간
+    [SerializeField] private float bgPieceOpenDelay = 0.04f;// 중앙에서 외곽까지 조각별 지연
+    [SerializeField] private float bgTargetWidth = 700f;    // 확장 목표 가로 폭
+    [SerializeField] private float bgTargetAlpha = 0.969f;  // 목표 알파(기존 DimBG와 동일)
+    [SerializeField] private Ease bgOpenEase = Ease.OutCubic;
+    [SerializeField] private Ease bgCloseEase = Ease.InCubic;
+    [SerializeField] private float hideContentFadeDuration = 0.14f;
 
     // ─── Pillar ───────────────────────────────────────────────────────────────
     [Header("── Pillar ───────────────────────────────────────────────────────")]
@@ -155,12 +162,24 @@ public class HUD_LootReveal : MonoBehaviour
     // 닫힘 페이드가 진행 중인지. isShowing은 페이드가 끝나야 false가 되므로 그 사이 들어온 Hide()(ESC/E 광클)를
     // 걸러내지 못한다. 걸러내지 않으면 매번 닫힘 SFX가 다시 울리고 페이드 트윈이 처음부터 재시작돼 닫힘이 계속 밀린다.
     private bool isHiding = false;
-    private Material runtimeDissolveMat;
 
+    // 가로 슬라이스(CenterOutward) 런타임 상태
+    private RectTransform[] sliceRects = Array.Empty<RectTransform>();
+    private Graphic[] sliceGraphics = Array.Empty<Graphic>();
+    private float[] sliceOpenDelays = Array.Empty<float>();
+    private float[] sliceCloseDelays = Array.Empty<float>();
+    private float[] sliceCloseStartWidths = Array.Empty<float>();
+    private float sliceCloseStartAlpha = 1f;
+    private float totalBgProductionDuration = 0.33f;
+    private Tween bgAnimTween;
+    private float bgAnimTime = 0f;
+    private bool isClosingBg = false;
+
+    private DOGetter<float> cachedGetBgAnimTime;
+    private DOSetter<float> cachedSetBgAnimTime;
     private TweenCallback cachedOnHideFadeComplete;
-    private TweenCallback cachedOnGridRevealUpdate;
 
-    private WaitForSeconds cachedHalfGridRevealDelay;
+    private WaitForSeconds cachedHalfBgOpenDelay;
     private WaitForSeconds cachedPillarDelay;
     private WaitForSeconds cachedLootDelay;
     private WaitForSeconds cachedTextDelay;
@@ -176,6 +195,7 @@ public class HUD_LootReveal : MonoBehaviour
             gameObject.SetActive(false);
         }
         InitParticles();
+        CacheSliceBGPieces();
 
         if (null != lootItemRect)
         {
@@ -195,19 +215,13 @@ public class HUD_LootReveal : MonoBehaviour
             revealGlow.Stop();
         }
 
-        if (null != bgDissolveImage && null == runtimeDissolveMat)
-        {
-            runtimeDissolveMat = new Material(bgDissolveImage.material);
-            bgDissolveImage.material = runtimeDissolveMat;
-            runtimeDissolveMat.SetFloat("_DissolveAmount", 0f);
-        }
-
+        cachedGetBgAnimTime = GetBgAnimTime;
+        cachedSetBgAnimTime = SetBgAnimTime;
         cachedOnHideFadeComplete = OnHideFadeComplete;
-        cachedOnGridRevealUpdate = OnGridRevealUpdate;
 
-        if (0f < bgRevealDuration)
+        if (0f < totalBgProductionDuration)
         {
-            cachedHalfGridRevealDelay = new WaitForSeconds(bgRevealDuration * 0.5f);
+            cachedHalfBgOpenDelay = new WaitForSeconds(totalBgProductionDuration * 0.5f);
         }
 
         if (0f < pillarStartDelay)
@@ -283,6 +297,22 @@ public class HUD_LootReveal : MonoBehaviour
             {
                 if (null != _p) _p.DOKill();
             }
+        }
+
+        if (null != bgAnimTween && true == bgAnimTween.IsActive())
+        {
+            bgAnimTween.Kill();
+            bgAnimTween = null;
+        }
+
+        if (null != contentCanvasGroup)
+        {
+            contentCanvasGroup.DOKill();
+        }
+
+        if (null != rootCanvasGroup)
+        {
+            rootCanvasGroup.DOKill();
         }
 
         UnsubscribeInputEvents();
@@ -412,10 +442,24 @@ public class HUD_LootReveal : MonoBehaviour
             revealCoroutine = null;
         }
 
+        if (null != contentCanvasGroup)
+        {
+            contentCanvasGroup.DOKill();
+            contentCanvasGroup.DOFade(0f, hideContentFadeDuration)
+                .SetEase(Ease.OutQuad)
+                .SetUpdate(true);
+        }
+
+        if (0 < sliceRects.Length)
+        {
+            StartSliceBgClose();
+            return;
+        }
+
         if (null != rootCanvasGroup)
         {
             rootCanvasGroup.DOKill();
-            rootCanvasGroup.DOFade(0f, 0.25f).OnComplete(cachedOnHideFadeComplete);
+            rootCanvasGroup.DOFade(0f, 0.25f).SetUpdate(true).OnComplete(cachedOnHideFadeComplete);
         }
         else
         {
@@ -428,8 +472,10 @@ public class HUD_LootReveal : MonoBehaviour
 
     private void OnHideFadeComplete()
     {
-        // 페이드아웃 중 다시 Show가 불려 알파값이 오르는 상황이면 끄지 않음
-        if (0.05f >= rootCanvasGroup.alpha) 
+        bgAnimTween = null;
+
+        // 닫힘 중 다시 Show가 불렸으면 비활성화하지 않는다
+        if (true == isHiding)
         {
             isShowing = false;
             isHiding = false;
@@ -450,11 +496,25 @@ public class HUD_LootReveal : MonoBehaviour
             revealGlow.Stop();
         }
 
+        if (null != bgAnimTween && true == bgAnimTween.IsActive())
+        {
+            bgAnimTween.Kill();
+            bgAnimTween = null;
+        }
+
         if (null != rootCanvasGroup)
         {
             rootCanvasGroup.DOKill();
-            rootCanvasGroup.alpha = 0f;
+            rootCanvasGroup.alpha = 1f;
         }
+
+        if (null != contentCanvasGroup)
+        {
+            contentCanvasGroup.DOKill();
+            contentCanvasGroup.alpha = 1f;
+        }
+
+        PrepareSliceBgOpenState();
 
         if (null != pillarRect)
         {
@@ -497,31 +557,6 @@ public class HUD_LootReveal : MonoBehaviour
             lootGrowthText.rectTransform.anchoredPosition =
                 new Vector2(descSlideFromX, lootGrowthText.rectTransform.anchoredPosition.y);
         }
-
-        if (null != bgDissolveImage && null != bgDissolveImage.material)
-        {
-            if (null == runtimeDissolveMat)
-            {
-                runtimeDissolveMat = new Material(bgDissolveImage.material);
-                bgDissolveImage.material = runtimeDissolveMat;
-            }
-
-            if (null != runtimeDissolveMat)
-                runtimeDissolveMat.DOKill();
-
-            runtimeDissolveMat.SetFloat("_DissolveAmount", 0f);
-            runtimeDissolveMat.SetFloat("_GridSize", gridSize);
-            
-            float _aspectRatio = 1f;
-            if (0 < bgDissolveImage.rectTransform.rect.height)
-            {
-                _aspectRatio = bgDissolveImage.rectTransform.rect.width / bgDissolveImage.rectTransform.rect.height;
-            }
-            runtimeDissolveMat.SetFloat("_AspectRatio", _aspectRatio);
-            
-            bgDissolveImage.SetMaterialDirty(); 
-            bgDissolveImage.SetVerticesDirty(); 
-        }
     }
 
     private IEnumerator PlayRevealSequence()
@@ -529,14 +564,14 @@ public class HUD_LootReveal : MonoBehaviour
         if (null != rootCanvasGroup)
         {
             rootCanvasGroup.DOKill();
-            rootCanvasGroup.DOFade(1f, 0.2f);
+            rootCanvasGroup.alpha = 1f;
         }
 
-        StartGridReveal();
+        StartSliceBgOpen();
 
-        if (null != cachedHalfGridRevealDelay)
+        if (null != cachedHalfBgOpenDelay)
         {
-            yield return cachedHalfGridRevealDelay;
+            yield return cachedHalfBgOpenDelay;
         }
 
         if (0f < pillarStartDelay && null != cachedPillarDelay)
@@ -559,24 +594,232 @@ public class HUD_LootReveal : MonoBehaviour
         OnRevealCompleted?.Invoke();
     }
 
-    private void StartGridReveal()
+    private void CacheSliceBGPieces()
     {
-        if (null == bgDissolveImage || null == runtimeDissolveMat)
+        sliceRects = Array.Empty<RectTransform>();
+        sliceGraphics = Array.Empty<Graphic>();
+        sliceOpenDelays = Array.Empty<float>();
+        sliceCloseDelays = Array.Empty<float>();
+        sliceCloseStartWidths = Array.Empty<float>();
+
+        if (null == sliceBgRoot)
             return;
 
-        runtimeDissolveMat.DOKill();
-        runtimeDissolveMat.SetFloat("_DissolveAmount", 0f);
-        
-        runtimeDissolveMat.DOFloat(1f, "_DissolveAmount", bgRevealDuration)
-            .SetEase(bgRevealEase)
-            .SetUpdate(true) 
-            .OnUpdate(cachedOnGridRevealUpdate);
+        int _childCount = sliceBgRoot.childCount;
+        List<RectTransform> _rects = new List<RectTransform>(0 < _childCount ? _childCount : Mathf.Max(1, sliceCount));
+        List<Graphic> _graphics = new List<Graphic>(0 < _childCount ? _childCount : Mathf.Max(1, sliceCount));
+
+        for (int i = 0; i < _childCount; i++)
+        {
+            RectTransform _rt = sliceBgRoot.GetChild(i) as RectTransform;
+            if (null == _rt || false == _rt.name.StartsWith("BG_", StringComparison.Ordinal))
+                continue;
+
+            Graphic _g = _rt.GetComponent<Graphic>();
+            if (null == _g)
+                continue;
+
+            _rects.Add(_rt);
+            _graphics.Add(_g);
+        }
+
+        if (0 == _rects.Count)
+        {
+            int _count = Mathf.Max(1, sliceCount);
+            float _totalHeight = 0f < sliceBgRoot.rect.height ? sliceBgRoot.rect.height : sliceBgRoot.sizeDelta.y;
+            if (0f >= _totalHeight)
+                _totalHeight = 132f;
+
+            float _stripHeight = _totalHeight / _count;
+
+            for (int i = 0; i < _count; i++)
+            {
+                GameObject _go = new GameObject("BG_" + (_count - 1 - i), typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                _go.layer = sliceBgRoot.gameObject.layer;
+                RectTransform _rt = (RectTransform)_go.transform;
+                _rt.SetParent(sliceBgRoot, false);
+                _rt.anchorMin = new Vector2(0.5f, 0.5f);
+                _rt.anchorMax = new Vector2(0.5f, 0.5f);
+                _rt.pivot = new Vector2(0.5f, 0.5f);
+                float _y = ((_count - 1) * 0.5f - i) * _stripHeight;
+                _rt.anchoredPosition = new Vector2(0f, _y);
+                _rt.sizeDelta = new Vector2(bgTargetWidth, _stripHeight);
+
+                Image _img = _go.GetComponent<Image>();
+                _img.color = new Color(0f, 0f, 0f, bgTargetAlpha);
+                _img.raycastTarget = false;
+
+                _rects.Add(_rt);
+                _graphics.Add(_img);
+            }
+        }
+
+        // Y 내림차순(위 -> 아래) 정렬
+        for (int i = 0; i < _rects.Count - 1; i++)
+        {
+            for (int j = i + 1; j < _rects.Count; j++)
+            {
+                if (_rects[j].anchoredPosition.y > _rects[i].anchoredPosition.y)
+                {
+                    RectTransform _tmpR = _rects[i];
+                    _rects[i] = _rects[j];
+                    _rects[j] = _tmpR;
+
+                    Graphic _tmpG = _graphics[i];
+                    _graphics[i] = _graphics[j];
+                    _graphics[j] = _tmpG;
+                }
+            }
+        }
+
+        int _finalCount = _rects.Count;
+        sliceRects = _rects.ToArray();
+        sliceGraphics = _graphics.ToArray();
+        sliceOpenDelays = new float[_finalCount];
+        sliceCloseDelays = new float[_finalCount];
+        sliceCloseStartWidths = new float[_finalCount];
+
+        if (0 == _finalCount)
+            return;
+
+        float _mid = (_finalCount - 1) * 0.5f;
+        int _maxDist = 0;
+
+        for (int i = 0; i < _finalCount; i++)
+        {
+            int _dist = Mathf.FloorToInt(Mathf.Abs(i - _mid));
+            if (_dist > _maxDist)
+                _maxDist = _dist;
+        }
+
+        for (int i = 0; i < _finalCount; i++)
+        {
+            int _dist = Mathf.FloorToInt(Mathf.Abs(i - _mid));
+            sliceOpenDelays[i] = _dist * bgPieceOpenDelay;
+            sliceCloseDelays[i] = (_maxDist - _dist) * bgPieceOpenDelay;
+        }
+
+        totalBgProductionDuration = bgOpenDuration + _maxDist * bgPieceOpenDelay;
     }
 
-    private void OnGridRevealUpdate()
+    private void PrepareSliceBgOpenState()
     {
-        bgDissolveImage.SetMaterialDirty();
-        bgDissolveImage.SetVerticesDirty();
+        for (int i = 0; i < sliceRects.Length; i++)
+        {
+            if (null != sliceRects[i])
+            {
+                sliceRects[i].SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 0f);
+            }
+
+            if (null != sliceGraphics[i])
+            {
+                Color _c = sliceGraphics[i].color;
+                _c.a = 0f;
+                sliceGraphics[i].color = _c;
+            }
+        }
+    }
+
+    private void StartSliceBgOpen()
+    {
+        if (0 == sliceRects.Length)
+            return;
+
+        if (null != bgAnimTween && true == bgAnimTween.IsActive())
+        {
+            bgAnimTween.Kill();
+        }
+
+        isClosingBg = false;
+        bgAnimTime = 0f;
+        PrepareSliceBgOpenState();
+
+        bgAnimTween = DOTween.To(cachedGetBgAnimTime, cachedSetBgAnimTime, totalBgProductionDuration, totalBgProductionDuration)
+            .SetEase(Ease.Linear)
+            .SetUpdate(true)
+            .SetLink(gameObject);
+    }
+
+    private void StartSliceBgClose()
+    {
+        if (null != bgAnimTween && true == bgAnimTween.IsActive())
+        {
+            bgAnimTween.Kill();
+        }
+
+        isClosingBg = true;
+        bgAnimTime = 0f;
+
+        sliceCloseStartAlpha = 0f < sliceGraphics.Length && null != sliceGraphics[0]
+            ? sliceGraphics[0].color.a
+            : bgTargetAlpha;
+
+        for (int i = 0; i < sliceRects.Length; i++)
+        {
+            sliceCloseStartWidths[i] = null != sliceRects[i] ? sliceRects[i].rect.width : 0f;
+        }
+
+        bgAnimTween = DOTween.To(cachedGetBgAnimTime, cachedSetBgAnimTime, totalBgProductionDuration, totalBgProductionDuration)
+            .SetEase(Ease.Linear)
+            .SetUpdate(true)
+            .SetLink(gameObject)
+            .OnComplete(cachedOnHideFadeComplete);
+    }
+
+    private float GetBgAnimTime()
+    {
+        return bgAnimTime;
+    }
+
+    private void SetBgAnimTime(float _time)
+    {
+        bgAnimTime = _time;
+        float _dur = Mathf.Max(0.001f, bgOpenDuration);
+        float _alphaT = Mathf.Clamp01(_time / _dur);
+
+        if (false == isClosingBg)
+        {
+            float _alpha = bgTargetAlpha * _alphaT;
+
+            for (int i = 0; i < sliceRects.Length; i++)
+            {
+                float _localT = Mathf.Clamp01((_time - sliceOpenDelays[i]) / _dur);
+                float _eased = DOVirtual.EasedValue(0f, 1f, _localT, bgOpenEase);
+
+                if (null != sliceRects[i])
+                {
+                    sliceRects[i].SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, bgTargetWidth * _eased);
+                }
+
+                if (null != sliceGraphics[i])
+                {
+                    Color _c = sliceGraphics[i].color;
+                    _c.a = _alpha;
+                    sliceGraphics[i].color = _c;
+                }
+            }
+            return;
+        }
+
+        float _closeAlpha = sliceCloseStartAlpha * (1f - _alphaT);
+
+        for (int i = 0; i < sliceRects.Length; i++)
+        {
+            float _localT = Mathf.Clamp01((_time - sliceCloseDelays[i]) / _dur);
+            float _eased = 1f - DOVirtual.EasedValue(0f, 1f, _localT, bgCloseEase);
+
+            if (null != sliceRects[i])
+            {
+                sliceRects[i].SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, sliceCloseStartWidths[i] * _eased);
+            }
+
+            if (null != sliceGraphics[i])
+            {
+                Color _c = sliceGraphics[i].color;
+                _c.a = _closeAlpha;
+                sliceGraphics[i].color = _c;
+            }
+        }
     }
 
     private IEnumerator PlayPillarReveal()
@@ -823,28 +1066,6 @@ public class HUD_LootReveal : MonoBehaviour
     private void TestReset()
     {
         ResetState();
-    }
-    
-    private void OnValidate()
-    {
-        // Application.isPlaying 제약을 제거하여 에디터 모드에서도 종횡비 연산이 즉시 동작하도록 락 해제
-        if (null != bgDissolveImage && null != bgDissolveImage.rectTransform)
-        {
-            Material _mat = (Application.isPlaying && null != runtimeDissolveMat) ? runtimeDissolveMat : bgDissolveImage.material;
-            if (null != _mat)
-            {
-                _mat.SetFloat("_GridSize", gridSize);
-                
-                float _aspectRatio = 1f;
-                if (0 < bgDissolveImage.rectTransform.rect.height)
-                {
-                    _aspectRatio = bgDissolveImage.rectTransform.rect.width / bgDissolveImage.rectTransform.rect.height;
-                }
-                _mat.SetFloat("_AspectRatio", _aspectRatio);
-                
-                bgDissolveImage.SetMaterialDirty();
-            }
-        }
     }
 #endif
 }

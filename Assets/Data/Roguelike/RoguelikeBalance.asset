@@ -252,14 +252,26 @@ MonoBehaviour:
   unlimitMaxKillTarget: 100
   unlimitMaxWave: 25
   unlimitHpOverrides:
+  - unlimitIndex: 16
+    treeHp: 5000
+  - unlimitIndex: 17
+    treeHp: 6800
+  - unlimitIndex: 18
+    treeHp: 9250
+  - unlimitIndex: 19
+    treeHp: 12580
+  - unlimitIndex: 20
+    treeHp: 17110
+  - unlimitIndex: 21
+    treeHp: 23270
   - unlimitIndex: 22
-    treeHp: 88435
+    treeHp: 31650
   - unlimitIndex: 23
-    treeHp: 110544
+    treeHp: 43040
   - unlimitIndex: 24
-    treeHp: 138179
+    treeHp: 58530
   - unlimitIndex: 25
-    treeHp: 172724
+    treeHp: 79600
   offerCount: 4
   guaranteedSlotCap: 2
   firstPickActiveOnly: 1

@@ -1090,6 +1090,7 @@ public class RoguelikeSkillController : MonoBehaviour
         if (0 == contaminations.Count) return;
 
         float tickDamage = tuning.sporeTickDamage * DotMul(ERoguelikeSkill.SporeBomb);
+        if (IsAnySporeComboActive()) tickDamage *= Mathf.Max(1f, tuning.sporeComboDotMultiplier);
         float extendOnKill = modifiers.Get(ERunEffect.DurationExtendOnDotKill);
         int stackMax = SporeStackMax();
         int kills = 0;
@@ -1170,7 +1171,9 @@ public class RoguelikeSkillController : MonoBehaviour
             }
         }
 
-        float damage = tuning.sporeExplosionDamage * DamageMul(ERoguelikeSkill.SporeBomb);
+        float damage = IsAnySporeComboActive()
+            ? tuning.sporeComboExplosionDamage * DotMul(ERoguelikeSkill.SporeBomb)
+            : tuning.sporeExplosionDamage * DamageMul(ERoguelikeSkill.SporeBomb);
         float duration = tuning.sporeDuration * DurationMul(ERoguelikeSkill.SporeBomb);
         int stackMax = SporeStackMax();
 
@@ -1450,7 +1453,7 @@ public class RoguelikeSkillController : MonoBehaviour
         bOffroadLanesPicked = false;
 
         // 다음 주기가 바로 시작된다.
-        nextOffroadTime = _now + Interval(tuning.offroadInterval, ERoguelikeSkill.Offroad);
+        nextOffroadTime = _now + OffroadInterval();
         PickPendingOffroadLanes(_now);
     }
 
@@ -1655,7 +1658,12 @@ public class RoguelikeSkillController : MonoBehaviour
         car.exitEndTime = 0f;
         car.exitStartFrame = 0;
         car.lastPosition = entry;
-        car.damage = tuning.offroadDamage * DamageMul(ERoguelikeSkill.Offroad);
+        float offroadDamage = tuning.offroadDamage * DamageMul(ERoguelikeSkill.Offroad);
+        if (null != modifiers && modifiers.IsComboActive(ERoguelikeCombo.SporeOffroad))
+        {
+            offroadDamage *= Mathf.Max(1f, tuning.sporeOffroadDamageMultiplier);
+        }
+        car.damage = offroadDamage;
         car.radius = tuning.offroadHitRadius * RangeMul(ERoguelikeSkill.Offroad);
         car.bEngine = _bEngine;
         car.sporeTrail = 0f;
@@ -1843,6 +1851,26 @@ public class RoguelikeSkillController : MonoBehaviour
         }
 
         return false;
+    }
+
+    /// <summary>포자 프리즘 조합 3종(역병 드론 · 방역차 · 포자 파동) 중 하나라도 활성화되어 있는지.</summary>
+    private bool IsAnySporeComboActive()
+    {
+        return null != modifiers && (modifiers.IsComboActive(ERoguelikeCombo.SporeDrone)
+            || modifiers.IsComboActive(ERoguelikeCombo.SporeOffroad)
+            || modifiers.IsComboActive(ERoguelikeCombo.SporeShockwave));
+    }
+
+    /// <summary>오프로드 소환 주기(초). 방역차 조합 활성화 시 소환 주기 단축 배율을 곱한다.</summary>
+    private float OffroadInterval()
+    {
+        float interval = Interval(tuning.offroadInterval, ERoguelikeSkill.Offroad);
+        if (null != modifiers && modifiers.IsComboActive(ERoguelikeCombo.SporeOffroad))
+        {
+            interval = Mathf.Max(0.05f, interval * Mathf.Max(0.1f, tuning.sporeOffroadIntervalMultiplier));
+        }
+
+        return interval;
     }
 
     // // 조합: 스텔라 + 드론

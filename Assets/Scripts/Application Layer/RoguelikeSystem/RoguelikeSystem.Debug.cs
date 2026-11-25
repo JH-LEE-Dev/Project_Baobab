@@ -119,7 +119,14 @@ public partial class RoguelikeSystem
 
     public void DebugDamageStamina(float _amount)
     {
-        character?.TakeEnvironmentalStaminaDamage(_amount);
+        if (null == character) return;
+
+        float beforeStamina = null != character.pHealthComponent ? character.pHealthComponent.GetCurrentStamina() : 0f;
+        character.TakeEnvironmentalStaminaDamage(_amount);
+        if (null != character.pHealthComponent && character.pHealthComponent.GetCurrentStamina() < beforeStamina)
+        {
+            bTookStaminaDamageThisRun = true;
+        }
     }
 }
 #endif
