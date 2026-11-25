@@ -85,9 +85,9 @@ public static class LootGrowthUiBuilder
     private const float TextShiftUp = 10f;
     private const float GrowthMaskY = -58f + TextShiftUp;
     private const float GrowthLineHeight = 16f;
-    private const float PillarRestY = -5f;
+    private const float PillarRestY = -14f;
     private const float PillarStartY = -110f;
-    private const float PillarTargetY = -5f;
+    private const float PillarTargetY = -14f;
 
     private static void BuildRevealPrefab(LootGrowthVisualData _data)
     {
@@ -126,6 +126,15 @@ public static class LootGrowthUiBuilder
                 RectTransform _dissolveRt = (RectTransform)_dissolve;
                 _dissolveRt.sizeDelta = new Vector2(_dissolveRt.sizeDelta.x, BandHeight);
                 _dissolveRt.anchoredPosition = new Vector2(_dissolveRt.anchoredPosition.x, 0f);
+            }
+
+            Transform _sliceBg = _root.transform.Find("SliceBG");
+
+            if (null != _sliceBg)
+            {
+                RectTransform _sliceRt = (RectTransform)_sliceBg;
+                _sliceRt.sizeDelta = new Vector2(_sliceRt.sizeDelta.x, BandHeight);
+                _sliceRt.anchoredPosition = new Vector2(_sliceRt.anchoredPosition.x, 0f);
             }
 
             // 1) 이름/설명 영역을 원래 값으로 복원
