@@ -873,7 +873,7 @@ public class TownSystem : MonoBehaviour
             logProcessingManager.StopRemoteDepositForDeparture();
         }
 
-        signalHub.Publish(new StartSkyProductionSignal(isMainMenu));
+        signalHub.Publish(new StartSkyProductionSignal(isMainMenu, isMainMenu ? MapType.None : selectedMapType));
     }
 
     private void RollbackSkyProduction()

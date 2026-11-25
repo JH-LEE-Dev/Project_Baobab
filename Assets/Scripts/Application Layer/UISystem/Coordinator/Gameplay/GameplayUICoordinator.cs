@@ -77,6 +77,8 @@ public class GameplayUICoordinator
     private bool bTreeCurrentlyDetected = false;
 
     private MapType mapType;
+    // 지금 플레이 중인 맵(마을 시작/던전 시작 신호로 갱신). 하늘 연출이 출발 맵 그림을 고를 때 쓴다.
+    private MapType currentMapForSky = MapType.Town;
     private ForestType forestType;
 
     public void Initialize(SignalHub _signalHub, InputManager _inputManager, UIView_Popup _popUpUI, UIView_HUD _hudUI,
@@ -739,6 +741,8 @@ public class GameplayUICoordinator
         unitUI.Refresh();
         unitUI.TownStarted();
 
+        currentMapForSky = MapType.Town;
+
         hudUI.SetCurrentMapType(MapType.Town, ForestType.InTown);
         popUpUI.SetCurrentMapType(MapType.Town, ForestType.InTown);
         worldPopupUI.SetCurrentMapType(MapType.Town, ForestType.InTown);
@@ -763,6 +767,7 @@ public class GameplayUICoordinator
         // 들어온 경우에도 DeclareDungeonState()가 올바른 mapType/forestType을 참조하도록 여기서 동기화한다.
         mapType = decareDungeonTypeSignal.mapType;
         forestType = decareDungeonTypeSignal.forestType;
+        currentMapForSky = decareDungeonTypeSignal.mapType;
 
         hudUI.SetCurrentMapType(decareDungeonTypeSignal.mapType, decareDungeonTypeSignal.forestType);
         popUpUI.SetCurrentMapType(decareDungeonTypeSignal.mapType, decareDungeonTypeSignal.forestType);
@@ -1085,6 +1090,13 @@ public class GameplayUICoordinator
     private void StartSkyProduction(StartSkyProductionSignal _startSkyProductionSignal)
     {
         skyProduction.SetMainMenuMode(_startSkyProductionSignal.isMainMenuRelated);
+
+        if (false == _startSkyProductionSignal.isMainMenuRelated)
+        {
+            MapType destination = _startSkyProductionSignal.destinationMapType;
+            skyProduction.PrepareMapTransition(currentMapForSky, destination == MapType.None ? currentMapForSky : destination);
+        }
+
         skyProduction.StartSkyProduction();
     }
 
