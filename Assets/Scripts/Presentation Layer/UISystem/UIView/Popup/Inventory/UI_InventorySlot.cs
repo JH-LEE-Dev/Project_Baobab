@@ -100,6 +100,8 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void Initialize()
     {
+        bNativeStateVerified = false;
+
         shinyEffectComponent = GetComponentInChildren<ShinyEffectComponent>();
 
         isRarityApplied = false;
@@ -258,6 +260,8 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     /// </summary>
     public void SetSlotOutlineActive(bool _active, bool _immediate = false)
     {
+        bNativeStateVerified = false;
+
         EnsureSlotImgEffectBound();
         CacheBaseOutlineColorIfNeeded();
 
@@ -356,6 +360,8 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void UpdateItemCount(int _newCnt)
     {
+        bNativeStateVerified = false;
+
         if (null == currencyFont)
             return;
 
@@ -402,6 +408,8 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void UpdateImage(Sprite _sprite, Color _color = default)
     {
+        bNativeStateVerified = false;
+
         if (null == uiImage)
             return;
 
@@ -491,6 +499,136 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             PlayItemInteraction();
     }
 
+    /// <summary>
+    /// 인벤토리 전체 갱신이 이 슬롯에 하는 일 - SetActive(_bActive) 뒤 UpdateBindSlotData(_newSlot, _maxCount, false, true) - 이
+    /// 지금 상태에서 아무것도 바꾸지 않는지 본다. 확신할 수 없으면 false를 돌려주고, 그러면 호출부가 이 슬롯에 그 처리를 한다.
+    ///
+    /// 유니티 쪽 상태(켜짐, 그림, 개수 글자, 효과)는 한 번 확인하면 기억해 두고(bNativeStateVerified), 그 상태를 쓰는 이 슬롯의
+    /// 함수가 불리기 전까지는 스크립트 필드만 본다. 원목이 들어온 슬롯은 PlayItemInteraction이 그 함수들을 부르므로 다음에 다시 확인된다.
+    /// </summary>
+    public bool IsBindUpToDate(IInventorySlot _newSlot, int _maxCount, bool _bActive)
+    {
+        bool _bCheckNative = false == bNativeStateVerified;
+
+        if (true == _bCheckNative)
+        {
+            if (_bActive != gameObject.activeSelf)
+                return false;
+        }
+        else if (_bActive != verifiedActiveSelf)
+        {
+            return false;
+        }
+
+        IItemData _data = null != _newSlot ? _newSlot.itemData : null;
+
+        if (null == _data)
+        {
+            // 빈 슬롯: ResetData가 적용된 상태 그대로여야 다시 적용해도 달라지지 않는다.
+            if (null != invSlotRef || null != showItemData || 99 != maxItemCntPerSlot || 0 >= _maxCount || 0 != showCnt)
+                return false;
+
+            if (true == isRarityApplied || false == ReferenceEquals(appliedFrameMaterial, null)
+                || true == bOutlineActive || null != outlineBlinkTween)
+                return false;
+
+            if (false == ReferenceEquals(currencyFont, null) && (false == isFontColorApplied || true == lastFontColorIsMax))
+                return false;
+
+            if (true == _bCheckNative)
+            {
+                if (null != uiImage && (true == uiImage.enabled || false == IsSameSprite(uiImage.sprite, emptySprite)))
+                    return false;
+
+                if (null != currencyFont && true == currencyFont.gameObject.activeSelf)
+                    return false;
+
+                if (null != uiEffect && true == uiEffect.gameObject.activeSelf)
+                    return false;
+
+                if (null != shinyEffectComponent && true == shinyEffectComponent.UseShinyEffect)
+                    return false;
+
+                if (null != slotImgEffect && true == slotImgEffect.enabled)
+                    return false;
+
+                bNativeStateVerified = true;
+                verifiedActiveSelf = _bActive;
+                bVerifiedAsEmpty = true;
+                verifiedSprite = null;
+            }
+            else if (false == bVerifiedAsEmpty)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        if (false == ReferenceEquals(invSlotRef, _newSlot))
+            return false;
+
+        // 개수가 0인데 데이터만 남은 슬롯은 드문 중간 상태라 확인하지 않는다(예전대로 갱신).
+        int _count = _newSlot.count;
+        if (0 >= _count || _count != showCnt || _maxCount != maxItemCntPerSlot)
+            return false;
+
+        if (false == ReferenceEquals(showItemData, _data))
+            return false;
+
+        if (false == isRarityApplied || false == ReferenceEquals(lastRarityData, _data) || lastRarityStateKey != GetRarityStateKey(_data))
+            return false;
+
+        if (false == ReferenceEquals(currencyFont, null)
+            && (false == isSortingApplied || false == isFontColorApplied || (maxItemCntPerSlot <= showCnt) != lastFontColorIsMax))
+            return false;
+
+        Sprite _sprite = _data.sprite;
+
+        if (true == _bCheckNative)
+        {
+            if (null != uiImage)
+            {
+                bool _bHasSprite = null != _sprite;
+
+                if (_bHasSprite != uiImage.enabled || false == IsSameSprite(uiImage.sprite, true == _bHasSprite ? _sprite : emptySprite))
+                    return false;
+            }
+
+            if (null != currencyFont && false == currencyFont.gameObject.activeSelf)
+                return false;
+
+            bNativeStateVerified = true;
+            verifiedActiveSelf = _bActive;
+            bVerifiedAsEmpty = false;
+            verifiedSprite = _sprite;
+        }
+        else if (true == bVerifiedAsEmpty || false == ReferenceEquals(verifiedSprite, _sprite))
+        {
+            // 확인한 뒤에 데이터의 그림이 바뀌었다(같은 데이터 객체가 다른 아이템으로 다시 쓰인 경우 등).
+            return false;
+        }
+
+        return true;
+    }
+
+    // IsBindUpToDate가 유니티 쪽 상태까지 확인해 둔 기록. 그 상태를 쓰는 함수(UpdateImage, UpdateItemCount, SetEffectActive,
+    // SetShinyEffectActive, SetSlotOutlineActive, 켜짐/꺼짐)가 지운다. 확인 당시의 기대값(켜짐 여부, 빈 슬롯인지, 그림)을 같이
+    // 기억해 기대값이 달라지면 통과시키지 않는다.
+    private bool bNativeStateVerified = false;
+    private bool verifiedActiveSelf = false;
+    private bool bVerifiedAsEmpty = false;
+    private Sprite verifiedSprite = null;
+
+    /// <summary>교체 테두리가 꺼져 있어 SetSwapIndicator(false)를 다시 불러도 달라지지 않는지.</summary>
+    public bool IsSwapOutlineOff => false == bOutlineActive && null == outlineBlinkTween;
+
+    // Image.sprite에 다시 넣어도 아무 일이 없는 경우(같은 객체이거나 둘 다 없음)인지.
+    private static bool IsSameSprite(Sprite _a, Sprite _b)
+    {
+        return ReferenceEquals(_a, _b) || (null == _a && null == _b);
+    }
+
     public void DisableRayCast()
     {
         if (null != uiImage)
@@ -499,6 +637,8 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void SetEffectActive(bool _active)
     {
+        bNativeStateVerified = false;
+
         if (null != uiEffect)
         {
             uiEffect.gameObject.SetActive(_active);
@@ -507,6 +647,8 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void SetShinyEffectActive(bool _active)
     {
+        bNativeStateVerified = false;
+
         if (null != shinyEffectComponent)
         {
             shinyEffectComponent.UseShinyEffect = _active;
@@ -705,10 +847,24 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         SetShinyEffectActive(false);
     }
 
+    // 원목 갱신 구간(ItemPickupBatch) 안에서 이 슬롯의 획득 모션을 마지막으로 시작한 구간 번호. 구간 밖에서 시작했으면 -1.
+    private int interactionBatchSerial = -1;
+
     private void PlayItemInteraction()
     {
         if (null != omp)
-            omp.Play("ItemInteraction", bReset: true);
+        {
+            // 원목 갱신 루프 한 번 안에서 같은 슬롯에 원목이 여러 개 들어오면 이 모션이 그 수만큼 다시 시작된다. 루프는 한 프레임
+            // 안에서 끊김 없이 도는 구간이라 그 사이에 트윈이 진행되지 않고, 방금 시작한 모션을 끊어 처음 상태로 되돌린 뒤 똑같은
+            // 모션을 새로 만드는 것은 그대로 두는 것과 결과가 같다. 그래서 구간마다 처음 한 번만 시작한다(구간 밖은 예전 그대로).
+            bool _bInBatch = ItemPickupBatch.IsActive;
+
+            if (false == _bInBatch || ItemPickupBatch.Serial != interactionBatchSerial)
+            {
+                omp.Play("ItemInteraction", bReset: true);
+                interactionBatchSerial = true == _bInBatch ? ItemPickupBatch.Serial : -1;
+            }
+        }
 
         if (null != invSlotRef)
         {
@@ -745,6 +901,9 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     private void OnEnable()
     {
+        interactionBatchSerial = -1;
+        bNativeStateVerified = false;
+
         if (true == bNeedSorting)
         {
             StartCoroutine(ApplySortingRoutine());
@@ -777,6 +936,9 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     private void OnDisable()
     {
+        interactionBatchSerial = -1;
+        bNativeStateVerified = false;
+
         StopSortingCoroutine();
         KillOutlineBlinkTween();
         KillGradeBurst();

@@ -356,6 +356,20 @@ MonoBehaviour:
   floatingDuration: 3.3333333
   loadingCloudSprite_MainMenu: {fileID: 21300000, guid: 8a6675ffa3d61074a98160c44c6f445f, type: 3}
   loadingCloudSprite: {fileID: 21300000, guid: 0478b4b4a6a44e249a33bfe7710bf07d, type: 3}
+  mapThemes:
+  - mapType: 3
+    sky: {fileID: 21300000, guid: 10d78fa829a64a242aee9805e63266b1, type: 3}
+    skyCloud: {fileID: 21300000, guid: a882099ee6b8d15489e7d15ae340ff76, type: 3}
+    cloud: {fileID: 21300000, guid: e958768c91dfc934b91cf55f0080e367, type: 3}
+  - mapType: 4
+    sky: {fileID: 21300000, guid: d4559a8b71a2f6d448d447f739052bbc, type: 3}
+    skyCloud: {fileID: 21300000, guid: b21c149218ffcb444acd6b9b41878f3a, type: 3}
+    cloud: {fileID: 21300000, guid: 57b52857d5aeaf7489d90c446f5bcaf2, type: 3}
+  - mapType: 5
+    sky: {fileID: 21300000, guid: cebefcf52c1518445bd96b77ad5975d8, type: 3}
+    skyCloud: {fileID: 21300000, guid: 5da3ddf9bc83ed4488ae1da5c08e794f, type: 3}
+    cloud: {fileID: 21300000, guid: 7cbd81e1f0a37994ab30600cbe62ae6a, type: 3}
+  themeBlendShader: {fileID: 4800000, guid: d0e756343b46b19419634d295f5d9853, type: 3}
 --- !u!223 &8034429127669148663
 Canvas:
   m_ObjectHideFlags: 0

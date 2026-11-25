@@ -534,7 +534,7 @@ public class InDungeonSystem : MonoBehaviour
         if (inDungeonObjectManager.offroadVehicle != null)
             inDungeonObjectManager.offroadVehicle.col.enabled = false;
 
-        signalHub.Publish(new StartSkyProductionSignal());
+        signalHub.Publish(new StartSkyProductionSignal(false, MapType.Town));
     }
 
     private void GemOreItemAcquired(GemOreItem _gemOreItem)
@@ -1063,7 +1063,7 @@ public class InDungeonSystem : MonoBehaviour
         inputManager.PauseESCKey(true);
 
         inDungeonProductionManager.StartSkyProduction();
-        signalHub.Publish(new StartSkyProductionSignal());
+        signalHub.Publish(new StartSkyProductionSignal(false, selectedMapType));
     }
 
     private void DungeonSelected(DungeonSelectedSignal _dungeonSelectedSignal)

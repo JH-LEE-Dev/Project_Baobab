@@ -67,18 +67,25 @@ public class RepairBox : MonoBehaviour
     [Tooltip("원판 바닥 가운데 위치(모루 로컬)")]
     [SerializeField] private Vector2 gaugeLocalAnchor = new Vector2(0f, 0.875f);
 
-    [Header("Axe Throw (임시 리소스)")]
-    [Tooltip("맡길 때 손 → 모루, 돌려받을 때 모루 → 손으로 날아가는 도끼 그림(임시: 도끼 팔 그림에서 손을 뺀 것). 비어 있으면 날리지 않고 바로 맡기고/돌려받는다.")]
-    [SerializeField] private Sprite throwAxeSprite;
+    [Header("Axe Throw")]
+    [Tooltip("맡길 때 손 → 모루, 돌려받을 때 모루 → 손으로 날아가는 도끼 애니메이션 프레임(Axe_Throw, 시계 방향으로 도는 그림). 왼쪽으로 날아가면 좌우 반전해 반대로 돈다. 비어 있으면 날리지 않고 바로 맡기고/돌려받는다.")]
+    [SerializeField] private Sprite[] throwAxeFrames;
+    [Tooltip("날아가는 도끼 애니메이션 속도(초당 프레임, 반복 재생)")]
+    [SerializeField] private float throwAxeFps = 16f;
     [Tooltip("날아가는 도끼 재질. 손에 든 도끼와 같은 재질(Custom-Sprite-Default-NoSnap)을 넣는다. 비어 있으면 기본 스프라이트 재질.")]
     [SerializeField] private Material throwAxeMaterial;
+    [Tooltip("날아가는 도끼 흰색 아웃라인의 스텐실 작성 재질(OutlineStencilWriter_LogItem_NoSnap). 아래 아웃라인 재질과 짝으로 쓴다. 둘 중 하나라도 비어 있으면 아웃라인 없이 날린다.")]
+    [SerializeField] private Material throwAxeOutlineStencilMaterial;
+    [Tooltip("날아가는 도끼 흰색 아웃라인 재질(Outline_LogItem_NoSnap)")]
+    [SerializeField] private Material throwAxeOutlineMaterial;
+    [SerializeField] private Color throwAxeOutlineColor = Color.white;
+    [Tooltip("도끼가 모루에 박혀 수리 중일 때의 모루 그림(Anvil_Repair). 비어 있으면 모루 그림을 바꾸지 않는다.")]
+    [SerializeField] private Sprite repairingAnvilSprite;
     [Tooltip("손 ↔ 모루를 날아가는 시간(초). 맡길 때·돌려받을 때 같다.")]
     [SerializeField] private float throwDuration = 0.3f;
     [Tooltip("포물선 꼭대기 높이(유닛)")]
     [SerializeField] private float throwArcHeight = 1f;
-    [Tooltip("날아가는 동안 도는 각도(도). 오른쪽으로 날아갈 때 시계 방향, 왼쪽이면 반대로 돈다. 360의 배수면 손에 든 각도 그대로 모루에 얹히고 손에 닿는다.")]
-    [SerializeField] private float throwSpinDegrees = 360f;
-    [Tooltip("도끼가 얹히는(돌려받을 때 떠나는) 지점(모루 로컬). 기본값은 수리 스파크가 튀는 모루 윗면")]
+    [Tooltip("도끼가 박히는(돌려받을 때 튀어나오는) 지점(모루 로컬). 기본값은 수리 스파크가 튀는 모루 윗면")]
     [SerializeField] private Vector2 throwLocalTarget = new Vector2(-5f / 32f, 21f / 32f);
 
     [Header("Axe Handoff Bounce (뽀잉)")]
@@ -105,7 +112,7 @@ public class RepairBox : MonoBehaviour
     private float hammerTimer = 0f;
     private AnvilRepairGauge repairGauge;
 
-    // 맡긴 도끼 그림의 상태: 손 → 모루로 날아가는 중 / 모루 위에 얹혀 있음 / 모루 → 손으로 돌아오는 중.
+    // 맡긴 도끼 그림의 상태: 손 → 모루로 날아가는 중 / 모루에 박혀 있음(도끼 그림은 숨고 모루가 수리 중 그림) / 모루 → 손으로 돌아오는 중.
     // 날아가는 동안은 두드리지도, 내구도를 채우지도 않는다. 돌아오는 동안은 손에 닿는 순간까지 맡긴 상태 그대로다.
     private enum AxeVisualState { Hidden, ToAnvil, OnAnvil, ToHand }
     private AxeVisualState axeVisualState = AxeVisualState.Hidden;
@@ -114,10 +121,13 @@ public class RepairBox : MonoBehaviour
     private float throwElapsed = 0f;
     private Vector3 throwStartPos;
     private float throwDirection = 1f;
-    private Transform thrownAxeRoot;          // 위치·뽀잉 크기
-    private SpriteRenderer throwAxeRenderer;  // 회전·좌우 반전
-    private Vector3 axeRestLocalPos;          // 모루 그림 기준으로 얹힌 자리
+    private Transform thrownAxeRoot;                 // 위치·뽀잉 크기
+    private SpriteRenderer throwAxeRenderer;         // 애니메이션 프레임·좌우 반전
+    private SpriteRenderer throwAxeOutlineStencilSR; // 흰색 아웃라인(스텐실 작성)
+    private SpriteRenderer throwAxeOutlineSR;        // 흰색 아웃라인
     private float axeBounceElapsed = float.MaxValue;
+    private Sprite idleAnvilSprite;                  // 수리 중이 아닐 때의 모루 그림(프리팹에 넣어 둔 그림)
+    private static readonly int OutlineColorID = Shader.PropertyToID("_OutlineColor");
     private const float ThrowPixelsPerUnit = 32f;
 
     private static readonly int FlashAmountID = Shader.PropertyToID("_FlashAmount");
@@ -152,6 +162,7 @@ public class RepairBox : MonoBehaviour
         {
             visualBaseLocalPos = spriteRenderer.transform.localPosition;
             visualBaseLocalScale = spriteRenderer.transform.localScale;
+            idleAnvilSprite = spriteRenderer.sprite;
         }
 
         if (repairVfx != null) repairVfx.Initialize();
@@ -225,13 +236,6 @@ public class RepairBox : MonoBehaviour
             {
                 outlineSR.sprite = currentSprite;
                 outlineSR.sortingOrder = spriteRenderer.sortingOrder + 1;
-            }
-
-            // 모루 위에 얹힌 도끼는 모루와 같은 층에서 모루(+1 아웃라인) 바로 위에 그린다(스파크는 그 위 +3).
-            if (axeVisualState == AxeVisualState.OnAnvil && throwAxeRenderer != null)
-            {
-                throwAxeRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
-                throwAxeRenderer.sortingOrder = spriteRenderer.sortingOrder + 2;
             }
         }
     }
@@ -403,8 +407,9 @@ public class RepairBox : MonoBehaviour
 
         bHoldingAxe = true;
 
-        // 던지는 순간 캐릭터가 뽀잉한다(손 도끼는 이미 꺼져 날아가는 도끼가 따로 뽀잉한다).
+        // 던지는 순간 캐릭터가 뽀잉한다(손 도끼는 이미 꺼져 날아가는 도끼가 따로 뽀잉한다). 몸에서 도끼가 나가는 휘두르기 소리.
         PlayCharacterHandoffBounce(false);
+        Sound.Play(SoundID.AxeThrowSwing, handPos);
 
         if (false == StartAxeFlight(handPos, false))
         {
@@ -414,13 +419,17 @@ public class RepairBox : MonoBehaviour
         UpdateInteractState();
     }
 
-    // 도끼가 모루에 닿았을 때(던지기 연출이 없으면 맡긴 즉시): 원판을 띄우고 첫 번째로 두드린다(모루 번쩍임·뽀잉·스파크).
+    // 도끼가 모루에 닿았을 때(던지기 연출이 없으면 맡긴 즉시): 모루가 수리 중 그림으로 바뀌고 원판을 띄운 뒤 첫 번째로 두드린다(모루 번쩍임·뽀잉·스파크).
+    // 첫 두드림은 망치 소리 대신 도착 소리(AnvilStart)를 낸다.
     private void BeginHammering()
     {
+        SetAnvilRepairing(true);
+        Sound.Play(SoundID.AnvilStart, GetAnvilAxePoint());
+
         if (repairGauge != null) repairGauge.Show(GetGaugeAnchor(), character.AxeDurabilityRatio);
 
         hammerTimer = hammerInterval;
-        PlayHammerHit(false);
+        PlayHammerHit(false, false);
     }
 
     // 돌려받기 시작: 두드리기를 멈추고 원판을 내린 뒤 도끼를 모루(던지는 중이었다면 그 자리)에서 손으로 날린다.
@@ -433,6 +442,13 @@ public class RepairBox : MonoBehaviour
 
         // 마지막 두드림 이후 조금 더 찬 내구도를 HUD에 반영한다.
         character.NotifyAxeRepairTick(false);
+
+        // 모루에 박혀 있던 도끼가 뽑혀 나온다: 모루는 원래 그림으로 돌아가고 뽑히는 소리를 낸다.
+        if (bWasOnAnvil)
+        {
+            SetAnvilRepairing(false);
+            Sound.Play(SoundID.AnvilEnd, from);
+        }
 
         if (false == StartAxeFlight(from, true))
         {
@@ -448,6 +464,7 @@ public class RepairBox : MonoBehaviour
     // 도끼가 손에 들어왔다: 돌려받고(모습·조작·HUD 도끼 복귀) 캐릭터와 손 도끼가 뽀잉한다.
     private void CatchAxe()
     {
+        Sound.Play(SoundID.AxeGrab, character.transform.position);
         character.RetrieveAxe();
         PlayCharacterHandoffBounce(true);
         EndHoldingAxe();
@@ -460,28 +477,33 @@ public class RepairBox : MonoBehaviour
             _bIncludeHeldAxe ? heldAxeBounceAmplitude : 0f);
     }
 
-    // ===== 손 ↔ 모루 도끼 날리기(임시 리소스) =====
+    // ===== 손 ↔ 모루 도끼 날리기 =====
     private bool StartAxeFlight(Vector3 _startPos, bool _bReturning)
     {
-        if (throwAxeSprite == null || throwDuration <= 0f) return false;
+        if (throwAxeFrames == null || throwAxeFrames.Length == 0 || throwDuration <= 0f) return false;
 
         EnsureThrownAxe();
 
-        // 날아가는 동안은 모루에서 떼어 FlyingItem 층에 그린다.
-        thrownAxeRoot.SetParent(transform, true);
+        // 날아가는 동안은 FlyingItem 층에 그린다. 흰색 아웃라인은 원목 아이템과 같은 짝(스텐실 작성 -1, 아웃라인 = 본체 순서)으로 그린다.
         thrownAxeRoot.localScale = Vector3.one;
         throwAxeRenderer.sortingLayerName = "FlyingItem";
         throwAxeRenderer.sortingOrder = 4;
-        throwAxeRenderer.sprite = throwAxeSprite;
+        if (throwAxeOutlineSR != null)
+        {
+            throwAxeOutlineSR.sortingLayerID = throwAxeRenderer.sortingLayerID;
+            throwAxeOutlineSR.sortingOrder = throwAxeRenderer.sortingOrder;
+            throwAxeOutlineStencilSR.sortingLayerID = throwAxeRenderer.sortingLayerID;
+            throwAxeOutlineStencilSR.sortingOrder = throwAxeRenderer.sortingOrder - 1;
+        }
 
         axeVisualState = _bReturning ? AxeVisualState.ToHand : AxeVisualState.ToAnvil;
         throwStartPos = _startPos;
         throwDirection = GetFlightTarget().x >= _startPos.x ? 1f : -1f;
-        // 돌아올 때는 얹혀 있던 방향 그대로 날린다(떠나는 순간 그림이 뒤집혀 튀지 않게).
-        if (false == _bReturning) throwAxeRenderer.flipX = throwDirection < 0f;
+        // 애니메이션 그림은 시계 방향으로 돈다: 오른쪽으로 날아가면 그대로, 왼쪽이면 좌우 반전해 반대로 돈다.
+        SetThrownAxeFlip(throwDirection < 0f);
         throwElapsed = 0f;
 
-        throwAxeRenderer.enabled = true;
+        SetThrownAxeVisible(true);
         StartAxeBounce();
         PlaceFlyingAxe(0f);
         return true;
@@ -500,6 +522,50 @@ public class RepairBox : MonoBehaviour
         throwAxeRenderer = visual.AddComponent<SpriteRenderer>();
         if (throwAxeMaterial != null) throwAxeRenderer.sharedMaterial = throwAxeMaterial;
         throwAxeRenderer.enabled = false;
+
+        if (throwAxeOutlineStencilMaterial != null && throwAxeOutlineMaterial != null)
+        {
+            throwAxeOutlineStencilSR = CreateThrownAxeOutlineRenderer(visual.transform, "OutlineStencil", throwAxeOutlineStencilMaterial);
+            throwAxeOutlineSR = CreateThrownAxeOutlineRenderer(visual.transform, "Outline", throwAxeOutlineMaterial);
+
+            MaterialPropertyBlock mpb = new MaterialPropertyBlock();
+            throwAxeOutlineSR.GetPropertyBlock(mpb);
+            mpb.SetColor(OutlineColorID, throwAxeOutlineColor);
+            throwAxeOutlineSR.SetPropertyBlock(mpb);
+        }
+    }
+
+    private static SpriteRenderer CreateThrownAxeOutlineRenderer(Transform _parent, string _name, Material _material)
+    {
+        GameObject go = new GameObject(_name);
+        go.transform.SetParent(_parent, false);
+        SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
+        sr.sharedMaterial = _material;
+        sr.enabled = false;
+        return sr;
+    }
+
+    private void SetThrownAxeVisible(bool _bVisible)
+    {
+        if (throwAxeRenderer != null) throwAxeRenderer.enabled = _bVisible;
+        if (throwAxeOutlineSR != null) throwAxeOutlineSR.enabled = _bVisible;
+        if (throwAxeOutlineStencilSR != null) throwAxeOutlineStencilSR.enabled = _bVisible;
+    }
+
+    // 아웃라인 셰이더는 SpriteRenderer.flipX를 반영하지 않아(본체만 뒤집혀 테두리가 어긋난다) 그림 Transform의 x 크기로 뒤집는다.
+    private void SetThrownAxeFlip(bool _bFlip)
+    {
+        throwAxeRenderer.transform.localScale = new Vector3(_bFlip ? -1f : 1f, 1f, 1f);
+    }
+
+    // 날아간 시간으로 애니메이션 프레임을 고른다(반복 재생). 아웃라인도 같은 그림을 쓴다.
+    private void SetThrownAxeFrame()
+    {
+        int index = throwAxeFps > 0f ? Mathf.FloorToInt(throwElapsed * throwAxeFps) % throwAxeFrames.Length : 0;
+        Sprite frame = throwAxeFrames[index];
+        throwAxeRenderer.sprite = frame;
+        if (throwAxeOutlineSR != null) throwAxeOutlineSR.sprite = frame;
+        if (throwAxeOutlineStencilSR != null) throwAxeOutlineStencilSR.sprite = frame;
     }
 
     private void UpdateAxeFlight(float _dt)
@@ -517,15 +583,14 @@ public class RepairBox : MonoBehaviour
         }
         else
         {
-            // 모루에 얹혔다: 도끼가 뽀잉하고 모루는 첫 두드림(번쩍임·뽀잉·스파크)으로 받는다.
+            // 모루에 박혔다: 날아가던 도끼는 숨고 모루가 수리 중 그림이 되어 첫 두드림(번쩍임·뽀잉·스파크)으로 받는다.
             PlaceAxeOnAnvil();
-            StartAxeBounce();
             BeginHammering();
         }
     }
 
-    // 출발점 → 도착점을 잇는 포물선 위에 놓고 날아가는 방향으로 돌린다. 픽셀 격자에 맞춘다.
-    // 돌아올 때는 움직이는 손을 매 프레임 따라가고, 손에 닿을 때 손에 든 모습(회전 0)이 되도록 돈다.
+    // 출발점 → 도착점을 잇는 포물선 위에 놓는다. 픽셀 격자에 맞추고, 도는 모습은 애니메이션 프레임이 낸다.
+    // 돌아올 때는 움직이는 손을 매 프레임 따라간다.
     private void PlaceFlyingAxe(float _t)
     {
         Vector3 target = GetFlightTarget();
@@ -535,42 +600,23 @@ public class RepairBox : MonoBehaviour
         pos.y = Mathf.Round(pos.y * ThrowPixelsPerUnit) / ThrowPixelsPerUnit;
         pos.z = 0f;
 
-        float spinT = bAxeReturning ? _t - 1f : _t;
         thrownAxeRoot.position = pos;
-        throwAxeRenderer.transform.localRotation = Quaternion.Euler(0f, 0f, -throwDirection * throwSpinDegrees * spinT);
+        SetThrownAxeFrame();
     }
 
-    // 모루 그림 아래로 옮겨 얹는다. 모루가 두드릴 때 출렁이면 그대로 같이 출렁인다.
+    // 도끼가 모루에 박혔다: 날아가던 도끼 그림을 숨긴다(박힌 모습은 모루의 수리 중 그림이 보여 준다).
     private void PlaceAxeOnAnvil()
     {
         axeVisualState = AxeVisualState.OnAnvil;
+        axeBounceElapsed = float.MaxValue;
+        SetThrownAxeVisible(false);
+    }
 
-        Transform anvilVisual = spriteRenderer != null ? spriteRenderer.transform : null;
-        if (anvilVisual == null)
-        {
-            axeRestLocalPos = transform.InverseTransformPoint(GetAnvilAxePoint());
-            thrownAxeRoot.localPosition = axeRestLocalPos;
-            return;
-        }
-
-        thrownAxeRoot.SetParent(anvilVisual, false);
-
-        // 모루가 출렁이는 중이어도 바른 자리에 놓이게 출렁임 없는 기준 위치·크기로 잡는다(모루 그림의 부모 = 모루).
-        if (anvilVisual.parent == transform)
-        {
-            axeRestLocalPos = new Vector3(
-                (throwLocalTarget.x - visualBaseLocalPos.x) / visualBaseLocalScale.x,
-                (throwLocalTarget.y - visualBaseLocalPos.y) / visualBaseLocalScale.y,
-                0f);
-        }
-        else
-        {
-            axeRestLocalPos = anvilVisual.InverseTransformPoint(GetAnvilAxePoint());
-        }
-
-        thrownAxeRoot.localPosition = axeRestLocalPos;
-        throwAxeRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
-        throwAxeRenderer.sortingOrder = spriteRenderer.sortingOrder + 2;
+    // 모루 그림을 수리 중(도끼가 박힌 그림) / 평소 그림으로 바꾼다. 상호작용 아웃라인은 LateUpdate에서 같은 그림을 따라간다.
+    private void SetAnvilRepairing(bool _bRepairing)
+    {
+        if (spriteRenderer == null || repairingAnvilSprite == null) return;
+        spriteRenderer.sprite = _bRepairing ? repairingAnvilSprite : idleAnvilSprite;
     }
 
     private void StartAxeBounce()
@@ -578,38 +624,26 @@ public class RepairBox : MonoBehaviour
         axeBounceElapsed = 0f;
     }
 
-    // 도끼 뽀잉(모루 뽀잉과 같은 감쇠 스프링). 얹혀 있을 때는 바닥(모루 윗면)에 붙은 채로 눌린다.
+    // 날아가는 도끼 뽀잉(모루 뽀잉과 같은 감쇠 스프링). 손·모루를 떠나는 순간 시작한다.
     private void UpdateAxeBounce(float _dt)
     {
-        if (axeVisualState == AxeVisualState.Hidden || thrownAxeRoot == null) return;
+        if (false == bAxeInFlight || thrownAxeRoot == null) return;
 
         if (axeBounceElapsed < float.MaxValue) axeBounceElapsed += _dt;
         float t = axeBounceDuration > 0f ? Mathf.Clamp01(axeBounceElapsed / axeBounceDuration) : 1f;
         float spring = t < 1f ? Mathf.Exp(-axeBounceDamping * t) * Mathf.Sin(axeBounceFrequency * t) : 0f;
         float sx = 1f + spring * axeBounceAmplitude;
         float sy = 1f - spring * axeBounceAmplitude;
-
-        if (axeVisualState == AxeVisualState.OnAnvil && thrownAxeRoot.parent != transform)
-        {
-            // 모루 그림의 기준 크기는 나눠서 빼고, 두드릴 때의 출렁임만 물려받는다.
-            float bx = visualBaseLocalScale.x;
-            float by = visualBaseLocalScale.y;
-            float halfHeight = throwAxeSprite != null ? throwAxeSprite.bounds.extents.y : 0f;
-            thrownAxeRoot.localScale = new Vector3(sx / bx, sy / by, 1f);
-            thrownAxeRoot.localPosition = axeRestLocalPos + new Vector3(0f, -halfHeight * (1f - sy) / by, 0f);
-        }
-        else
-        {
-            thrownAxeRoot.localScale = new Vector3(sx, sy, 1f);
-        }
+        thrownAxeRoot.localScale = new Vector3(sx, sy, 1f);
     }
 
-    // 도끼 그림을 숨긴다. 끌 때(OnDisable)도 불리므로 계층은 바꾸지 않는다(다음에 날릴 때 다시 모루에서 뗀다).
+    // 도끼 그림을 숨기고 모루를 평소 그림으로 돌린다. 끌 때(OnDisable)도 불린다.
     private void HideThrownAxe()
     {
         axeVisualState = AxeVisualState.Hidden;
         axeBounceElapsed = float.MaxValue;
-        if (throwAxeRenderer != null) throwAxeRenderer.enabled = false;
+        SetThrownAxeVisible(false);
+        SetAnvilRepairing(false);
     }
 
     private Vector3 GetFlightTarget()
@@ -622,12 +656,13 @@ public class RepairBox : MonoBehaviour
         return transform.TransformPoint(throwLocalTarget);
     }
 
-    // 모루를 한 번 두드린다: 기존 수리 연출(번쩍임·뽀잉·스파크) + 게이지 번쩍임 + HUD 도끼 내구도 갱신.
-    private void PlayHammerHit(bool _bPlayHudRepairEffect)
+    // 모루를 한 번 두드린다: 기존 수리 연출(번쩍임·뽀잉·스파크) + 게이지 번쩍임 + HUD 도끼 내구도 갱신 + 망치 소리.
+    private void PlayHammerHit(bool _bPlayHudRepairEffect, bool _bPlaySound = true)
     {
         PlayRepairFeedback();
         if (repairGauge != null) repairGauge.PlayHit();
         if (character != null) character.NotifyAxeRepairTick(_bPlayHudRepairEffect);
+        if (_bPlaySound) Sound.Play(SoundID.AnvilHit, GetAnvilAxePoint());
     }
 
     private void EndHoldingAxe()

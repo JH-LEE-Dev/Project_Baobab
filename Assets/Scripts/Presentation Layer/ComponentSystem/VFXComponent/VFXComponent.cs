@@ -262,6 +262,29 @@ public class VFXComponent : MonoBehaviour
     }
 
     /// <summary>
+    /// 지정한 태그의 풀이 최소 _count개가 되도록 인스턴스를 미리 만든다(재생하지 않는다). 풀이 전부 재생 중일 때 재생 시점에
+    /// 만들던 것과 같은 인스턴스를(같은 CreateNewInstance) 같은 순서로 먼저 만들어 둘 뿐이다. 재생은 예전처럼 목록 앞쪽의
+    /// 쉬는 인스턴스부터 쓰므로 n번째로 만든 인스턴스가 쓰이는 때도 예전과 같다. 로딩 중에 부른다. 만든 인스턴스는 풀에 남아 계속 재사용된다.
+    /// </summary>
+    public void EnsurePoolSize(string _tag, int _count)
+    {
+        if (false == isInitialized || true == string.IsNullOrEmpty(_tag)) return;
+        if (false == configDictionary.TryGetValue(_tag, out VFXPoolData _config) || null == _config) return;
+        if (false == poolDictionary.TryGetValue(_tag, out List<ParticleSystem> _poolList) || null == _poolList) return;
+
+        poolFreeHints.TryGetValue(_tag, out VFXPoolFreeHint _hint);
+
+        while (_poolList.Count < _count)
+        {
+            ParticleSystem _instance = CreateNewInstance(_config);
+            if (null == _instance) break;
+
+            BindPoolSlot(_instance, _hint, _poolList.Count);
+            _poolList.Add(_instance);
+        }
+    }
+
+    /// <summary>
     /// 태그에 바인딩된 프리팹과 풀 상한을 돌려줍니다. 공유 이미터(SharedBurstEmitter)가 같은 프리팹을 인스턴스 하나로 재생할 때 씁니다.
     /// </summary>
     public bool TryGetPoolConfig(string _tag, out ParticleSystem _prefab, out int _maxPoolSize)
