@@ -189,14 +189,6 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.EmberGuideCollectedNotifyEvent -= EmberGuideCollected;
         inDungeonObjectManager.EmberGuideCollectedNotifyEvent += EmberGuideCollected;
 
-        inDungeonObjectManager.QuakeChargeChangedEvent -= QuakeChargeChanged;
-        inDungeonObjectManager.QuakeChargeChangedEvent += QuakeChargeChanged;
-        inDungeonObjectManager.QuakeTriggeredEvent -= QuakeTriggered;
-        inDungeonObjectManager.QuakeTriggeredEvent += QuakeTriggered;
-
-        inDungeonObjectManager.MeteorShowerChargeChangedEvent -= MeteorShowerChargeChanged;
-        inDungeonObjectManager.MeteorShowerChargeChangedEvent += MeteorShowerChargeChanged;
-
         inDungeonObjectManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
         inDungeonObjectManager.CarrotItemAcquiredEvent += CarrotItemAcquired;
 
@@ -263,9 +255,6 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.TreeHeatHitEvent -= TreeHeatHit;
         inDungeonObjectManager.ConstellationManifestedEvent -= ConstellationManifested;
         inDungeonObjectManager.EmberGuideCollectedNotifyEvent -= EmberGuideCollected;
-        inDungeonObjectManager.QuakeChargeChangedEvent -= QuakeChargeChanged;
-        inDungeonObjectManager.QuakeTriggeredEvent -= QuakeTriggered;
-        inDungeonObjectManager.MeteorShowerChargeChangedEvent -= MeteorShowerChargeChanged;
         inDungeonObjectManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
         inDungeonObjectManager.GemOreItemAcquiredEvent -= GemOreItemAcquired;
         inDungeonObjectManager.TreeDeadEvent -= TreeIsDead;
@@ -485,43 +474,6 @@ public class InDungeonSystem : MonoBehaviour
     private void RegionGuideAborted(RegionGuideAbortedSignal _signal)
     {
         if (_signal.step == TutorialStep.MagmaForestGuide) inDungeonObjectManager.SetEmberGuideActive(false);
-    }
-
-    // "흑요 부적" 지진 게이지: 타수 중첩(StackHits), 값은 주운 불씨 수. 충전 중에만 보이고 HUD 자동 감소는 쓰지 않는다.
-    // 가득 차면 최대 도달 연출, 지진이 실제로 발동할 때 번쩍이며 퇴장(쿨타임이 남아 있으면 가득 찬 채 기다린다).
-    // 숲 방문 초기화(0)는 연출 없이 지운다.
-    private void QuakeChargeChanged(int _embers, int _maxEmbers)
-    {
-        if (0 >= _embers)
-        {
-            signalHub.Publish(BuffHudSignal.Of(EBuffHudId.Earthquake, EBuffHudOp.Remove));
-            return;
-        }
-
-        signalHub.Publish(BuffHudSignal.AddStackHits(EBuffHudId.Earthquake, _embers, _maxEmbers));
-    }
-
-    private void QuakeTriggered()
-    {
-        signalHub.Publish(BuffHudSignal.Of(EBuffHudId.Earthquake, EBuffHudOp.Dispel));
-    }
-
-    // "별빛 나침반" 유성우 게이지: 지진 게이지와 같은 방식(StackHits, 값은 게이지를 채운 벌목 수).
-    // 가득 차면 최대 도달 연출 뒤 번쩍이며 퇴장(유성우 발동), 숲 방문 초기화(0)는 연출 없이 지운다.
-    private void MeteorShowerChargeChanged(int _kills, int _maxKills)
-    {
-        if (0 >= _kills)
-        {
-            signalHub.Publish(BuffHudSignal.Of(EBuffHudId.StarRain, EBuffHudOp.Remove));
-            return;
-        }
-
-        signalHub.Publish(BuffHudSignal.AddStackHits(EBuffHudId.StarRain, _kills, _maxKills));
-
-        if (_maxKills <= _kills)
-        {
-            signalHub.Publish(BuffHudSignal.Of(EBuffHudId.StarRain, EBuffHudOp.Dispel));
-        }
     }
 
     private void GoHome(GoHomeButtonClickedSignal goHomeButtonClickedSignal)
