@@ -133,6 +133,13 @@ public class LogInBelt : MonoBehaviour
     /// <summary>특성이 반영된 실제 주행 속도.</summary>
     private float EffectiveBeltSpeed => beltSpeed * speedMultiplier;
 
+    // 특성이 반영된 실제 가감속. 가속도를 고정해 두면 컨베이어 특성으로 속도만 오를 때 멈추며 미끄러지는
+    // 거리가 배율의 제곱으로 늘어(풀강 10.5배에서 기본 0.07 -> 7.35유닛) 벨트 길이보다 길어졌다. 그래서 첫 원목이
+    // 벨트 끝까지 가속해 커터에 닿아 벨트가 설 때, 뒤 원목들이 원목 간격(약 1.0)보다 훨씬 더 미끄러져 투입구에
+    // 붙잡히며(MoveItems의 안전장치) 커터 앞에 겹쳐 쌓였다. 속도와 같은 배율을 곱하면 미끄러지는 거리는 배율에
+    // 비례(10.5배에서 0.7)해 간격 안에 머문다. 배율 1(특성 없음)에서는 예전과 같다.
+    private float EffectiveAcceleration => acceleration * speedMultiplier;
+
     // 내부 상태
     private List<BeltItem> activeItems = new List<BeltItem>(10);
     private List<DeactivatingItem> deactivatingItems = new List<DeactivatingItem>(10);
@@ -485,7 +492,7 @@ public class LogInBelt : MonoBehaviour
             // 2. 현재 속도를 목표 속도로 부드럽게 이동
             if (!Mathf.Approximately(currentSpeed, targetSpeedValue))
             {
-                currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeedValue, acceleration * subDeltaTime);
+                currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeedValue, EffectiveAcceleration * subDeltaTime);
             }
 
             // 3. 실행 조건 확인 (속도가 0이고 목표 속도도 0이면 중단)
@@ -498,7 +505,7 @@ public class LogInBelt : MonoBehaviour
             // 4. 아이템 이동 처리. 옮길 원목이 없으면 이번 프레임의 남은 시간만큼 감속만 마저 하고 끝낸다.
             if (activeItems.Count == 0 || path.Count == 0)
             {
-                currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeedValue, acceleration * subDeltaTime * (substeps - s - 1));
+                currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeedValue, EffectiveAcceleration * subDeltaTime * (substeps - s - 1));
                 AddIdleSupplyProgress(subDeltaTime * (substeps - s));
                 break;
             }
@@ -805,12 +812,12 @@ public class LogInBelt : MonoBehaviour
         }
 
         // Update()와 같은 식: 벨트 시간이 globalSpeedMultiplier배로 흐른다. 실제 이동 = currentSpeed * mul,
-        // currentSpeed는 초당 acceleration * mul만큼 목표에 다가가므로 실제 가속도는 acceleration * mul^2이다.
+        // currentSpeed는 초당 EffectiveAcceleration * mul만큼 목표에 다가가므로 실제 가속도는 EffectiveAcceleration * mul^2이다.
         float targetSpeed = isMoving ? EffectiveBeltSpeed : 0f;
         float mul = Mathf.Max(0.0001f, globalSpeedMultiplier);
         float v0 = currentSpeed * mul;
         float v1 = targetSpeed * mul;
-        float a = Mathf.Max(0.0001f, acceleration * mul * mul);
+        float a = Mathf.Max(0.0001f, EffectiveAcceleration * mul * mul);
 
         if (v1 <= 0.0001f) return false;
 

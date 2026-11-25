@@ -59,6 +59,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private Canvas rootCanvas;
     private bool hasDraggedCurrentPress;
     private bool moneyVisualRefreshPending;
+    private bool allOtherSkillsCompleted;
     private bool hasZoomFocus;
     private bool hasPreviousMousePosition;
     private Vector2 previousMousePosition;
@@ -1831,6 +1832,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             case SkillCommandType.LogCapacityIncrease:
                 return 5f;
             case SkillCommandType.ProcessLineExpand:
+            case SkillCommandType.SimultaneousProcessing:
                 return 1f;
             case SkillCommandType.StaminaMaxIncrease:
                 return 100f;
@@ -1898,6 +1900,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             case SkillCommandType.AdvancedLogChance:
             case SkillCommandType.PerfectLogChance:
             case SkillCommandType.AutoLoadInRestArea:
+            case SkillCommandType.AutoLoadAnywhere:
             case SkillCommandType.WhirlWind:
             case SkillCommandType.Hello:
             case SkillCommandType.RemoteLogTransport:
@@ -3881,6 +3884,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         int previousNodeLevel = node.CurrentLevel;
         bool wasLockedByLevel = node.IsUnlockedByLevel() == false;
+        bool previouslyCompletedAllOtherSkills = allOtherSkillsCompleted;
         SyncNodeLevelsFromProvider();
         SkillInfo upgradedSkillInfo = GetSkillInfo(_skillType);
         bool reachedMaxLevel = upgradedSkillInfo.maxLevel > 0 &&
@@ -3892,9 +3896,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             _currentHUDState.PrestigeLevel > _previousHUDState.PrestigeLevel;
 
         // 해금되는 순간임
-        bool picnicUnlocked = _currentHUDState.IsValid && _previousHUDState.IsValid &&
-            IsPicnicBasketVisible(_currentHUDState.PrestigeLevel, _currentHUDState.Experience) &&
-            !IsPicnicBasketVisible(_previousHUDState.PrestigeLevel, _previousHUDState.Experience);
+        bool picnicUnlocked = allOtherSkillsCompleted && !previouslyCompletedAllOtherSkills;
         // 새로 드러나는 노드가 없는 구매에서는 여기서 선을 따로 만들지 않는다. 바로 아래 RefreshNodeAvailabilityVisuals가
         // 끝에서 같은 노드 배치로 선을 다시 만들어 통째로 덮어쓰므로, 여기서 만든 선은 화면에 나가지 않았다(결과 동일).
         if ((wasLockedByLevel && node.IsUnlockedByLevel()) || prestigeIncreased || picnicUnlocked)
@@ -4173,9 +4175,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
     private void SyncNodeLevelsFromProvider()
     {
+        allOtherSkillsCompleted = false;
         if (skillSystemProvider == null)
             return;
 
+        bool allCompleted = true;
+        int otherSkillCount = 0;
         for (int i = 0; i < spawnedNodes.Count; i++)
         {
             AbilityNode node = spawnedNodes[i];
@@ -4186,7 +4191,18 @@ public class UI_TentAbilityComponent : MonoBehaviour
                 node.SetCurrentLevel(currentLevel);
             else
                 node.SetCurrentLevel(0);
+
+            if (node.SkillType != SkillType.PicnicBasket)
+            {
+                otherSkillCount++;
+                // MaxLevel 판정은 재화·선행 조건보다 먼저 처리되며, 별도 목록을 만들지 않는다.
+                if (skillSystemProvider.CanApplySkill(node.SkillType) != AbilityLevelUpRejectReason.MaxLevel)
+                    allCompleted = false;
+            }
         }
+
+        // 화면에 가려진 노드도 포함한다. 초기화 중 빈 페이지에서는 소풍을 공개하지 않는다.
+        allOtherSkillsCompleted = otherSkillCount > 0 && allCompleted;
     }
 
     private void RefreshNodeVisibility(bool _playUnlockReveal)
@@ -4520,9 +4536,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
             // 기존 세이브에서 이미 습득한 소풍은 숨기지 않는다.
             bool alreadyAcquired = skillSystemProvider.IsApplied(_node.SkillType, out int level) && level > 0;
-            if (!alreadyAcquired && !IsPicnicBasketVisible(
-                skillSystemProvider.GetCurrentPrestigeLevel(), skillSystemProvider.GetCurrentPrestigeExp()))
-                return false;
+            return alreadyAcquired || allOtherSkillsCompleted;
         }
 
         if (SatisfiesPrestigeRequirement(_node) == false)
@@ -4532,12 +4546,6 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return ShouldShowNodeByProvider(_node);
 
         return ShouldShowNodeByVisualConnection(_node);
-    }
-
-    // 소풍의 등장은 TentUI에서만 제한하고, 구매 판정은 기존 스킬 시스템에 맡긴다.
-    private static bool IsPicnicBasketVisible(int _prestigeLevel, int _experience)
-    {
-        return _prestigeLevel > 11 || (_prestigeLevel == 11 && _experience >= 149);
     }
 
     private bool SatisfiesPrestigeRequirement(AbilityNode _node)

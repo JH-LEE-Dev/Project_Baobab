@@ -25,6 +25,12 @@ Shader "Custom/EllipseRadiusIndicator"
 
         [Header(HDR)]
         _ArrowHDRIntensity("Arrow HDR Intensity", Float) = 2.35
+
+        // 휘두르기 튕김: AttackComponent가 스윙마다 진행도(0~1)를 넣는다. 음수면 튕김 없음(평소 그림 그대로).
+        [Header(Swing Punch)]
+        _SwingPunch("Swing Punch Progress", Float) = -1
+        _SwingPunchScale("Punch Scale", Float) = 0.15
+        _SwingPunchBrighten("Punch Brighten", Float) = 1.2
     }
 
     SubShader
@@ -73,6 +79,9 @@ Shader "Custom/EllipseRadiusIndicator"
                 float _FillStart;
                 float _AngleFade;
                 float _ArrowHDRIntensity;
+                float _SwingPunch;
+                float _SwingPunchScale;
+                float _SwingPunchBrighten;
             CBUFFER_END
 
             Varyings vert(Attributes IN)
@@ -90,6 +99,17 @@ Shader "Custom/EllipseRadiusIndicator"
 
                 float2 posUnits = IN.positionOS.xy * float2(scaleX, scaleY);
                 float2 posIso = float2(posUnits.x, posUnits.y * 2.0);
+
+                // 휘두르기 튕김: 휘두르는 순간 표시기 전체(외곽선·화살표·바탕)가 바깥으로 튕겼다가(진행도 0.25에 최대) 제자리로 돌아오며,
+                // 최대일 때 진하고 하얘진다. 좌표를 줄여 읽는 방식이라 모양은 그대로 커진다. 진행도가 음수면 평소 그림과 같다.
+                float punchCurve = 0.0;
+                if (_SwingPunch >= 0.0)
+                {
+                    float swingT = saturate(_SwingPunch);
+                    punchCurve = swingT < 0.25 ? sin(swingT / 0.25 * 1.5707963) : pow(1.0 - (swingT - 0.25) / 0.75, 2.0);
+                    posIso /= 1.0 + _SwingPunchScale * punchCurve;
+                }
+
                 float dist = length(posIso);
 
                 float2 dir = dist > 0.0001 ? posIso / dist : float2(1.0, 0.0);
@@ -133,6 +153,14 @@ Shader "Custom/EllipseRadiusIndicator"
 
                 float arrowHdrMask = saturate(arrowMask);
                 half3 finalRgb = _BaseColor.rgb * lerp(1.0, _ArrowHDRIntensity, arrowHdrMask);
+
+                // 튕김 중에만: 외곽선·화살표·바탕이 함께 진해지고 흰색 쪽으로 간다(화살표 HDR은 유지, 나머지는 1을 넘기지 않아 블룸이 생기지 않는다).
+                // 평소(punchCurve = 0)에는 이 계산을 건너뛰어 예전 그림과 같다.
+                if (punchCurve > 0.0)
+                {
+                    alpha = saturate(max(shapeMask * _IndicatorAlpha, fillAlpha) * (1.0 + _SwingPunchBrighten * punchCurve)) * _BaseColor.a;
+                    finalRgb = lerp(finalRgb, max(finalRgb, half3(1.0, 1.0, 1.0)), punchCurve * 0.6);
+                }
                 half4 finalColor = half4(finalRgb, alpha);
                 clip(finalColor.a - 0.005);
                 return finalColor;

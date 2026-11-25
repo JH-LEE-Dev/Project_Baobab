@@ -1,6 +1,38 @@
 ﻿{
     "nodes": [
         {
+            "skillType": "AutoLoadAnywhere",
+            "nameLocId": 357,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": -15,
+            "gridY": -6,
+            "parents": [
+                {
+                    "skillType": "RemoteLogTransport",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "SimultaneousProcessing",
+            "nameLocId": 358,
+            "levelBadge": "None",
+            "requiredPrestigeLevel": 0,
+            "gridX": 15,
+            "gridY": -4,
+            "parents": [
+                {
+                    "skillType": "SawmillLogStorageExpansion4",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
             "skillType": "AxeDamage7",
             "nameLocId": 329,
             "levelBadge": "M",
@@ -336,16 +368,10 @@
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
             "gridX": 15,
-            "gridY": -4,
+            "gridY": -2,
             "parents": [
                 {
-                    "skillType": "RainbowTreeChance",
-                    "usePivot": false,
-                    "pivotX": 0,
-                    "pivotY": 0
-                },
-                {
-                    "skillType": "TopgradeAssessment1",
+                    "skillType": "BountifulTree6",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -374,7 +400,7 @@
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
             "gridX": -15,
-            "gridY": -6,
+            "gridY": -8,
             "parents": [
                 {
                     "skillType": "PickupRange3",
@@ -764,7 +790,7 @@
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
             "gridX": -15,
-            "gridY": -8,
+            "gridY": -10,
             "parents": [
                 {
                     "skillType": "InventoryExpansion2",
@@ -1459,7 +1485,7 @@
         {
             "skillType": "RemoteLogTransport",
             "nameLocId": 283,
-            "levelBadge": "M",
+            "levelBadge": "None",
             "requiredPrestigeLevel": 0,
             "gridX": -13,
             "gridY": -4,

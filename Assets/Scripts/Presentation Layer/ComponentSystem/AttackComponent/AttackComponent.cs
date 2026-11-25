@@ -161,6 +161,12 @@ public class AttackComponent : PComponent
     private Vector3 appliedIndicatorPos = new Vector3(float.NaN, float.NaN, float.NaN);
     private static readonly int BaseColorID = Shader.PropertyToID("_BaseColor");
 
+    // 휘두르기 튕김: 도끼를 휘두를 때(허공 포함) 공격 범위 표시기 전체가 바깥으로 튕겼다가 제자리로 돌아오며 잠깐 진하고 하얘진다.
+    // 그림 전용이라 판정과 무관하다(셰이더가 그림만 키운다). _SwingPunch = 진행도 0~1, 음수면 평소 그림.
+    private static readonly int SwingPunchID = Shader.PropertyToID("_SwingPunch");
+    private const float SwingPunchDuration = 0.11f; // 진행도 0.25(약 0.03초)에 가장 크고, 도끼날이 조준 방향에 닿는 0.05초 무렵부터 돌아온다
+    private float swingPunchElapsed = -1f;          // 음수면 튕김 중이 아니다
+
     private const float IndicatorFadeInDuration = 1f; // 인디케이터 활성화 시 알파가 0에서 복원되는 데 걸리는 시간
     private Coroutine indicatorFadeCoroutine;
     private float indicatorFullAlpha = 1f; // Initialize에서 1회만 캐싱되는 인디케이터의 원래 알파값(페이드인의 목표값)
@@ -518,6 +524,8 @@ public class AttackComponent : PComponent
         if (bIsWhirlwindStrike)
         {
             whirlwindVfx = WhirlwindVFX.Spawn(centerPos, effectiveEllipseRadius);
+            // 회전 베기는 360도라 부채꼴 튕김과 맞지 않으므로 끊는다(회전 베기 VFX가 대신 나온다).
+            StopSwingPunch();
             WhirlwindStrikeEvent?.Invoke();
             CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
 
@@ -1251,6 +1259,7 @@ public class AttackComponent : PComponent
         UpdateGamepadAim();
         UpdateMouseAim();
         UpdateIndicator();
+        UpdateSwingPunch();
 
         detectionTimer += Time.deltaTime;
         if (detectionTimer >= detectionInterval)
@@ -1740,9 +1749,41 @@ public class AttackComponent : PComponent
         ellipseIndicatorMat.SetColor(BaseColorID, _color);
     }
 
+    /// <summary>도끼 스윙 시작(AxeComponent.SwingStartedEvent). 공격 범위 표시기를 한 번 튕긴다. 튕기는 중에 다시 휘두르면 처음부터.</summary>
+    public void PlaySwingPunch()
+    {
+        if (null == ellipseIndicatorMat) return;
+
+        swingPunchElapsed = 0f;
+        ellipseIndicatorMat.SetFloat(SwingPunchID, 0f);
+    }
+
+    private void UpdateSwingPunch()
+    {
+        if (swingPunchElapsed < 0f) return;
+
+        swingPunchElapsed += Time.deltaTime;
+        if (swingPunchElapsed >= SwingPunchDuration)
+        {
+            StopSwingPunch();
+            return;
+        }
+
+        ellipseIndicatorMat.SetFloat(SwingPunchID, swingPunchElapsed / SwingPunchDuration);
+    }
+
+    private void StopSwingPunch()
+    {
+        if (swingPunchElapsed < 0f) return;
+
+        swingPunchElapsed = -1f;
+        if (null != ellipseIndicatorMat) ellipseIndicatorMat.SetFloat(SwingPunchID, -1f);
+    }
+
     public void SetEnable(bool _boolean)
     {
         ellipseRadiusIndicator.gameObject.SetActive(_boolean);
+        StopSwingPunch();
 
         if (null != indicatorFadeCoroutine)
         {

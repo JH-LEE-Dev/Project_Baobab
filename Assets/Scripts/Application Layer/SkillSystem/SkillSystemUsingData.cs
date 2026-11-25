@@ -383,6 +383,8 @@ public enum SkillType
     OverheatEfficiency,
     TreeHeatResistance2,
     PicnicBasket,
+    AutoLoadAnywhere,
+    SimultaneousProcessing,
     MAX
 }
 

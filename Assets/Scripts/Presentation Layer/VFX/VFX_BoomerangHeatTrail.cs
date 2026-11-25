@@ -18,14 +18,15 @@ namespace PresentationLayer.VFX
     /// 바닥 타일(용암, 물 등)은 종류가 다양하므로 바닥에 남는 자국은 만들지 않는다.
     ///
     /// 크기 대응: 입자 하나의 크기는 고정(반지름 최대 6px)이고, 부메랑 반경(R)에 비례해 방출 개수가 늘어난다.
-    /// 최적화: 정적 공유 PixelQuadBuffer, 구조체 배열(GC 0), 해시 업로드 생략, 실제 그린 범위로 좁힌 메쉬 경계, PixelVfxCulling 화면 밖 생략,
+    /// 최적화: 구조체 배열(GC 0), 해시 업로드 생략, 실제 그린 범위로 좁힌 메쉬 경계, PixelVfxCulling 화면 밖 생략,
+    /// 입자 이동·꼬리 격자·사각형 채우기는 일꾼 스레드에서 계산(PixelVfxWorkQueue, 그래서 그리기 버퍼는 인스턴스마다 따로 둔다),
     /// 동시 4개 이상이면 저부하 모드(방출 개수 절반, 몸통 30fps). 화면 캡처를 쓰지 않으므로 SortingLayerTextureGate와 무관하다.
     ///
     /// 반투명은 쓰지 않는다. 밝기는 정점 알파에 실린 HDR 발광 세기(BrandWrapGlow 셰이더)로만 낸다.
     /// </summary>
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(10000)] // Boomerang.LateUpdate(Feed 호출)가 끝난 뒤에 실행한다
-    public class VFX_BoomerangHeatTrail : MonoBehaviour
+    public class VFX_BoomerangHeatTrail : MonoBehaviour, IPixelVfxDeferred
     {
         private const float PixelsPerUnit = 32.0f;
         private const float PixelUnit = 1.0f / PixelsPerUnit;
@@ -111,13 +112,13 @@ namespace PresentationLayer.VFX
             public int tone;
         }
 
-        // 이펙트 종류별 공유 버퍼. 메인 스레드에서 한 번에 한 인스턴스만 채우고 올린다.
-        private static readonly PixelQuadBuffer bodyBuffer = new PixelQuadBuffer(BodyQuadCapacity);
-        // 궤도 앞쪽 절반의 불꽃 꼬리(본체 앞에 그린다)
-        private static readonly PixelQuadBuffer frontBuffer = new PixelQuadBuffer(FrontQuadCapacity);
         private static readonly Color32[] toneColors = BuildToneColors();
         private static readonly int[][] circleHalfWidth = BuildCircleTable();
         private static int activeCount;
+        // 같은 프레임에 먼저 등록해 아직 반영 전인 꼬리들. 다 사그라든 꼬리는 반영 때 꺼지며 activeCount를 줄이므로,
+        // 저부하 판정이 갈릴 수 있으면 뒤에 도는 꼬리가 이들을 먼저 끝낸다(LateUpdate 참고).
+        private static readonly System.Collections.Generic.List<VFX_BoomerangHeatTrail> pendingTrails = new System.Collections.Generic.List<VFX_BoomerangHeatTrail>(8);
+        private static int pendingFrame = -1;
 
         //외부 의존성
         private Material material;
@@ -127,6 +128,10 @@ namespace PresentationLayer.VFX
         private Mesh bodyMesh;
         private MeshRenderer frontRenderer;
         private Mesh frontMesh;
+        // 인스턴스별 그리기 버퍼(처음 비행할 때 만든다). 채우기가 일꾼 스레드에서 돌 수 있어(ComputeDeferred) 인스턴스끼리 나눠 쓰지 않는다.
+        private PixelQuadBuffer bodyBuffer;
+        // 궤도 앞쪽 절반의 불꽃 꼬리(본체 앞에 그린다)
+        private PixelQuadBuffer frontBuffer;
         // 꽉 차면 두 배로 늘리므로 readonly가 아니다(PuffCapacity/EmberCapacity는 처음 크기)
         private Puff[] puffs = new Puff[PuffCapacity];
         private Ember[] embers = new Ember[EmberCapacity];
@@ -175,6 +180,18 @@ namespace PresentationLayer.VFX
         private float tongueSpinTurns; // 본체가 지금까지 돈 바퀴 수(Feed로 받음). 칼날 끝 불꽃이 이 각도만큼 궤도를 따라 돈다.
         // 백열, 민트, 하늘, 청, 라일락. 이 재질(BrandWrapGlow)의 발광 배율로 바꿔 충격파와 같은 최종 밝기가 되게 Initialize에서 만든다.
         private Color32[] tongueColors;
+
+        // 미뤄 둔 계산(PixelVfxWorkQueue)이 쓸 값. LateUpdate에서 예전과 같은 시점에 읽어 둔다.
+        private int deferredSlot = -1;          // 대기열 자리. -1이면 미뤄 둔 계산이 없다
+        private float deferredDt;
+        private int deferredFrame;
+        private bool bDeferredLowLoad;
+        private bool bDeferredHead;             // 이번 프레임에 머리 갱신·방출을 한다(비행 중이고 Feed를 받았다)
+        private bool bDeferredForceVisible;     // 시작 직후 몇 프레임은 화면 안으로 본다
+        private int deferredVisibility;         // 1 보임, 0 안 보임, -1 경계 근처(반영 때 확정)
+        private bool bDeferredDrawn;            // 이번 프레임에 버퍼를 다시 채웠다
+        private Vector3 deferredCullCenter;
+        private Vector3 deferredCullSize;
 
         /// <summary>
         /// 독립 루트 오브젝트로 이펙트를 만든다. 부메랑의 Awake에서 호출하고 DontDestroyOnLoad는 호출 측이 건다.
@@ -235,6 +252,14 @@ namespace PresentationLayer.VFX
         /// </summary>
         public void Begin()
         {
+            CompleteDeferred();
+
+            if (null == bodyBuffer)
+            {
+                bodyBuffer = new PixelQuadBuffer(BodyQuadCapacity);
+                frontBuffer = new PixelQuadBuffer(FrontQuadCapacity);
+            }
+
             if (TrailState.Idle == state)
             {
                 activeCount++;
@@ -271,6 +296,7 @@ namespace PresentationLayer.VFX
         /// </summary>
         public void Feed(Vector3 _position, int _sortingLayerID, int _sortingOrder, float _radiusUnits, float _visualRadiusUnits, float _spinTurns)
         {
+            CompleteDeferred();
             if (TrailState.Flying != state) return;
 
             bFed = true;
@@ -292,6 +318,7 @@ namespace PresentationLayer.VFX
         /// </summary>
         public void End()
         {
+            CompleteDeferred();
             if (TrailState.Flying != state) return;
 
             state = TrailState.Fading;
@@ -303,6 +330,7 @@ namespace PresentationLayer.VFX
         /// </summary>
         public void Clear()
         {
+            CompleteDeferred();
             for (int i = 0; i < puffs.Length; i++) puffs[i].bActive = false;
             for (int i = 0; i < embers.Length; i++) embers[i].bActive = false;
 
@@ -705,14 +733,18 @@ namespace PresentationLayer.VFX
 
         }
 
-        private bool IsRangeVisible()
+        // 일꾼 스레드에서 불릴 수 있어 준비해 둔 절두체로 판정한다(PixelVfxCulling.TestPrepared). 1 보임, 0 안 보임,
+        // -1 경계 근처(ApplyDeferred가 같은 상자로 IsVisible을 불러 확정한다). 상자는 예전 IsRangeVisible과 같은 식이다.
+        private int TestRangeVisible()
         {
-            if (false == bRangeValid) return false;
+            if (false == bRangeValid) return 0;
 
             float widthUnits = (rangeMaxX - rangeMinX) * PixelUnit + 2.0f;
             float heightUnits = (rangeMaxY - rangeMinY) * PixelUnit + 2.0f;
             Vector3 center = new Vector3((rangeMinX + rangeMaxX) * 0.5f * PixelUnit, (rangeMinY + rangeMaxY) * 0.5f * PixelUnit, 0.0f);
-            return PixelVfxCulling.IsVisible(center, new Vector3(widthUnits, heightUnits, 10.0f));
+            deferredCullCenter = center;
+            deferredCullSize = new Vector3(widthUnits, heightUnits, 10.0f);
+            return PixelVfxCulling.TestPrepared(deferredCullCenter, deferredCullSize);
         }
 
         // ---------- 그리기 ----------
@@ -722,7 +754,8 @@ namespace PresentationLayer.VFX
             _buffer.AddLocalRect(_x0, _y0, _x1, _y1, _color);
         }
 
-        private void RebuildBody()
+        // 미뤄 둔 그리기의 결과를 메쉬에 올린다(주 스레드). 버퍼는 ComputeDeferred가 채워 뒀다(DrawTongues -> DrawPuffs -> DrawEmbers).
+        private void CommitBody()
         {
             // 몸통은 부메랑 본체 바로 뒤(잔상과 같은 order - 1)에 깔린다. 소팅은 값이 바뀔 때만 쓴다.
             int bodyOrder = feedSortingOrder - 1;
@@ -742,14 +775,6 @@ namespace PresentationLayer.VFX
                 frontRenderer.sortingLayerID = feedSortingLayerID;
                 frontRenderer.sortingOrder = frontOrder;
             }
-
-            bodyBuffer.Clear();
-            frontBuffer.Clear();
-
-            // 불꽃 꼬리를 먼저 깔아 꼬리 입자·불씨가 그 위에 얹힌다(충격파도 불씨가 불꽃 혀 위다).
-            DrawTongues();
-            DrawPuffs();
-            DrawEmbers();
 
             UploadBuffer(bodyBuffer, bodyMesh, bodyRenderer, ref uploadedBodyVertexCount, ref uploadedBodyHash);
             UploadBuffer(frontBuffer, frontMesh, frontRenderer, ref uploadedFrontVertexCount, ref uploadedFrontHash);
@@ -819,7 +844,7 @@ namespace PresentationLayer.VFX
         }
 
         // 채워진 원(반지름 rg px). 수명 후반에는 행이 통째로 빠지거나 끝이 한 칸씩 깎여 흩어진다. 갓 생긴 큰 원은 한 단계 밝은 코어를 얹는다.
-        private static void DrawCircle(int _px, int _py, int _rg, float _u, int _seed, int _tone, Color32 _color)
+        private void DrawCircle(int _px, int _py, int _rg, float _u, int _seed, int _tone, Color32 _color)
         {
             int[] table = circleHalfWidth[_rg];
             float dissolve = Mathf.Clamp01((_u - 0.4f) / 0.6f);
@@ -902,10 +927,11 @@ namespace PresentationLayer.VFX
         }
 
         private const byte TailEmpty = 255;
-        private static byte[] tailGridBack = new byte[0];
-        private static byte[] tailGridFront = new byte[0];
+        // 꼬리 격자도 일꾼 스레드에서 채우므로 인스턴스마다 둔다
+        private byte[] tailGridBack = new byte[0];
+        private byte[] tailGridFront = new byte[0];
 
-        private static void EnsureTailGrid(int _size)
+        private void EnsureTailGrid(int _size)
         {
             if (tailGridBack.Length >= _size) return;
             tailGridBack = new byte[_size];
@@ -1027,6 +1053,9 @@ namespace PresentationLayer.VFX
 
         // ---------- 유니티 이벤트 ----------
 
+        // 한 프레임의 일을 셋으로 나눈다. 여기(LateUpdate)는 예전과 같은 시점에 유니티 상태(시간, 프레임 번호, 절두체)를 읽고 등록만 한다.
+        // 머리 갱신·방출, 입자 이동, 화면 안/밖 판정, 버퍼 채우기는 ComputeDeferred(일꾼 스레드일 수 있다), 꺼짐 처리·정렬·메쉬 올리기는
+        // ApplyDeferred(주 스레드)가 한다. 순서와 식은 예전 LateUpdate 그대로다.
         private void LateUpdate()
         {
             if (TrailState.Idle == state) return;
@@ -1037,14 +1066,66 @@ namespace PresentationLayer.VFX
             elapsed += dt;
             if (TrailState.Flying == state) tongueElapsed += dt;
 
-            bool bLowLoad = LowLoadCount <= activeCount;
-
-            if (TrailState.Flying == state && true == bHasFeed)
+            // 같은 프레임에 먼저 등록한 꼬리가 다 사그라들었으면 반영 때 꺼지며 activeCount를 줄인다(예전에는 그 꼬리의 LateUpdate에서 이미 줄어 있었다).
+            // 지금 수가 LowLoadCount 미만이면 줄어도 판정이 같으므로 그대로 두고, 이상이면 그들을 먼저 끝내 예전과 같은 수를 읽는다.
+            int frame = Time.frameCount;
+            if (frame != pendingFrame)
             {
-                UpdateHead(dt, bLowLoad);
+                pendingTrails.Clear();
+                pendingFrame = frame;
             }
 
-            UpdateParticles(dt);
+            if (LowLoadCount <= activeCount) CompletePendingTrails();
+
+            deferredDt = dt;
+            deferredFrame = frame;
+            bDeferredLowLoad = LowLoadCount <= activeCount;
+            bDeferredHead = TrailState.Flying == state && true == bHasFeed;
+            bDeferredForceVisible = frame - beginFrame < AlwaysVisibleFrames;
+            if (false == bDeferredForceVisible) PixelVfxCulling.PrepareFrame();
+
+            deferredSlot = PixelVfxWorkQueue.Enqueue(this);
+            if (0 <= deferredSlot) pendingTrails.Add(this);
+        }
+
+        // 미뤄 둔 계산. 일꾼 스레드에서 불릴 수 있다: 이 인스턴스의 데이터와 읽기 전용 표만 쓴다.
+        void IPixelVfxDeferred.ComputeDeferred()
+        {
+            bDeferredDrawn = false;
+            deferredVisibility = 0;
+
+            if (true == bDeferredHead)
+            {
+                UpdateHead(deferredDt, bDeferredLowLoad);
+            }
+
+            UpdateParticles(deferredDt);
+
+            // 방출이 멈추고 남은 입자가 모두 사라졌으면 반영 때 꺼진다
+            if (TrailState.Fading == state && false == bHasLiveParticles) return;
+
+            deferredVisibility = true == bDeferredForceVisible ? 1 : TestRangeVisible();
+            if (0 == deferredVisibility) return;
+
+            // 저부하 모드에서는 몸통을 격 프레임으로만 다시 만든다(30fps).
+            // 경계 근처(-1)는 보이는지 아직 모른다: 채워 두고, 안 보이는 것으로 확정되면 올리지 않는다(버퍼는 다음에 다시 비우고 채운다).
+            if (false == bDeferredLowLoad || 0 == (deferredFrame & 1))
+            {
+                bodyBuffer.Clear();
+                frontBuffer.Clear();
+
+                // 불꽃 꼬리를 먼저 깔아 꼬리 입자·불씨가 그 위에 얹힌다(충격파도 불씨가 불꽃 혀 위다).
+                DrawTongues();
+                DrawPuffs();
+                DrawEmbers();
+                bDeferredDrawn = true;
+            }
+        }
+
+        // 미뤄 둔 계산의 결과를 반영한다(주 스레드)
+        void IPixelVfxDeferred.ApplyDeferred()
+        {
+            deferredSlot = -1;
 
             // 방출이 멈추고 남은 입자가 모두 사라졌으면 꺼진다
             if (TrailState.Fading == state && false == bHasLiveParticles)
@@ -1056,14 +1137,31 @@ namespace PresentationLayer.VFX
                 return;
             }
 
-            bool bVisible = Time.frameCount - beginFrame < AlwaysVisibleFrames || true == IsRangeVisible();
+            bool bVisible = 1 == deferredVisibility || (-1 == deferredVisibility && true == PixelVfxCulling.IsVisible(deferredCullCenter, deferredCullSize));
             if (false == bVisible) return;
 
-            // 저부하 모드에서는 몸통을 격 프레임으로만 다시 만든다(30fps)
-            if (false == bLowLoad || 0 == (Time.frameCount & 1))
+            if (true == bDeferredDrawn) CommitBody();
+        }
+
+        // 미뤄 둔 계산이 있으면 지금 끝낸다(상태가 바뀌거나 꺼지기 전에: 예전에는 LateUpdate에서 이미 끝나 있던 일이다)
+        private void CompleteDeferred()
+        {
+            if (0 <= deferredSlot) PixelVfxWorkQueue.CompleteNow(deferredSlot, this);
+        }
+
+        private static void CompletePendingTrails()
+        {
+            for (int i = 0; i < pendingTrails.Count; i++)
             {
-                RebuildBody();
+                pendingTrails[i].CompleteDeferred();
             }
+
+            pendingTrails.Clear();
+        }
+
+        private void OnDisable()
+        {
+            CompleteDeferred();
         }
 
         private void OnDestroy()
@@ -1082,6 +1180,8 @@ namespace PresentationLayer.VFX
         private static void ResetStatics()
         {
             activeCount = 0;
+            pendingTrails.Clear();
+            pendingFrame = -1;
         }
     }
 }

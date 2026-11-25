@@ -18,9 +18,10 @@ namespace PresentationLayer.VFX
     /// - 이동 중(초당 30px 이상): 지나간 구간을 따라 `x` `+` `.` 조각을 촘촘히 남겨 꼬리를 만들고,
     ///   불티는 각자 다른 지연으로 불덩이를 뒤쫓아 꼬리처럼 늘어진다. 바닥 빛과 대기 중 입자는 멈추고, 정렬은 FlyingItem 레이어로 올린다.
     /// - 드랍 비행(나무에서 튀어나와 착지할 때까지): 루트 스케일 0.05 미만(Launch 직후) 또는 Visual 높이 > 0(포물선)이면 시작, 루트 스케일 1 + Visual 높이 0이면 끝.
-    ///   이 동안에는 위 흡입용 조각 꼬리 대신 OverheatEmberTrail(빛 꼬리 + 픽셀 심선)과 떨어지는 불티(Shed)를 그린다. 착지 뒤 꼬리는 0.3초에 걸쳐 사그라든다.
+    ///   이 동안에는 위 조각 꼬리 대신 OverheatEmberTrail(빛 꼬리 + 픽셀 심선)과 떨어지는 불티(Shed)를 그린다. 착지 뒤 꼬리는 0.3초에 걸쳐 사그라든다.
+    ///   흡입 비행(그 밖에 움직이는 동안)도 같은 드랍 꼬리를 쓴다(bDropTrail을 끄면 둘 다 조각 꼬리).
     ///   분출·착지 순간 연출은 없다(시안 2 승인 범위).
-    /// - 날아가던 중에 꺼지면(획득) 남은 꼬리는 OverheatEmberResidue로 넘겨 끝까지 그린다. 바닥에서 꺼질 때의 대기 불티는 버린다. 획득·소멸 터짐은 단발 이펙트(VFX_OverheatEmberOneShot)가 맡는다.
+    /// - 날아가던 중에 꺼지면(획득) 남은 꼬리(입자·떨어지는 불티·빛 꼬리)는 OverheatEmberResidue로 넘겨 끝까지 그린다. 바닥에서 꺼질 때의 대기 불티는 버린다. 획득·소멸 터짐은 단발 이펙트(VFX_OverheatEmberOneShot)가 맡는다.
     ///
     /// 갱신: 위치·불티·입자·꼬리는 60Hz 고정 간격(불꽃 격자만 30Hz), 그리기는 매 프레임. 화면 밖이면 계산과 그리기를 모두 멈춘다(맵에 수십 개가 깔린다).
     /// 고정 용량 구조체 배열과 자체 xorshift로 재생 중 힙 할당이 없다. 쿼드 버퍼는 인스턴스끼리 공유한다.
@@ -52,8 +53,8 @@ namespace PresentationLayer.VFX
         [SerializeField] private string glowSortingLayerName = "Indicators";
         [SerializeField] private int glowSortingOrder = 0;
 
-        [Header("드랍 트레일 (나무에서 튀어나와 날아가는 동안)")]
-        [SerializeField, Tooltip("끄면 드랍 비행도 흡입과 같은 조각 꼬리를 쓴다")]
+        [Header("드랍 트레일 (나무에서 튀어나와 날아가는 동안, 흡입되는 동안)")]
+        [SerializeField, Tooltip("끄면 드랍 비행·흡입 모두 조각 꼬리를 쓴다")]
         private bool bDropTrail = true;
         [SerializeField, Tooltip("빛 꼬리 메쉬 렌더러(자식, EmberTrailAdditive). 비우면 빛 꼬리를 그리지 않는다.")]
         private MeshRenderer trailRenderer;
@@ -128,6 +129,8 @@ namespace PresentationLayer.VFX
 
             public readonly PixelQuadBuffer buffer = new PixelQuadBuffer(QuadBudget);
             public readonly PixelQuadBuffer glowBuffer = new PixelQuadBuffer(GlowQuadBudget);
+            // 드랍 빛 꼬리 정점(OverheatEmberTrail.ComputeRibbon이 채운다)
+            public readonly OverheatEmberTrail.RibbonScratch ribbon = new OverheatEmberTrail.RibbonScratch();
             private int serial;
             private bool bUsed;
 
@@ -147,6 +150,7 @@ namespace PresentationLayer.VFX
                     work.serial = queueSerial;
                     work.buffer.Clear();
                     work.glowBuffer.Clear();
+                    work.ribbon.Clear();
                 }
 
                 return work;
@@ -230,6 +234,7 @@ namespace PresentationLayer.VFX
         private int deferredSortLayer;                  // 바닥에 있을 때 따를 정렬(LateUpdate에서 읽은 값)
         private int deferredSortOrder;
         private Matrix4x4 deferredTrailWorldToLocal;    // 드랍 꼬리 메쉬의 월드 -> 로컬 변환
+        private bool bDeferredHasTrail;            // 꼬리 렌더러와 메쉬가 있다(LateUpdate에서 확인)
         private bool bDeferredHasGlow;                  // 바닥 빛 렌더러가 있다
         private bool bDeferredGlowRendererEnabled;      // LateUpdate 시점에 바닥 빛 렌더러가 켜져 있었다
         private bool bDeferredMesh;                     // 이번 프레임에 불덩이·불티 메쉬를 다시 그린다
@@ -437,16 +442,19 @@ namespace PresentationLayer.VFX
             orb.Step(StepInterval, time, phase, 1.0f, flare);
             StepMotes(_scale);
 
+            // 흡입 비행도 드랍 비행과 같은 꼬리(빛 꼬리 + 심선 + 떨어지는 불티)를 쓴다. 드랍 트레일을 끄면 둘 다 조각 꼬리다.
+            bool bRibbonTrail = true == bDropFlight || (true == bDropTrail && true == bMoving);
+
             if (true == bMoving && true == bHasPrevious)
             {
-                if (true == bDropFlight) EmitShed(_scale);
+                if (true == bRibbonTrail) EmitShed(_scale);
                 else EmitTrail(segment);
             }
             else if (0.9f < _scale) EmitIdle();
 
             particles.Step(StepInterval, time);
             shedParticles.Step(StepInterval, time);
-            trail.Step(StepInterval, bDropFlight, orbX, orbY, _scale, trailDuration);
+            trail.Step(StepInterval, bRibbonTrail, orbX, orbY, _scale, trailDuration);
 
             previousOrbX = orbX;
             previousOrbY = orbY;
@@ -651,13 +659,14 @@ namespace PresentationLayer.VFX
             painter.Dot(x, y, _color);
         }
 
-        // 드랍 빛 꼬리: 기록이 있거나 직전까지 그렸을 때만 다시 만든다. 스텝이 끝난 뒤(반영 때) 부르고, 변환은 LateUpdate에서 읽어 둔 값을 쓴다.
+        // 드랍 빛 꼬리: 기록이 있거나 직전까지 그렸을 때만 다시 만든다. 정점은 스텝이 끝난 뒤 ComputeDeferred가 채워 뒀고
+        // (변환은 LateUpdate에서 읽어 둔 값), 여기(반영 때)서는 메쉬에 올리기만 한다.
         private void RebuildTrail()
         {
             if (null == trailRenderer || null == trailMesh) return;
             if (false == trail.bHasPoints && false == trailRenderer.enabled) return;
 
-            trail.BuildRibbon(trailMesh, trailRenderer, deferredTrailWorldToLocal, trailDuration, trailIntensity, trailWidth, trailMaterialIntensity);
+            trail.UploadRibbon(trailMesh, trailRenderer);
         }
 
         // 드랍 비행 판단. 불씨 상태를 읽지 않고 루트 스케일과 Visual(부모) 높이로 정한다.
@@ -766,6 +775,12 @@ namespace PresentationLayer.VFX
 
             Work work = Work.ForCurrentThread();
             if (true == bDeferredMesh) DrawMeshSegment(work);
+            // 드랍 빛 꼬리 정점. 기록이 없으면 채울 것이 없고, 올릴지는 반영 때(RebuildTrail) 정한다.
+            if (true == bDeferredRedraw && true == bDeferredHasTrail)
+            {
+                trail.ComputeRibbon(work.ribbon, deferredTrailWorldToLocal, trailDuration, trailIntensity, trailWidth, trailMaterialIntensity);
+            }
+
             if (true == bDeferredGlow) DrawGlowSegment(work);
         }
 
@@ -952,7 +967,8 @@ namespace PresentationLayer.VFX
                 bMeshesHidden = false;
                 RebuildMesh(scale, pos.z);
                 // 드랍 꼬리(RebuildTrail)는 스텝 결과를 읽으므로 스텝 뒤에 만든다. 변환만 여기서 읽어 둔다.
-                if (null != trailRenderer && null != trailMesh) deferredTrailWorldToLocal = trailTransform.worldToLocalMatrix;
+                bDeferredHasTrail = null != trailRenderer && null != trailMesh;
+                if (true == bDeferredHasTrail) deferredTrailWorldToLocal = trailTransform.worldToLocalMatrix;
                 lastDrawPosition = pos;
                 lastDrawScale = scale;
             }
@@ -979,11 +995,21 @@ namespace PresentationLayer.VFX
             // 이번 프레임에 미뤄 둔 그리기가 불티·꼬리를 읽으므로 넘기거나 숨기기 전에 먼저 끝낸다
             CompleteDeferred();
 
-            // 날아가던 중에 꺼지면(획득) 남은 흡입 꼬리는 잔여 드라이버가 끝까지 그린다.
+            // 날아가던 중에 꺼지면(획득) 남은 꼬리(입자·떨어지는 불티·빛 꼬리)는 잔여 드라이버가 끝까지 그린다.
             // 바닥에서 꺼질 때(소멸·회수·씬 정리)의 대기 불티는 버린다. 소멸 연출은 단발 이펙트가 따로 그린다.
             if (true == bInitialized && true == bMoving)
             {
                 OverheatEmberResidue.Adopt(particles, meshRenderer.sharedMaterial, meshRenderer.sortingLayerID, meshRenderer.sortingOrder, tones, darks, smokeColor);
+                OverheatEmberResidue.Adopt(shedParticles, meshRenderer.sharedMaterial, meshRenderer.sortingLayerID, meshRenderer.sortingOrder, tones, darks, smokeColor);
+
+                if (true == trail.bHasPoints && null != trailRenderer)
+                {
+                    // 꺼진 프레임에 불씨가 도착한 자리(마지막 스텝 뒤로 움직인 만큼)까지 꼬리 머리를 잇는다
+                    Vector3 pos = cachedTransform.position;
+                    trail.AddHead(pos.x * PixelsPerUnit, pos.y * PixelsPerUnit + OrbCenterY);
+                    OverheatEmberResidue.AdoptTrail(trail, trailRenderer.sharedMaterial, trailRenderer.sortingLayerID, trailRenderer.sortingOrder,
+                        trailDuration, trailIntensity, trailWidth, trailMaterialIntensity);
+                }
             }
 
             HideMeshes();

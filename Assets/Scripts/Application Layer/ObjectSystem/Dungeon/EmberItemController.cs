@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
+using PresentationLayer.UISystem.UIView.HUD.Equipment;
 
 /// <summary>
 /// 4스테이지(MagmaForest) 불씨의 생성·소멸을 맡는다. 주운 뒤 과열 수치를 올리는 것은 InDungeonObjectManager가 한다.
@@ -18,6 +19,8 @@ using UnityEngine.Pool;
 /// - 바닥에 놓인 모든 불씨 위에 화살표(QuestIndicator)를 띄운다(입장 배치·자연 생성·벌목 드랍 전부).
 /// - 안내 중 처음 불씨를 떨어뜨리는 나무는 무조건 guideFirstTreeDropCount개를 떨어뜨리고, 그 불씨는 사라지지 않는다.
 ///   그 불씨를 모두 주우면 GuideEmbersCollectedEvent로 알린다(안내 클리어). 안내가 끝나면 화살표를 모두 내린다.
+/// - 주운 불씨는 캐릭터 대신 화면의 과열 게이지(HUD_HeatGauge 바) 자리로 빨려 들어간다(같은 흡입 공식, 도착하면 획득).
+///   게이지가 보이지 않으면 평소처럼 캐릭터로 간다. 안내 중에 빨려가기 시작한 불씨는 안내가 끝나도 게이지까지 간다.
 ///
 /// 이펙트 담당 연결 지점: 이 오브젝트의 VFXComponent에 이펙트를 등록하고 아래 태그를 채우면 된다(비어 있으면 재생하지 않는다).
 /// </summary>
@@ -110,6 +113,14 @@ public class EmberItemController : MonoBehaviour
     private int guideEmbersRemaining;
     // 쓰고 남은 화살표(퇴장 연출 중이어도 다시 Show하면 그대로 재사용된다).
     private readonly Stack<QuestIndicator> freeGuideIndicators = new Stack<QuestIndicator>(16);
+
+    // 기믹 안내 중 주운 불씨가 빨려 들어갈 과열 게이지 자리. 화면 위치를 매 프레임 월드 위치로 바꿔 이 Transform에 둔다.
+    private Transform gaugeAbsorbTarget;
+    private HUD_HeatGauge heatGauge;
+    private RectTransform heatGaugeBar;
+    private Canvas heatGaugeCanvas;
+    // 게이지로 날아가는 불씨가 있을 수 있는 동안 true(안내가 끝난 뒤에도 남은 비행이 끝날 때까지 자리를 갱신한다).
+    private bool bGaugeAbsorbInFlight;
 
     private static readonly Vector3Int[] NeighborOffsets =
     {
@@ -321,6 +332,84 @@ public class EmberItemController : MonoBehaviour
         freeGuideIndicators.Push(indicator);
     }
 
+    // 과열 게이지가 화면에 보이면 빨려 들어갈 자리(gaugeAbsorbTarget)를 지금 위치로 맞추고 true. 게이지가 없거나 숨겨져 있으면 false.
+    // _z는 불씨가 움직이는 평면의 z(흡입은 3차원 거리로 움직이므로 목표도 같은 평면에 둔다).
+    private bool TryPrepareGaugeAbsorbTarget(float _z)
+    {
+        if (heatGauge == null)
+        {
+            heatGauge = FindAnyObjectByType<HUD_HeatGauge>();
+            if (heatGauge == null) return false;
+
+            // 게이지의 세로 바(Visual/Bar)를 목표로 한다. 계층이 바뀌어 못 찾으면 게이지 전체 영역 가운데로 간다.
+            heatGaugeBar = heatGauge.transform.Find("Visual/Bar") as RectTransform;
+            if (heatGaugeBar == null) heatGaugeBar = heatGauge.transform as RectTransform;
+            heatGaugeCanvas = heatGauge.GetComponentInParent<Canvas>();
+            if (heatGaugeCanvas != null) heatGaugeCanvas = heatGaugeCanvas.rootCanvas;
+        }
+
+        if (heatGaugeBar == null || false == heatGauge.isActiveAndEnabled || false == heatGauge.IsVisible) return false;
+
+        if (gaugeAbsorbTarget == null)
+        {
+            gaugeAbsorbTarget = new GameObject("EmberGaugeAbsorbTarget").transform;
+            gaugeAbsorbTarget.SetParent(transform, false);
+        }
+
+        Vector3 position = gaugeAbsorbTarget.position;
+        position.z = _z;
+        gaugeAbsorbTarget.position = position;
+
+        return TrySyncGaugeAbsorbTarget();
+    }
+
+    // 게이지 바 가운데의 화면 위치를 게임 카메라의 월드 위치로 바꿔 목표에 둔다(z는 그대로). 카메라가 없으면 false.
+    private bool TrySyncGaugeAbsorbTarget()
+    {
+        Camera worldCamera = CameraFinder.Instance != null ? CameraFinder.Instance.PPMainCamera : null;
+        if (worldCamera == null) worldCamera = Camera.main;
+        if (worldCamera == null || heatGaugeBar == null || gaugeAbsorbTarget == null) return false;
+
+        Camera uiCamera = null;
+        if (heatGaugeCanvas != null && RenderMode.ScreenSpaceOverlay != heatGaugeCanvas.renderMode)
+        {
+            uiCamera = heatGaugeCanvas.worldCamera != null ? heatGaugeCanvas.worldCamera : Camera.main;
+        }
+
+        Vector3 barCenter = heatGaugeBar.TransformPoint(heatGaugeBar.rect.center);
+        Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(uiCamera, barCenter);
+        Vector3 world = worldCamera.ScreenToWorldPoint(new Vector3(screenPoint.x, screenPoint.y, 0f));
+
+        world.z = gaugeAbsorbTarget.position.z;
+        gaugeAbsorbTarget.position = world;
+        return true;
+    }
+
+    // 게이지로 날아가는 불씨가 있는 동안 매 프레임 목표 자리를 갱신한다(카메라가 움직여도 화면의 게이지를 따라간다).
+    private void UpdateGaugeAbsorbTarget()
+    {
+        if (false == bGaugeAbsorbInFlight) return;
+
+        bool bAnyInFlight = false;
+        for (int i = 0; i < updatingEmbers.Count; i++)
+        {
+            EmberItem ember = updatingEmbers[i];
+            if (ember.MoveState == ItemMoveState.Sucking && ember.SuckTarget == gaugeAbsorbTarget)
+            {
+                bAnyInFlight = true;
+                break;
+            }
+        }
+
+        if (false == bAnyInFlight)
+        {
+            bGaugeAbsorbInFlight = false;
+            return;
+        }
+
+        TrySyncGaugeAbsorbTarget();
+    }
+
     /// <summary>원정이 끝날 때(마을 도착·재도전 정리) 부른다. 불씨를 치우고 다음 BeginRun까지 아무것도 만들지 않는다.</summary>
     public void EndRun()
     {
@@ -362,6 +451,9 @@ public class EmberItemController : MonoBehaviour
 
     private void Update()
     {
+        // 게이지로 날아가는 불씨가 이번 프레임 목표를 읽기 전에 게이지 자리를 갱신한다
+        UpdateGaugeAbsorbTarget();
+
         if (updatingEmbers.Count > 0)
         {
             float deltaTime = Time.deltaTime;
@@ -570,6 +662,13 @@ public class EmberItemController : MonoBehaviour
         {
             // 바닥을 떠나면(흡입 시작·회수) 화살표를 내린다.
             HideGuideIndicator(_ember);
+
+            // 기믹 안내 중 흡입이 시작됐으면 캐릭터 대신 과열 게이지 자리로 빨려 들어가게 한다.
+            if (bGuideActive && _ember.MoveState == ItemMoveState.Sucking && TryPrepareGaugeAbsorbTarget(_ember.transform.position.z))
+            {
+                _ember.RedirectSuck(gaugeAbsorbTarget);
+                bGaugeAbsorbInFlight = true;
+            }
 
             if (_ember.bHasGroundCell)
             {

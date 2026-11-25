@@ -589,3 +589,11 @@ MonoBehaviour:
     enumValueName: ObsidianTree
     enumIntValue: 12
     compositeKey: 14680076
+  - enumTypeName: SkillCommandType
+    enumValueName: AutoLoadAnywhere
+    enumIntValue: 131
+    compositeKey: 4203502
+  - enumTypeName: SkillCommandType
+    enumValueName: SimultaneousProcessing
+    enumIntValue: 132
+    compositeKey: 4203503

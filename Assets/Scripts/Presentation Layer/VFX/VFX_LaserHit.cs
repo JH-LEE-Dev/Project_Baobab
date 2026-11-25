@@ -17,7 +17,7 @@ namespace PresentationLayer.VFX
     /// 밝기 차이는 정점 알파에 실린 HDR 발광 세기(BrandWrapGlow 셰이더)로 낸다. 위치는 매 프레임 계산해서 정수 픽셀에 스냅한다.
     /// </summary>
     [DisallowMultipleComponent]
-    public class VFX_LaserHit : MonoBehaviour
+    public class VFX_LaserHit : MonoBehaviour, IPixelVfxDeferred
     {
         [Header("렌더링")]
         [SerializeField] private Material hitMaterial;
@@ -114,8 +114,36 @@ namespace PresentationLayer.VFX
             new Color32[] { new Color32(12, 50, 170, 255), new Color32(20, 115, 220, 255), new Color32(110, 200, 240, 255) },
         };
 
-        // 매 프레임 Clear 후 채우고, 메인 스레드 단일 실행이라 인스턴스끼리 공유해도 안전하다
-        private static readonly PixelQuadBuffer quadBuffer = new PixelQuadBuffer(768, false);
+        // 스레드별 작업 버퍼. 그리기는 일꾼 스레드에서 돌 수 있어(ComputeDeferred) 스레드마다 하나씩 두고, 한 프레임에 여러 인스턴스가
+        // 한 버퍼에 구간을 이어 채운 뒤 반영 때 자기 구간만 메쉬에 올린다. 계산 묶음(PixelVfxWorkQueue.Serial)이 바뀌면 비운다.
+        private sealed class Work
+        {
+            [System.ThreadStatic] private static Work current;
+
+            public readonly PixelQuadBuffer buffer = new PixelQuadBuffer(768, false);
+            private int serial;
+            private bool bUsed;
+
+            public static Work ForCurrentThread()
+            {
+                Work work = current;
+                if (null == work)
+                {
+                    work = new Work();
+                    current = work;
+                }
+
+                int queueSerial = PixelVfxWorkQueue.Serial;
+                if (false == work.bUsed || work.serial != queueSerial)
+                {
+                    work.bUsed = true;
+                    work.serial = queueSerial;
+                    work.buffer.Clear();
+                }
+
+                return work;
+            }
+        }
 
         //내부 의존성
         private MeshFilter meshFilter;
@@ -138,6 +166,25 @@ namespace PresentationLayer.VFX
         private int baseSeed;
         private float boltDropChance;   // 지금 프레임에서 번개 마디 하나가 빠질 확률(후반일수록 커진다)
         private uint randomState;
+
+        // 미뤄 둔 계산(PixelVfxWorkQueue)이 쓸 값. LateUpdate에서 예전과 같은 시점에 읽어 둔다.
+        private int deferredSlot = -1;          // 대기열 자리. -1이면 미뤄 둔 계산이 없다
+        private float deferredDt;
+        private Vector3 deferredCenter;         // 메쉬 오브젝트 위치
+        private Vector3 deferredLossyScale;
+        private bool bDeferredHasRoot;
+        private int deferredRootLayer;
+        private int deferredRootOrder;
+        // 화면 안/밖 판정(1 보임, 0 안 보임, -1 경계 근처 - 반영 때 확정). 고정 범위를 먼저 보고, 확실히 보이지 않을 때만 스파크·잔불까지 넓힌 범위를 본다.
+        private int deferredVisFixed;
+        private int deferredVisFull;
+        private Vector3 deferredFixedSize;
+        private Vector3 deferredFullSize;
+        // 계산 중에 채우는 버퍼(이 스레드의 작업 버퍼)와, 반영 때 올릴 구간
+        private PixelQuadBuffer drawBuffer;
+        private PixelQuadBuffer segmentBuffer;
+        private int segmentStart;
+        private int segmentCount;
 
         private void EnsureInitialized()
         {
@@ -168,6 +215,7 @@ namespace PresentationLayer.VFX
         private void Begin()
         {
             EnsureInitialized();
+            CompleteDeferred();
 
             elapsed = 0.0f;
             bFirstFrame = true;
@@ -190,6 +238,7 @@ namespace PresentationLayer.VFX
         /// </summary>
         public void SetOverheat(bool _isOverheat)
         {
+            CompleteDeferred();
             bOverheat = _isOverheat;
         }
 
@@ -198,6 +247,7 @@ namespace PresentationLayer.VFX
         /// </summary>
         public void SetTint(EDroneLaserTint _tint)
         {
+            CompleteDeferred();
             bStellaTint = EDroneLaserTint.Stella == _tint;
         }
 
@@ -348,13 +398,13 @@ namespace PresentationLayer.VFX
             return new Color32(color.r, color.g, color.b, alpha);
         }
 
-        private static void AddRect(int _x0, int _y0, int _x1, int _y1, Color32 _color)
+        private void AddRect(int _x0, int _y0, int _x1, int _y1, Color32 _color)
         {
-            quadBuffer.AddLocalRect(_x0, _y0, _x1, _y1, _color);
+            drawBuffer.AddLocalRect(_x0, _y0, _x1, _y1, _color);
         }
 
         // 두 점 사이를 1px 선(브레젠험)으로 그린다(시작점 포함)
-        private static void DrawLine(int _x0, int _y0, int _x1, int _y1, Color32 _color)
+        private void DrawLine(int _x0, int _y0, int _x1, int _y1, Color32 _color)
         {
             int dx = Mathf.Abs(_x1 - _x0);
             int dy = Mathf.Abs(_y1 - _y0);
@@ -383,21 +433,31 @@ namespace PresentationLayer.VFX
             }
         }
 
-        private void RebuildMesh()
+        // 이번 프레임 그림을 이 스레드의 작업 버퍼에 새 구간으로 채운다(일꾼 스레드에서 불릴 수 있다). 상태와 난수는 건드리지 않는다.
+        private void DrawSegment()
         {
-            quadBuffer.Clear();
+            drawBuffer = Work.ForCurrentThread().buffer;
+            segmentStart = drawBuffer.BeginSegment();
 
             DrawImpact();
             DrawBolts();
             DrawSparks();
             DrawEmbers();
 
+            segmentCount = drawBuffer.VertexCount - segmentStart;
+            segmentBuffer = drawBuffer;
+            drawBuffer = null;
+        }
+
+        // 채워 둔 구간을 메쉬에 올린다(주 스레드). 예전 RebuildMesh에서 그리기 뒤에 하던 일 그대로다. 루트 소팅은 LateUpdate에서 읽어 둔 값을 쓴다.
+        private void CommitMesh()
+        {
             meshTransform.rotation = Quaternion.identity;
 
-            if (null != rootParticleRenderer)
+            if (true == bDeferredHasRoot)
             {
-                int rootLayer = rootParticleRenderer.sortingLayerID;
-                int rootOrder = rootParticleRenderer.sortingOrder;
+                int rootLayer = deferredRootLayer;
+                int rootOrder = deferredRootOrder;
                 if (rootLayer != appliedRootSortingLayerID || rootOrder != appliedRootSortingOrder)
                 {
                     appliedRootSortingLayerID = rootLayer;
@@ -407,10 +467,10 @@ namespace PresentationLayer.VFX
                 }
             }
 
-            bool bEmpty = 0 == quadBuffer.VertexCount;
+            bool bEmpty = 0 == segmentCount;
             if (false == bEmpty || true == bMeshHasGeometry)
             {
-                quadBuffer.Upload(mesh, MeshBoundsSize);
+                segmentBuffer.UploadRange(mesh, MeshBoundsSize, segmentStart, segmentCount);
                 bMeshHasGeometry = false == bEmpty;
             }
 
@@ -419,6 +479,8 @@ namespace PresentationLayer.VFX
                 meshRenderer.enabled = true;
                 bRendererOn = true;
             }
+
+            segmentBuffer = null;
         }
 
         // 1. 중심 충격: 십자/X자 광선(길이가 도트 단위로 늘었다 줄어든다), 밝은 원판, 점선 충격파 고리
@@ -656,11 +718,14 @@ namespace PresentationLayer.VFX
 
         private void OnEnable()
         {
+            CompleteDeferred();
             appliedRootSortingLayerID = int.MinValue;
             appliedRootSortingOrder = int.MinValue;
             Begin();
         }
 
+        // 한 프레임의 일을 셋으로 나눈다. 여기(LateUpdate)는 예전과 같은 시점에 유니티 상태(시간, 위치·스케일, 루트 소팅, 절두체)를 읽고 등록만 한다.
+        // 입자 이동, 화면 안/밖 판정, 그리기는 ComputeDeferred(일꾼 스레드일 수 있다), 렌더러 켜고 끄기·회전·소팅·메쉬 올리기는 ApplyDeferred(주 스레드)가 한다.
         private void LateUpdate()
         {
             // 첫 프레임은 시간을 더하지 않아서 t=0의 첫 장면(중심 충격)이 반드시 한 번 그려진다
@@ -674,34 +739,85 @@ namespace PresentationLayer.VFX
                 return;
             }
 
-            UpdateSparks(dt);
-            UpdateEmbers(dt);
+            deferredDt = dt;
+            deferredCenter = meshTransform.position;
+            deferredLossyScale = meshTransform.lossyScale;
+            PixelVfxCulling.PrepareFrame();
+
+            bDeferredHasRoot = null != rootParticleRenderer;
+            if (true == bDeferredHasRoot)
+            {
+                deferredRootLayer = rootParticleRenderer.sortingLayerID;
+                deferredRootOrder = rootParticleRenderer.sortingOrder;
+            }
+
+            deferredSlot = PixelVfxWorkQueue.Enqueue(this);
+        }
+
+        // 미뤄 둔 계산. 일꾼 스레드에서 불릴 수 있다: 이 인스턴스의 데이터, 읽기 전용 표, 이 스레드의 작업 버퍼만 쓴다.
+        void IPixelVfxDeferred.ComputeDeferred()
+        {
+            UpdateSparks(deferredDt);
+            UpdateEmbers(deferredDt);
 
             // 화면 밖이면 시간과 입자만 흐르게 두고 그리지 않는다. 그리기는 상태와 난수를 건드리지 않으므로 다시 보이는 프레임에 같은 그림이 나온다.
-            if (false == IsOnScreen())
+            segmentBuffer = null;
+            TestOnScreen();
+            if (0 == deferredVisFixed && 0 == deferredVisFull) return;
+
+            // 경계 근처(-1)는 보이는지 아직 모른다: 그려 두고, 안 보이는 것으로 확정되면 올리지 않는다
+            DrawSegment();
+        }
+
+        // 미뤄 둔 계산의 결과를 반영한다(주 스레드)
+        void IPixelVfxDeferred.ApplyDeferred()
+        {
+            deferredSlot = -1;
+
+            // 예전 IsOnScreen과 같은 순서: 고정 범위가 보이면 보임, 아니면 넓힌 범위로 다시 본다
+            bool bVisible = 1 == deferredVisFixed
+                || (-1 == deferredVisFixed && true == PixelVfxCulling.IsVisible(deferredCenter, deferredFixedSize));
+            if (false == bVisible)
+            {
+                bVisible = 1 == deferredVisFull
+                    || (-1 == deferredVisFull && true == PixelVfxCulling.IsVisible(deferredCenter, deferredFullSize));
+            }
+
+            if (false == bVisible)
             {
                 HideRenderer();
+                segmentBuffer = null;
                 return;
             }
 
-            RebuildMesh();
+            CommitMesh();
+        }
+
+        // 미뤄 둔 계산이 있으면 지금 끝낸다(상태가 바뀌거나 꺼지기 전에: 예전에는 LateUpdate에서 이미 끝나 있던 일이다)
+        private void CompleteDeferred()
+        {
+            if (0 <= deferredSlot) PixelVfxWorkQueue.CompleteNow(deferredSlot, this);
         }
 
         // 이번 프레임에 그릴 수 있는 범위(메쉬 중심 기준 로컬 픽셀)가 화면에 걸치는지 본다. 중심 충격·번개는 설정값으로 정해지는 최대 범위를,
         // 스파크(머리와 꼬리)와 잔불은 지금 위치에 모양 크기를 더해 잡는다. 메쉬 회전은 그릴 때 0으로 맞추므로 회전과 무관한 정사각형으로 본다.
-        // 대부분 화면 안이므로 고정 범위로 먼저 보고, 그 범위가 화면 밖일 때만 스파크·잔불까지 넓혀 다시 본다.
-        private bool IsOnScreen()
+        // 대부분 화면 안이므로 고정 범위로 먼저 보고, 그 범위가 확실히 보이는 것이 아닐 때만 스파크·잔불까지 넓혀 다시 본다.
+        // 일꾼 스레드에서 불릴 수 있어 위치·스케일은 LateUpdate에서 읽어 둔 값을 쓰고, 판정은 준비해 둔 절두체로 한다(PixelVfxCulling.TestPrepared).
+        private void TestOnScreen()
         {
             float boltLength = Mathf.Max(boltLengthMinPx, boltLengthMaxPx);
             float reach = Mathf.Max(rayMaxLengthPx + 2.0f, discRadiusPx + 2.0f);
             reach = Mathf.Max(reach, 4.0f + ringRadiusPx + 3.0f);
             reach = Mathf.Max(reach, boltLength * (1.0f + BranchLengthRatio) + Mathf.Abs(boltJitterPx) * 2.0f + 3.0f);
 
-            Vector3 center = meshTransform.position;
-            Vector3 scale = meshTransform.lossyScale;
+            Vector3 center = deferredCenter;
+            Vector3 scale = deferredLossyScale;
             float unitsPerPixel = PixelUnitSize * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y));
             float fixedExtent = reach * unitsPerPixel * 2.0f + PixelVfxCulling.MarginUnits * 2.0f;
-            if (true == PixelVfxCulling.IsVisible(center, new Vector3(fixedExtent, fixedExtent, PixelVfxCulling.BoundsDepth))) return true;
+            deferredFixedSize = new Vector3(fixedExtent, fixedExtent, PixelVfxCulling.BoundsDepth);
+            deferredVisFixed = PixelVfxCulling.TestPrepared(center, deferredFixedSize);
+            deferredVisFull = 0;
+            if (1 == deferredVisFixed) return;
 
             for (int i = 0; i < SparkCapacity; i++)
             {
@@ -718,11 +834,13 @@ namespace PresentationLayer.VFX
             }
 
             float extent = reach * unitsPerPixel * 2.0f + PixelVfxCulling.MarginUnits * 2.0f;
-            return PixelVfxCulling.IsVisible(center, new Vector3(extent, extent, PixelVfxCulling.BoundsDepth));
+            deferredFullSize = new Vector3(extent, extent, PixelVfxCulling.BoundsDepth);
+            deferredVisFull = PixelVfxCulling.TestPrepared(center, deferredFullSize);
         }
 
         private void OnDisable()
         {
+            CompleteDeferred();
             HideRenderer();
         }
 

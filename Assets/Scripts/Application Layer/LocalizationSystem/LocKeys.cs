@@ -220,6 +220,10 @@ public static class LocKeys
         public const int overheatEfficiencyName = 4194658;
         public const int treeHeatResistance2Name = 4194659;
         public const int picnicBasketName = 4194660;
+        public const int autoLoadAnywhereName = 4194661;
+        public const int abilityDescriptionAutoLoadAnywhere = 4203502;
+        public const int simultaneousProcessingName = 4194662;
+        public const int abilityDescriptionSimultaneousProcessing = 4203503;
         public const int commonLevel = 4203304;
         public const int commonFree = 4203305;
         public const int commonMaxLevel = 4203306;
