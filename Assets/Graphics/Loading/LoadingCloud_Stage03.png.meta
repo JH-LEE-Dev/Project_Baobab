@@ -5,9 +5,6 @@ TextureImporter:
   - first:
       213: -743727287812933008
     second: LoadingCloud_Stage03_0
-  - first:
-      213: -6958946576942070465
-    second: LoadingCloud_Stage03_1
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -124,28 +121,6 @@ TextureImporter:
       indices: 
       edges: []
       weights: []
-    - serializedVersion: 2
-      name: LoadingCloud_Stage03_1
-      rect:
-        serializedVersion: 2
-        x: 269
-        y: 1959
-        width: 19
-        height: 23
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: f35827655fadc6f90800000000000000
-      internalID: -6958946576942070465
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
     outline: []
     customData: 
     physicsShape: []
@@ -161,7 +136,6 @@ TextureImporter:
       entries: []
     nameFileIdTable:
       LoadingCloud_Stage03_0: -743727287812933008
-      LoadingCloud_Stage03_1: -6958946576942070465
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

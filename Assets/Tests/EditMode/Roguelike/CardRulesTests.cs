@@ -269,6 +269,32 @@ public class CardRulesTests
     }
 
     [Test]
+    public void WaveSchedule_Unlimit16To25_FollowsSmoothedHpOverrides()
+    {
+        RoguelikeBalanceSO asset = UnityEditor.AssetDatabase.LoadAssetAtPath<RoguelikeBalanceSO>("Assets/Data/Roguelike/RoguelikeBalance.asset");
+        Assert.IsNotNull(asset);
+
+        float[] expected = { 5000f, 6800f, 9250f, 12580f, 17110f, 23270f, 31650f, 43040f, 58530f, 79600f };
+        RoguelikeBalanceSO[] targets = { balance, asset };
+
+        for (int t = 0; t < targets.Length; t++)
+        {
+            RoguelikeBalanceSO target = targets[t];
+            float prevHp = WaveSchedule.Get(target, target.clearWave + 15).treeHp;
+            Assert.AreEqual(target.GetWaveRow(15).treeHp * UnityEngine.Mathf.Pow(1.35f, 14), prevHp, 0.1f, "Unlimit-15 공식 유지");
+
+            for (int i = 0; i < expected.Length; i++)
+            {
+                int unlimitIndex = 16 + i;
+                float hp = WaveSchedule.Get(target, target.clearWave + unlimitIndex).treeHp;
+                Assert.AreEqual(expected[i], hp, 0.001f, $"Unlimit-{unlimitIndex}");
+                Assert.Greater(hp, prevHp, $"Unlimit-{unlimitIndex} 단조 증가");
+                prevHp = hp;
+            }
+        }
+    }
+
+    [Test]
     public void WaveSchedule_BatchSizeAndPeriodFollowAppendixA2()
     {
         // 기획서 v2.7 부록 A-2: 티어별 정수 묶음. 1티어 3~7그루 / 3초, 2티어 7~14그루 / 2.5초, 3티어 14~21그루 / 3초, 4티어 21~30그루 / 2.5초.

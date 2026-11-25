@@ -637,6 +637,7 @@ MonoBehaviour:
   durationAccent: {r: 0.6666667, g: 0.83137256, b: 0.34509805, a: 1}
   hitsAccent: {r: 0.9098039, g: 0.69803923, b: 0.22745098, a: 1}
   thresholdAccent: {r: 0.47058824, g: 0.8784314, b: 0.8784314, a: 1}
+  statusAccent: {r: 0.47058824, g: 0.74509805, b: 1, a: 1}
   warnRatio: 0.25
   blinkRatio: 0.3
   shineInterval: 2.6

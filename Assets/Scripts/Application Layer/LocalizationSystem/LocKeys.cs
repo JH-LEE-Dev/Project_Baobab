@@ -737,6 +737,12 @@ public static class LocKeys
         public const int roguelikeCollectionCompleteTitle = 37749331;
         public const int roguelikeChallengeCollectionAllTitle = 37749332;
         public const int roguelikeChallengeCollectionAllTip = 37749333;
+        public const int roguelikeChallengeNoDamageWave30Title = 37749335;
+        public const int roguelikeChallengeNoDamageWave30Tip = 37749336;
+        public const int roguelikeChallengeNoPrismWave30Title = 37749337;
+        public const int roguelikeChallengeNoPrismWave30Tip = 37749338;
+        public const int roguelikeChallengeActiveMasterTitle = 37749339;
+        public const int roguelikeChallengeActiveMasterTip = 37749340;
     }
 
     public static class SaveCheckUI

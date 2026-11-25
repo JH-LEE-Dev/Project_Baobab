@@ -198,6 +198,7 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
     private bool bRunActive;
     private bool bRunEnding;
     private bool bCleared;
+    private bool bTookStaminaDamageThisRun;
     private float playTimeSeconds;
     private float clearTimeSeconds;
     private int treesFelled;
@@ -516,8 +517,8 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         signalHub.Publish(new RoguelikeModifiersChangedSignal());
         signalHub.Publish(new RoguelikeCardPurchasedSignal(purchase));
 
-        // 도전과제: 프리즘 해제 · MAX 도달 · 루비 선택은 카드를 고른 순간 판정한다(기획서 v3.1 8-3).
-        challengeTracker.OnCardPurchased(in purchase);
+        // 도전과제: 프리즘 해제 · MAX 도달 · 루비 선택 · 액티브 마스터는 카드를 고른 순간 판정한다(기획서 v3.1 8-3).
+        challengeTracker.OnCardPurchased(in purchase, CountOwnedPrismsInRun());
         SaveAndAnnounceClearedChallenges();
     }
 
@@ -678,6 +679,18 @@ public partial class RoguelikeSystem : MonoBehaviour, IRoguelikeRunInfo
         {
             signalHub.Publish(new RoguelikeChallengeClearedSignal(cleared[i]));
         }
+    }
+
+    private int CountOwnedPrismsInRun()
+    {
+        IReadOnlyList<CardDefinitionSO> owned = build.OwnedCards;
+        int count = 0;
+        for (int i = 0; i < owned.Count; i++)
+        {
+            if (null != owned[i] && ECardKind.Prism == owned[i].kind) count++;
+        }
+
+        return count;
     }
 
     // // UI

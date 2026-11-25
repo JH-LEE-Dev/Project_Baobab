@@ -173,7 +173,7 @@ public class UI_RoguelikeRecordSpotlight : MonoBehaviour
     [SerializeField] private Sprite cardSprite;
     [SerializeField] private Sprite clockSprite;
     [SerializeField] private Sprite clearTimeSprite;
-    [SerializeField, Tooltip("MAX 배지(15x7).")] private Sprite maxSprite;
+    [SerializeField, Tooltip("M(MAX) 배지(7x9).")] private Sprite maxSprite;
 
     [Header("웨이브 길")]
     [SerializeField] private UI_RoguelikeWaveTrail trail;

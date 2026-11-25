@@ -191,6 +191,16 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     /// <summary>유성우 게이지(0~1). 효과가 없는 숲 방문이면 0이다.</summary>
     public float MeteorShowerCharge => (float)meteorShowerStack / GetMeteorShowerMaxStack();
+    /// <summary>이번 숲 방문에서 별빛 나침반(유성우) 효과가 활성화되어 있는지.</summary>
+    public bool IsMeteorShowerActiveThisRun => 0 < starCompassTierThisRun;
+    /// <summary>이번 숲 방문에서 흑요 부적(지진) 효과가 활성화되어 있는지.</summary>
+    public bool IsQuakeActiveThisRun => 0 < obsidianCharmTierThisRun;
+    /// <summary>유성우 발동 목표 스택.</summary>
+    public int MeteorShowerMaxStack => GetMeteorShowerMaxStack();
+    /// <summary>지진 발동 목표 스택.</summary>
+    public int QuakeMaxStack => GetQuakeMaxStack();
+    /// <summary>지진 발동 후 쿨타임(초).</summary>
+    public float QuakeCooldown => quakeCooldown;
     [SerializeField] private int starCompassPityMinKills = 4;
     [SerializeField] private int starCompassPityMaxKills = 5;
     private int starCompassPityThreshold;

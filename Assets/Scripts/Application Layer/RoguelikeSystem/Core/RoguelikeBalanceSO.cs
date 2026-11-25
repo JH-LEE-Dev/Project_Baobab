@@ -107,8 +107,8 @@ public class RoguelikeBalanceSO : ScriptableObject
     public int unlimitMaxKillTarget = 100;
     [Tooltip("언리밋 최대 웨이브. 이 번호의 Unlimit 웨이브를 클리어하면 런이 끝나고 결과 화면으로 간다(종료 사유 UnlimitCompleted). 0 이하면 상한 없음.")]
     public int unlimitMaxWave = 25;
-    [Tooltip("특정 언리밋 웨이브의 나무 HP를 공식 대신 직접 지정한다(기획서 부록 A \"언리밋 곡선\"). 4티어 진입(Unlimit-23)에서 기본 HP와 누적 배율이 겹쳐 HP가 약 3배로 뛰는 것을 막으려고 22~25를 Unlimit-21 HP × 1.25^(N−21)로 둔다. 목록에 없는 번호는 공식을 쓴다.")]
-    public List<UnlimitHpOverride> unlimitHpOverrides = new List<UnlimitHpOverride>(4);
+    [Tooltip("특정 언리밋 웨이브의 나무 HP를 공식 대신 직접 지정한다(기획서 부록 A \"언리밋 곡선\"). 3티어 진입(Unlimit-16)과 4티어 진입(Unlimit-23)에서 기본 HP와 누적 배율이 겹쳐 급등하는 것을 막고 Unlimit-15 이후 완만한 ×1.36 곡선을 유지하기 위해 16~25를 직접 지정한다. 목록에 없는 번호는 공식을 쓴다.")]
+    public List<UnlimitHpOverride> unlimitHpOverrides = new List<UnlimitHpOverride>(10);
 
     [Header("카드 제시")]
     [Tooltip("한 번에 제시하는 카드 수 N(기획서 v2.5 4장).")]
@@ -286,12 +286,18 @@ public class RoguelikeBalanceSO : ScriptableObject
         unlimitHpGrowthPerWave = 0.35f;
         unlimitMaxKillTarget = 100;
         unlimitMaxWave = 25;
-        unlimitHpOverrides = new List<UnlimitHpOverride>(4)
+        unlimitHpOverrides = new List<UnlimitHpOverride>(10)
         {
-            new UnlimitHpOverride { unlimitIndex = 22, treeHp = 88435f },
-            new UnlimitHpOverride { unlimitIndex = 23, treeHp = 110544f },
-            new UnlimitHpOverride { unlimitIndex = 24, treeHp = 138179f },
-            new UnlimitHpOverride { unlimitIndex = 25, treeHp = 172724f },
+            new UnlimitHpOverride { unlimitIndex = 16, treeHp = 5000f },
+            new UnlimitHpOverride { unlimitIndex = 17, treeHp = 6800f },
+            new UnlimitHpOverride { unlimitIndex = 18, treeHp = 9250f },
+            new UnlimitHpOverride { unlimitIndex = 19, treeHp = 12580f },
+            new UnlimitHpOverride { unlimitIndex = 20, treeHp = 17110f },
+            new UnlimitHpOverride { unlimitIndex = 21, treeHp = 23270f },
+            new UnlimitHpOverride { unlimitIndex = 22, treeHp = 31650f },
+            new UnlimitHpOverride { unlimitIndex = 23, treeHp = 43040f },
+            new UnlimitHpOverride { unlimitIndex = 24, treeHp = 58530f },
+            new UnlimitHpOverride { unlimitIndex = 25, treeHp = 79600f },
         };
 
         offerCount = 4;

@@ -19,8 +19,14 @@ public static class HUD_BuffPrefabBuilder
     // 평행사변형 두 칸의 사선 외곽선(2px)이 같은 픽셀에 정확히 겹쳐 맞물리는 칸 간격(스프라이트 폭 24가 아니라 이 값)
     private const float DashCellPitch = 15f;
     private const float DashVisibleWidth = 38f;
-    // 대시 게이지의 화면 왼쪽 아래 기준 위치(가방 오른쪽 끝 바로 옆, 코인 줄 위)
-    private static readonly Vector2 DashScreenPosition = new Vector2(89f, 32f);
+    // 대시 게이지의 화면 왼쪽 아래 기준 위치(가방 오른쪽 끝 바로 옆, 코인 줄 바로 위; 스프라이트 하단 7px 여백 보정 포함)
+    private static readonly Vector2 DashScreenPosition = new Vector2(90f, 23f);
+    // 유성우(별빛 나침반) / 지진(흑요 부적) 임시 원형 HUD 규격 및 화면 왼쪽 아래 기준 위치(대시 게이지 바로 위 나란히)
+    private const string RelicArtDir = "Assets/Graphics/HUD/Relic";
+    private const float RelicGaugeSize = 22f;
+    private static readonly Vector2 MeteorShowerScreenPosition = new Vector2(86f, 44f);
+    private static readonly Vector2 EarthquakeScreenPosition = new Vector2(115f, 44f);
+    private static readonly Vector2 RelicShadowOffset = new Vector2(-2f, -2f);
     // HUD 그림자 규격(인벤토리 용량 게이지와 같다): 같은 스프라이트를 검정 반투명으로 왼쪽 아래에 깐다.
     // 칸이 위로 갈수록 오른쪽으로 기운 평행사변형이라 그림자가 오른쪽으로 치우쳐 보이므로 X는 2도트 더 왼쪽(-4)에 둔다.
     private static readonly Vector2 DashShadowOffset = new Vector2(-4f, -3f);
@@ -264,7 +270,17 @@ public static class HUD_BuffPrefabBuilder
         // ===== HUD_DashGauge.prefab (대시 2칸) =====
         GameObject _dashPrefab = BuildDashPrefab();
 
-        // ===== HUD_StaminaGroup.prefab (스태미나 + 버프 + 대시 조합) =====
+        // ===== HUD_MeteorShowerGauge / HUD_EarthquakeGauge (대시 위 임시 원형 2칸) =====
+        BuildRelicGaugeAssets(out Sprite _relicFrame, out Sprite _relicFill, out Sprite _relicInner,
+            out Sprite _relicShadow, out Sprite _meteorIcon, out Sprite _quakeIcon);
+        GameObject _meteorPrefab = BuildRelicGaugePrefab("HUD_MeteorShowerGauge",
+            _relicFrame, _relicFill, _relicInner, _relicShadow, _meteorIcon,
+            new Color32(96, 196, 255, 255), new Color32(255, 236, 138, 255), new Color32(165, 238, 255, 255));
+        GameObject _quakePrefab = BuildRelicGaugePrefab("HUD_EarthquakeGauge",
+            _relicFrame, _relicFill, _relicInner, _relicShadow, _quakeIcon,
+            new Color32(242, 118, 48, 255), new Color32(255, 224, 112, 255), new Color32(255, 176, 86, 255));
+
+        // ===== HUD_StaminaGroup.prefab (스태미나 + 버프 + 대시 + 유성우/지진 조합) =====
         GameObject _staminaPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(StaminaPrefabPath);
         GameObject _groupGo = new GameObject("HUD_StaminaGroup", typeof(RectTransform));
         RectTransform _groupRt = (RectTransform)_groupGo.transform;
@@ -292,8 +308,24 @@ public static class HUD_BuffPrefabBuilder
         // 화면 왼쪽 아래 인벤토리(가방, UI_Inventory 팝업 뷰) 오른쪽에 고정. 인벤토리 열기/닫기 모션은 따라가지 않는다
         _dashRt.anchoredPosition = DashScreenPosition;
 
+        GameObject _meteorInst = (GameObject)PrefabUtility.InstantiatePrefab(_meteorPrefab, _groupRt);
+        RectTransform _meteorRt = (RectTransform)_meteorInst.transform;
+        _meteorRt.anchorMin = Vector2.zero;
+        _meteorRt.anchorMax = Vector2.zero;
+        _meteorRt.pivot = Vector2.zero;
+        _meteorRt.anchoredPosition = MeteorShowerScreenPosition;
+
+        GameObject _quakeInst = (GameObject)PrefabUtility.InstantiatePrefab(_quakePrefab, _groupRt);
+        RectTransform _quakeRt = (RectTransform)_quakeInst.transform;
+        _quakeRt.anchorMin = Vector2.zero;
+        _quakeRt.anchorMax = Vector2.zero;
+        _quakeRt.pivot = Vector2.zero;
+        _quakeRt.anchoredPosition = EarthquakeScreenPosition;
+
         SerializedObject _gso = new SerializedObject(_groupComp);
         _gso.FindProperty("dashGauge").objectReferenceValue = _dashInst.GetComponent<HUD_DashGauge>();
+        _gso.FindProperty("meteorShowerGauge").objectReferenceValue = _meteorInst.GetComponent<HUD_RelicSkillGauge>();
+        _gso.FindProperty("earthquakeGauge").objectReferenceValue = _quakeInst.GetComponent<HUD_RelicSkillGauge>();
         _gso.FindProperty("stamina").objectReferenceValue = _staminaInst.GetComponent<HUD_Stemina>();
         _gso.FindProperty("buffBar").objectReferenceValue = _buffInst.GetComponent<HUD_BuffBar>();
         _gso.ApplyModifiedPropertiesWithoutUndo();
@@ -395,6 +427,201 @@ public static class HUD_BuffPrefabBuilder
 
         _so.ApplyModifiedPropertiesWithoutUndo();
         GameObject _prefab = PrefabUtility.SaveAsPrefabAsset(_go, PrefabDir + "/HUD_DashGauge.prefab");
+        UnityEngine.Object.DestroyImmediate(_go);
+        return _prefab;
+    }
+
+    private static void BuildRelicGaugeAssets(out Sprite _frameSprite, out Sprite _fillSprite, out Sprite _innerSprite,
+        out Sprite _shadowSprite, out Sprite _meteorSprite, out Sprite _quakeSprite)
+    {
+        EnsureFolder("Assets/Graphics/HUD", "Relic");
+
+        int _size = Mathf.RoundToInt(RelicGaugeSize);
+        float _center = (_size - 1) * 0.5f;
+        Color32 _clear = new Color32(0, 0, 0, 0);
+        Color32 _outline = new Color32(37, 33, 30, 255);
+        Color32 _well = new Color32(40, 30, 22, 255);
+        Color32 _pureWhite = new Color32(255, 255, 255, 255);
+
+        Texture2D _frameTex = new Texture2D(_size, _size, TextureFormat.RGBA32, false);
+        Texture2D _fillTex = new Texture2D(_size, _size, TextureFormat.RGBA32, false);
+        Texture2D _innerTex = new Texture2D(_size, _size, TextureFormat.RGBA32, false);
+        Texture2D _shadowTex = new Texture2D(_size, _size, TextureFormat.RGBA32, false);
+
+        for (int y = 0; y < _size; y++)
+        {
+            for (int x = 0; x < _size; x++)
+            {
+                float _dx = x - _center;
+                float _dy = y - _center;
+                float _dist = Mathf.Sqrt(_dx * _dx + _dy * _dy);
+
+                // 외곽 원형 프레임(22x22): 1px 어두운 외곽선 + 내부 우물
+                if (_dist <= 10.8f)
+                {
+                    _frameTex.SetPixel(x, y, 9.6f <= _dist ? _outline : _well);
+                    _shadowTex.SetPixel(x, y, _pureWhite);
+                }
+                else
+                {
+                    _frameTex.SetPixel(x, y, _clear);
+                    _shadowTex.SetPixel(x, y, _clear);
+                }
+
+                // Radial360 채움 링용 흰 원판
+                _fillTex.SetPixel(x, y, _dist <= 9.5f ? _pureWhite : _clear);
+
+                // 중앙 아이콘 배지(링 안쪽을 깔끔히 가려 원형 게이지 링을 만든다)
+                if (_dist <= 6.4f)
+                {
+                    _innerTex.SetPixel(x, y, 5.2f <= _dist ? _outline : _well);
+                }
+                else
+                {
+                    _innerTex.SetPixel(x, y, _clear);
+                }
+            }
+        }
+
+        string _framePath = RelicArtDir + "/Relic_Circle_Frame.png";
+        string _fillPath = RelicArtDir + "/Relic_Circle_Fill.png";
+        string _innerPath = RelicArtDir + "/Relic_Circle_Inner.png";
+        string _shadowPath = RelicArtDir + "/Relic_Circle_Shadow.png";
+        SavePng(_frameTex, _framePath);
+        SavePng(_fillTex, _fillPath);
+        SavePng(_innerTex, _innerPath);
+        SavePng(_shadowTex, _shadowPath);
+
+        // 임시 유성우 아이콘(12x12 별/유성)
+        string[] _meteorRows =
+        {
+            ".....aa.....",
+            ".....ab.....",
+            "....abba....",
+            ".aaabccbaaa.",
+            "..abccccba..",
+            "...bcccca...",
+            "...bccccb...",
+            "..abcaacba..",
+            "..aba..aba..",
+            ".aa......aa.",
+            "............",
+            "............",
+        };
+        uint[] _meteorPalette = { 0x3A88D8, 0x8CE2FF, 0xFFF4A8 };
+        string _meteorPath = RelicArtDir + "/Relic_Temp_Meteor.png";
+        SavePatternPng(_meteorRows, _meteorPalette, _meteorPath);
+
+        // 임시 지진 아이콘(12x12 용암 균열)
+        string[] _quakeRows =
+        {
+            ".....ab.....",
+            "....abc.....",
+            "...abca.....",
+            "...bcaa.....",
+            "....abca....",
+            "...aabccba..",
+            "..abccbaaa..",
+            "..bccba.....",
+            "...abca.....",
+            "....bc......",
+            "....a.......",
+            "............",
+        };
+        uint[] _quakePalette = { 0xB83214, 0xFF7A28, 0xFFE680 };
+        string _quakePath = RelicArtDir + "/Relic_Temp_Quake.png";
+        SavePatternPng(_quakeRows, _quakePalette, _quakePath);
+
+        AssetDatabase.Refresh();
+
+        ImportAsSprite(_framePath);
+        ImportAsSprite(_fillPath);
+        ImportAsSprite(_innerPath);
+        ImportAsSprite(_shadowPath);
+        ImportAsSprite(_meteorPath);
+        ImportAsSprite(_quakePath);
+
+        _frameSprite = AssetDatabase.LoadAssetAtPath<Sprite>(_framePath);
+        _fillSprite = AssetDatabase.LoadAssetAtPath<Sprite>(_fillPath);
+        _innerSprite = AssetDatabase.LoadAssetAtPath<Sprite>(_innerPath);
+        _shadowSprite = AssetDatabase.LoadAssetAtPath<Sprite>(_shadowPath);
+        _meteorSprite = AssetDatabase.LoadAssetAtPath<Sprite>(_meteorPath);
+        _quakeSprite = AssetDatabase.LoadAssetAtPath<Sprite>(_quakePath);
+    }
+
+    private static void SavePatternPng(string[] _rows, uint[] _palette, string _path)
+    {
+        int _h = _rows.Length;
+        int _w = _rows[0].Length;
+        Texture2D _tex = new Texture2D(_w, _h, TextureFormat.RGBA32, false);
+        Color32 _clear = new Color32(0, 0, 0, 0);
+
+        for (int row = 0; row < _h; row++)
+        {
+            string _line = _rows[row];
+            int _y = _h - 1 - row;
+
+            for (int x = 0; x < _w; x++)
+            {
+                char _ch = _line[x];
+
+                if ('.' == _ch)
+                {
+                    _tex.SetPixel(x, _y, _clear);
+                    continue;
+                }
+
+                int _idx = Mathf.Clamp(_ch - 'a', 0, _palette.Length - 1);
+                uint _hex = _palette[_idx];
+                _tex.SetPixel(x, _y, new Color32((byte)((_hex >> 16) & 0xFF), (byte)((_hex >> 8) & 0xFF), (byte)(_hex & 0xFF), 255));
+            }
+        }
+
+        SavePng(_tex, _path);
+    }
+
+    private static GameObject BuildRelicGaugePrefab(string _name, Sprite _frame, Sprite _fill, Sprite _inner,
+        Sprite _shadow, Sprite _icon, Color32 _chargingColor, Color32 _readyColor, Color32 _activeDrainColor)
+    {
+        GameObject _go = new GameObject(_name, typeof(RectTransform));
+        RectTransform _rt = (RectTransform)_go.transform;
+        SetRect(_rt, Vector2.zero, new Vector2(RelicGaugeSize, RelicGaugeSize), Vector2.zero);
+        HUD_RelicSkillGauge _gauge = _go.AddComponent<HUD_RelicSkillGauge>();
+
+        float _half = RelicGaugeSize * 0.5f;
+        RectTransform _visual = NewRect("Visual", _rt, new Vector2(_half, _half),
+            new Vector2(RelicGaugeSize, RelicGaugeSize), new Vector2(0.5f, 0.5f));
+
+        Image _shadowImg = NewImage("Shadow", _visual, _shadow, RelicShadowOffset, new Vector2(RelicGaugeSize, RelicGaugeSize));
+        _shadowImg.color = DashShadowColor;
+
+        NewImage("Frame", _visual, _frame, Vector2.zero, new Vector2(RelicGaugeSize, RelicGaugeSize));
+
+        Image _fillImg = NewImage("Fill", _visual, _fill, Vector2.zero, new Vector2(RelicGaugeSize, RelicGaugeSize));
+        _fillImg.type = Image.Type.Filled;
+        _fillImg.fillMethod = Image.FillMethod.Radial360;
+        _fillImg.fillOrigin = (int)Image.Origin360.Top;
+        _fillImg.fillClockwise = true;
+        _fillImg.fillAmount = 0f;
+        _fillImg.color = _chargingColor;
+
+        NewImage("InnerWell", _visual, _inner, Vector2.zero, new Vector2(RelicGaugeSize, RelicGaugeSize));
+        NewImage("Icon", _visual, _icon, new Vector2((RelicGaugeSize - 12f) * 0.5f, (RelicGaugeSize - 12f) * 0.5f), new Vector2(12f, 12f));
+
+        Image _flashImg = NewImage("Flash", _visual, _shadow, Vector2.zero, new Vector2(RelicGaugeSize, RelicGaugeSize));
+        _flashImg.color = Color.white;
+        _flashImg.enabled = false;
+
+        SerializedObject _so = new SerializedObject(_gauge);
+        _so.FindProperty("visualRoot").objectReferenceValue = _visual;
+        _so.FindProperty("fillImage").objectReferenceValue = _fillImg;
+        _so.FindProperty("flashImage").objectReferenceValue = _flashImg;
+        _so.FindProperty("chargingColor").colorValue = _chargingColor;
+        _so.FindProperty("readyColor").colorValue = _readyColor;
+        _so.FindProperty("activeDrainColor").colorValue = _activeDrainColor;
+        _so.ApplyModifiedPropertiesWithoutUndo();
+
+        GameObject _prefab = PrefabUtility.SaveAsPrefabAsset(_go, PrefabDir + "/" + _name + ".prefab");
         UnityEngine.Object.DestroyImmediate(_go);
         return _prefab;
     }

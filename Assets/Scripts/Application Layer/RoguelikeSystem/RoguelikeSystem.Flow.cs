@@ -533,7 +533,15 @@ public partial class RoguelikeSystem
             }
 
             // 손실 중에는 프레임마다 초당 손실을 깎는다(피해 연출 이벤트 없음). 1초 펄스는 연출 신호만 낸다.
-            if (true == bLosing && null != character) character.DrainRoguelikeStamina(pressure.LossPerSecond);
+            if (true == bLosing && null != character)
+            {
+                float beforeStamina = null != character.pHealthComponent ? character.pHealthComponent.GetCurrentStamina() : 0f;
+                character.DrainRoguelikeStamina(pressure.LossPerSecond);
+                if (null != character.pHealthComponent && character.pHealthComponent.GetCurrentStamina() < beforeStamina)
+                {
+                    bTookStaminaDamageThisRun = true;
+                }
+            }
             if (true == bPulse) signalHub.Publish(new RoguelikePressurePulseSignal(pressure.LossPerSecond));
 
             yield return null;
@@ -640,8 +648,8 @@ public partial class RoguelikeSystem
 
         signalHub.Publish(new RoguelikeRunClearedSignal());
 
-        // 도전과제: WAVE 30 클리어는 클리어한 순간 판정한다(기획서 v3.1 8-3).
-        challengeTracker.OnRunCleared();
+        // 도전과제: WAVE 30 클리어(일반 · 무피해 · 노 프리즘)는 클리어한 순간 판정한다(기획서 v3.1 8-3).
+        challengeTracker.OnRunCleared(false == bTookStaminaDamageThisRun, 0 == CountOwnedPrismsInRun());
         SaveAndAnnounceClearedChallenges();
 
         // 이펙트 담당의 RunClear 연출이 끝나면 언리밋으로 넘어간다.
@@ -893,6 +901,7 @@ public partial class RoguelikeSystem
         bRunActive = false;
         bRunEnding = false;
         bCleared = false;
+        bTookStaminaDamageThisRun = false;
 
         waveStrategy?.StopSpawning();
         pressure.Reset();
