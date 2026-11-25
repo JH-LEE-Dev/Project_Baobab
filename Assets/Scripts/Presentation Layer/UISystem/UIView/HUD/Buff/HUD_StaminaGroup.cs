@@ -11,6 +11,10 @@ public class HUD_StaminaGroup : MonoBehaviour
     [SerializeField] private HUD_BuffBar buffBar;
     [Tooltip("화면 왼쪽 아래 인벤토리(가방) 오른쪽에 고정되는 대시 게이지. 인벤토리 열기/닫기 모션은 따라가지 않는다")]
     [SerializeField] private HUD_DashGauge dashGauge;
+    [Tooltip("대시 게이지 왼쪽 위 유성우(별빛 나침반) 임시 원형 HUD")]
+    [SerializeField] private HUD_RelicSkillGauge meteorShowerGauge;
+    [Tooltip("대시 게이지 오른쪽 위 지진(흑요 부적) 임시 원형 HUD")]
+    [SerializeField] private HUD_RelicSkillGauge earthquakeGauge;
 
     public HUD_Stemina Stamina
     {
@@ -20,6 +24,16 @@ public class HUD_StaminaGroup : MonoBehaviour
     public HUD_DashGauge DashGauge
     {
         get { return dashGauge; }
+    }
+
+    public HUD_RelicSkillGauge MeteorShowerGauge
+    {
+        get { return meteorShowerGauge; }
+    }
+
+    public HUD_RelicSkillGauge EarthquakeGauge
+    {
+        get { return earthquakeGauge; }
     }
 
     public HUD_BuffBar BuffBar

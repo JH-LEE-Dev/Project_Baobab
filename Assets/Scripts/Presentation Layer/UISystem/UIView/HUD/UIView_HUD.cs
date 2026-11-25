@@ -31,6 +31,8 @@ public class UIView_HUD : UIView
     private HUD_Stemina hudStaminaBar;
     private HUD_BuffBar hudBuffBar;
     private HUD_DashGauge hudDashGauge;
+    private HUD_RelicSkillGauge hudMeteorShowerGauge;
+    private HUD_RelicSkillGauge hudEarthquakeGauge;
     private HUD_DirIndicator hudDirIndicator;
     private HUD_Message hudMessage;
     private HUD_ScreenBlood hudScreenBlood;
@@ -61,6 +63,14 @@ public class UIView_HUD : UIView
     private int dashShownCharges = 0;
     private int dashShownMax = 0;
     private float dashLastProgress = 0f;
+
+    // 전리품 발동 스킬(유성우·지진) HUD 캐시 상태. 프리팹 초기화 전이나 맵 전환 전 신호가 와도 놓치지 않는다.
+    private bool bMeteorUnlocked = false;
+    private int meteorCurrent = 0;
+    private int meteorMax = 1;
+    private bool bQuakeUnlocked = false;
+    private int quakeCurrent = 0;
+    private int quakeMax = 1;
 
     // 로그라이크 런: 본편 스태미너 바 · 대쉬 게이지는 화면에서만 숨기고(CanvasGroup alpha 0) 같은 호출을 로그라이크 HUD의 새 컴포넌트에도 전달한다(RoguelikeHUDLink).
     private GameObject hudStaminaRoot;
@@ -364,6 +374,16 @@ public class UIView_HUD : UIView
         get { return hudBuffBar; }
     }
 
+    public HUD_RelicSkillGauge MeteorShowerGauge
+    {
+        get { return hudMeteorShowerGauge; }
+    }
+
+    public HUD_RelicSkillGauge EarthquakeGauge
+    {
+        get { return hudEarthquakeGauge; }
+    }
+
     #region HUD_Buff Logic
 
     public void ApplyBuffHud(in BuffHudSignal _s)
@@ -439,6 +459,93 @@ public class UIView_HUD : UIView
 
     #endregion
 
+    #region HUD_RelicSkill Logic
+
+    public void ApplyRelicSkillHud(in RelicSkillHudSignal _signal)
+    {
+        bool _bCanDisplay = false == bEquipmentHiddenForRun;
+
+        if (ERelicSkillHudId.MeteorShower == _signal.id)
+        {
+            bMeteorUnlocked = _signal.bUnlocked;
+
+            if (ERelicSkillHudOp.SetCharge == _signal.op)
+            {
+                meteorCurrent = _signal.current;
+                meteorMax = 0 < _signal.max ? _signal.max : 1;
+            }
+            else if (ERelicSkillHudOp.Trigger == _signal.op)
+            {
+                meteorCurrent = 0;
+            }
+
+            ApplyRelicSignalToGauge(hudMeteorShowerGauge, _bCanDisplay, bMeteorUnlocked, meteorCurrent, meteorMax, in _signal);
+            return;
+        }
+
+        if (ERelicSkillHudId.Earthquake == _signal.id)
+        {
+            bQuakeUnlocked = _signal.bUnlocked;
+
+            if (ERelicSkillHudOp.SetCharge == _signal.op)
+            {
+                quakeCurrent = _signal.current;
+                quakeMax = 0 < _signal.max ? _signal.max : 1;
+            }
+            else if (ERelicSkillHudOp.Trigger == _signal.op)
+            {
+                quakeCurrent = 0;
+            }
+
+            ApplyRelicSignalToGauge(hudEarthquakeGauge, _bCanDisplay, bQuakeUnlocked, quakeCurrent, quakeMax, in _signal);
+        }
+    }
+
+    private static void ApplyRelicSignalToGauge(HUD_RelicSkillGauge _gauge, bool _bCanDisplay, bool _bUnlocked,
+        int _current, int _max, in RelicSkillHudSignal _signal)
+    {
+        if (null == _gauge)
+            return;
+
+        bool _bVisible = true == _bCanDisplay && true == _bUnlocked;
+        bool _bBecameVisible = true == _bVisible && false == _gauge.IsUnlocked;
+        _gauge.SetUnlocked(_bVisible);
+
+        if (ERelicSkillHudOp.Trigger == _signal.op)
+        {
+            _gauge.PlayTriggered(_signal.duration);
+            return;
+        }
+
+        if (ERelicSkillHudOp.SetCharge == _signal.op || true == _bBecameVisible)
+        {
+            _gauge.SetCharge(_current, _max, _bBecameVisible);
+        }
+    }
+
+    private void RefreshRelicSkillHudVisibility()
+    {
+        bool _bCanDisplay = false == bEquipmentHiddenForRun;
+        SyncSingleRelicGauge(hudMeteorShowerGauge, true == _bCanDisplay && true == bMeteorUnlocked, meteorCurrent, meteorMax);
+        SyncSingleRelicGauge(hudEarthquakeGauge, true == _bCanDisplay && true == bQuakeUnlocked, quakeCurrent, quakeMax);
+    }
+
+    private static void SyncSingleRelicGauge(HUD_RelicSkillGauge _gauge, bool _bVisible, int _current, int _max)
+    {
+        if (null == _gauge)
+            return;
+
+        bool _bBecameVisible = true == _bVisible && false == _gauge.IsUnlocked;
+        _gauge.SetUnlocked(_bVisible);
+
+        if (true == _bVisible)
+        {
+            _gauge.SetCharge(_current, _max, _bBecameVisible);
+        }
+    }
+
+    #endregion
+
     #region HUD_Stemina Logic
 
     private void Init_HUDScreenBlood()
@@ -465,6 +572,10 @@ public class UIView_HUD : UIView
             hudStaminaBar = _group.Stamina;
             hudBuffBar = _group.BuffBar;
             hudDashGauge = _group.DashGauge;
+            hudMeteorShowerGauge = _group.MeteorShowerGauge;
+            hudEarthquakeGauge = _group.EarthquakeGauge;
+
+            RefreshRelicSkillHudVisibility();
 
             // 캐릭터 바인딩이 HUD 생성보다 먼저였다면 그때 받은 대시 상태를 지금 반영한다
             if (null != dashState)
@@ -587,6 +698,7 @@ public class UIView_HUD : UIView
 
         ChangedActiveStateEquipment(bTown);
         ChangedActiveStateStemina(bTown);
+        RefreshRelicSkillHudVisibility();
 
         // 과열 게이지는 맵이 바뀌는 순간 일단 화면 밖에 대기시키고, HUD가 다 올라온 뒤(HUDGoUp 완료) 튀어 오르게 한다.
         hudEquipment?.SetHeatGaugeVisible(false, false);
@@ -639,6 +751,7 @@ public class UIView_HUD : UIView
     {
         bEquipmentHiddenForRun = _bHidden;
         ChangedActiveStateEquipment(MapType.Town == currentMapType);
+        RefreshRelicSkillHudVisibility();
 
         if (true == _bHidden)
             hudEquipment?.SetHeatGaugeVisible(false, false);

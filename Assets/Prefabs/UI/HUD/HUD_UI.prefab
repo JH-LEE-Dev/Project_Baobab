@@ -64,7 +64,6 @@ MonoBehaviour:
   hudScreenBloodPrefab: {fileID: 1244665093748110384, guid: ffb38f872f5eefe4f8e2729e2b6c405a, type: 3}
   omp: {fileID: 3133789044350283666}
   mapTransitionMotionTag: GoDown
-  dashReservedWidth: 46
   buffHudIcons: []
   dirIndicatorShowDelay: 1
 --- !u!1 &5488935301192403642

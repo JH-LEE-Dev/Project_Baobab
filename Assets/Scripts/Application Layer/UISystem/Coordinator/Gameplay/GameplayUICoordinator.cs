@@ -155,6 +155,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<PopupUIUpSignal>(PopupUIUp);
         signalHub.Subscribe<StaminaInvincibleStateChangedSignal>(StaminaInvincibleStateChanged);
         signalHub.Subscribe<BuffHudSignal>(BuffHud);
+        signalHub.Subscribe<RelicSkillHudSignal>(RelicSkillHud);
         signalHub.Subscribe<CharacterTreeHeatHitSignal>(CharacterTreeHeatHit);
         signalHub.Subscribe<ProvideSkillAccumulatedValueChangeSignal>(ProvideAccumulatedValueChangeEvent);
         signalHub.Subscribe<GameEndSignal>(GameEnd);
@@ -226,6 +227,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<PopupUIUpSignal>(PopupUIUp);
         signalHub.UnSubscribe<StaminaInvincibleStateChangedSignal>(StaminaInvincibleStateChanged);
         signalHub.UnSubscribe<BuffHudSignal>(BuffHud);
+        signalHub.UnSubscribe<RelicSkillHudSignal>(RelicSkillHud);
         signalHub.UnSubscribe<CharacterTreeHeatHitSignal>(CharacterTreeHeatHit);
         signalHub.UnSubscribe<ProvideSkillAccumulatedValueChangeSignal>(ProvideAccumulatedValueChangeEvent);
         signalHub.UnSubscribe<GameEndSignal>(GameEnd);
@@ -1125,6 +1127,12 @@ public class GameplayUICoordinator
     private void BuffHud(BuffHudSignal _signal)
     {
         hudUI.ApplyBuffHud(in _signal);
+    }
+
+    // 유성우/지진 전리품 HUD 갱신. 그대로 넘긴다.
+    private void RelicSkillHud(RelicSkillHudSignal _signal)
+    {
+        hudUI.ApplyRelicSkillHud(in _signal);
     }
 
     // 나무 열기 피격: 붉은 화면 한 번 + 피로도 바 흔들림.

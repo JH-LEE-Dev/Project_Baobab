@@ -189,6 +189,18 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.EmberGuideCollectedNotifyEvent -= EmberGuideCollected;
         inDungeonObjectManager.EmberGuideCollectedNotifyEvent += EmberGuideCollected;
 
+        inDungeonObjectManager.MeteorShowerChargeChangedEvent -= MeteorShowerChargeChanged;
+        inDungeonObjectManager.MeteorShowerChargeChangedEvent += MeteorShowerChargeChanged;
+
+        inDungeonObjectManager.MeteorShowerStartedEvent -= MeteorShowerStarted;
+        inDungeonObjectManager.MeteorShowerStartedEvent += MeteorShowerStarted;
+
+        inDungeonObjectManager.QuakeChargeChangedEvent -= QuakeChargeChanged;
+        inDungeonObjectManager.QuakeChargeChangedEvent += QuakeChargeChanged;
+
+        inDungeonObjectManager.QuakeTriggeredEvent -= QuakeTriggered;
+        inDungeonObjectManager.QuakeTriggeredEvent += QuakeTriggered;
+
         inDungeonObjectManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
         inDungeonObjectManager.CarrotItemAcquiredEvent += CarrotItemAcquired;
 
@@ -255,6 +267,10 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.TreeHeatHitEvent -= TreeHeatHit;
         inDungeonObjectManager.ConstellationManifestedEvent -= ConstellationManifested;
         inDungeonObjectManager.EmberGuideCollectedNotifyEvent -= EmberGuideCollected;
+        inDungeonObjectManager.MeteorShowerChargeChangedEvent -= MeteorShowerChargeChanged;
+        inDungeonObjectManager.MeteorShowerStartedEvent -= MeteorShowerStarted;
+        inDungeonObjectManager.QuakeChargeChangedEvent -= QuakeChargeChanged;
+        inDungeonObjectManager.QuakeTriggeredEvent -= QuakeTriggered;
         inDungeonObjectManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
         inDungeonObjectManager.GemOreItemAcquiredEvent -= GemOreItemAcquired;
         inDungeonObjectManager.TreeDeadEvent -= TreeIsDead;
@@ -351,6 +367,11 @@ public class InDungeonSystem : MonoBehaviour
 
         // "산불 조심"·"예열" 중 하나라도 찍었으면 다른 숲에서도 과열 게이지를 띄운다(맵 선언보다 먼저 알려, HUD가 올라올 때 함께 나오게 한다).
         signalHub.Publish(new OverheatGaugeRequiredSignal(character.bEmberEverywhere || character.PreheatAmount > 0f));
+        // 유성우(별빛 나침반) / 지진(흑요 부적) 전리품 활성 여부 및 초기 게이지 상태를 HUD에 알린다.
+        signalHub.Publish(RelicSkillHudSignal.SetCharge(ERelicSkillHudId.MeteorShower,
+            inDungeonObjectManager.IsMeteorShowerActiveThisRun, 0, inDungeonObjectManager.MeteorShowerMaxStack));
+        signalHub.Publish(RelicSkillHudSignal.SetCharge(ERelicSkillHudId.Earthquake,
+            inDungeonObjectManager.IsQuakeActiveThisRun, 0, inDungeonObjectManager.QuakeMaxStack));
         signalHub.Publish(new DecalreDungeonTypeSignal(currentMapType, currentForestType));
 
         // 스테이지 첫 입장 도전과제. MainMenu → Dungeon은 튜토리얼 원정이라 세지 않는다.
@@ -458,6 +479,30 @@ public class InDungeonSystem : MonoBehaviour
     private void EmberGuideCollected()
     {
         signalHub.Publish(new MagmaGuideEmbersCollectedSignal());
+    }
+
+    private void MeteorShowerChargeChanged(int _current, int _max)
+    {
+        signalHub.Publish(RelicSkillHudSignal.SetCharge(ERelicSkillHudId.MeteorShower,
+            inDungeonObjectManager.IsMeteorShowerActiveThisRun, _current, _max));
+    }
+
+    private void MeteorShowerStarted(float _duration)
+    {
+        signalHub.Publish(RelicSkillHudSignal.Trigger(ERelicSkillHudId.MeteorShower,
+            inDungeonObjectManager.IsMeteorShowerActiveThisRun, _duration));
+    }
+
+    private void QuakeChargeChanged(int _current, int _max)
+    {
+        signalHub.Publish(RelicSkillHudSignal.SetCharge(ERelicSkillHudId.Earthquake,
+            inDungeonObjectManager.IsQuakeActiveThisRun, _current, _max));
+    }
+
+    private void QuakeTriggered()
+    {
+        signalHub.Publish(RelicSkillHudSignal.Trigger(ERelicSkillHudId.Earthquake,
+            inDungeonObjectManager.IsQuakeActiveThisRun, 0f));
     }
 
     // 용암숲 기믹 안내가 떠 있는 동안만 불씨 화살표·첫 나무 불씨 추적을 켠다(클리어·원정 종료로 내려가면 끈다).
