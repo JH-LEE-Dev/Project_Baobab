@@ -40,7 +40,7 @@ public static class HUD_BuffPrefabBuilder
     private static readonly Color32 MeteorFillColor = new Color32(154, 172, 227, 255);
     private static readonly Color32 QuakeFillColor = new Color32(225, 48, 31, 255);
     // 지진 쿨타임 음영은 구슬 외곽을 포함한 32행을 덮는다.
-    private static readonly Color QuakeCooldownColor = new Color(0f, 0f, 0f, 0.6f);
+    private static readonly Color QuakeCooldownColor = new Color(0f, 0f, 0f, 0.65f);
     private static readonly Vector2Int QuakeCooldownContent = new Vector2Int(16, 32);
     // HUD 그림자 규격(인벤토리 용량 게이지와 같다): 같은 스프라이트를 검정 반투명으로 왼쪽 아래에 깐다.
     // 칸이 위로 갈수록 오른쪽으로 기운 평행사변형이라 그림자가 오른쪽으로 치우쳐 보이므로 X는 2도트 더 왼쪽(-4)에 둔다.

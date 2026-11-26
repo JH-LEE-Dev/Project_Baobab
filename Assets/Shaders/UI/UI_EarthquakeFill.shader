@@ -64,6 +64,33 @@ Shader "UI/EarthquakeFill"
                 return o;
             }
 
+            float HashCell(float2 cell)
+            {
+                float2 wrapped = cell - 289.0 * floor(cell / 289.0);
+                float seed = fmod(dot(wrapped, float2(37.0, 71.0)), 289.0);
+                return fmod(seed * seed * 13.0 + seed * 17.0, 289.0) / 289.0;
+            }
+
+            float ValueNoise(float2 samplePosition)
+            {
+                float2 cell = floor(samplePosition);
+                float2 fraction = frac(samplePosition);
+                float2 blend = fraction * fraction * (3.0 - 2.0 * fraction);
+                float bottom = lerp(HashCell(cell), HashCell(cell + float2(1, 0)), blend.x);
+                float top = lerp(HashCell(cell + float2(0, 1)), HashCell(cell + 1.0), blend.x);
+                return lerp(bottom, top, blend.y);
+            }
+
+            float LavaFlow(float2 pixel, float time)
+            {
+                float2 samplePoint = float2((pixel.x - 32.0) * 0.22, pixel.y * 0.26);
+                float eddy = ValueNoise(samplePoint * 0.72 + float2(9.3, time * 0.25)) - 0.5;
+                float2 current = samplePoint + float2(eddy * 1.45, -time * 0.54 + eddy * 0.5);
+                float body = ValueNoise(current);
+                float veins = ValueNoise(current * 1.85 + float2(6.1, 3.4));
+                return (body - 0.5) * 2.0 + (veins - 0.5) * 0.65;
+            }
+
             half4 frag(Varyings i) : SV_Target
             {
                 float2 uv = (i.uv - _SpriteUVRect.xy) / (_SpriteUVRect.zw - _SpriteUVRect.xy);
@@ -71,16 +98,15 @@ Shader "UI/EarthquakeFill"
                 p.y -= _LiquidState.x;
                 float time = _LiquidState.y;
                 float level = _LiquidState.z;
-                float wave = 0.72 * sin(p.x * 0.34 - time * 3.7) + 0.50 * sin(p.x * 0.79 + time * 2.3);
+                float wave = (ValueNoise(float2((p.x - 32.0) * 0.20 - time * 0.36, 17.6 + time * 0.23)) - 0.5) * 2.8;
                 float surface = clamp(round(level + wave * saturate(min(level, 20 - level) * 0.5)), 0, 20);
                 float depth = surface - 1.0 - p.y;
                 half liquid = step(0.0, p.y) * step(0.0, depth);
                 half alpha = tex2D(_MainTex, i.uv).a * liquid;
                 clip(alpha - 0.001h);
 
-                float flow = sin(p.x * 0.47 + p.y * 0.61 - time * 1.5)
-                    + 0.58 * sin(p.x * 0.91 - p.y * 0.42 + time * 2.1);
-                float heat = saturate(0.44 + 0.24 * flow + 0.33 * saturate(1.0 - depth / max(1.0, surface)));
+                float flow = LavaFlow(p, time);
+                float heat = saturate(0.44 + 0.36 * flow + 0.33 * saturate(1.0 - depth / max(1.0, surface)));
                 heat = floor(heat * 6.0) / 6.0;
                 half3 rock = half3(0.072, 0.009, 0.019);
                 half3 magma = half3(0.72, 0.064, 0.012);

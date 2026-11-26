@@ -4103,8 +4103,8 @@ MonoBehaviour:
   obsidianCharmPityMaxKills: 5
   obsidianCharmTier3PrestigeLevel: 11
   quakeMaxStack: 100
-  quakeStackPerEmberMin: 2
-  quakeStackPerEmberMax: 3
+  quakeStackPerEmberMin: 1
+  quakeStackPerEmberMax: 2
   quakeCooldown: 15
   quakeTier1Radius: 8
   quakeTier1FlashScale: 0.35

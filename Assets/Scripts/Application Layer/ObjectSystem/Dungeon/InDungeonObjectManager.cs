@@ -232,9 +232,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     [SerializeField, Tooltip("지진이 발동하는 지진 스택(버프 HUD 최대치)")]
     private int quakeMaxStack = 100;
     [SerializeField, Tooltip("불씨 하나를 주울 때 오르는 지진 스택 최소값(포함). 불씨 관련 특성 배율과 무관하다")]
-    private int quakeStackPerEmberMin = 2;
+    private int quakeStackPerEmberMin = 1;
     [SerializeField, Tooltip("불씨 하나를 주울 때 오르는 지진 스택 최대값(포함). 불씨 관련 특성 배율과 무관하다")]
-    private int quakeStackPerEmberMax = 3;
+    private int quakeStackPerEmberMax = 2;
     [SerializeField, Tooltip("지진 쿨타임(초, 게임 시간). 지진이 발동한 순간부터 센다. 스택이 가득 차도 쿨타임이 끝나야 발동한다(숲 방문 시작 때는 바로 발동 가능)")]
     [Min(0f)] private float quakeCooldown = 15f;
     // III(나무) 범위는 화면 전체다. 해상도·화면비마다 보이는 넓이가 달라도 똑같이 맞도록 기준 화면(1920×1080) 크기로 고정한다.
