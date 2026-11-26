@@ -293,6 +293,12 @@ namespace PresentationLayer.VFX
         private bool bDeferredForceVisible;      // 처음 몇 프레임은 판정 없이 보이는 것으로 본다
         private Vector3 deferredWorldPosition;   // LateUpdate에서 읽은 몸통 위치(화면 안/밖 판정용)
         private int deferredVisibility;          // 1 보임, 0 안 보임, -1 경계 근처(반영 때 주 스레드에서 확정)
+        // 고정 박자(PixelVfxClock): 마지막으로 계산한 박자 번호, 이 인스턴스의 박자 어긋남, 계산을 쉰 프레임 동안 모아 둔 시간,
+        // 마지막으로 계산한 프레임에 화면에 보였는지(안 보였으면 더 낮은 박자로 돈다).
+        private int lastStepTick;
+        private float stepPhase;
+        private float pendingDeltaTime;
+        private bool bLastStepVisible;
         private Vector3 deferredCullCenter;
         private Vector3 deferredCullSize;
         private int bodySegmentStart;
@@ -372,6 +378,10 @@ namespace PresentationLayer.VFX
             bodyTimer = 1000.0f; // 첫 프레임에 바로 그린다
             trickleAccumulator = 0.0f;
             framesSinceEnable = 0;
+            lastStepTick = int.MinValue;
+            stepPhase = PixelVfxClock.NextPhase();
+            pendingDeltaTime = 0.0f;
+            bLastStepVisible = true;
             emberCursor = 0;
             bFirstFrame = true;
             bBodyUploaded = false;
@@ -1327,16 +1337,17 @@ namespace PresentationLayer.VFX
         }
 
         // 충격파 링 진행도와 아지랑이 세기를 시간으로 정해 왜곡 쿼드에 넘긴다(_TimeSeed는 재생 시작 때 한 번 넣었다)
-        private void UpdateDistortion()
+        // _elapsed: 재생 시작부터 지난 시간. 계산을 쉬는 프레임에는 아직 흘리지 않은 시간까지 더한 값을 넘겨 왜곡은 화면 프레임마다 이어진다.
+        private void UpdateDistortion(float _elapsed)
         {
-            bool bActive = elapsed < Mathf.Max(ringDuration, hazeDuration);
+            bool bActive = _elapsed < Mathf.Max(ringDuration, hazeDuration);
             SetDistortionActive(bActive);
             if (false == bActive) return;
 
-            float ringProgress = Mathf.Clamp01(elapsed / Mathf.Max(0.05f, ringDuration));
-            float hazeT = Mathf.Clamp01(elapsed / Mathf.Max(0.05f, hazeDuration));
+            float ringProgress = Mathf.Clamp01(_elapsed / Mathf.Max(0.05f, ringDuration));
+            float hazeT = Mathf.Clamp01(_elapsed / Mathf.Max(0.05f, hazeDuration));
             // 0.08초 만에 켜졌다가 서서히 사라진다
-            float hazeIntensity = Mathf.Clamp01(elapsed / 0.08f) * (1.0f - hazeT * hazeT);
+            float hazeIntensity = Mathf.Clamp01(_elapsed / 0.08f) * (1.0f - hazeT * hazeT);
 
             distortionBlock.SetFloat(ProgressId, ringProgress);
             distortionBlock.SetFloat(IntensityId, hazeIntensity);
@@ -1372,8 +1383,31 @@ namespace PresentationLayer.VFX
 
         private void LateUpdate()
         {
-            // 첫 프레임은 시간을 더하지 않아서 t=0의 첫 장면이 반드시 한 번 그려진다
-            float dt = true == bFirstFrame ? 0.0f : Time.deltaTime;
+            // 첫 프레임은 시간을 더하지 않아서 t=0의 첫 장면이 반드시 한 번 그려진다.
+            // 그 뒤로는 고정 박자(PixelVfxClock)로만 계산한다: 쉬는 프레임에는 지나간 시간만 모아 두고, 계산하는 프레임에 한꺼번에 흘린다.
+            if (true == bFirstFrame)
+            {
+                PixelVfxClock.ShouldStep(ref lastStepTick, stepPhase, PixelVfxClock.Rate);
+            }
+            else
+            {
+                pendingDeltaTime += Time.deltaTime;
+                if (false == PixelVfxClock.ShouldStep(ref lastStepTick, stepPhase, true == bLastStepVisible ? PixelVfxClock.Rate : PixelVfxClock.OffScreenRate))
+                {
+                    // 쉬는 프레임에도 나무의 흔들림을 지우는 변환 맞추기와 화면 왜곡 값은 화면 프레임마다 이어 간다(불씨·몸통 그림만 쉰다).
+                    // 재생이 끝난 뒤(남은 불씨만 사라지는 중이거나 이미 숨긴 뒤)에는 예전에도 하지 않던 일이라 하지 않는다.
+                    if (true == bLastStepVisible && elapsed < totalDuration)
+                    {
+                        SyncTransformsAndSorting();
+                        UpdateDistortion(elapsed + pendingDeltaTime);
+                    }
+
+                    return;
+                }
+            }
+
+            float dt = pendingDeltaTime;
+            pendingDeltaTime = 0.0f;
             bFirstFrame = false;
             elapsed += dt;
             framesSinceEnable++;
@@ -1409,7 +1443,7 @@ namespace PresentationLayer.VFX
 
             // 아래 셋은 계산 결과를 쓰지 않는다(Transform, 정렬, 경과 시간만 읽는다). 예전과 같은 시점에 읽도록 여기서 끝낸다.
             SyncTransformsAndSorting();
-            UpdateDistortion();
+            UpdateDistortion(elapsed);
 
             if (false == bodyRenderer.enabled) bodyRenderer.enabled = true;
 
@@ -1446,6 +1480,7 @@ namespace PresentationLayer.VFX
 
             if (true == bVisible) CommitEmbers();
 
+            bLastStepVisible = bVisible;
             work = null;
         }
 

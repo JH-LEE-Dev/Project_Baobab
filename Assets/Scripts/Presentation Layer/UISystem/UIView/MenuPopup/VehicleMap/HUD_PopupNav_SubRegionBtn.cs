@@ -631,15 +631,12 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         RectTransform _rect = null != clickImage ? clickImage.rectTransform : CachedRectTransform;
         if (null == _rect) return false;
 
-        Vector2 _mousePos = Vector2.zero;
-        if (null != UnityEngine.InputSystem.Mouse.current)
-        {
-            _mousePos = UnityEngine.InputSystem.Mouse.current.position.ReadValue();
-        }
-        else
-        {
-            _mousePos = Input.mousePosition;
-        }
+        // 마우스 장치가 없으면 가리키는 위치도 없으므로 호버가 아니다. 예전 Input.mousePosition으로 대신 읽으면
+        // 이 프로젝트는 새 입력 시스템 전용(activeInputHandler: 1)이라 InvalidOperationException이 난다.
+        UnityEngine.InputSystem.Mouse _mouse = UnityEngine.InputSystem.Mouse.current;
+        if (null == _mouse) return false;
+
+        Vector2 _mousePos = _mouse.position.ReadValue();
 
         Canvas _canvas = GetComponentInParent<Canvas>();
         Camera _cam = (null != _canvas && RenderMode.ScreenSpaceOverlay != _canvas.renderMode)

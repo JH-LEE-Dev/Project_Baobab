@@ -302,8 +302,12 @@ public class GameInstaller : MonoBehaviour
         bool _bMeteor = false == _bForceHide && (true == _bDungeonRun ? _objMgr.IsMeteorShowerActiveThisRun : _objMgr.bHasAcquiredStarCompass);
         bool _bQuake = false == _bForceHide && (true == _bDungeonRun ? _objMgr.IsQuakeActiveThisRun : _objMgr.bHasAcquiredObsidianCharm);
 
-        signalHub.Publish(RelicSkillHudSignal.SetCharge(ERelicSkillHudId.MeteorShower, _bMeteor, 0, _objMgr.MeteorShowerMaxStack));
-        signalHub.Publish(RelicSkillHudSignal.SetCharge(ERelicSkillHudId.Earthquake, _bQuake, 0, _objMgr.QuakeMaxStack));
+        // 스택은 원정이 끝나도 유지되므로 마을·던전에서는 지금 스택을 보낸다(로그라이크는 숨기므로 지금처럼 0).
+        int _meteorStack = true == _bForceHide ? 0 : _objMgr.MeteorShowerStack;
+        int _quakeStack = true == _bForceHide ? 0 : _objMgr.QuakeStack;
+
+        signalHub.Publish(RelicSkillHudSignal.SetCharge(ERelicSkillHudId.MeteorShower, _bMeteor, _meteorStack, _objMgr.MeteorShowerMaxStack));
+        signalHub.Publish(RelicSkillHudSignal.SetCharge(ERelicSkillHudId.Earthquake, _bQuake, _quakeStack, _objMgr.QuakeMaxStack));
     }
 
     private void BindEvents()

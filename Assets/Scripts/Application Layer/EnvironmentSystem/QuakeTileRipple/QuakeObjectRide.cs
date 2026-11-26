@@ -245,6 +245,17 @@ public sealed class QuakeObjectRide
     // 나무 말고도 모을 물체가 있는지(칸 높이를 따르거나 튀는 물체가 있다).
     private bool bCollect => bRideHeights || PopEnabled;
 
+    /// <summary>
+    /// [미리 준비] Begin이 줄 세워 둔 물체의 첫 몫을 지금 더한다(QuakeTileRipple.Prewarm). 부른 쪽이 바로 Stop으로 모두 돌려놓는다.
+    /// 그리기 사이에 끼지 않으므로 물체는 움직이지 않는다.
+    /// </summary>
+    public void PrewarmGather()
+    {
+        if (false == bActive || false == bCollect) return;
+
+        GatherStep(GatherBudget);
+    }
+
     /// <summary>물결이 도는 동안 매 프레임(게임 시간). 새로 나타난 물체를 잠깐마다 더한다.</summary>
     public void Tick(float _deltaTime)
     {

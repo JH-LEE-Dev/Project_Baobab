@@ -130,6 +130,23 @@ public class EmberItemController : MonoBehaviour
     };
     private readonly List<Vector3Int> neighborBuffer = new List<Vector3Int>(8);
 
+    // 나무가 한 프레임에 여러 그루 쓰러지면 불씨를 풀에서 꺼내 튀기는 일도 그 프레임에 몰린다. 원목(LogItemController.SpawnLogItem)과
+    // 같은 방식으로, 한 프레임에 MaxDropEmbersPerFrame개까지만 그 자리에서 튀기고 넘는 분량은 튀길 값을 적어 줄을 세웠다가 다음
+    // 프레임들에 순서대로 튀긴다. 개수·방향·착지 칸·높이는 쓰러지는 순간에 예전과 같은 순서로 정하므로 난수 흐름은 그대로이고,
+    // 한도 안인 프레임은 예전과 같다. 기믹 안내의 첫 드랍은 항상 그 자리에서 튀긴다.
+    private struct PendingEmberDrop
+    {
+        public Vector3 treePosition;
+        public Vector3 endPos;
+        public float height;
+        public float lifetime;
+    }
+
+    private const int MaxDropEmbersPerFrame = 12;
+    private readonly Queue<PendingEmberDrop> pendingEmberDrops = new Queue<PendingEmberDrop>(64);
+    private int emberDropFrame = -1;
+    private int emberDropsThisFrame = 0;
+
     public bool bEnabled => bEnabledThisRun;
 
     public void Initialize(ICharacter _character, IEnvironmentProvider _environmentProvider)
@@ -226,12 +243,8 @@ public class EmberItemController : MonoBehaviour
 
         for (int i = 0; i < count; i++)
         {
-            EmberItem ember = emberPool.Get();
-            if (ember == null) continue;
-
-            ember.Initialize(character, bGuideDrop ? 0f : droppedLifetime);
-
-            // 원목과 같은 흩뿌림(LogItemController.SpawnLogItem과 같은 거리·높이).
+            // 원목과 같은 흩뿌림(LogItemController.SpawnLogItem과 같은 거리·높이). 방향·착지 칸·높이는 불씨를 지금 튀기든
+            // 줄을 세우든 여기서 예전과 같은 순서로 정한다(풀에서 꺼내기·초기화는 난수를 쓰지 않는다).
             Vector2 randomDir = UnityEngine.Random.insideUnitCircle.normalized;
             float randomDist = UnityEngine.Random.Range(1.25f, 1.75f);
             Vector3 endPos = _treePosition + new Vector3(randomDir.x, randomDir.y * 0.5f, 0f) * randomDist;
@@ -244,24 +257,90 @@ public class EmberItemController : MonoBehaviour
             {
                 endPos = TryPickNeighborCell(treeCell, true, out Vector3Int landCell) ? tilemap.CellToWorld(landCell) : _treePosition;
 
-                if (IsBlockedPosition(endPos))
-                {
-                    TryReleaseEmber(ember);
-                    continue;
-                }
+                // 예전에는 꺼내 둔 불씨를 그대로 풀에 되돌렸다. 이제는 꺼내기 전이라 건너뛰기만 한다.
+                if (IsBlockedPosition(endPos)) continue;
             }
 
-            if (bGuideDrop)
+            float launchHeight = UnityEngine.Random.Range(0.75f, 1.25f);
+
+            if (false == bGuideDrop && false == TryTakeEmberDropSlot())
             {
-                ember.bGuideTracked = true;
-                guideEmbersRemaining++;
+                pendingEmberDrops.Enqueue(new PendingEmberDrop
+                {
+                    treePosition = _treePosition,
+                    endPos = endPos,
+                    height = launchHeight,
+                    lifetime = droppedLifetime,
+                });
+                continue;
             }
 
-            ember.Launch(_treePosition, endPos, UnityEngine.Random.Range(0.75f, 1.25f));
+            if (bGuideDrop) CountEmberDrop();
+
+            LaunchDropEmber(_treePosition, endPos, launchHeight, bGuideDrop ? 0f : droppedLifetime, bGuideDrop);
         }
 
         // 하나라도 실제로 떨어졌을 때만 첫 나무로 친다(전부 휴식 구역에 막히면 다음 나무가 다시 첫 나무가 된다).
         if (bGuideDrop && 0 < guideEmbersRemaining) bGuideFirstDropDone = true;
+    }
+
+    // 불씨 하나를 풀에서 꺼내 튀긴다(예전 SpawnDropEmbers 루프 안에서 하던 일 그대로).
+    private void LaunchDropEmber(Vector3 _treePosition, Vector3 _endPos, float _height, float _lifetime, bool _bGuideDrop)
+    {
+        EmberItem ember = emberPool.Get();
+        if (ember == null) return;
+
+        ember.Initialize(character, _lifetime);
+
+        if (_bGuideDrop)
+        {
+            ember.bGuideTracked = true;
+            guideEmbersRemaining++;
+        }
+
+        ember.Launch(_treePosition, _endPos, _height);
+    }
+
+    private void SyncEmberDropFrame()
+    {
+        int frame = Time.frameCount;
+        if (frame != emberDropFrame)
+        {
+            emberDropFrame = frame;
+            emberDropsThisFrame = 0;
+        }
+    }
+
+    private void CountEmberDrop()
+    {
+        SyncEmberDropFrame();
+        ++emberDropsThisFrame;
+    }
+
+    // 이번 프레임 한도 안이고 앞에 줄 선 불씨가 없으면 자리를 하나 쓰고 true(그 자리에서 튀긴다). 아니면 false(줄을 세운다 - 순서 유지).
+    private bool TryTakeEmberDropSlot()
+    {
+        SyncEmberDropFrame();
+
+        if (0 < pendingEmberDrops.Count || MaxDropEmbersPerFrame <= emberDropsThisFrame) return false;
+
+        ++emberDropsThisFrame;
+        return true;
+    }
+
+    private void FlushPendingEmberDrops()
+    {
+        SyncEmberDropFrame();
+
+        // 밀린 양이 많으면 한도를 그 절반까지 늘려 두세 프레임 안에 따라잡는다.
+        int limit = Mathf.Max(MaxDropEmbersPerFrame, (pendingEmberDrops.Count + 1) / 2);
+
+        while (0 < pendingEmberDrops.Count && emberDropsThisFrame < limit)
+        {
+            PendingEmberDrop pending = pendingEmberDrops.Dequeue();
+            ++emberDropsThisFrame;
+            LaunchDropEmber(pending.treePosition, pending.endPos, pending.height, pending.lifetime, false);
+        }
     }
 
     /// <summary>
@@ -439,6 +518,9 @@ public class EmberItemController : MonoBehaviour
 
     public void ClearAll()
     {
+        // 아직 튀기지 않은 불씨는 바닥에 떨어진 채 치워지는 불씨와 마찬가지로 버린다.
+        pendingEmberDrops.Clear();
+
         cleanupList.Clear();
         cleanupList.AddRange(activeEmbers);
         for (int i = 0; i < cleanupList.Count; i++)
@@ -455,6 +537,9 @@ public class EmberItemController : MonoBehaviour
     {
         // 게이지로 날아가는 불씨가 이번 프레임 목표를 읽기 전에 게이지 자리를 갱신한다
         UpdateGaugeAbsorbTarget();
+
+        // 앞선 프레임에서 한도를 넘어 줄을 세워 둔 불씨를 튀긴다(아래 갱신 루프가 이번 프레임부터 움직인다).
+        if (0 < pendingEmberDrops.Count) FlushPendingEmberDrops();
 
         if (updatingEmbers.Count > 0)
         {

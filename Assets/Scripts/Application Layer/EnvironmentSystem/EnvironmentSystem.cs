@@ -281,6 +281,28 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         return true;
     }
 
+    /// <summary>
+    /// 지진 바닥 물결의 첫 준비를 _center 둘레(화면 크기 영역)에서 숨긴 채 한 번 돌려 둔다(QuakeTileRipple.Prewarm).
+    /// 화면이 가려진 원정 시작 시점에 부른다. 화면·게임 상태는 바뀌지 않는다. 던전 맵이 없거나 지진 물결이 돌고 있으면 아무것도 하지 않는다.
+    /// </summary>
+    public void PrewarmQuakeRipple(Vector3 _center)
+    {
+        if (false == bDungeonMapActive || quakeRipple.IsBusy) return;
+
+        Camera camera = Camera.main;
+        if (null == camera || false == camera.orthographic) return;
+
+        tileMapGenerator.GetVisualTilemapsForRun(quakeFloorLayers, quakeWaterLayers, quakeShoreLayers);
+        if (quakeFloorLayers.Count == 0 || null == quakeFloorLayers[0]) return;
+
+        // 카메라는 아직 시작 지점에 와 있지 않을 수 있어, 화면 크기만 빌려 시작 지점 둘레를 영역으로 잡는다.
+        float halfHeight = camera.orthographicSize;
+        float halfWidth = halfHeight * camera.aspect;
+        _center.z = 0f;
+        Rect viewRect = new Rect(_center.x - halfWidth, _center.y - halfHeight, halfWidth * 2f, halfHeight * 2f);
+        quakeRipple.Prewarm(quakeFloorLayers[0].layoutGrid, quakeFloorLayers, quakeWaterLayers, quakeShoreLayers, _center, viewRect);
+    }
+
     private void PlayQuakeFeedback()
     {
         // 아래로 한 번 세게 찍고(되튀며 잦아든다) 웅웅대는 흔들림으로 이어진다. 진동(Earthquake)도 같은 모양이다.

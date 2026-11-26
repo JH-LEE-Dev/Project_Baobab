@@ -198,6 +198,9 @@ namespace PresentationLayer.VFX
         private float time;
         private float accumulator;
         private float glowAccumulator;
+        // 고정 박자(PixelVfxClock): 마지막으로 계산한 박자 번호와 이 인스턴스의 박자 어긋남. 바닥에 가만히 있는 동안에만 쓴다.
+        private int lastStepTick;
+        private float stepPhase;
         private float phase;
         private float flare;
         private float flareTimer;
@@ -350,6 +353,8 @@ namespace PresentationLayer.VFX
             time = 0.0f;
             accumulator = 0.0f;
             glowAccumulator = 0.0f;
+            lastStepTick = int.MinValue;
+            stepPhase = PixelVfxClock.NextPhase();
             phase = Rand01();
             flare = 0.0f;
             flareTimer = 1.0f + Rand01() * 2.0f;
@@ -913,6 +918,17 @@ namespace PresentationLayer.VFX
             }
 
             accumulator += dt;
+
+            // 바닥에 가만히 있는 동안(날아가거나 떨어지는 중이 아니고 자리·크기가 그대로)은 고정 박자로만 계산하고 다시 그린다.
+            // 지나간 시간은 accumulator에 쌓여 있다가 계산하는 프레임에 60Hz 스텝 여러 번으로 한꺼번에 돈다(스텝 계산 자체는 그대로).
+            if (true == bHasPrevious && false == bMoving && false == bDropFlight && -1 != meshVertexCount
+                && pos == lastDrawPosition && scale == lastDrawScale
+                && false == PixelVfxClock.ShouldStep(ref lastStepTick, stepPhase, PixelVfxClock.Rate))
+            {
+                glowAccumulator += dt;
+                return;
+            }
+
             int pendingSteps = 0;
             float pendingTime = accumulator;
             while (StepInterval <= pendingTime && pendingSteps < MaxStepsPerFrame)

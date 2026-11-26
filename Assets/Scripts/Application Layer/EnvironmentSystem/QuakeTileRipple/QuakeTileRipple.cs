@@ -539,6 +539,40 @@ public sealed class QuakeTileRipple
     }
 
     /// <summary>
+    /// [미리 준비] 물결의 시작 준비(복제층 만들기, 영역 타일 옮겨 쓰기, 물체 모으기 첫 몫)를 화면에 내지 않고 한 번 돌린 뒤 바로 끝낸다.
+    /// 게임을 켠 뒤 첫 물결에서만 더 드는 준비 비용(실측 2026-11-26: 옮겨 쓰기 첫 프레임과 전조 첫 프레임이 각각 10ms쯤 더 무겁다)을
+    /// 화면이 가려진 로딩 시점으로 옮긴다. 복제층은 내내 숨겨져 있고 끝나면 비워져, 준비 중에 끊긴 물결을 다 비운 뒤와 같은 상태다
+    /// (실제 층·물체·게임 상태는 건드리지 않는다). 물결이 돌거나 복제층을 비우는 중이면 아무것도 하지 않는다.
+    /// _viewRect는 물결이 처음 일어날 만한 화면(보통 시작 지점 둘레)이다.
+    /// </summary>
+    public void Prewarm(Grid _grid, List<Tilemap> _floor, List<Tilemap> _water, List<Tilemap> _shore, Vector3 _center, Rect _viewRect)
+    {
+        if (IsBusy) return;
+
+        if (false == Begin(_grid, _floor, _water, _shore, _center, _viewRect))
+        {
+            // 물결이 닿을 바닥이 없었다. 새로 만든 복제층이 있으면(렌더러가 켜진 채다) 숨겨 둔다.
+            SetLiftsVisible(false);
+            return;
+        }
+
+        // 옮겨 쓰기를 끝까지 한다(복제층은 Begin이 숨겨 두었다). 부를 때마다 칸이나 층이 넘어가므로 반드시 끝난다.
+        bool bCopied = CopyStep();
+        while (false == bCopied) bCopied = CopyStep();
+
+        // 물체 모으기도 첫 몫만 돌려 둔다. 모은 것은 아래 Stop에서 모두 돌려놓는다.
+        if (NeedsObjectRide)
+        {
+            BeginObjectRide();
+            objectRide.PrewarmGather();
+        }
+
+        // 준비 중에 끊긴 물결과 같은 길로 끝낸다: 복제층을 숨긴 채 비울 차례에 올리고(Stop) 바로 다 비운다.
+        Stop();
+        FinishClears();
+    }
+
+    /// <summary>
     /// 물결이 돌거나 끝난 복제층을 비우는 중이면(IsBusy) 매 프레임 부른다(게임 시간).
     /// 물결이 다 지나가면 복제층을 숨기고 false를 돌려준다. 그 뒤 부를 때마다 숨긴 복제층을 한 층씩 비운다.
     /// </summary>

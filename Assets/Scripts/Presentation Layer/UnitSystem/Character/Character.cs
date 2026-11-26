@@ -2069,16 +2069,18 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             // bDead/bIsSapling이 둘 다 다시 false로 리셋되지만 GameObject는 비활성화된다. CollisionSystem은
             // 이때 Unregister되지 않아 여전히 검색에 걸리므로, 비활성 오브젝트는 여기서 반드시 걸러야 한다.
             Transform treeTransform = treeObj.GetTransform();
-            bool isActiveInScene = treeTransform != null && treeTransform.gameObject.activeInHierarchy;
+            if (false == canApplyDamage || treeTransform == null) continue;
 
-            if (canApplyDamage && isActiveInScene)
+            // 거리부터 본다. 지금까지의 가장 가까운 후보보다 가깝지 않으면 어차피 뽑히지 않으므로, 활성 여부(엔진 호출 두 번)는
+            // 더 가까운 후보에게만 묻는다. 판정들은 모두 상태를 바꾸지 않는 읽기라 순서를 바꿔도 뽑히는 나무는 같다
+            // (ShockWave.ApplyShockWaveDamageToTargets와 같은 방식).
+            float isoSqr = GetIsometricDistSq(droneScanResults[i].Position, originPos);
+            if (false == (isoSqr < nearestIsoSqr)) continue;
+
+            if (treeTransform.gameObject.activeInHierarchy)
             {
-                float isoSqr = GetIsometricDistSq(droneScanResults[i].Position, originPos);
-                if (isoSqr < nearestIsoSqr)
-                {
-                    nearestIsoSqr = isoSqr;
-                    nearest = treeObj;
-                }
+                nearestIsoSqr = isoSqr;
+                nearest = treeObj;
             }
         }
 
@@ -2251,16 +2253,18 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             bool canApplyDamage = (treeObj as IDamageable)?.bCanApplyDamage ?? true;
 
             Transform treeTransform = treeObj.GetTransform();
-            bool isActiveInScene = treeTransform != null && treeTransform.gameObject.activeInHierarchy;
+            if (false == canApplyDamage || treeTransform == null) continue;
 
-            if (canApplyDamage && isActiveInScene)
+            // 거리부터 본다. 지금까지의 가장 가까운 후보보다 가깝지 않으면 어차피 뽑히지 않으므로, 활성 여부(엔진 호출 두 번)는
+            // 더 가까운 후보에게만 묻는다. 판정들은 모두 상태를 바꾸지 않는 읽기라 순서를 바꿔도 뽑히는 나무는 같다
+            // (ShockWave.ApplyShockWaveDamageToTargets와 같은 방식).
+            float isoSqr = GetIsometricDistSq(droneScanResults[i].Position, originPos);
+            if (false == (isoSqr < nearestIsoSqr)) continue;
+
+            if (treeTransform.gameObject.activeInHierarchy)
             {
-                float isoSqr = GetIsometricDistSq(droneScanResults[i].Position, originPos);
-                if (isoSqr < nearestIsoSqr)
-                {
-                    nearestIsoSqr = isoSqr;
-                    nearest = treeObj;
-                }
+                nearestIsoSqr = isoSqr;
+                nearest = treeObj;
             }
         }
 

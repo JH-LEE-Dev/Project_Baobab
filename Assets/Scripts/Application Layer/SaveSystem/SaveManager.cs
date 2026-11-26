@@ -413,6 +413,7 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
 
         // 0. 이 세이브를 만든 빌드를 각인한다. 정식 빌드는 데모 세이브를 이어받지 않고 그대로 덮어쓴다.
         cachedSaveData.buildVariant = BuildInfo.Variant;
+        cachedSaveData.saveVersion = CURRENT_SAVE_VERSION;
 
         // 0-1. 엔딩 시청 / 로그라이크 해금
         cachedSaveData.bEndingSeen = bEndingSeen;
@@ -461,6 +462,8 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
             cachedSaveData.bHasAcquiredSporePotion = inDungeonObjectManager.bHasAcquiredSporePotion;
             cachedSaveData.bHasAcquiredStarCompass = inDungeonObjectManager.bHasAcquiredStarCompass;
             cachedSaveData.bHasAcquiredObsidianCharm = inDungeonObjectManager.bHasAcquiredObsidianCharm;
+            cachedSaveData.meteorShowerStack = inDungeonObjectManager.SavedMeteorShowerStack;
+            cachedSaveData.quakeStack = inDungeonObjectManager.SavedQuakeStack;
             cachedSaveData.bGoldTreePityDone = inDungeonObjectManager.bGoldTreePityDone;
             cachedSaveData.bGoldTreePityArmed = inDungeonObjectManager.IsGoldTreePityArmed;
             cachedSaveData.goldTreePityThreshold = inDungeonObjectManager.GoldTreePityThreshold;
@@ -990,6 +993,7 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
             inDungeonObjectManager.bHasAcquiredSporePotion = _data.bHasAcquiredSporePotion;
             inDungeonObjectManager.bHasAcquiredStarCompass = _data.bHasAcquiredStarCompass;
             inDungeonObjectManager.bHasAcquiredObsidianCharm = _data.bHasAcquiredObsidianCharm;
+            inDungeonObjectManager.RestoreRelicStacks(_data.meteorShowerStack, _data.quakeStack);
             inDungeonObjectManager.bGoldTreePityDone = _data.bGoldTreePityDone;
 
             // 이 복원은 스킬 재적용(1단계)보다 뒤라, 1단계의 TryArmGoldTreePity가 방금 새로
@@ -1037,6 +1041,8 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
                 return false;
             }
 
+            UpgradeSaveData(saveData);
+
             _data = saveData;
             return true;
         }
@@ -1045,6 +1051,34 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
             Debug.LogError($"[SaveManager] Failed to parse save JSON: {_e.Message}");
             return false;
         }
+    }
+
+    // // 세이브 형식 번호
+    // 필드를 새로 추가하기만 하는 변경은 번호를 올리지 않아도 된다(키가 없는 예전 세이브는 기본값으로 읽힌다).
+    // 기존 필드의 이름·뜻·형식을 바꾸거나 저장되는 열거형의 순서를 바꿀 때는 CURRENT_SAVE_VERSION을 1 올리고,
+    // UpgradeSaveData에 "if (_data.saveVersion < N) { 예전 형식 -> 새 형식 변환 }" 단계를 순서대로 덧붙인다.
+    public const int CURRENT_SAVE_VERSION = 1;
+
+    private static bool bLoggedNewerSaveVersion;
+
+    // 파싱 직후 호출된다. 읽기 경로(로컬·백업·클라우드 사전 검증·메인 메뉴 확인)가 모두 TryParseSaveBytes를
+    // 지나므로 어디서 읽어도 현재 형식의 데이터를 받는다. 같은 데이터에 여러 번 불려도 결과가 같아야 한다.
+    private static void UpgradeSaveData(GameSaveData _data)
+    {
+        if (_data.saveVersion > CURRENT_SAVE_VERSION)
+        {
+            // 이 빌드보다 새 빌드가 만든 세이브(베타 브랜치에서 되돌린 경우 등). 지금은 읽는 방식을 바꾸지 않고 기록만 남긴다.
+            if (false == bLoggedNewerSaveVersion)
+            {
+                bLoggedNewerSaveVersion = true;
+                Debug.LogWarning($"[SaveManager] Save was created by a newer save format (version {_data.saveVersion}); this build supports up to {CURRENT_SAVE_VERSION}.");
+            }
+            return;
+        }
+
+        // 0 -> 1: 번호가 새로 생겼을 뿐 내용 형식은 같다.
+
+        _data.saveVersion = CURRENT_SAVE_VERSION;
     }
 
     // 임시 파일에 먼저 쓰고 File.Replace(원자적 교체 + 기존 파일을 백업으로 자동 이동)로 반영한다.

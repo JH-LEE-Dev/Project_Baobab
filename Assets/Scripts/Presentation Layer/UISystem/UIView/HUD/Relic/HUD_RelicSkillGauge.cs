@@ -3,9 +3,9 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// 전리품 발동형 스킬(유성우/지진) 임시 원형 HUD 게이지.
-/// 보임/숨김은 해금 및 현재 맵 상태로 제어하고, Radial360 채움 + 발동 시 바운스/섬광을 재생한다.
-/// 실제 리소스가 준비되면 프리팹의 원형 프레임/채움/아이콘 스프라이트만 교체한다.
+/// 전리품 발동형 스킬(유성우/지진) 구슬 HUD 게이지.
+/// 보임/숨김은 해금 및 현재 맵 상태로 제어하고, 스택이 찰수록 구슬이 아래에서 위로 차오른다(정수 도트 행으로 스냅).
+/// 유성우는 내리는 동안 게이지가 0까지 천천히 줄고, 지진은 쿨타임 동안 구슬 위에 음영이 덮였다가 위에서부터 아래로 걷힌다.
 /// </summary>
 public class HUD_RelicSkillGauge : MonoBehaviour
 {
@@ -14,8 +14,20 @@ public class HUD_RelicSkillGauge : MonoBehaviour
     [Tooltip("보임/숨김 및 스케일 연출 대상. 피벗은 가운데.")]
     [SerializeField] private RectTransform visualRoot;
     [SerializeField] private Image fillImage;
+    [SerializeField] private Material meteorFillMaterial;
+    [SerializeField] private Material earthquakeFillMaterial;
+    [Tooltip("쿨타임 중 게이지 실루엣과 채움 위에 겹치는 반투명 검정 이미지.")]
+    [SerializeField] private Image cooldownImage;
     [Tooltip("발동 순간 겹치는 흰 섬광 오버레이.")]
     [SerializeField] private Image flashImage;
+
+    [Header("Fill Shape")]
+    [Tooltip("채움 스프라이트 안에서 채움 픽셀이 시작하는 행(아래부터)과 높이, 스프라이트 높이(px)")]
+    [SerializeField] private int fillContentY = 22;
+    [SerializeField] private int fillContentHeight = 20;
+    [SerializeField] private int spriteSize = 64;
+    [Tooltip("쿨타임 음영 스프라이트의 시작 행과 높이(px). 높이가 0이면 채움 영역을 사용한다.")]
+    [SerializeField] private Vector2Int cooldownContent;
 
     [Header("Color")]
     [SerializeField] private Color chargingColor = new Color32(110, 210, 255, 255);
@@ -32,6 +44,9 @@ public class HUD_RelicSkillGauge : MonoBehaviour
     [SerializeField] private Ease bounceEase = Ease.OutBack;
     [SerializeField] private float bounceOvershoot = 2.2f;
     [SerializeField] private float flashTime = 0.14f;
+    private const float EarthquakeShakeDuration = 0.5f;
+    private const float EarthquakeShakeAmplitude = 2.625f;
+    private const int EarthquakeShakeCycles = 3;
 
     // 내부 상태
     private bool bUnlocked = false;
@@ -43,7 +58,14 @@ public class HUD_RelicSkillGauge : MonoBehaviour
     private bool bActiveDraining = false;
     private float enterAge = -1f;
     private float bounceAge = -1f;
+    private float earthquakeShakeAge = -1f;
     private float flashAge = -1f;
+    // 쿨타임이 끝나는 시각(Time.time 기준, 0 미만이면 쿨타임 없음). 게임 쪽 쿨타임도 Time.deltaTime으로 줄어 일시정지 때 함께 멈춘다.
+    private float cooldownEndTime = -1f;
+    private float cooldownTotal = 0f;
+    private int cooldownShownPx = -1;
+    private HUD_MeteorShowerFill meteorFill;
+    private HUD_EarthquakeFill earthquakeFill;
 
     public bool IsUnlocked
     {
@@ -70,6 +92,7 @@ public class HUD_RelicSkillGauge : MonoBehaviour
         {
             enterAge = 0f;
             ApplyEnterScale(0f);
+            UpdateCooldown();
         }
         else
         {
@@ -91,7 +114,19 @@ public class HUD_RelicSkillGauge : MonoBehaviour
         activeDrainElapsed = 0f;
         targetRatio = _nextRatio;
 
-        ApplyFill(_nextRatio, 1f <= _nextRatio ? readyColor : chargingColor);
+        if (earthquakeFill != null)
+        {
+            if (_bSilent || !bUnlocked)
+                earthquakeFill.Reset(_nextRatio);
+            else
+                earthquakeFill.Charge(_nextRatio);
+        }
+        else if (meteorFill == null)
+            ApplyFill(_nextRatio, 1f <= _nextRatio ? readyColor : chargingColor);
+        else if (_bSilent || !bUnlocked)
+            meteorFill.Reset(_nextRatio);
+        else
+            meteorFill.Charge(_nextRatio);
 
         if (true == _bSilent || false == bUnlocked)
         {
@@ -102,7 +137,7 @@ public class HUD_RelicSkillGauge : MonoBehaviour
         {
             StartBounce();
 
-            if (1f <= _nextRatio)
+            if (1f <= _nextRatio && meteorFill == null && earthquakeFill == null)
             {
                 StartFlash();
             }
@@ -120,8 +155,19 @@ public class HUD_RelicSkillGauge : MonoBehaviour
             return;
         }
 
+        if (earthquakeFill != null)
+        {
+            targetRatio = 0f;
+            bounceAge = -1f;
+            earthquakeShakeAge = 0f;
+            UpdateEarthquakeShake(0f);
+            earthquakeFill.Trigger();
+            return;
+        }
+
         StartBounce();
-        StartFlash();
+        if (meteorFill == null || _drainDuration <= 0.05f)
+            StartFlash();
 
         if (0.05f < _drainDuration)
         {
@@ -129,7 +175,10 @@ public class HUD_RelicSkillGauge : MonoBehaviour
             activeDrainDuration = _drainDuration;
             activeDrainElapsed = 0f;
             targetRatio = 1f;
-            ApplyFill(1f, activeDrainColor);
+            if (meteorFill != null)
+                meteorFill.Trigger();
+            else
+                ApplyFill(1f, activeDrainColor);
         }
         else
         {
@@ -139,9 +188,31 @@ public class HUD_RelicSkillGauge : MonoBehaviour
         }
     }
 
+    // 남은 쿨타임과 전체 쿨타임(초). 남은 시간이 0 이하이면 음영을 걷는다.
+    public void SetCooldown(float _remaining, float _total)
+    {
+        if (0f >= _remaining || 0f >= _total)
+        {
+            cooldownEndTime = -1f;
+            cooldownTotal = 0f;
+        }
+        else
+        {
+            cooldownTotal = _total;
+            cooldownEndTime = Time.time + Mathf.Min(_remaining, _total);
+        }
+
+        UpdateCooldown();
+    }
+
     private void Awake()
     {
         CacheBase();
+
+        if (meteorFillMaterial != null && fillImage != null && fillImage.sprite != null)
+            meteorFill = new HUD_MeteorShowerFill(fillImage, meteorFillMaterial, fillContentY, fillContentHeight);
+        else if (earthquakeFillMaterial != null && fillImage != null && fillImage.sprite != null)
+            earthquakeFill = new HUD_EarthquakeFill(fillImage, earthquakeFillMaterial, fillContentY, fillContentHeight);
 
         if (null != visualRoot)
         {
@@ -149,6 +220,7 @@ public class HUD_RelicSkillGauge : MonoBehaviour
         }
 
         ApplyFill(0f, chargingColor);
+        UpdateCooldown();
 
         if (null != flashImage)
         {
@@ -166,8 +238,55 @@ public class HUD_RelicSkillGauge : MonoBehaviour
         float _dt = Time.deltaTime;
         UpdateEnter(_dt);
         UpdateBounce(_dt);
+        UpdateEarthquakeShake(_dt);
         UpdateFlash(_dt);
         UpdateActiveDrain(_dt);
+        meteorFill?.Tick(_dt);
+        earthquakeFill?.Tick(_dt, cooldownEndTime > Time.time);
+        UpdateCooldown();
+    }
+
+    private void OnDestroy()
+    {
+        meteorFill?.Dispose();
+        earthquakeFill?.Dispose();
+    }
+
+    // 음영 높이 = 남은 쿨타임 비율. 아래쪽을 기준으로 위 가장자리가 내려가며 걷힌다.
+    // 남은 시간이 조금이라도 있으면 1행은 남기도록 올림한다(끝나는 순간 정확히 사라짐).
+    private void UpdateCooldown()
+    {
+        if (null == cooldownImage)
+        {
+            return;
+        }
+
+        int _height = cooldownContent.y > 0 ? cooldownContent.y : fillContentHeight;
+        int _bottom = cooldownContent.y > 0 ? cooldownContent.x : fillContentY;
+        int _px = 0;
+
+        if (0f <= cooldownEndTime && 0f < cooldownTotal)
+        {
+            float _remain = cooldownEndTime - Time.time;
+
+            if (0f < _remain)
+            {
+                _px = Mathf.Clamp(Mathf.CeilToInt(_remain / cooldownTotal * _height), 1, _height);
+            }
+            else
+            {
+                cooldownEndTime = -1f;
+            }
+        }
+
+        if (_px == cooldownShownPx)
+        {
+            return;
+        }
+
+        cooldownShownPx = _px;
+        cooldownImage.enabled = 0 < _px;
+        cooldownImage.fillAmount = (float)(_bottom + _px) / Mathf.Max(1, spriteSize);
     }
 
     private void CacheBase()
@@ -215,7 +334,8 @@ public class HUD_RelicSkillGauge : MonoBehaviour
 
     private void StartBounce()
     {
-        bounceAge = 0f;
+        if (earthquakeShakeAge < 0f)
+            bounceAge = 0f;
     }
 
     private void UpdateBounce(float _dt)
@@ -238,6 +358,30 @@ public class HUD_RelicSkillGauge : MonoBehaviour
         float _t = bounceAge / _duration;
         float _offsetY = DOVirtual.EasedValue(bounceHeight, 0f, _t, bounceEase, bounceOvershoot, 0f);
         visualRoot.anchoredPosition = new Vector2(rootBasePos.x, rootBasePos.y + _offsetY);
+    }
+
+    private void UpdateEarthquakeShake(float _dt)
+    {
+        if (earthquakeShakeAge < 0f || visualRoot == null)
+            return;
+
+        earthquakeShakeAge += _dt;
+        if (earthquakeShakeAge >= EarthquakeShakeDuration)
+        {
+            earthquakeShakeAge = -1f;
+            visualRoot.anchoredPosition = rootBasePos;
+            return;
+        }
+
+        // Slow the phase near the end and ease out the last bit of motion.
+        float _progress = earthquakeShakeAge / EarthquakeShakeDuration;
+        float _remaining = 1f - _progress;
+        float _settle = Mathf.SmoothStep(0f, 1f, _remaining * 10f);
+        float _envelope = EarthquakeShakeAmplitude * Mathf.Pow(_remaining, 0.75f) * _settle;
+        float _phaseProgress = _progress * (1f + 0.2f * _remaining);
+        float _phase = 2f * Mathf.PI * EarthquakeShakeCycles * _phaseProgress;
+        float _offsetX = Mathf.Round(_envelope * Mathf.Sin(_phase));
+        visualRoot.anchoredPosition = rootBasePos + Vector2.right * _offsetX;
     }
 
     private void StartFlash()
@@ -285,25 +429,45 @@ public class HUD_RelicSkillGauge : MonoBehaviour
         }
 
         float _remainRatio = Mathf.Clamp01(1f - (activeDrainElapsed / activeDrainDuration));
-        ApplyFill(_remainRatio, activeDrainColor);
+        if (meteorFill != null)
+            meteorFill.Drain(_remainRatio, activeDrainElapsed);
+        else
+            ApplyFill(_remainRatio, activeDrainColor);
     }
 
     private void ApplyFill(float _ratio, Color _color)
     {
+        if (earthquakeFill != null)
+        {
+            earthquakeFill.Reset(_ratio);
+            return;
+        }
+
+        if (meteorFill != null)
+        {
+            meteorFill.Reset(_ratio);
+            return;
+        }
+
         if (null == fillImage)
         {
             return;
         }
 
-        fillImage.fillAmount = Mathf.Clamp01(_ratio);
+        // 채움 높이를 정수 도트 행으로 스냅한다(구슬 안쪽 원의 아래 행부터 차오름)
+        float _px = Mathf.Round(Mathf.Clamp01(_ratio) * fillContentHeight);
+        fillImage.fillAmount = (fillContentY + _px) / Mathf.Max(1, spriteSize);
         fillImage.color = _color;
     }
 
     private void ClearEffects()
     {
         bounceAge = -1f;
+        earthquakeShakeAge = -1f;
         flashAge = -1f;
         bActiveDraining = false;
+        meteorFill?.Reset(0f);
+        earthquakeFill?.Reset(0f);
 
         if (null != visualRoot)
         {

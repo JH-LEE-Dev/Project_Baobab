@@ -213,6 +213,8 @@ public class LogItem : Item, IStaticCollidable
     private Transform outlineTransform; // outlineObj.transform 프로퍼티(네이티브 호출)를 매 프레임 반복하지 않도록 캐싱
     private TweenCallback syncOutlineCallback; // 벨트 트윈마다 메서드 그룹 델리게이트를 새로 할당하지 않도록 캐싱
     [SerializeField] private SpriteRenderer outlineStencilSR;
+    // 비어 있으면 외곽선을 고리 한 번으로 그리는 구성이다: outlineStencilSR이 OutlineRing_LogItem 재질로 외곽선 색을 바로 칠한다(LogItem 프리팹).
+    // 채워져 있으면 예전 구성이다: outlineStencilSR이 스텐실만 쓰고 이 렌더러가 몸통 뒤에 외곽선을 칠한다(LogItem_ToCut 프리팹).
     [SerializeField] private SpriteRenderer outlineSR;
 
     [Header("Outline Color")]
@@ -322,6 +324,11 @@ public class LogItem : Item, IStaticCollidable
         if (outlineSR != null && outlineStencilSR != null)
         {
             outlineSR.sortingOrder = spriteRenderer.sortingOrder;
+            outlineStencilSR.sortingOrder = spriteRenderer.sortingOrder - 1;
+        }
+        else if (outlineStencilSR != null)
+        {
+            // 외곽선을 고리 한 번으로 그리는 구성(outlineSR 없음): 고리 렌더러만 몸통보다 한 칸 앞에 둔다
             outlineStencilSR.sortingOrder = spriteRenderer.sortingOrder - 1;
         }
 
@@ -898,6 +905,11 @@ public class LogItem : Item, IStaticCollidable
             outlineSR.SetPropertyBlock(null);
             outlineSR.color = originalOutlineColor; // FadeAndVanish 연출로 줄어든 알파 복구
         }
+        else if (null != outlineStencilSR)
+        {
+            // 고리 한 번 구성에서는 고리 렌더러가 외곽선 색 블록을 들고 있다(ApplyOutlineColor 참고)
+            outlineStencilSR.SetPropertyBlock(null);
+        }
 
         if (null != shadowRenderer)
         {
@@ -1007,8 +1019,7 @@ public class LogItem : Item, IStaticCollidable
         if (bDisableCustomSortable == false)
         {
             customSortable.ManualLateUpdate();
-            if (outlineStencilSR != null && outlineSR != null)
-                outlineStencilSR.sortingOrder = outlineSR.sortingOrder - 1;
+            SyncOutlineStencilOrder();
         }
 
         // 모든 이동 상태(포물선/전송/흡입/착지)에서 아웃라인이 본체 그림을 따라가게 한 곳에서 맞춘다
@@ -1019,13 +1030,24 @@ public class LogItem : Item, IStaticCollidable
         SyncParticleSorting();
     }
 
+    // 정렬기가 자식 렌더러 전부에 같은 순서를 넣은 뒤, 스텐실 작성기(또는 고리)만 몸통보다 한 칸 앞으로 옮긴다.
+    // 외곽선 렌더러가 있는 구성은 예전 그대로 외곽선 순서를 기준으로 하고(몸통과 같은 값), 없는 구성은 몸통 순서를 기준으로 한다.
+    private void SyncOutlineStencilOrder()
+    {
+        if (outlineStencilSR == null) return;
+
+        if (outlineSR != null)
+            outlineStencilSR.sortingOrder = outlineSR.sortingOrder - 1;
+        else if (spriteRenderer != null)
+            outlineStencilSR.sortingOrder = spriteRenderer.sortingOrder - 1;
+    }
+
     public void UpdateSortingOrder()
     {
         if (bDisableCustomSortable == false)
         {
             customSortable.ManualLateUpdate();
-            if (outlineStencilSR != null && outlineSR != null)
-                outlineStencilSR.sortingOrder = outlineSR.sortingOrder - 1;
+            SyncOutlineStencilOrder();
         }
 
         SyncOutlineTransform();
@@ -1838,24 +1860,27 @@ public class LogItem : Item, IStaticCollidable
                 spriteRenderer.SetPropertyBlock(mpb);
             }
         }
-        if (outlineStencilSR != null) outlineStencilSR.SetPropertyBlock(null);
+        // 고리 한 번 구성(outlineSR 없음)에서는 작성기 자리의 렌더러가 외곽선 색 블록을 들고 있으므로 비우지 않는다
+        if (outlineStencilSR != null && outlineSR != null) outlineStencilSR.SetPropertyBlock(null);
     }
 
     private void ApplyOutlineColor()
     {
-        if (outlineSR == null) return;
+        // 외곽선 색을 받는 렌더러: 예전 구성은 몸통 뒤의 외곽선 렌더러, 고리 한 번 구성(OutlineRing_LogItem)은 작성기 자리의 렌더러
+        SpriteRenderer colorRenderer = outlineSR != null ? outlineSR : outlineStencilSR;
+        if (colorRenderer == null) return;
 
         // 외곽선 블록에 들어가는 값은 _OutlineColor 하나뿐이다. 재질 색과 정확히 같으면 블록을 비운다(본체와 같은 이유, SetShaderFloating 참고).
-        Material outlineMaterial = outlineSR.sharedMaterial;
+        Material outlineMaterial = colorRenderer.sharedMaterial;
         if (outlineMaterial != null && outlineMaterial.HasColor(OutlineColorPropertyID) && outlineMaterial.GetColor(OutlineColorPropertyID).Equals(normalOutlineColor))
         {
-            outlineSR.SetPropertyBlock(null);
+            colorRenderer.SetPropertyBlock(null);
             return;
         }
 
         if (mpb == null) mpb = new MaterialPropertyBlock();
-        outlineSR.GetPropertyBlock(mpb);
+        colorRenderer.GetPropertyBlock(mpb);
         mpb.SetColor(OutlineColorPropertyID, normalOutlineColor);
-        outlineSR.SetPropertyBlock(mpb);
+        colorRenderer.SetPropertyBlock(mpb);
     }
 }

@@ -354,6 +354,8 @@ public class InDungeonSystem : MonoBehaviour
     {
         // 화면이 아직 가려져 있는 지금, 전투 중 처음 켜질 때 준비가 몰리는 이펙트를 미리 준비한다.
         inDungeonObjectManager.PrewarmSporeDebuffVfx();
+        // 지진(흑요 부적)의 바닥 물결 첫 준비도 같은 이유로 지금 해 둔다. 로그라이크는 건드리지 않는다.
+        if (false == GameModeContext.IsRoguelike) inDungeonObjectManager.PrewarmQuakeRipple();
 
         inDungeonObjectManager.ReadyPortal();
         inDungeonProductionManager.Offroad_DI(inDungeonObjectManager.offroadVehicle);
@@ -371,10 +373,11 @@ public class InDungeonSystem : MonoBehaviour
         // "산불 조심"·"예열" 중 하나라도 찍었으면 다른 숲에서도 과열 게이지를 띄운다(맵 선언보다 먼저 알려, HUD가 올라올 때 함께 나오게 한다).
         signalHub.Publish(new OverheatGaugeRequiredSignal(character.bEmberEverywhere || character.PreheatAmount > 0f));
         // 유성우(별빛 나침반) / 지진(흑요 부적) 전리품 활성 여부 및 초기 게이지 상태를 HUD에 알린다.
+        // 스택은 원정이 끝나도 유지되므로 지금 스택을 보낸다.
         signalHub.Publish(RelicSkillHudSignal.SetCharge(ERelicSkillHudId.MeteorShower,
-            inDungeonObjectManager.IsMeteorShowerActiveThisRun, 0, inDungeonObjectManager.MeteorShowerMaxStack));
+            inDungeonObjectManager.IsMeteorShowerActiveThisRun, inDungeonObjectManager.MeteorShowerStack, inDungeonObjectManager.MeteorShowerMaxStack));
         signalHub.Publish(RelicSkillHudSignal.SetCharge(ERelicSkillHudId.Earthquake,
-            inDungeonObjectManager.IsQuakeActiveThisRun, 0, inDungeonObjectManager.QuakeMaxStack));
+            inDungeonObjectManager.IsQuakeActiveThisRun, inDungeonObjectManager.QuakeStack, inDungeonObjectManager.QuakeMaxStack));
         signalHub.Publish(new DecalreDungeonTypeSignal(currentMapType, currentForestType));
 
         // 스테이지 첫 입장 도전과제. MainMenu → Dungeon은 튜토리얼 원정이라 세지 않는다.
@@ -496,16 +499,20 @@ public class InDungeonSystem : MonoBehaviour
             inDungeonObjectManager.IsMeteorShowerActiveThisRun, _duration));
     }
 
+    // 쿨타임 중에도 스택은 차므로 남은 쿨타임을 함께 보내 HUD 음영을 맞춘다(숲 방문 초기화 때는 0이라 음영이 걷힌다).
     private void QuakeChargeChanged(int _current, int _max)
     {
         signalHub.Publish(RelicSkillHudSignal.SetCharge(ERelicSkillHudId.Earthquake,
-            inDungeonObjectManager.IsQuakeActiveThisRun, _current, _max));
+            inDungeonObjectManager.IsQuakeActiveThisRun, _current, _max,
+            inDungeonObjectManager.QuakeCooldownRemaining, inDungeonObjectManager.QuakeCooldown));
     }
 
+    // 발동 순간 쿨타임이 막 시작된다(TriggerQuake가 쿨타임을 채운 뒤 이벤트를 보낸다).
     private void QuakeTriggered()
     {
         signalHub.Publish(RelicSkillHudSignal.Trigger(ERelicSkillHudId.Earthquake,
-            inDungeonObjectManager.IsQuakeActiveThisRun, 0f));
+            inDungeonObjectManager.IsQuakeActiveThisRun, 0f,
+            inDungeonObjectManager.QuakeCooldownRemaining, inDungeonObjectManager.QuakeCooldown));
     }
 
     // 용암숲 기믹 안내가 떠 있는 동안만 불씨 화살표·첫 나무 불씨 추적을 켠다(클리어·원정 종료로 내려가면 끈다).
