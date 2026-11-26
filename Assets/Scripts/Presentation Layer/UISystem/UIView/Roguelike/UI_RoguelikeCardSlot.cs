@@ -25,6 +25,10 @@ using UnityEngine.UI;
 ///   두근 0.45초(뒷면이 박자마다 1px 떨림) → 뒤집힘(뜀 10px) → 공개 순간 흰 실루엣(flash · 와이프 없음) → 팡 · 타다다닥 · 유지(후광 · 빛살 · 입자는 rareFx가 슬롯 밖 층에 그린다).
 ///   슬롯은 매 프레임 자기 위치 · 알파 · 카드 모양을 rareFx에 넘기고, rareFx가 정한 실루엣 색을 카드에 덮는다. rareFx가 비어 있으면 일반 카드와 똑같이 동작한다.
 ///   두근 시작 ~ 유지 시작 사이에는 RareSpotlightEvent(true)로 화면이 다른 카드를 어둡게 한다.
+///
+/// [빛기둥 소환] PlaySummonIntro(_summonDelay, _flipDelay, _bRare)는 _summonDelay까지 카드 그림을 숨기고(UI_RoguelikeCard.SetSummonHidden), 그 순간 뒷면이 흰 실루엣으로 나타나
+///   약 0.3초에 걸쳐 원래 뒷면으로 돌아오고, 0.05초 뒤 1px 눌림 착지한다(먼지 없음). 빛기둥 자체는 화면(UI_RoguelikeSummonPillarFx)이 그린다. 이후 _flipDelay에 기존 뒤집힘이 이어진다.
+///   숨김은 슬롯 canvasGroup(구매 흐려짐 전용)이 아니라 카드 그림 쪽에서 처리한다.
 /// </summary>
 public class UI_RoguelikeCardSlot : MonoBehaviour
 {
@@ -51,6 +55,10 @@ public class UI_RoguelikeCardSlot : MonoBehaviour
     private const float RevealFlashAlpha = 0.35f;
     private const float ShakeStepSeconds = 0.03f;
     private static readonly int[] ShakePattern = { -2, 2, -2, 2, -1, 1, 0 };
+    // 빛기둥 소환: 흰 실루엣은 1.3에서 초당 4씩 줄어(약 0.3초) 사라지고, 기둥 + 0.05초에 1px 눌려 0.08초 머문다.
+    private const float SummonWhiteStart = 1.3f;
+    private const float SummonWhiteDecay = 4f;
+    private const float SummonPressDelay = 0.05f;
     private const float DisabledButtonAlpha = 0.4f;
     private const float RerollFocusSeconds = 0.1f;
     private static readonly Color RerollIdleColor = new Color(0.9f, 0.88f, 0.84f, 1f);
@@ -95,6 +103,14 @@ public class UI_RoguelikeCardSlot : MonoBehaviour
     private bool bRareSpotlight;
     private int rareShake;
     private Color32 lastSilhouette;
+    // 빛기둥 소환 상태. summonStartTime = 기둥이 치는 시각(animTime 기준, 지연 때문에 보통 음수).
+    private bool bSummoning;
+    private bool bSummonShown;
+    private bool bSummonSilhouette;
+    private bool bSummonPressed;
+    private float summonStartTime;
+    private bool bRerollAvailable = true;
+    private float rerollFade = 1f;
     private float rerollFocusTarget;
     private float rerollFocusAmount;
     private float rerollIconBaseY;
@@ -117,6 +133,7 @@ public class UI_RoguelikeCardSlot : MonoBehaviour
 
         gameObject.SetActive(true);
         StopRareFx();
+        EndSummon();
         card.SetData(_data);
 
         anim = EAnim.Idle;
@@ -132,6 +149,7 @@ public class UI_RoguelikeCardSlot : MonoBehaviour
     {
         anim = EAnim.Idle;
         StopRareFx();
+        EndSummon();
         SetRerollVisible(false);
         gameObject.SetActive(false);
     }
@@ -150,8 +168,23 @@ public class UI_RoguelikeCardSlot : MonoBehaviour
     {
         if (null == rerollButton) return;
 
+        bRerollAvailable = _bAvailable;
         rerollButton.interactable = _bAvailable;
-        rerollGroup.alpha = true == _bAvailable ? 1f : DisabledButtonAlpha;
+        ApplyRerollAlpha();
+    }
+
+    /// <summary>칸별 리롤 버튼 나타남 정도(0 ~ 1). 빛기둥 소환이 끝난 뒤 버튼이 0.15초에 나타날 때 쓴다. 사용 불가 회색(알파)에 곱해진다.</summary>
+    public void SetRerollFade(float _fade)
+    {
+        rerollFade = _fade;
+        ApplyRerollAlpha();
+    }
+
+    private void ApplyRerollAlpha()
+    {
+        if (null == rerollGroup) return;
+
+        rerollGroup.alpha = (true == bRerollAvailable ? 1f : DisabledButtonAlpha) * rerollFade;
     }
 
     /// <summary>칸별 리롤 버튼 포커스 표시: 배경이 밝아지고 아이콘이 1px 뜬다(0.1초, unscaled).</summary>
@@ -244,11 +277,90 @@ public class UI_RoguelikeCardSlot : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 빛기둥 소환 등장. _summonDelay초까지 카드 그림을 숨기고, 그 순간(기둥이 치는 순간) 뒷면이 흰 실루엣으로 나타났다가 약 0.3초에 걸쳐 원래 뒷면으로 돌아오고
+    /// 0.05초 뒤 1px 눌림 착지한다. 이어서 _flipDelay초에 PlayIntro(_flipDelay, _bRare)와 같은 뒤집힘이 시작된다(_flipDelay는 _summonDelay보다 충분히 커야 한다).
+    /// 기둥 · 번쩍 · 흔들림은 화면(UI_RoguelikeSummonPillarFx 등)이 같은 시각 기준으로 따로 그린다.
+    /// </summary>
+    public void PlaySummonIntro(float _summonDelay, float _flipDelay, bool _bRare)
+    {
+        PlayIntro(_flipDelay, _bRare);
+
+        bSummoning = true;
+        bSummonShown = false;
+        bSummonPressed = false;
+        summonStartTime = _summonDelay - _flipDelay;
+        card.SetSummonHidden(true);
+    }
+
+    /// <summary>
+    /// 빛기둥 소환 연출을 끝내고 카드 그림을 되돌린다(흰 실루엣 · 눌림 해제). 뒤집힘 일정은 그대로 이어진다.
+    /// 화면이 소환 연출을 중단할 때(보유 카드 창 · 강제 종료) 숨은 카드가 남지 않게 부른다. 소환 중이 아니면 아무 일도 하지 않는다.
+    /// </summary>
+    public void EndSummon()
+    {
+        if (false == bSummoning) return;
+
+        bSummoning = false;
+        card.SetSummonHidden(false);
+        if (true == bSummonSilhouette)
+        {
+            bSummonSilhouette = false;
+            card.SetSilhouette(default, null);
+        }
+
+        if (true == bSummonPressed)
+        {
+            bSummonPressed = false;
+            card.SetFlipLift(0);
+        }
+    }
+
+    /// <summary>소환 연출 진행: 기둥이 치는 순간 카드가 나타나 흰 실루엣이 걷히고, 0.05초 뒤 1px 눌렸다 돌아온다.</summary>
+    private void UpdateSummon()
+    {
+        float time = animTime - summonStartTime;
+        if (0f > time) return;
+
+        if (false == bSummonShown)
+        {
+            bSummonShown = true;
+            card.SetSummonHidden(false);
+        }
+
+        float whiteAlpha = Mathf.Clamp01(SummonWhiteStart - time * SummonWhiteDecay);
+        if (0f < whiteAlpha)
+        {
+            bSummonSilhouette = true;
+            card.SetSilhouette(new Color(1f, 1f, 1f, whiteAlpha), null != rareFx ? rareFx.SilhouetteMaterial : null);
+        }
+        else if (true == bSummonSilhouette)
+        {
+            bSummonSilhouette = false;
+            card.SetSilhouette(default, null);
+        }
+
+        if (false == bSummonPressed && SummonPressDelay <= time && time < SummonPressDelay + LandingSeconds)
+        {
+            bSummonPressed = true;
+            card.SetFlipLift(-LandingDipPixels);
+            // [효과음 지점] 카드 착지(소환)
+        }
+        else if (true == bSummonPressed && SummonPressDelay + LandingSeconds <= time)
+        {
+            bSummonPressed = false;
+            card.SetFlipLift(0);
+        }
+
+        if (SummonPressDelay + LandingSeconds <= time && false == bSummonSilhouette && false == bSummonPressed) bSummoning = false;
+    }
+
     /// <summary>뒤집히는 중이면 그 자리에서 앞면·정상 폭으로 마무리한다(다른 연출이 끼어들 때 폭이 줄어든 채 남지 않게).</summary>
     private void CompleteIntro()
     {
         if (EAnim.Intro != anim) return;
 
+        EndSummon();
         anim = EAnim.Idle;
         card.SetFaceDown(false);
         card.SetFlipWidth(card.FrameWidth);
@@ -266,6 +378,8 @@ public class UI_RoguelikeCardSlot : MonoBehaviour
     /// <summary>다른 연출(흐려짐·이동·흔들림)이 끼어든다. 뒤집히는 중이면 앞면으로 마무리하고, 착지 중이면 눌림을 푼다.</summary>
     private void InterruptFlip()
     {
+        EndSummon();
+
         // 희귀 연출이 아직 공개 순간에 닿지 않았다면(지연 · 두근 중) 중단한다. 공개 뒤라면 후광 · 빛살은 그대로 따라간다.
         if (EAnim.Intro == anim && true == bRareIntro && false == bRevealed) StopRareFx();
 
@@ -325,6 +439,7 @@ public class UI_RoguelikeCardSlot : MonoBehaviour
     private void UpdateIntro()
     {
         animTime += Time.unscaledDeltaTime;
+        if (true == bSummoning) UpdateSummon();
         EvaluateIntro(animTime);
     }
 

@@ -129,6 +129,8 @@ public class UI_RoguelikeCard : MonoBehaviour
     private int shakeOffsetX;
     // 희귀 등장 연출이 flashImage를 등급색 실루엣(덮기 머티리얼)으로 쓰는 중
     private bool bSilhouette;
+    // 빛기둥 소환이 치기 전까지 카드 그림 · 그림자를 숨기는 중
+    private bool bSummonHidden;
 
     private float liftPosition;
     private float liftVelocity;
@@ -358,6 +360,19 @@ public class UI_RoguelikeCard : MonoBehaviour
     {
         flipLift = _pixels;
         ApplyVisualPosition();
+    }
+
+    /// <summary>
+    /// 빛기둥 소환 연출용. true면 카드 그림(Visual)과 밑 그림자를 숨기고, false면 되돌린다. 판정(HitBox)과 슬롯의 canvasGroup은 건드리지 않는다.
+    /// 숨기는 동안에도 호버 · 뒤집힘 상태 계산은 그대로 진행된다.
+    /// </summary>
+    public void SetSummonHidden(bool _bHidden)
+    {
+        if (_bHidden == bSummonHidden) return;
+
+        bSummonHidden = _bHidden;
+        if (null != visual) visual.gameObject.SetActive(false == _bHidden);
+        if (null != shadowImage) shadowImage.enabled = false == _bHidden;
     }
 
     /// <summary>카드 밑 그림자를 켜고 끈다(레어 카드를 아크릴 케이스에 끼울 때는 케이스 받침 위에 그림자가 얹히지 않게 끈다). ResetMotion이 다시 켠다.</summary>

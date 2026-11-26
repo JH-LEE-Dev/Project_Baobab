@@ -101,13 +101,13 @@ public class RoguelikeBalanceSO : ScriptableObject
     public float maxMoveSpeedPercent = 100f;
 
     [Header("언리밋 (기획서 v3.0 7-2, 부록 A \"언리밋 곡선\")")]
-    [Tooltip("언리밋 웨이브마다 나무 HP에 곱하는 증가율(누적). Unlimit-N의 HP = N웨이브 줄 HP(30을 넘으면 30웨이브 줄) × (1 + 이 값)^(N−1). 0.35면 웨이브마다 ×1.35. 나무 종류 · 묶음 · 주기 · 피해량은 N웨이브 줄 그대로다.")]
-    public float unlimitHpGrowthPerWave = 0.35f;
+    [Tooltip("언리밋 웨이브마다 나무 HP에 곱하는 증가율(누적). Unlimit-N의 HP = N웨이브 줄 HP(30을 넘으면 30웨이브 줄) × (1 + 이 값)^(N−1). 0.25면 웨이브마다 ×1.25. 나무 종류 · 묶음 · 주기 · 피해량은 N웨이브 줄 그대로다.")]
+    public float unlimitHpGrowthPerWave = 0.25f;
     [Tooltip("언리밋 목표 처치 수 상한. Unlimit-N의 목표 처치 수 = N웨이브 줄의 목표 처치 수와 이 값 중 작은 값(기획서 v3.0 7-2, 100이면 Unlimit-9부터 100).")]
     public int unlimitMaxKillTarget = 100;
     [Tooltip("언리밋 최대 웨이브. 이 번호의 Unlimit 웨이브를 클리어하면 런이 끝나고 결과 화면으로 간다(종료 사유 UnlimitCompleted). 0 이하면 상한 없음.")]
     public int unlimitMaxWave = 25;
-    [Tooltip("특정 언리밋 웨이브의 나무 HP를 공식 대신 직접 지정한다(기획서 부록 A \"언리밋 곡선\"). 3티어 진입(Unlimit-16)과 4티어 진입(Unlimit-23)에서 기본 HP와 누적 배율이 겹쳐 급등하는 것을 막고 Unlimit-15 이후 완만한 ×1.36 곡선을 유지하기 위해 16~25를 직접 지정한다. 목록에 없는 번호는 공식을 쓴다.")]
+    [Tooltip("특정 언리밋 웨이브의 나무 HP를 공식 대신 직접 지정한다(기획서 부록 A \"언리밋 곡선\"). Unlimit-16~21은 22웨이브(기존 25수준 79,600)까지 완만히 연결하고, Unlimit-22~25는 약 +2%씩 미세하게 증가시킨다. 목록에 없는 번호는 공식을 쓴다.")]
     public List<UnlimitHpOverride> unlimitHpOverrides = new List<UnlimitHpOverride>(10);
 
     [Header("카드 제시")]
@@ -212,35 +212,35 @@ public class RoguelikeBalanceSO : ScriptableObject
         float[,] table =
         {
             { 3f, 3f, 20f, 20f, 0f, 0.60f },
-            { 4f, 3f, 20f, 30f, 0f, 0.65f },
-            { 4f, 3f, 30f, 30f, 1f, 0.70f },
-            { 5f, 3f, 30f, 45f, 1f, 0.75f },
-            { 6f, 3f, 30f, 55f, 1f, 0.80f },
-            { 6f, 3f, 40f, 60f, 2f, 0.85f },
-            { 7f, 3f, 40f, 75f, 2f, 0.90f },
-            { 7f, 2.5f, 45f, 95f, 0f, 1.1f },
-            { 8f, 2.5f, 50f, 115f, 0f, 1.2f },
-            { 9f, 2.5f, 50f, 140f, 1f, 1.3f },
-            { 10f, 2.5f, 55f, 165f, 1f, 1.4f },
-            { 11f, 2.5f, 55f, 190f, 1f, 1.5f },
-            { 12f, 2.5f, 55f, 215f, 2f, 1.6f },
-            { 13f, 2.5f, 55f, 245f, 2f, 1.7f },
-            { 14f, 2.5f, 55f, 275f, 2f, 1.8f },
-            { 14f, 3f, 150f, 280f, 0f, 2.0f },
-            { 15f, 3f, 150f, 285f, 0f, 2.2f },
-            { 16f, 3f, 160f, 295f, 1f, 2.4f },
-            { 18f, 3f, 160f, 345f, 1f, 2.6f },
-            { 19f, 3f, 160f, 375f, 1f, 2.8f },
-            { 20f, 3f, 175f, 410f, 2f, 3.0f },
-            { 21f, 3f, 175f, 445f, 2f, 3.2f },
-            { 21f, 2.5f, 380f, 550f, 0f, 3.3f },
-            { 22f, 2.5f, 380f, 595f, 0f, 3.5f },
-            { 24f, 2.5f, 500f, 670f, 1f, 3.7f },
-            { 25f, 2.5f, 500f, 715f, 1f, 3.9f },
-            { 26f, 2.5f, 500f, 765f, 1f, 4.1f },
-            { 28f, 2.5f, 580f, 850f, 2f, 4.3f },
-            { 29f, 2.5f, 580f, 905f, 2f, 4.5f },
-            { 30f, 2.5f, 580f, 960f, 2f, 4.7f },
+            { 4f, 3f, 25f, 30f, 0f, 0.65f },
+            { 4f, 3f, 32f, 30f, 1f, 0.70f },
+            { 5f, 3f, 40f, 45f, 1f, 0.75f },
+            { 6f, 3f, 50f, 55f, 1f, 0.80f },
+            { 6f, 3f, 62f, 60f, 2f, 0.85f },
+            { 7f, 3f, 75f, 75f, 2f, 0.90f },
+            { 7f, 2.5f, 95f, 95f, 0f, 1.1f },
+            { 8f, 2.5f, 115f, 115f, 0f, 1.2f },
+            { 9f, 2.5f, 135f, 140f, 1f, 1.3f },
+            { 10f, 2.5f, 160f, 165f, 1f, 1.4f },
+            { 11f, 2.5f, 185f, 190f, 1f, 1.5f },
+            { 12f, 2.5f, 215f, 215f, 2f, 1.6f },
+            { 13f, 2.5f, 245f, 245f, 2f, 1.7f },
+            { 14f, 2.5f, 280f, 275f, 2f, 1.8f },
+            { 14f, 3f, 450f, 280f, 0f, 2.0f },
+            { 15f, 3f, 560f, 285f, 0f, 2.2f },
+            { 16f, 3f, 700f, 295f, 1f, 2.4f },
+            { 18f, 3f, 880f, 345f, 1f, 2.6f },
+            { 19f, 3f, 1100f, 375f, 1f, 2.8f },
+            { 20f, 3f, 1350f, 410f, 2f, 3.0f },
+            { 21f, 3f, 1650f, 445f, 2f, 3.2f },
+            { 21f, 2.5f, 1900f, 550f, 0f, 3.3f },
+            { 22f, 2.5f, 2150f, 595f, 0f, 3.5f },
+            { 24f, 2.5f, 2450f, 670f, 1f, 3.7f },
+            { 25f, 2.5f, 2750f, 715f, 1f, 3.9f },
+            { 26f, 2.5f, 3100f, 765f, 1f, 4.1f },
+            { 28f, 2.5f, 3450f, 850f, 2f, 4.3f },
+            { 29f, 2.5f, 3800f, 905f, 2f, 4.5f },
+            { 30f, 2.5f, 4200f, 960f, 2f, 4.7f },
         };
 
         int rows = table.GetLength(0);
@@ -283,21 +283,21 @@ public class RoguelikeBalanceSO : ScriptableObject
         lethalWarningSeconds = 4f;
         maxMoveSpeedPercent = 100f;
 
-        unlimitHpGrowthPerWave = 0.35f;
+        unlimitHpGrowthPerWave = 0.25f;
         unlimitMaxKillTarget = 100;
         unlimitMaxWave = 25;
         unlimitHpOverrides = new List<UnlimitHpOverride>(10)
         {
-            new UnlimitHpOverride { unlimitIndex = 16, treeHp = 5000f },
-            new UnlimitHpOverride { unlimitIndex = 17, treeHp = 6800f },
-            new UnlimitHpOverride { unlimitIndex = 18, treeHp = 9250f },
-            new UnlimitHpOverride { unlimitIndex = 19, treeHp = 12580f },
-            new UnlimitHpOverride { unlimitIndex = 20, treeHp = 17110f },
-            new UnlimitHpOverride { unlimitIndex = 21, treeHp = 23270f },
-            new UnlimitHpOverride { unlimitIndex = 22, treeHp = 31650f },
-            new UnlimitHpOverride { unlimitIndex = 23, treeHp = 43040f },
-            new UnlimitHpOverride { unlimitIndex = 24, treeHp = 58530f },
-            new UnlimitHpOverride { unlimitIndex = 25, treeHp = 79600f },
+            new UnlimitHpOverride { unlimitIndex = 16, treeHp = 9200f },
+            new UnlimitHpOverride { unlimitIndex = 17, treeHp = 13200f },
+            new UnlimitHpOverride { unlimitIndex = 18, treeHp = 19000f },
+            new UnlimitHpOverride { unlimitIndex = 19, treeHp = 27500f },
+            new UnlimitHpOverride { unlimitIndex = 20, treeHp = 39500f },
+            new UnlimitHpOverride { unlimitIndex = 21, treeHp = 56500f },
+            new UnlimitHpOverride { unlimitIndex = 22, treeHp = 79600f },
+            new UnlimitHpOverride { unlimitIndex = 23, treeHp = 81200f },
+            new UnlimitHpOverride { unlimitIndex = 24, treeHp = 82800f },
+            new UnlimitHpOverride { unlimitIndex = 25, treeHp = 84500f },
         };
 
         offerCount = 4;

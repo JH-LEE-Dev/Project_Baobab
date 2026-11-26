@@ -30,7 +30,7 @@ MonoBehaviour:
       value: 5
     - effect: 1
       skill: 2
-      value: 90
+      value: 70
   - effects:
     - effect: 8
       skill: 2
@@ -40,31 +40,14 @@ MonoBehaviour:
       value: 5
     - effect: 1
       skill: 2
-      value: 80
+      value: 100
   - effects:
     - effect: 3
       skill: 2
       value: 5
     - effect: 1
       skill: 2
-      value: 30
-  - effects:
-    - effect: 8
-      skill: 2
-      value: -1
-    - effect: 3
-      skill: 2
-      value: 5
-    - effect: 1
-      skill: 2
-      value: 50
-  - effects:
-    - effect: 3
-      skill: 2
-      value: 5
-    - effect: 1
-      skill: 2
-      value: 30
+      value: 100
   - effects:
     - effect: 8
       skill: 2
@@ -74,7 +57,24 @@ MonoBehaviour:
       value: 5
     - effect: 1
       skill: 2
-      value: 20
+      value: 130
+  - effects:
+    - effect: 3
+      skill: 2
+      value: 5
+    - effect: 1
+      skill: 2
+      value: 200
+  - effects:
+    - effect: 8
+      skill: 2
+      value: -1
+    - effect: 3
+      skill: 2
+      value: 5
+    - effect: 1
+      skill: 2
+      value: 250
   comboMaterialA: {fileID: 0}
   comboMaterialB: {fileID: 0}
   comboType: 0

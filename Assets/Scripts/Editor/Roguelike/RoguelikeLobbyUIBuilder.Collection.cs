@@ -8,20 +8,18 @@ using UnityEngine.UI;
 
 /// <summary>
 /// 카드 도감 창 구성기(RoguelikeLobbyUIBuilder의 partial). 여러 번 실행해도 같은 결과로 덮어쓴다.
-///   LumberBoy/UI/Build Roguelike Collection     UIView_RoguelikeCollection.prefab (딤 · 640x360 SimRoot{ 판(진행도 · 머리줄 4 · 칸 26 · 상세 패널 · 뒤로 버튼) · 완성 연출 뒤 층 · 제목판 · 완성 연출 앞 층 })
+///   LumberBoy/UI/Build Roguelike Collection     UIView_RoguelikeCollection.prefab (딤 · 640x360 SimRoot{ 판(진행도 · 머리줄 4 · 칸 26 · 상세 패널 · 뒤로 버튼) · 제목판 · 완성 연출 앞 층 })
 ///   LumberBoy/UI/Validate Roguelike Collection  18개 언어 x 도감 문구의 폭 검수(콘솔 표)
 /// 좌표는 시뮬레이션(Docs/Roguelike/_Work/CardCollection/template.html, mock.py layout_a)과 같은 640x360 좌표(왼쪽 위 원점, 아래쪽 +)다.
 ///
 /// [그림] 이 구성기가 굽는 그림(있어도 같은 값으로 덮어쓴다):
 ///   records/Slot_Back.png(36x36 뒷면 칸 = Panel_Info 9분할 + 가운데 금 마름모 문양, 시뮬레이션 mock.py slot_back과 같은 픽셀) · Slot_Outline.png(1px 테두리) · Slot_BackSpark.png(가운데 d ≤ 2 마름모)
 ///   owned/Title_Plate_Gold.png · Title_Plate_White.png (Title_Plate 색 바꿈 / 흰 실루엣, 9분할 테두리 4)
-///   VFX/CardCollection/T_CollectionPlate_GhostWide.png · GhostCore.png (제목판 실루엣 가우시안 블러, 레어 등장 연출의 잔상과 같은 방식)
 /// 빛 텍스처(T_RareCard_*)와 머티리얼(M_UILootGlowAdd · M_UILootParticles)은 레어 카드 등장 연출 구성기가 만든 것을 그대로 쓴다.
 /// </summary>
 public static partial class RoguelikeLobbyUIBuilder
 {
     private const string CollectionPrefabPath = "Assets/Prefabs/Roguelike/UI/UIView_RoguelikeCollection.prefab";
-    private const string CollectionVfxDir = "Assets/Graphics/VFX/CardCollection";
     private const string RareRevealDir = "Assets/Graphics/VFX/RareCardReveal/";
     private const string GlowAddMaterialPath = "Assets/Graphics/VFX/Materials/M_UILootGlowAdd.mat";
     private const string ParticleMaterialPath = "Assets/Graphics/VFX/Materials/M_UILootParticles.mat";
@@ -75,7 +73,6 @@ public static partial class RoguelikeLobbyUIBuilder
         Sprite slotSpark = BakeSlotSpark();
         Sprite plateGold = BakePlateGold();
         Sprite plateWhite = BakePlateWhite();
-        BakePlateGhosts(out Sprite ghostWide, out Sprite ghostCore);
 
         Material glowAdd = AssetDatabase.LoadAssetAtPath<Material>(GlowAddMaterialPath);
         Material particleMaterial = AssetDatabase.LoadAssetAtPath<Material>(ParticleMaterialPath);
@@ -83,7 +80,7 @@ public static partial class RoguelikeLobbyUIBuilder
         Sprite badgeNew = AssetDatabase.LoadAssetAtPath<Sprite>(BadgeNewPath);
         Sprite spotRings = AssetDatabase.LoadAssetAtPath<Sprite>(SpotRingsPath);
         Texture softTexture = AssetDatabase.LoadAssetAtPath<Texture>(RareRevealDir + "T_RareCard_Dot.png");
-        if (null == slotBack || null == slotOutline || null == slotSpark || null == plateGold || null == plateWhite || null == ghostWide || null == ghostCore
+        if (null == slotBack || null == slotOutline || null == slotSpark || null == plateGold || null == plateWhite
             || null == glowAdd || null == particleMaterial || null == cardPrefab || null == badgeNew || null == spotRings || null == softTexture)
         {
             Debug.LogError("[RoguelikeLobbyUIBuilder] 카드 도감에 필요한 그림 · 머티리얼 · 카드 프리팹을 찾지 못했습니다. 레어 카드 등장 연출 구성기(LumberBoy/VFX/Build Rare Card Reveal)와 카드 구성기를 먼저 실행하십시오.");
@@ -249,8 +246,7 @@ public static partial class RoguelikeLobbyUIBuilder
                 slotSo.ApplyModifiedPropertiesWithoutUndo();
             }
 
-            // ---- 완성 연출 뒤 층 · 제목판 · 앞 층 ----
-            RectTransform fxBack = NewTopLeftLayer("FxBack", simRoot);
+            // ---- 제목판 · 앞 층 ----
             RectTransform plate = TopLeft("TitlePlate", simRoot, PlateWidth, PlateHeight24);
             plate.anchoredPosition = new Vector2(184f, -12f);
             Image plateImage = plate.gameObject.AddComponent<Image>();
@@ -263,22 +259,7 @@ public static partial class RoguelikeLobbyUIBuilder
 
             UI_RoguelikeCollectionPlateFx plateFx = simRoot.gameObject.AddComponent<UI_RoguelikeCollectionPlateFx>();
             SerializedObject fxSo = new SerializedObject(plateFx);
-            Sprite discLinear = LoadRare("T_RareCard_DiscLinear");
-            Set(fxSo, "haloCoreImage", FxImage("HaloCore", fxBack, LoadRare("T_RareCard_HaloCore"), glowAdd, false));
-            Set(fxSo, "haloMainImage", FxImage("HaloMain", fxBack, LoadRare("T_RareCard_HaloMain"), glowAdd, false));
-            Set(fxSo, "haloDeepImage", FxImage("HaloDeep", fxBack, LoadRare("T_RareCard_HaloDeep"), glowAdd, false));
-            Set(fxSo, "discCoreImage", FxImage("DiscCore", fxBack, discLinear, glowAdd, false));
-            Image[] blobs = new Image[7];
-            for (int i = 0; blobs.Length > i; i++) blobs[i] = FxImage("Blob" + i, fxBack, discLinear, glowAdd, false);
-            SetArrayOf(fxSo, "blobImages", blobs);
             Set(fxSo, "edgeRingImage", FxImage("EdgeRing", fxFront, LoadRare("T_RareCard_EdgeRing"), glowAdd, true));
-            SetArrayOf(fxSo, "ghostWideImages", new[] { FxImage("GhostWide0", fxFront, ghostWide, glowAdd, false), FxImage("GhostWide1", fxFront, ghostWide, glowAdd, false) });
-            SetArrayOf(fxSo, "ghostCoreImages", new[] { FxImage("GhostCore0", fxFront, ghostCore, glowAdd, false), FxImage("GhostCore1", fxFront, ghostCore, glowAdd, false) });
-            Set(fxSo, "shockMainImage", FxImage("ShockMain", fxFront, LoadRare("T_RareCard_ShockMain"), glowAdd, true));
-            Set(fxSo, "shockCoreImage", FxImage("ShockCore", fxFront, LoadRare("T_RareCard_ShockCore"), glowAdd, true));
-            Set(fxSo, "meetHaloImage", FxImage("MeetHalo", fxFront, LoadRare("T_RareCard_MeetHalo"), glowAdd, true));
-            Set(fxSo, "meetLineImage", FxImage("MeetLine", fxFront, LoadRare("T_RareCard_MeetLine"), glowAdd, true));
-            Set(fxSo, "softGraphic", FxParticles("SoftParticles", fxFront, glowAdd, softTexture));
             Set(fxSo, "pixelGraphic", FxParticles("PixelParticles", fxFront, particleMaterial, softTexture));
             fxSo.ApplyModifiedPropertiesWithoutUndo();
 
@@ -336,7 +317,7 @@ public static partial class RoguelikeLobbyUIBuilder
                 slotSo.ApplyModifiedPropertiesWithoutUndo();
             }
 
-            // 분류 머리줄 4개의 문구 · 위치는 런타임이 채운다. 층 순서: 판 · FxBack · 제목판 · FxFront(= 만든 순서).
+            // 분류 머리줄 4개의 문구 · 위치는 런타임이 채운다. 층 순서: 판 · 제목판 · FxFront(= 만든 순서).
             PrefabUtility.SaveAsPrefabAsset(root, CollectionPrefabPath);
             Debug.Log("[RoguelikeLobbyUIBuilder] 완료: " + CollectionPrefabPath);
         }
@@ -354,13 +335,6 @@ public static partial class RoguelikeLobbyUIBuilder
     private static Sprite LoadRare(string _name)
     {
         return AssetDatabase.LoadAssetAtPath<Sprite>(RareRevealDir + _name + ".png");
-    }
-
-    private static void SetArrayOf(SerializedObject _so, string _property, Image[] _values)
-    {
-        SerializedProperty property = _so.FindProperty(_property);
-        property.arraySize = _values.Length;
-        for (int i = 0; _values.Length > i; i++) property.GetArrayElementAtIndex(i).objectReferenceValue = _values[i];
     }
 
     /// <summary>크기 0 · 왼쪽 위 앵커 · 피벗의 자식 Canvas 층(자식 위치 = SimRoot 좌표 (x, -y)). 연출이 자기 Canvas로 격리되어 판 전체가 다시 그려지지 않는다.</summary>
@@ -691,82 +665,6 @@ public static partial class RoguelikeLobbyUIBuilder
         }
 
         return WritePixelSprite(PlateWhitePath, pixels, width, height, 4, true);
-    }
-
-    /// <summary>제목판 실루엣(272x24)을 가운데 놓고 가우시안 블러한 잔상 텍스처: GhostWide 300x52(시그마 2.4) · GhostCore 280x32(시그마 0.5). 레어 카드 연출의 잔상과 같은 방식이다.</summary>
-    private static void BakePlateGhosts(out Sprite _wide, out Sprite _core)
-    {
-        Color32[] plate = ReadPixels(PlateSourcePath, out int plateSize, out _);
-        Color32[] silhouette = NineSlice(plate, plateSize, 4, PlateWidth, PlateHeight24);
-        LootPillarGlowBuilder.EnsureFolder(CollectionVfxDir);
-        _wide = BakeGhost("T_CollectionPlate_GhostWide", silhouette, PlateWidth + 28, PlateHeight24 + 28, 2.4f);
-        _core = BakeGhost("T_CollectionPlate_GhostCore", silhouette, PlateWidth + 8, PlateHeight24 + 8, 0.5f);
-    }
-
-    private static Sprite BakeGhost(string _name, Color32[] _silhouette, int _width, int _height, float _sigma)
-    {
-        float[] field = new float[_width * _height];
-        int offsetX = (_width - PlateWidth) / 2;
-        int offsetY = (_height - PlateHeight24) / 2;
-        for (int y = 0; PlateHeight24 > y; y++)
-        {
-            for (int x = 0; PlateWidth > x; x++) field[(y + offsetY) * _width + x + offsetX] = _silhouette[y * PlateWidth + x].a / 255f;
-        }
-
-        float[] blurred = GaussianBlur(field, _width, _height, _sigma);
-        Color32[] pixels = new Color32[_width * _height];
-        for (int i = 0; pixels.Length > i; i++) pixels[i] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt(Mathf.Clamp01(blurred[i]) * 255f));
-        return LootPillarGlowBuilder.WriteSprite(CollectionVfxDir, _name, _width, _height, pixels, new Vector2(0.5f, 0.5f), _height);
-    }
-
-    private static float[] GaussianBlur(float[] _src, int _width, int _height, float _sigma)
-    {
-        int radius = Mathf.CeilToInt(_sigma * 3f);
-        float[] kernel = new float[radius * 2 + 1];
-        float sum = 0f;
-        for (int i = -radius; radius >= i; i++)
-        {
-            kernel[i + radius] = Mathf.Exp(-(i * i) / (2f * _sigma * _sigma));
-            sum += kernel[i + radius];
-        }
-
-        for (int i = 0; kernel.Length > i; i++) kernel[i] /= sum;
-
-        float[] temp = new float[_src.Length];
-        float[] dst = new float[_src.Length];
-        for (int y = 0; _height > y; y++)
-        {
-            for (int x = 0; _width > x; x++)
-            {
-                float acc = 0f;
-                for (int k = -radius; radius >= k; k++)
-                {
-                    int xx = x + k;
-                    if (0 > xx || _width <= xx) continue;
-                    acc += _src[y * _width + xx] * kernel[k + radius];
-                }
-
-                temp[y * _width + x] = acc;
-            }
-        }
-
-        for (int y = 0; _height > y; y++)
-        {
-            for (int x = 0; _width > x; x++)
-            {
-                float acc = 0f;
-                for (int k = -radius; radius >= k; k++)
-                {
-                    int yy = y + k;
-                    if (0 > yy || _height <= yy) continue;
-                    acc += temp[yy * _width + x] * kernel[k + radius];
-                }
-
-                dst[y * _width + x] = acc;
-            }
-        }
-
-        return dst;
     }
 }
 #endif

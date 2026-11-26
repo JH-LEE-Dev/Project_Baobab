@@ -4,14 +4,44 @@
     {
       "name": "challenge-ui-sim",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8765", "--bind", "127.0.0.1", "--directory", "Docs/Roguelike/_Work/ChallengeUI_Mockup"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8765",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "Docs/Roguelike/_Work/ChallengeUI_Mockup"
+      ],
       "port": 8765
     },
     {
       "name": "card-frame-sim",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8766", "--bind", "127.0.0.1", "--directory", "Docs/Roguelike/_Work/CardFrameDesign"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8766",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "Docs/Roguelike/_Work/CardFrameDesign"
+      ],
       "port": 8766
+    },
+    {
+      "name": "card-select-juice-sim",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8767",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "Docs/Roguelike/_Work/CardSelectJuice"
+      ],
+      "port": 8767
     }
   ]
 }

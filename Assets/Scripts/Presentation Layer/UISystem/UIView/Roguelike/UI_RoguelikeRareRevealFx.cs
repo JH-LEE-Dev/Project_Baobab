@@ -271,6 +271,18 @@ public class UI_RoguelikeRareRevealFx : MonoBehaviour
     // 퍼블릭 초기화 및 제어 메서드
 
     /// <summary>
+    /// 등급(0 에메랄드 · 1 프리즘 · 2 루비)의 주색 · 심 · 어두운 색. 빛기둥 소환(UI_RoguelikeSummonPillarFx)이 같은 팔레트를 쓴다.
+    /// 프리즘은 주색이 _time(초)에 따라 색상환을 돈다. 범위를 벗어난 등급은 에메랄드로 본다.
+    /// </summary>
+    public static void GetGradeColors(int _gradeIndex, float _time, out Color32 _main, out Color32 _core, out Color32 _deep)
+    {
+        Palette source = Palettes[Mathf.Clamp(_gradeIndex, 0, Palettes.Length - 1)];
+        _core = source.core;
+        _deep = source.deep;
+        _main = true == source.bPrism ? Hsl(_time * PrismHueSpeed, 0.95f, 0.68f) : source.main;
+    }
+
+    /// <summary>
     /// 연출을 시작한다. _teaseDelay초 뒤(= 이 희귀 카드의 시작 시각)부터 두근이 시작된다. _gradeIndex는 카드와 같다(0 에메랄드, 1 프리즘, 2 루비).
     /// </summary>
     public void Play(int _gradeIndex, float _teaseDelay)

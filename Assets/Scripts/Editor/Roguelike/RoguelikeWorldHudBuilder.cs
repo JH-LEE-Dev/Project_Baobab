@@ -5,8 +5,8 @@ using UnityEngine;
 /// <summary>
 /// 로그라이크 월드 HUD(WorldHUD_Plan.md)의 에디터 구성기. 여러 번 실행해도 같은 결과로 덮어쓴다.
 ///   LumberBoy/UI/Build Roguelike World HUD  재색 시트 임포트 설정(Read/Write 켬, Point, 압축 없음, 밉맵 끔)을 맞추고 RoguelikeWorldHud.prefab을 만든다.
-///   프리팹 = 루트(RoguelikeWorldHud) + 자식 SpriteRenderer 8개. 띠 2개는 Sorting Layer Objects(WorldHUD_Plan.md 9-1: 나무와 같은 Y 정렬 층. 폭 4px 조각 렌더러와
-///   조각별 order는 RoguelikeWorldHud가 런타임에 만든다 - 여기 Order 0은 자리 값), 숫자 4개는 WorldUI / Order 0, 연출 입자 2개(10-4)는 WorldUI / Order -1(숫자보다 아래)이고
+///   프리팹 = 루트(RoguelikeWorldHud) + 자식 SpriteRenderer 8개. 띠 2개는 고정 Sorting Layer TreeShadow / Order -32768(short.MinValue)(Y 정렬 없음: 나무 · 액터 · 이펙트 · 물 장식은 모두 띠 위, 물 · 지형만 아래),
+///   숫자 4개는 WorldUI / Order 0, 연출 입자 2개(10-4)는 WorldUI / Order -1(숫자보다 아래)이고
 ///   Unlit 스프라이트 재질(조명 영향 없음)을 쓴다. 렌더러는 꺼진 채로 시작한다(RoguelikeWorldHud가 켠다).
 /// 시트는 Docs/Roguelike/_Work/WorldHUD/make_world_hud_sprites.py가 Assets/Graphics/Roguelike/hud/world/에 만든다.
 /// </summary>
@@ -16,8 +16,8 @@ public static class RoguelikeWorldHudBuilder
     public const string PrefabPath = "Assets/Prefabs/Roguelike/UI/RoguelikeWorldHud.prefab";
 
     private const string UnlitMaterialPath = "Packages/com.unity.render-pipelines.universal/Runtime/Materials/Sprite-Unlit-Default.mat";
-    private const string BandSortingLayer = "Objects";
-    private const int BandSortingOrder = 0;
+    private const string BandSortingLayer = "TreeShadow";
+    private const int BandSortingOrder = short.MinValue;
     private const string LabelSortingLayer = "WorldUI";
     private const int LabelSortingOrder = 0;
     private const int FxSortingOrder = -1;

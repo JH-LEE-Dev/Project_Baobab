@@ -236,16 +236,16 @@ public class CardRulesTests
         Assert.AreEqual(row1.treeHp, w31.treeHp, 0.001f);
         Assert.AreEqual(row1.batchSize, w31.batchSize);
         Assert.AreEqual(row1.batchSeconds, w31.batchSeconds, 0.0001f);
-        Assert.AreEqual(balance.GetWaveRow(2).treeHp * 1.35f, w32.treeHp, 0.001f);
+        Assert.AreEqual(balance.GetWaveRow(2).treeHp * 1.25f, w32.treeHp, 0.001f);
         Assert.AreEqual(balance.GetWaveRow(2).batchSize, w32.batchSize);
         Assert.IsFalse(w32.bTierChanged);
 
-        // Unlimit-8은 8웨이브처럼 2티어로 전환되고, Unlimit-10 HP는 10웨이브 HP × 1.35^9.
+        // Unlimit-8은 8웨이브처럼 2티어로 전환되고, Unlimit-10 HP는 10웨이브 HP × 1.25^9.
         WaveSpec w38 = WaveSchedule.Get(balance, 38);
         Assert.AreEqual(1, w38.tierIndex);
         Assert.IsTrue(w38.bTierChanged);
         WaveSpec w40 = WaveSchedule.Get(balance, 40);
-        Assert.AreEqual(balance.GetWaveRow(10).treeHp * UnityEngine.Mathf.Pow(1.35f, 9), w40.treeHp, w40.treeHp * 1e-5f);
+        Assert.AreEqual(balance.GetWaveRow(10).treeHp * UnityEngine.Mathf.Pow(1.25f, 9), w40.treeHp, w40.treeHp * 1e-5f);
         Assert.LessOrEqual(w40.killTarget, 100);
 
         // Unlimit-31부터는 30웨이브 줄에 머물고 HP만 계속 오른다.
@@ -257,7 +257,7 @@ public class CardRulesTests
         Assert.AreEqual(UnityEngine.Mathf.Min(row30.killTarget, 100), w61.killTarget);
         Assert.AreEqual(row30.batchSize, w61.batchSize);
         Assert.AreEqual(row30.batchSeconds, w61.batchSeconds, 0.0001f);
-        Assert.AreEqual(row30.treeHp * UnityEngine.Mathf.Pow(1.35f, 30), w61.treeHp, w61.treeHp * 1e-5f);
+        Assert.AreEqual(row30.treeHp * UnityEngine.Mathf.Pow(1.25f, 30), w61.treeHp, w61.treeHp * 1e-5f);
     }
 
     [Test]
@@ -274,14 +274,14 @@ public class CardRulesTests
         RoguelikeBalanceSO asset = UnityEditor.AssetDatabase.LoadAssetAtPath<RoguelikeBalanceSO>("Assets/Data/Roguelike/RoguelikeBalance.asset");
         Assert.IsNotNull(asset);
 
-        float[] expected = { 5000f, 6800f, 9250f, 12580f, 17110f, 23270f, 31650f, 43040f, 58530f, 79600f };
+        float[] expected = { 9200f, 13200f, 19000f, 27500f, 39500f, 56500f, 79600f, 81200f, 82800f, 84500f };
         RoguelikeBalanceSO[] targets = { balance, asset };
 
         for (int t = 0; t < targets.Length; t++)
         {
             RoguelikeBalanceSO target = targets[t];
             float prevHp = WaveSchedule.Get(target, target.clearWave + 15).treeHp;
-            Assert.AreEqual(target.GetWaveRow(15).treeHp * UnityEngine.Mathf.Pow(1.35f, 14), prevHp, 0.1f, "Unlimit-15 공식 유지");
+            Assert.AreEqual(target.GetWaveRow(15).treeHp * UnityEngine.Mathf.Pow(1.25f, 14), prevHp, 0.1f, "Unlimit-15 공식 유지");
 
             for (int i = 0; i < expected.Length; i++)
             {
@@ -326,8 +326,8 @@ public class CardRulesTests
     [Test]
     public void WaveSchedule_AbsoluteHpAndDamageFollowAppendixA2()
     {
-        // 기획서 v2.7 부록 A-2: 3티어 150 / 160 / 175, 4티어 380 / 500 / 580.
-        float[] hp = { 20, 20, 30, 30, 30, 40, 40, 45, 50, 50, 55, 55, 55, 55, 55, 150, 150, 160, 160, 160, 175, 175, 380, 380, 500, 500, 500, 580, 580, 580 };
+        // 티어별 점진적 나무 HP 곡선(1티어 20~75, 2티어 95~280, 3티어 450~1650, 4티어 1900~4200).
+        float[] hp = { 20, 25, 32, 40, 50, 62, 75, 95, 115, 135, 160, 185, 215, 245, 280, 450, 560, 700, 880, 1100, 1350, 1650, 1900, 2150, 2450, 2750, 3100, 3450, 3800, 4200 };
         for (int wave = 1; wave <= 30; wave++)
         {
             Assert.AreEqual(hp[wave - 1], WaveSchedule.Get(balance, wave).treeHp, 0.001f, "웨이브 " + wave);

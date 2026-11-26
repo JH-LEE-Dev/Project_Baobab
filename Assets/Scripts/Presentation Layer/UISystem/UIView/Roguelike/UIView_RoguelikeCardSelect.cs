@@ -39,6 +39,13 @@ using UnityEngine.UI;
 ///   칸별 모드도 설명 패널 자리는 같다(공용 버튼 자리는 비워 둔다).
 ///   키 안내는 패드 모드에서만 왼쪽 아래에 보인다(키보드 · 마우스 모드는 마우스 GUI 조작 - 키보드 단축키를 두지 않는다).
 ///
+/// [빛기둥 소환] 처음 열 때(OpenSelection)만 카드 뒤집힘 앞에 소환 단계가 붙는다(리롤 · 예전 모드 ReplaceOffers는 그대로). t = 0은 화면이 켜지는 순간이다.
+///   0.00  딤이 기본 알파에서 진하게(기본의 약 1.23배) 깔리고 카드 칸은 비어 있다. 0.10  제목 글자 바운스.
+///   기둥 k - 0.20 예고(바닥 빛 줄 + 피어오르는 알갱이) → 기둥 k 빛기둥 쾅(번쩍 · 화면 흔들림 · 입자 · 그 칸에 뒷면이 흰 실루엣으로 나타남). 일반 카드를 왼쪽부터 0.30초에 시작해 0.26초 간격,
+///   희귀 카드는 마지막에 0.25초 더 뜸을 들이고 등급색 굵은 기둥(뒤집기 전에 미리 드러남). 마지막 기둥 + 0.12초에 딤이 기본으로 돌아오고 설명 패널 · 칸별 리롤 버튼이 0.15초에 나타난다.
+///   이어서 지금과 같은 뒤집힘(일반 0.13초 간격 → 희귀는 마지막 일반 + 0.3초에 두근). 칸별 리롤(ReplaceOffer)은 바뀌는 칸에만 예고 0.2초 → 기둥 → 0.12초 뒤 뒤집힘(딤 · 다른 칸 그대로).
+///   기둥 · 입자는 UI_RoguelikeSummonPillarFx, 번쩍 · 흔들림(Content 정수 px 오프셋)은 이 클래스가 StrikeEvent를 받아 처리한다. 닫기 · 구매 · 보유 카드 창으로 가려짐 · 다시 열기에서는 StopSummon이 모두 원래대로 돌린다.
+///
 /// [퇴장 단계] 연출이 끝나면 Complete 전에 퇴장 0.18초가 돈다: 화면 전체(딤 포함)가 흐려지고(screenGroup) Content가 4px 떠오른다. 끝나면 Complete.
 ///
 /// [레어 카드 케이스] 레어(에메랄드 · 프리즘 · 루비)를 고르면 기존 이동 · 잠깐 머묾 대신 아크릴 케이스에 끼우는 연출(UI_RoguelikeAcrylicCase, 약 1.26초)이 돈다.
@@ -99,6 +106,28 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     private const float ScreenMargin = 6f;
     private const float HoverHeadroom = 6f;
     private static readonly int[] ShakePattern = { -2, 2, -2, 2, -1, 1, 0 };
+    // 빛기둥 소환(진입 연출) 수치 - 승인 시안 그대로.
+    private const float SummonFirstStrikeSeconds = 0.3f;
+    private const float SummonStrikeIntervalSeconds = 0.26f;
+    private const float SummonRareExtraSeconds = 0.25f;
+    private const float SummonEndAfterLastSeconds = 0.12f;
+    private const float SummonTitleDelaySeconds = 0.1f;
+    private const float SummonControlsFadeSeconds = 0.15f;
+    // 시안 딤 76% / 기본 62%
+    private const float SummonDimScale = 0.76f / 0.62f;
+    private const float SummonDimLerpRate = 8f;
+    private const float SummonDimReturnLeadSeconds = 0.05f;
+    private const float SummonDimEpsilon = 0.004f;
+    private const float SummonTopMargin = 8f;
+    private const float RerollSummonDelaySeconds = 0.2f;
+    private const float RerollFlipDelaySeconds = 0.32f;
+    private const float ImpactFlashDecayPerSecond = 2.6f;
+    private const float ImpactShakeDecayPerSecond = 10f;
+    private const float ImpactStepRate = 30f;
+    private const float NormalFlashAlpha = 0.2f;
+    private const float RareFlashAlpha = 0.5f;
+    private const float NormalShakePixels = 2f;
+    private const float RareShakePixels = 3.5f;
 
     /// <summary>제시된 _offerIndex번 카드를 고르겠다.</summary>
     public event Action<int> BuyRequestedEvent;
@@ -136,6 +165,14 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     [SerializeField] private Image rerollBackground;
     [SerializeField] private TMP_Text rerollLabel;
     [SerializeField] private TMP_Text rerollCountText;
+
+    [Header("빛기둥 소환 (진입 연출)")]
+    [Tooltip("칸마다 빛기둥을 내리꽂는 화면 단위 이펙트(Content/PillarFxFront에 붙은 컴포넌트). 비어 있으면 소환 없이 예전 순차 뒤집힘으로 열린다.")]
+    [SerializeField] private UI_RoguelikeSummonPillarFx pillarFx;
+    [Tooltip("전체 화면 번쩍 이미지(흰색, 알파 0, 레이캐스트 끔). 기둥이 칠 때 기둥 색 · 알파로 바뀐다.")]
+    [SerializeField] private Image flashImage;
+    [Tooltip("설명 패널이 나타나는 알파(0.15초)용 CanvasGroup. 비어 있으면 패널이 바로 켜진다.")]
+    [SerializeField] private CanvasGroup descGroup;
 
     [Header("머리 줄 · 키 안내")]
     [SerializeField] private RectTransform titlePlate;
@@ -198,6 +235,22 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     private RectTransform shakeRect;
     private Vector2 shakeBasePosition;
     private float shakeTime;
+
+    // 빛기둥 소환. summonDelays = 칸별 기둥이 치는 시각(OpenSelection 기준 초), summonEndTime = 마지막 기둥 + 0.12초(딤 복귀 · 설명 패널 표시 시각).
+    private bool bSummonActive;
+    private float summonTime;
+    private float summonEndTime;
+    private float summonControlsTime = -1f;
+    private float summonDimAlpha;
+    private bool bSummonTitleShown;
+    private float[] summonDelays = new float[0];
+    // 기둥이 칠 때의 번쩍(알파) · 흔들림(픽셀). 소환이 끝나도 감쇠가 끝날 때까지 이어지므로 소환 진행과 따로 돈다.
+    private float flashAlpha;
+    private float shakeAmount;
+    private float impactClock;
+    private int impactStep;
+    private int impactAppliedX;
+    private int impactAppliedY;
 
     /// <summary>[호환] G-12 반영 후 삭제. 예전 모드: 이번 선택 단계에서 리롤을 쓸 수 있는가(선택 단계마다 1회). 칸별 모드는 RoguelikeCardViewData.bCanReroll을 쓴다.</summary>
     public bool bCanReroll { get; private set; }
@@ -262,7 +315,18 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 
         offers[_index] = _offer;
         slot.Bind(_index, _offer);
-        slot.PlayIntro(0f, CardRarity.IsRare(_offer.displayGrade));
+        bool bRare = CardRarity.IsRare(_offer.displayGrade);
+        if (null != pillarFx)
+        {
+            // 그 칸만 빛기둥: 예고 0.2초 → 기둥 → 흰 실루엣 뒷면 → 0.12초 뒤 기존 뒤집힘. 딤 · 다른 칸은 그대로(번쩍 · 흔들림은 기둥이 알린다).
+            slot.PlaySummonIntro(RerollSummonDelaySeconds, RerollFlipDelaySeconds, bRare);
+            pillarFx.Play(_index, GetPillarBottomCenter(slot), GetScreenTopLocal(), RerollSummonDelaySeconds, bRare, slot.Card.GradeIndex);
+        }
+        else
+        {
+            slot.PlayIntro(0f, bRare);
+        }
+
         slot.SetRerollAvailable(_offer.bCanReroll);
 
         // Bind가 카드 호버 · 어둡게를 초기화하므로 현재 포커스에 맞게 다시 건다.
@@ -293,6 +357,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
             return;
         }
 
+        StopSummon();
         pendingComplete = _onComplete;
         bLocked = true;
         chosenSlot = FindSlotByOffer(_purchase.offerIndex);
@@ -329,6 +394,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
             return;
         }
 
+        StopSummon();
         pendingComplete = _onComplete;
         bLocked = true;
         chosenSlot = null;
@@ -372,6 +438,8 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         {
             if (false == CanBeCoveredByOwnedCards) return;
 
+            // 소환 연출 중이면 중단하고 원래대로 돌린다(Content 흔들림이 coverBaseY에 섞이지 않게 먼저).
+            StopSummon();
             if (0f >= coverAmount) coverBaseY = contentRoot.anchoredPosition.y;
             bCovered = true;
             HideCursor();
@@ -442,16 +510,15 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         bRarePurchase = false;
         bLocked = false;
         phase = EPhase.Idle;
+        StopSummon();
         if (null != acrylicCase) acrylicCase.ResetCase();
         SetControlsVisible(true);
+        // 처음 열 때만 빛기둥 소환이 붙는다(리롤은 예전 그대로). 소환이면 제목 바운스는 0.1초 뒤(UpdateSummon)로 미룬다.
+        bool bSummon = false == _bReroll && null != pillarFx;
         // 뷰가 처음 열릴 때만 제목 글자가 차례로 튀어나온다(리롤 때는 다시 하지 않는다). 이후 wave는 계속된다.
-        if (false == _bReroll)
-        {
-            if (null != titleAnimator) titleAnimator.PlayRevealBounce();
-            if (null != titleShadowAnimator) titleShadowAnimator.PlayRevealBounce();
-        }
+        if (false == _bReroll && false == bSummon) PlayTitleBounce();
 
-        PlaceSlots(count);
+        PlaceSlots(count, bSummon);
         UpdateControls();
         LayoutControls();
         RebuildNavigation();
@@ -462,6 +529,9 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 
         // 처음 포커스한 카드의 설명 높이로 바로 맞춘다(열리자마자 높이가 바뀌는 연출이 보이지 않게).
         descPanel.SnapHeight();
+
+        // 배치(Content 위치)가 끝난 뒤에 시작한다 - 기둥이 화면 위 끝까지 닿는 높이를 Content 위치에서 잰다.
+        if (true == bSummon) BeginSummon(count);
     }
 
     // // 입력 전달
@@ -480,12 +550,13 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 
     // // 배치
 
-    private void PlaceSlots(int _count)
+    private void PlaceSlots(int _count, bool _bSummon)
     {
         float slotWidth = 0 < slots.Length && null != slots[0] ? ((RectTransform)slots[0].transform).rect.width : 0f;
         float totalWidth = 0 < _count ? _count * slotWidth + (_count - 1) * slotGap : 0f;
         float left = Mathf.Floor(-totalWidth * 0.5f);
-        ComputeIntroDelays(_count);
+        if (true == _bSummon) ComputeSummonSchedule(_count);
+        else ComputeIntroDelays(_count);
 
         for (int i = 0; i < slots.Length; i++)
         {
@@ -498,7 +569,9 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 
             slot.Bind(i, offers[i]);
             slot.SetPosition(new Vector2(left + Mathf.Round(i * (slotWidth + slotGap)), cardRowY));
-            slot.PlayIntro(introDelays[i], CardRarity.IsRare(offers[i].displayGrade));
+            bool bRare = CardRarity.IsRare(offers[i].displayGrade);
+            if (true == _bSummon) slot.PlaySummonIntro(summonDelays[i], introDelays[i], bRare);
+            else slot.PlayIntro(introDelays[i], bRare);
             slot.SetRerollVisible(bSlotRerollMode);
             if (true == bSlotRerollMode) slot.SetRerollAvailable(offers[i].bCanReroll);
         }
@@ -548,6 +621,35 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
             introDelays[i] = rareStart;
             rareStart += RareIntervalSeconds;
         }
+    }
+
+    /// <summary>
+    /// 빛기둥 소환 일정. 기둥은 일반 카드를 왼쪽부터 0.30초에 시작해 0.26초 간격, 희귀 카드는 맨 뒤에서 기둥마다 0.25초 더 뜸을 들인다(summonDelays).
+    /// 뒤집힘 시작 지연(introDelays)은 기존 규칙(일반 0.13초 간격, 희귀는 마지막 일반 + 0.3초)에 마지막 기둥 + 0.12초를 더한 값이다.
+    /// </summary>
+    private void ComputeSummonSchedule(int _count)
+    {
+        ComputeIntroDelays(_count);
+        if (summonDelays.Length < _count) summonDelays = new float[_count];
+
+        float strike = SummonFirstStrikeSeconds;
+        float last = strike;
+        for (int pass = 0; pass < 2; pass++)
+        {
+            bool bRarePass = 1 == pass;
+            for (int i = 0; i < _count; i++)
+            {
+                if (bRarePass != CardRarity.IsRare(offers[i].displayGrade)) continue;
+
+                if (true == bRarePass) strike += SummonRareExtraSeconds;
+                summonDelays[i] = strike;
+                last = strike;
+                strike += SummonStrikeIntervalSeconds;
+            }
+        }
+
+        summonEndTime = last + SummonEndAfterLastSeconds;
+        for (int i = 0; i < _count; i++) introDelays[i] += summonEndTime;
     }
 
     private string Localize(int _key)
@@ -661,7 +763,8 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         if (y < minY) y = minY;
         if (y > maxY) y = maxY;
 
-        contentRoot.anchoredPosition = new Vector2(contentRoot.anchoredPosition.x, Mathf.Round(y));
+        // 기둥 흔들림 오프셋이 걸려 있으면 그 위에 얹는다(흔들림이 이 배치에 지워지거나 누적되지 않게).
+        contentRoot.anchoredPosition = new Vector2(contentRoot.anchoredPosition.x, Mathf.Round(y) + impactAppliedY);
     }
 
     /// <summary>[호환] G-12 반영 후 삭제. 예전 모드: 리롤 가능 여부를 공용 버튼 상태(활성/어둡게)에 반영한다. 칸별 버튼은 PlaceSlots · ReplaceOffer가 칸마다 반영한다.</summary>
@@ -953,6 +1056,238 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         RequestReroll();
     }
 
+    // // 빛기둥 소환
+
+    /// <summary>카드 아래 가운데(Content 기준 px). 기둥은 여기서 화면 위 끝까지 선다.</summary>
+    private static Vector2 GetPillarBottomCenter(UI_RoguelikeCardSlot _slot)
+    {
+        Vector2 position = _slot.GetPosition();
+        return new Vector2(position.x + Mathf.Round(((RectTransform)_slot.transform).rect.width * 0.5f), position.y);
+    }
+
+    /// <summary>화면 위 끝(Content 기준 px). 흔들림 오프셋은 빼고 잰다.</summary>
+    private float GetScreenTopLocal()
+    {
+        RectTransform screen = (RectTransform)contentRoot.parent;
+        return screen.rect.height * 0.5f - (contentRoot.anchoredPosition.y - impactAppliedY) + SummonTopMargin;
+    }
+
+    private void PlayTitleBounce()
+    {
+        if (null != titleAnimator) titleAnimator.PlayRevealBounce();
+        if (null != titleShadowAnimator) titleShadowAnimator.PlayRevealBounce();
+    }
+
+    /// <summary>
+    /// 소환 시작(처음 열 때). 제목 · 설명 패널 · 칸별 리롤 버튼을 숨기고 칸마다 기둥을 예약한다(카드 숨김과 뒤집힘 일정은 PlaceSlots가 슬롯에 이미 넘겼다).
+    /// 딤은 UpdateSummon이 기본 알파에서 진하게 올렸다가 마지막 기둥 + 0.12초에 기본으로 돌린다.
+    /// </summary>
+    private void BeginSummon(int _count)
+    {
+        bSummonActive = true;
+        summonTime = 0f;
+        summonControlsTime = -1f;
+        bSummonTitleShown = false;
+        summonDimAlpha = null != dimImage ? dimImage.color.a : 0f;
+
+        if (null != titlePlate) titlePlate.gameObject.SetActive(false);
+        if (null != descGroup) descGroup.alpha = 0f;
+        else descPanel.gameObject.SetActive(false);
+
+        if (true == bSlotRerollMode)
+        {
+            for (int i = 0; i < _count; i++)
+            {
+                slots[i].SetRerollFade(0f);
+                slots[i].SetRerollVisible(false);
+            }
+        }
+        else
+        {
+            rerollButton.gameObject.SetActive(false);
+        }
+
+        pillarFx.StopAll();
+        float topY = GetScreenTopLocal();
+        for (int i = 0; i < _count; i++)
+        {
+            UI_RoguelikeCardSlot slot = slots[i];
+            pillarFx.Play(i, GetPillarBottomCenter(slot), topY, summonDelays[i], CardRarity.IsRare(offers[i].displayGrade), slot.Card.GradeIndex);
+        }
+    }
+
+    /// <summary>
+    /// 소환 · 번쩍 · 흔들림을 모두 멈추고 원래대로 돌린다(닫기 · 구매 · 보유 카드 창으로 가려짐 · 다시 열기). 숨은 카드는 슬롯이 되돌리고, 소환이 진행 중이었다면 딤 · 제목 · 설명 · 리롤 버튼도 바로 보이게 한다.
+    /// </summary>
+    private void StopSummon()
+    {
+        StopImpact();
+        if (null != pillarFx) pillarFx.StopAll();
+        for (int i = 0; i < slots.Length; i++) slots[i].EndSummon();
+
+        if (false == bSummonActive) return;
+
+        bSummonActive = false;
+        summonControlsTime = -1f;
+        RestoreDim();
+        if (null != descGroup) descGroup.alpha = 1f;
+        for (int i = 0; i < slotCount; i++) slots[i].SetRerollFade(1f);
+        SetControlsVisible(true);
+    }
+
+    /// <summary>번쩍 이미지를 끄고 Content 흔들림 오프셋을 되돌린다.</summary>
+    private void StopImpact()
+    {
+        flashAlpha = 0f;
+        if (null != flashImage) flashImage.enabled = false;
+        shakeAmount = 0f;
+        ApplyImpactOffset(0, 0);
+    }
+
+    /// <summary>Content에 걸린 흔들림 오프셋을 (_x, _y)로 바꾼다. 기준 위치는 건드리지 않고 차이만 더한다(레이아웃이 따로 정한 위치를 보존).</summary>
+    private void ApplyImpactOffset(int _x, int _y)
+    {
+        if (_x == impactAppliedX && _y == impactAppliedY) return;
+
+        contentRoot.anchoredPosition += new Vector2(_x - impactAppliedX, _y - impactAppliedY);
+        impactAppliedX = _x;
+        impactAppliedY = _y;
+    }
+
+    /// <summary>기둥이 쳤다: 기둥 색으로 화면이 번쩍이고(일반 0.2 / 희귀 0.5) 화면이 흔들린다(일반 2px / 희귀 3.5px).</summary>
+    private void OnPillarStrike(int _slot, bool _bRare)
+    {
+        flashAlpha = Mathf.Max(flashAlpha, true == _bRare ? RareFlashAlpha : NormalFlashAlpha);
+        if (null != flashImage)
+        {
+            Color32 color = pillarFx.LastStrikeColor;
+            flashImage.color = new Color32(color.r, color.g, color.b, (byte)Mathf.RoundToInt(flashAlpha * 255f));
+            flashImage.enabled = true;
+        }
+
+        shakeAmount = Mathf.Max(shakeAmount, true == _bRare ? RareShakePixels : NormalShakePixels);
+        impactStep = -1;
+    }
+
+    /// <summary>번쩍은 초당 2.6, 흔들림은 초당 10px씩 줄어든다(unscaled). 흔들림 방향은 30Hz로 바뀌고 Content는 정수 px로만 움직인다.</summary>
+    private void UpdateImpact()
+    {
+        if (0f >= flashAlpha && 0f >= shakeAmount && 0 == impactAppliedX && 0 == impactAppliedY) return;
+
+        float dt = Time.unscaledDeltaTime;
+        if (0f < flashAlpha)
+        {
+            flashAlpha -= dt * ImpactFlashDecayPerSecond;
+            if (0f >= flashAlpha)
+            {
+                flashAlpha = 0f;
+                if (null != flashImage) flashImage.enabled = false;
+            }
+            else if (null != flashImage)
+            {
+                Color color = flashImage.color;
+                color.a = flashAlpha;
+                flashImage.color = color;
+            }
+        }
+
+        if (0f >= shakeAmount)
+        {
+            ApplyImpactOffset(0, 0);
+            return;
+        }
+
+        shakeAmount = Mathf.Max(0f, shakeAmount - dt * ImpactShakeDecayPerSecond);
+        impactClock += dt;
+        int step = (int)(impactClock * ImpactStepRate);
+        if (0f < shakeAmount && step == impactStep) return;
+
+        impactStep = step;
+        if (0f >= shakeAmount)
+        {
+            ApplyImpactOffset(0, 0);
+            return;
+        }
+
+        ApplyImpactOffset(Mathf.RoundToInt((Hash01(step * 2) * 2f - 1f) * shakeAmount), Mathf.RoundToInt((Hash01(step * 2 + 1) * 2f - 1f) * shakeAmount));
+    }
+
+    // 상태 없는 해시 난수 0 이상 1 미만.
+    private static float Hash01(int _n)
+    {
+        return Mathf.Repeat(Mathf.Sin(_n * 12.9898f) * 43758.5453f, 1f);
+    }
+
+    /// <summary>소환 진행: 제목 바운스(0.1초) · 딤 진하게/복귀 · 마지막 기둥 + 0.12초부터 설명 패널 · 리롤 버튼이 0.15초에 나타남.</summary>
+    private void UpdateSummon()
+    {
+        if (false == bSummonActive) return;
+
+        float dt = Time.unscaledDeltaTime;
+        summonTime += dt;
+
+        if (false == bSummonTitleShown && SummonTitleDelaySeconds <= summonTime)
+        {
+            bSummonTitleShown = true;
+            if (null != titlePlate) titlePlate.gameObject.SetActive(true);
+            PlayTitleBounce();
+        }
+
+        if (0f > summonControlsTime)
+        {
+            if (summonEndTime <= summonTime) BeginSummonControls();
+        }
+        else if (SummonControlsFadeSeconds > summonControlsTime)
+        {
+            summonControlsTime += dt;
+            ApplySummonControlsFade(Mathf.Clamp01(summonControlsTime / SummonControlsFadeSeconds));
+        }
+
+        bool bDimDone = UpdateSummonDim(dt);
+        if (true == bDimDone && SummonControlsFadeSeconds <= summonControlsTime) bSummonActive = false;
+    }
+
+    /// <summary>설명 패널 · 리롤 버튼을 켜고 알파 0에서 시작한다. 예전 모드의 공용 리롤 버튼은 알파 페이드 없이 바로 켠다.</summary>
+    private void BeginSummonControls()
+    {
+        summonControlsTime = 0f;
+        if (null == descGroup) descPanel.gameObject.SetActive(true);
+
+        if (true == bSlotRerollMode)
+        {
+            for (int i = 0; i < slotCount; i++) slots[i].SetRerollVisible(true);
+        }
+        else
+        {
+            rerollButton.gameObject.SetActive(true);
+        }
+
+        ApplySummonControlsFade(0f);
+    }
+
+    private void ApplySummonControlsFade(float _fade)
+    {
+        if (null != descGroup) descGroup.alpha = _fade;
+        for (int i = 0; i < slotCount; i++) slots[i].SetRerollFade(_fade);
+    }
+
+    /// <summary>딤: 기본 알파 → 진하게(마지막 기둥 + 0.07초 전까지) → 기본으로 돌아옴(지수 접근 초당 8). 기본에 닿으면 true.</summary>
+    private bool UpdateSummonDim(float _dt)
+    {
+        if (null == dimImage) return true;
+
+        float target = summonTime < summonEndTime - SummonDimReturnLeadSeconds ? Mathf.Min(1f, dimBaseAlpha * SummonDimScale) : dimBaseAlpha;
+        summonDimAlpha += (target - summonDimAlpha) * Mathf.Min(1f, _dt * SummonDimLerpRate);
+
+        bool bDone = summonEndTime <= summonTime && Mathf.Abs(summonDimAlpha - dimBaseAlpha) < SummonDimEpsilon;
+        if (true == bDone) summonDimAlpha = dimBaseAlpha;
+
+        Color color = dimImage.color;
+        color.a = summonDimAlpha;
+        dimImage.color = color;
+        return bDone;
+    }
+
     // // 연출 진행
 
     private void StartButtonShake(Button _button)
@@ -1209,6 +1544,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 
     protected override void OnShowContent()
     {
+        StopSummon();
         UnsubscribeLanguage();
         localizationManager = viewCtx?.localizationManager;
         if (null != localizationManager) localizationManager.OnLanguageChanged += languageChangedHandler;
@@ -1248,6 +1584,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     /// </summary>
     protected override void OnHideContent()
     {
+        StopSummon();
         RestoreExitState();
         pendingComplete = null;
         phase = EPhase.Idle;
@@ -1298,6 +1635,8 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         if (null != acrylicCase) acrylicCase.Initialize();
         if (null != storeDrop) storeDrop.Initialize();
         if (null != dimImage) dimBaseAlpha = dimImage.color.a;
+        if (null != flashImage) flashImage.enabled = false;
+        if (null != pillarFx) pillarFx.StrikeEvent += OnPillarStrike;
 
         // 프리팹에 잡아 둔 Content 기본 위치. 이후 레이아웃은 이 값에서 다시 계산한다.
         contentDefaultY = contentRoot.anchoredPosition.y;
@@ -1326,6 +1665,8 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         UpdatePhase();
         UpdateCover();
         UpdateButtonShake();
+        UpdateSummon();
+        UpdateImpact();
 
         // 보유 카드 창에 덮여 있는 동안에는 리롤 포커스 갱신과 선택 복구를 하지 않는다(그 창이 선택을 쥐고 있다).
         if (true == IsCoverActive) return;
@@ -1349,6 +1690,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         RerollRequestedEvent = null;
         SlotRerollRequestedEvent = null;
         pendingComplete = null;
+        if (null != pillarFx) pillarFx.StrikeEvent -= OnPillarStrike;
         UnsubscribeLanguage();
         base.OnDestroy();
     }

@@ -702,6 +702,8 @@ public class UIView_MainMenu : UIView
         {
             logoAnimUI.ResetToInitialState();
             logoAnimUI.SetAlpha(0f);
+            // 로그라이크에서 돌아오면 부제가 켜진 채 남아 "아무 키" 화면에 보이고, 키를 누르면 등장 연출이 한 번 더 재생된다. 여기서 숨겨 두면 키 입력 뒤 하위 메뉴가 열릴 때 한 번만 떨어진다.
+            logoAnimUI.SetRoguelikeSubtitleVisible(false, false, 0f);
         }
 
         if (null != otherCanvasGroup)

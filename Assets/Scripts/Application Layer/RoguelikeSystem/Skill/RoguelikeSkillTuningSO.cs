@@ -57,9 +57,9 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     [Tooltip("돌진 최고 속도(월드/초). 오프로드 IV의 돌진 속도 증가(MoveSpeedPercent, 오프로드 전용)가 곱해진다.")]
     public float offroadSpeed = 16f;
     [Tooltip("돌진 판정 폭(반경). 범위%로 넓어진다(오프로드 IV).")]
-    public float offroadHitRadius = 0.9f;
-    [Tooltip("돌진 피해 기준값(1레벨 10, 기획서 v2.7 A-4). 오프로드 카드의 피해%로 10 / 10 / 14 / 18 / 22 / 28 / 30이 된다.")]
-    public float offroadDamage = 10f;
+    public float offroadHitRadius = 0.55f;
+    [Tooltip("돌진 피해 기준값(1레벨 12). 오프로드 카드의 피해%로 12 / 18 / 36 / 60 / 96 / 132 / 168이 된다.")]
+    public float offroadDamage = 12f;
     [Tooltip("소환 전 예열 시간(초). 시동 떨림·플래시가 나오고, 이 동안은 피해가 없다.")]
     public float offroadWarmup = 0.45f;
     [Tooltip("출발 순간 속도(월드/초). 여기서 최고 속도까지 가속한다.")]
@@ -100,8 +100,8 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     public float stellaStarLifetime = 12f;
     [Tooltip("별을 쳤을 때의 단발 공격 반경.")]
     public float stellaBlastRadius = 2.2f;
-    [Tooltip("별 폭발 피해 기준값(1레벨 11, 기획서 v2.7 A-4). 스텔라 카드의 피해%로 16 / 16 / 18 / 19 / 20 / 20이 된다.")]
-    public float stellaBlastDamage = 11f;
+    [Tooltip("별 폭발 피해 기준값(1레벨 12). 스텔라 카드의 피해%로 12 / 18 / 30 / 39 / 48 / 54 / 60이 된다.")]
+    public float stellaBlastDamage = 12f;
     [Tooltip("별 표식 유지 시간(초). 지속%로 늘어나고, 카드 효과 StarMarkDurationAdd(레벨 IV +3초)가 더해진다.")]
     public float stellaMarkDuration = 6f;
     [Tooltip("별 표식이 남은 나무가 받는 피해 증가율(0.3 = +30%). 도끼·다른 액티브·지속 피해 모두에 적용된다(기획서 6-1). 스텔라 V의 StarMarkDamageTakenAdd(+15%p)가 더해진다.")]
@@ -120,8 +120,8 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     public float sporeRadius = 2.5f;
     [Tooltip("폭탄이 떨어진 뒤 대폭발 판정까지의 시간(초). 본편 대폭발 연출이 응집한 뒤 터지는 순간에 맞춘다.")]
     public float sporeExplosionDelay = 0.2f;
-    [Tooltip("대폭발 자체의 피해. 기획서는 오염 지속 피해만 정해 두었으므로 기본 0이다.")]
-    public float sporeExplosionDamage = 0f;
+    [Tooltip("비조합 대폭발 자체의 기본 피해(DamageMul 반영).")]
+    public float sporeExplosionDamage = 15f;
     [Tooltip("오염 유지 시간(초, 기획서 v2.8 6초 - 1레벨 틱 1.5초로 4틱). 공통 패시브 '유지 시간 증가'(지속%)로만 늘어난다(포자 수류탄 레벨은 유지 시간을 올리지 않는다).")]
     public float sporeDuration = 6f;
     [Tooltip("오염 지속 피해 틱 주기(초). 1레벨 1.5초에서 시작해 카드 DotTickIntervalAdd(II −0.3 · IV −0.4 · VI −0.3초)로 1.2 / 0.8 / 0.5초까지 짧아진다(기획서 v2.8).")]
@@ -140,8 +140,8 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     [Header("조합: 회전베기 + 부메랑")]
     [Tooltip("회전베기 반경 = 부메랑 판정 반경 × 이 값(기획서 v3.0 11-13, 1.5 - 부메랑보다 확실히 크다). 부메랑 범위 카드 · 패시브만 반영되고 도끼 · 회전베기 범위는 반영되지 않는다.")]
     public float spinBoomerangRadiusRatio = 1.5f;
-    [Tooltip("도끼 피해 대비 배율, 회전베기 MAX 최종 피해와 같은 60(도끼 10 × 6).")]
-    public float spinBoomerangDamageMultiplier = 6f;
+    [Tooltip("도끼 피해 대비 배율(도끼 10 × 22 = 220).")]
+    public float spinBoomerangDamageMultiplier = 22f;
 
     [Header("조합: 포자 수류탄 + 드론 / 오프로드 / 충격파 (포자 수류탄 대폭발 + 오염, 기획서 v2.6 6-2 · C-2 '연쇄 폭발')")]
     [Tooltip("한 프레임에 일으키는 대폭발 수의 상한. 넘친 몫은 다음 프레임으로 미룬다. 대폭발의 범위 · 피해 · 오염은 위 포자폭탄 값을 그대로 쓴다.")]
@@ -151,27 +151,27 @@ public class RoguelikeSkillTuningSO : ScriptableObject
     [Tooltip("같은 자리(같은 나무) 재발동 제한: 최근 이 시간(초) 안에 병합 반경 안에서 일어났으면 다시 일어나지 않는다.")]
     public float sporeComboRepeatCooldown = 0.5f;
     [Tooltip("같은 자리로 보는 거리(월드). 붙어 선 나무를 한 번에 맞혀도 같은 자리 대폭발이 겹쳐 쌓이지 않게 한다.")]
-    public float sporeComboMergeRadius = 0.6f;
+    public float sporeComboMergeRadius = 2.2f;
     [Tooltip("방구차: 오프로드가 이 거리(월드)를 달릴 때마다 지나가는 경로에 대폭발.")]
     public float sporeOffroadSpacing = 1.5f;
     [Tooltip("포자 충격파: 충격파 그림에 곱하는 색. 충격파 그림이 흰색이라 이 색이 그대로 보인다. 기본은 본편 포자 대폭발 팔레트의 초록(143, 217, 138).")]
     public Color sporeShockwaveColor = new Color(143f / 255f, 217f / 255f, 138f / 255f, 1f);
     [Tooltip("포자 프리즘 조합(역병 드론·방역차·포자 파동) 활성화 시 대폭발 1회 기본 피해(DotMul 반영). 비조합 기본 투하는 sporeExplosionDamage(0)를 유지한다.")]
-    public float sporeComboExplosionDamage = 180f;
+    public float sporeComboExplosionDamage = 25f;
     [Tooltip("포자 프리즘 조합 활성화 시 오염 지속 피해 틱 배율.")]
-    public float sporeComboDotMultiplier = 4.5f;
+    public float sporeComboDotMultiplier = 2f;
     [Tooltip("방역차(포자 수류탄 + 오프로드) 활성화 시 오프로드 소환 주기 배율.")]
     public float sporeOffroadIntervalMultiplier = 0.6f;
     [Tooltip("방역차(포자 수류탄 + 오프로드) 활성화 시 차량 돌진 직접 피해 배율.")]
-    public float sporeOffroadDamageMultiplier = 6f;
+    public float sporeOffroadDamageMultiplier = 1.5f;
 
     [Header("조합: 스텔라 + 드론")]
     [Tooltip("이음선 레이저의 판정 폭과 이음선 하나당 피해. 발사 주기는 따로 없고 드론 레이저 발사 주기(공격속도 반영)를 그대로 쓴다(기획서 v2.8 6-2).")]
     public float stellaDroneBeamWidth = 0.9f;
-    public float stellaDroneBeamDamage = 120f;
+    public float stellaDroneBeamDamage = 45f;
     [Tooltip("섬 위 고정 칸(9칸)이 이 수만큼 별로 차면 노바(기획서 9개). 노바는 섬 중심에서 섬 전체를 치는 고정 크기다(기획서 v3.0 6-2).")]
     public int stellaDroneNovaStars = 9;
-    public float stellaDroneNovaDamage = 6000f;
+    public float stellaDroneNovaDamage = 1200f;
     [Tooltip("별 생성 간격(초). 별이 생기면 이 시간 동안은 나무를 부숴도 별 생성 판정을 하지 않는다 - 나무가 한꺼번에 많이 부서져도 이 간격에 별 1개(기획서 v3.0 11-12 6-2, 0.25초).")]
     public float stellaDroneStarSpawnDelay = 0.25f;
     [Tooltip("노바 지연(초). 고정 칸이 모두 별로 찬 뒤 이 시간이 지나야 노바가 터진다. 그동안 이음선 레이저는 계속 쏜다(기획서 v3.0 11-12 6-2, 초안 1.0초).")]

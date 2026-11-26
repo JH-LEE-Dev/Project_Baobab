@@ -54,6 +54,8 @@ public static class RoguelikeCardSelectBuilder
     private const float SlotRerollGap = 5f;
     private const float SlotRerollIconSize = 14f;
 
+    // 빛기둥 소환 픽셀 입자 그래픽 머티리얼(희귀 등장 연출의 픽셀 입자와 같은 UIPixelGlow).
+    private const string PillarFxMaterialPath = "Assets/Graphics/VFX/Materials/M_UILootParticles.mat";
     private static readonly Color DimColor = new Color(0.02f, 0.03f, 0.06f, 0.85f);
     private static readonly Color CreamColor = new Color(0.95f, 0.89f, 0.77f, 1f);
     private static readonly Color GoldColor = new Color(1f, 0.83f, 0.35f, 1f);
@@ -258,6 +260,8 @@ public static class RoguelikeCardSelectBuilder
         descBg.type = Image.Type.Sliced;
         descBg.raycastTarget = false;
         desc.gameObject.AddComponent<RectMask2D>();
+        // 빛기둥 소환이 끝난 뒤 설명 패널이 0.15초에 나타나는 알파.
+        CanvasGroup descGroup = desc.gameObject.AddComponent<CanvasGroup>();
 
         // 세 글자 영역의 위치·크기는 UI_RoguelikeCardDescPanel이 글자에 맞춰 잡는다.
         TMP_Text nameText = CreateText("Name", desc, _font, string.Empty, TextAlignmentOptions.TopLeft, CreamColor, true, TextOverflowModes.Overflow);
@@ -329,6 +333,9 @@ public static class RoguelikeCardSelectBuilder
         // 보관 연출(일반 카드 슬리브 + 아래로 뚝): 슬리브는 Content 맨 앞 형제(고른 카드 슬롯 위에 씌워진다). 연출 전에는 꺼 둔다.
         UI_RoguelikeCardStoreDrop storeDrop = BuildStoreDrop(content);
 
+        // 빛기둥 소환(진입 연출): 뒤 층은 첫 슬롯 바로 앞 형제(카드 뒤), 앞 층은 Content 맨 뒤 형제(카드 · 케이스 · 보관 슬리브 위).
+        UI_RoguelikeSummonPillarFx pillarFx = BuildPillarFx(content, slots[0].transform);
+
         // 키 안내: 화면 왼쪽 아래. 패드 모드에서만 스크립트가 켠다(키보드 · 마우스 모드는 마우스 GUI 조작).
         RectTransform guide = AnchoredRect("PadGuide", rootRect, Vector2.zero, new Vector2(EdgeMargin, EdgeMargin + 5f), new Vector2(0f, GuideHeight));
         HorizontalLayoutGroup layout = guide.gameObject.AddComponent<HorizontalLayoutGroup>();
@@ -345,6 +352,12 @@ public static class RoguelikeCardSelectBuilder
         UI_KeyboardImage selectKey = CreateKeyImage("SelectKey", guide, keyIcons, EOtherKey.Enter, EGamepadButton.Button_A_Cross);
         TMP_Text hintSelect = CreateGuideText("HintSelect", guide, _font);
         guide.gameObject.SetActive(false);
+
+        // 전체 화면 번쩍: 화면 맨 앞(흰색, 알파 0, 꺼 둔다). 기둥이 칠 때 스크립트가 기둥 색 · 알파로 켠다.
+        Image flash = CreateStretchImage("Flash", rootRect, new Color(1f, 1f, 1f, 0f));
+        flash.raycastTarget = false;
+        flash.enabled = false;
+        flash.transform.SetAsLastSibling();
 
         // 화면 컴포넌트 연결. UIView 기본 설정(layer 등)은 기존 프리팹 값을 그대로 둔다.
         UIView_RoguelikeCardSelect view = root.GetComponent<UIView_RoguelikeCardSelect>();
@@ -364,6 +377,9 @@ public static class RoguelikeCardSelectBuilder
         viewSo.FindProperty("acrylicCase").objectReferenceValue = acrylicCase;
         viewSo.FindProperty("storeDrop").objectReferenceValue = storeDrop;
         viewSo.FindProperty("dimImage").objectReferenceValue = dim;
+        viewSo.FindProperty("pillarFx").objectReferenceValue = pillarFx;
+        viewSo.FindProperty("flashImage").objectReferenceValue = flash;
+        viewSo.FindProperty("descGroup").objectReferenceValue = descGroup;
         viewSo.FindProperty("rerollButton").objectReferenceValue = rerollButton;
         viewSo.FindProperty("rerollGroup").objectReferenceValue = rerollGroup;
         viewSo.FindProperty("rerollRelay").objectReferenceValue = rerollRelay;
@@ -388,6 +404,49 @@ public static class RoguelikeCardSelectBuilder
 
         PrefabUtility.SaveAsPrefabAsset(root, ViewPrefabPath);
         PrefabUtility.UnloadPrefabContents(root);
+    }
+
+    // // 빛기둥 소환
+
+    /// <summary>
+    /// 빛기둥 소환 이펙트 층을 만든다(Content 아래, 앵커 · 피벗 가운데 · 크기 0 = 슬롯 anchoredPosition과 같은 좌표계).
+    ///   PillarFxBack   뒤 층(자식 Canvas + Pixels). _firstSlot 바로 앞 형제 - 예고 줄 · 피어오르는 알갱이 · 바닥 링이 카드 뒤에 그려진다.
+    ///   PillarFxFront  앞 층(자식 Canvas + Pixels + UI_RoguelikeSummonPillarFx). Content 맨 뒤 형제 - 기둥 · 심 · 번개 · 폭발 입자가 카드 앞에 그려진다.
+    /// 픽셀 입자 그래픽의 머티리얼은 희귀 등장 연출과 같은 UIPixelGlow(PillarFxMaterialPath)다.
+    /// </summary>
+    private static UI_RoguelikeSummonPillarFx BuildPillarFx(RectTransform _content, Transform _firstSlot)
+    {
+        Material material = AssetDatabase.LoadAssetAtPath<Material>(PillarFxMaterialPath);
+        if (null == material) Debug.LogWarning("[RoguelikeCardSelectBuilder] 픽셀 입자 머티리얼을 찾지 못했습니다: " + PillarFxMaterialPath);
+
+        RectTransform back = RoguelikeCardBuilder.CreateRect("PillarFxBack", _content, Vector2Int.zero, Vector2.zero);
+        CenterAnchor(back);
+        back.gameObject.AddComponent<Canvas>();
+        UI_RoguelikeRareRevealParticles backPixels = CreatePillarPixels(back, material);
+        back.SetSiblingIndex(_firstSlot.GetSiblingIndex());
+
+        RectTransform front = RoguelikeCardBuilder.CreateRect("PillarFxFront", _content, Vector2Int.zero, Vector2.zero);
+        CenterAnchor(front);
+        front.gameObject.AddComponent<Canvas>();
+        UI_RoguelikeRareRevealParticles frontPixels = CreatePillarPixels(front, material);
+        front.SetAsLastSibling();
+
+        UI_RoguelikeSummonPillarFx fx = front.gameObject.AddComponent<UI_RoguelikeSummonPillarFx>();
+        SerializedObject so = new SerializedObject(fx);
+        so.FindProperty("backGraphic").objectReferenceValue = backPixels;
+        so.FindProperty("frontGraphic").objectReferenceValue = frontPixels;
+        so.ApplyModifiedPropertiesWithoutUndo();
+        return fx;
+    }
+
+    private static UI_RoguelikeRareRevealParticles CreatePillarPixels(RectTransform _layer, Material _material)
+    {
+        RectTransform pixels = RoguelikeCardBuilder.CreateRect("Pixels", _layer, Vector2Int.zero, Vector2.zero);
+        CenterAnchor(pixels);
+        UI_RoguelikeRareRevealParticles graphic = pixels.gameObject.AddComponent<UI_RoguelikeRareRevealParticles>();
+        graphic.material = _material;
+        graphic.raycastTarget = false;
+        return graphic;
     }
 
     // // 레어 카드 아크릴 케이스

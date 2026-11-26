@@ -30,18 +30,21 @@ MonoBehaviour:
       value: 10
     - effect: 1
       skill: 6
-      value: 45.454545
+      value: 50
   - effects:
     - effect: 27
       skill: 6
       value: 1
+    - effect: 1
+      skill: 6
+      value: 100
   - effects:
     - effect: 24
       skill: 6
       value: 3
     - effect: 1
       skill: 6
-      value: 18.181818
+      value: 75
   - effects:
     - effect: 35
       skill: 6
@@ -51,7 +54,7 @@ MonoBehaviour:
       value: 10
     - effect: 1
       skill: 6
-      value: 9.090909
+      value: 75
   - effects:
     - effect: 7
       skill: 6
@@ -61,11 +64,14 @@ MonoBehaviour:
       value: 12
     - effect: 1
       skill: 6
-      value: 9.090909
+      value: 50
   - effects:
     - effect: 28
       skill: 6
       value: 1
+    - effect: 1
+      skill: 6
+      value: 50
   comboMaterialA: {fileID: 0}
   comboMaterialB: {fileID: 0}
   comboType: 0

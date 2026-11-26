@@ -30,8 +30,8 @@ MonoBehaviour:
   offroadInterval: 6
   offroadMinPreviewSeconds: 1.5
   offroadSpeed: 16
-  offroadHitRadius: 0.9
-  offroadDamage: 10
+  offroadHitRadius: 0.55
+  offroadDamage: 12
   offroadWarmup: 0.45
   offroadLaunchSpeed: 3
   offroadAcceleration: 70
@@ -50,7 +50,7 @@ MonoBehaviour:
   stellaBaseMaxStars: 3
   stellaStarLifetime: 12
   stellaBlastRadius: 2.2
-  stellaBlastDamage: 11
+  stellaBlastDamage: 12
   stellaMarkDuration: 6
   stellaMarkDamageTakenBonus: 0.3
   stellaBlastMaxHpRatio: 0.25
@@ -59,30 +59,30 @@ MonoBehaviour:
   sporeTargetRange: 7
   sporeRadius: 2.5
   sporeExplosionDelay: 0.2
-  sporeExplosionDamage: 0
+  sporeExplosionDamage: 15
   sporeDuration: 6
   sporeTickInterval: 1.5
   sporeTickDamage: 4
   dotTickIntervalMin: 0.2
   spinShockwaveSwingInterval: 3
   spinShockwaveDamage: 400
-  spinBoomerangDamageMultiplier: 6
+  spinBoomerangDamageMultiplier: 22
   spinBoomerangRadiusRatio: 1.5
   sporeComboMaxExplosionsPerFrame: 8
   sporeComboMaxPending: 48
   sporeComboRepeatCooldown: 0.5
-  sporeComboMergeRadius: 0.6
+  sporeComboMergeRadius: 2.2
   sporeOffroadSpacing: 1.5
   sporeShockwaveColor: {r: 0.56078434, g: 0.8509804, b: 0.5411765, a: 1}
-  sporeComboExplosionDamage: 180
-  sporeComboDotMultiplier: 4.5
+  sporeComboExplosionDamage: 25
+  sporeComboDotMultiplier: 2
   sporeOffroadIntervalMultiplier: 0.6
-  sporeOffroadDamageMultiplier: 6
+  sporeOffroadDamageMultiplier: 1.5
   stellaDroneBeamInterval: 1.2
   stellaDroneBeamWidth: 0.9
-  stellaDroneBeamDamage: 120
+  stellaDroneBeamDamage: 45
   stellaDroneNovaStars: 9
-  stellaDroneNovaDamage: 6000
+  stellaDroneNovaDamage: 1200
   stellaDroneStarSpawnDelay: 0.25
   stellaDroneNovaDelay: 1
   stellaDroneSlotInset: 0.9

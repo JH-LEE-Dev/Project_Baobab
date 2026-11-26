@@ -139,11 +139,11 @@ public class DraftCardDataTests
         Assert.AreEqual(5.5f, 6f / (1f + ResolveAtLevel("active_offroad", 2).GetForSkill(ERunEffect.AttackSpeedPercent, ERoguelikeSkill.Offroad) / 100f), 0.01f);
         Assert.AreEqual(5f, 6f / (1f + ResolveAtLevel("active_offroad", 6).GetForSkill(ERunEffect.AttackSpeedPercent, ERoguelikeSkill.Offroad) / 100f), 0.01f);
 
-        // 기획서 v2.7 A-4: 피해 10 / 10 / 14 / 18 / 22 / 28 / 30(기준 10).
-        float[] damages = { 10f, 10f, 14f, 18f, 22f, 28f, 30f };
+        // 오프로드 피해: 12 / 18 / 36 / 60 / 96 / 132 / 168(기준 12).
+        float[] damages = { 12f, 18f, 36f, 60f, 96f, 132f, 168f };
         for (int level = 1; level <= 7; level++)
         {
-            Assert.AreEqual(damages[level - 1], 10f * (1f + ResolveAtLevel("active_offroad", level).GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Offroad) / 100f), 0.01f, "피해 " + level);
+            Assert.AreEqual(damages[level - 1], 12f * (1f + ResolveAtLevel("active_offroad", level).GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Offroad) / 100f), 0.01f, "피해 " + level);
         }
 
         Assert.AreEqual(20f, ResolveAtLevel("active_offroad", 4).Get(ERunEffect.MoveSpeedPercent, ERoguelikeSkill.Offroad), 0.01f);
@@ -160,8 +160,8 @@ public class DraftCardDataTests
             Assert.AreEqual(required[level - 1], 3 + (int)add, "레벨 " + level);
         }
 
-        // 기획서 v3.0 A-4: 회전 피해 10 / 19 / 27 / 30 / 35 / 38 / 40(도끼 10 기준, 카드 피해 배율), 범위(반경) +17.5%에서 레벨마다 +14.58%씩 늘어 MAX +105%(모든 레벨 증가).
-        float[] damages = { 10f, 19f, 27f, 30f, 35f, 38f, 40f };
+        // 회전베기 피해 배율: 도끼 10 × (1 + 피해%) = 10 / 17 / 27 / 37 / 50 / 70 / 95 (AttackComponent 1.5배 곱해 실피해 15~142.5).
+        float[] damages = { 10f, 17f, 27f, 37f, 50f, 70f, 95f };
         for (int level = 1; level <= 7; level++)
         {
             RunModifiers mods = ResolveAtLevel("active_spin", level);
@@ -174,10 +174,9 @@ public class DraftCardDataTests
     [Test]
     public void Shockwave_Chance50To75To100_DamageAndDoubleAtMax()
     {
-        // 기획서 v2.8 A-4: 확률 50 / 75 / 100%(I~III), 크기 1.5 / 2.0 / … / 4.5(1레벨 대비 ×1 / 1.33 / … / 3), 그루당 피해 10 / 19 / 38 / 40 / 75 / 110 / 115(VII는 2회 다단 합이라 1회째 약 72).
-        // 크기는 충격파가 닿는 거리(0.5 + 1.5 × 범위 배율, ShockWave.SetValue)다 - 1레벨(범위 +10%) 2.15에서 7레벨 6.45까지.
+        // 그루당 피해 10 / 19 / 28 / 42 / 75 / 110 / 76.875(VII는 2회 다단 합 123).
         float[] chances = { 50f, 75f, 100f, 100f, 100f, 100f, 100f };
-        float[] damages = { 10f, 19f, 38f, 40f, 75f, 110f, 71.875f };
+        float[] damages = { 10f, 19f, 28f, 42f, 75f, 110f, 76.875f };
         for (int level = 1; level <= 7; level++)
         {
             RunModifiers mods = ResolveAtLevel("active_shockwave", level);
@@ -199,19 +198,20 @@ public class DraftCardDataTests
     [Test]
     public void Drone_CountChainFromVAndInterval()
     {
-        Assert.AreEqual(0f, ResolveAtLevel("active_drone", 4).GetForSkill(ERunEffect.ChainCountAdd, ERoguelikeSkill.Drone), "체인은 V부터");
+        Assert.AreEqual(0f, ResolveAtLevel("active_drone", 1).GetForSkill(ERunEffect.ChainCountAdd, ERoguelikeSkill.Drone), "체인은 II부터");
+        Assert.AreEqual(1f, ResolveAtLevel("active_drone", 2).GetForSkill(ERunEffect.ChainCountAdd, ERoguelikeSkill.Drone)); // 1연쇄
         Assert.AreEqual(1f, ResolveAtLevel("active_drone", 3).GetForSkill(ERunEffect.CountAdd, ERoguelikeSkill.Drone));     // 2기
-        // 기획서 v2.5 A-4: 체인 타격 수 약 1.5배 - V 2연쇄(레이저당 3그루) · VI 4연쇄(5그루) · MAX 5연쇄(6그루).
-        Assert.AreEqual(2f, ResolveAtLevel("active_drone", 5).GetForSkill(ERunEffect.ChainCountAdd, ERoguelikeSkill.Drone)); // 2연쇄
+        Assert.AreEqual(2f, ResolveAtLevel("active_drone", 4).GetForSkill(ERunEffect.ChainCountAdd, ERoguelikeSkill.Drone)); // 2연쇄
+        Assert.AreEqual(3f, ResolveAtLevel("active_drone", 5).GetForSkill(ERunEffect.ChainCountAdd, ERoguelikeSkill.Drone)); // 3연쇄
         Assert.AreEqual(4f, ResolveAtLevel("active_drone", 6).GetForSkill(ERunEffect.ChainCountAdd, ERoguelikeSkill.Drone)); // 4연쇄
 
         RunModifiers max = ResolveAtLevel("active_drone", 7);
         Assert.AreEqual(2f, max.GetForSkill(ERunEffect.CountAdd, ERoguelikeSkill.Drone));      // 3기
         Assert.AreEqual(5f, max.GetForSkill(ERunEffect.ChainCountAdd, ERoguelikeSkill.Drone)); // 5연쇄
 
-        // 기획서 v2.8 A-4: 레이저 피해 9 / 12 / 12 / 16 / 16 / 18 / 20, 발사 주기 VI 0.5초 · VII 0.4초.
-        float[] intervals = { 1f, 0.8f, 0.8f, 0.7f, 0.7f, 0.5f, 0.4f };
-        float[] damages = { 9f, 12f, 12f, 16f, 16f, 18f, 20f };
+        // 레이저 피해 14 / 18 / 21 / 25 / 28 / 35 / 42, 발사 주기 0.8 / 0.7 / 0.7 / 0.6 / 0.55 / 0.45 / 0.4초.
+        float[] intervals = { 0.8f, 0.7f, 0.7f, 0.6f, 0.55f, 0.45f, 0.4f };
+        float[] damages = { 14f, 18f, 21f, 25f, 28f, 35f, 42f };
         for (int level = 1; level <= 7; level++)
         {
             RunModifiers mods = ResolveAtLevel("active_drone", level);
@@ -227,8 +227,8 @@ public class DraftCardDataTests
         Assert.AreEqual(0.25f, 0.3f / (1f + ResolveAtLevel("active_boomerang", 5).GetForSkill(ERunEffect.AttackSpeedPercent, ERoguelikeSkill.Boomerang) / 100f), 0.001f);
         Assert.AreEqual(2f, ResolveAtLevel("active_boomerang", 7).GetForSkill(ERunEffect.CountAdd, ERoguelikeSkill.Boomerang));
 
-        // 기획서 v3.0 A-4: 틱 피해 2.5 / 4.8 / 7.6 / 8 / 15.2 / 22 / 23.2(기준 2.5, III부터 v2.8 값의 ×0.8), 경로 위 타격 폭 약 2.5 → 7.5그루(1레벨 대비 7레벨 +200%, 모든 레벨 증가).
-        float[] ticks = { 2.5f, 4.8f, 7.6f, 8f, 15.2f, 22f, 23.2f };
+        // 틱 피해 2.5 / 4.5 / 6.5 / 10 / 16 / 25 / 32(기준 2.5), 경로 위 타격 폭 약 2.5 → 7.5그루(1레벨 대비 7레벨 +200%, 모든 레벨 증가).
+        float[] ticks = { 2.5f, 4.5f, 6.5f, 10f, 16f, 25f, 32f };
         for (int level = 1; level <= 7; level++)
         {
             RunModifiers mods = ResolveAtLevel("active_boomerang", level);
@@ -249,13 +249,16 @@ public class DraftCardDataTests
     [Test]
     public void SporeBomb_TickIntervalBombsDropIntervalAndStacks()
     {
-        // 기획서 v2.8 A-4: 틱 주기 1.5 → 1.2(II) → 0.8(IV) → 0.5(VI)초, 틱 피해 4 → 7(레벨마다 +0.5), 오염 6초 고정.
+        // 틱 주기 1.5 → 1.2(II) → 0.8(IV) → 0.5(VI)초, 틱 피해 4 → 14, 대폭발 15 → 150, 오염 6초 고정.
         float[] tickIntervals = { 1.5f, 1.2f, 1.2f, 0.8f, 0.8f, 0.5f, 0.5f };
+        float[] tickDamages = { 4f, 5.4f, 6.8f, 8.4f, 10.2f, 12f, 14f };
+        float[] explosionDamages = { 15f, 22.5f, 37.5f, 52.5f, 75f, 105f, 150f };
         for (int level = 1; level <= 7; level++)
         {
             RunModifiers mods = ResolveAtLevel("active_sporebomb", level);
             Assert.AreEqual(tickIntervals[level - 1], 1.5f + mods.GetForSkill(ERunEffect.DotTickIntervalAdd, ERoguelikeSkill.SporeBomb), 0.001f, "틱 주기 " + level);
-            Assert.AreEqual(4f + 0.5f * (level - 1), 4f * (1f + mods.GetForSkill(ERunEffect.DotDamagePercent, ERoguelikeSkill.SporeBomb) / 100f), 0.01f, "틱 피해 " + level);
+            Assert.AreEqual(tickDamages[level - 1], 4f * (1f + mods.GetForSkill(ERunEffect.DotDamagePercent, ERoguelikeSkill.SporeBomb) / 100f), 0.01f, "틱 피해 " + level);
+            Assert.AreEqual(explosionDamages[level - 1], 15f * (1f + mods.GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.SporeBomb) / 100f), 0.01f, "대폭발 피해 " + level);
             Assert.AreEqual(0f, mods.GetForSkill(ERunEffect.DurationPercent, ERoguelikeSkill.SporeBomb), "오염 유지 고정 " + level);
         }
 
@@ -265,22 +268,23 @@ public class DraftCardDataTests
         RunModifiers iv = ResolveAtLevel("active_sporebomb", 4);
         Assert.AreEqual(4f, 5f / (1f + iv.GetForSkill(ERunEffect.AttackSpeedPercent, ERoguelikeSkill.SporeBomb) / 100f), 0.01f); // 투하 4초
 
-        Assert.AreEqual(1f, 1f + ResolveAtLevel("active_sporebomb", 4).GetForSkill(ERunEffect.SporeStackAdd, ERoguelikeSkill.SporeBomb));
-        Assert.AreEqual(2f, 1f + ResolveAtLevel("active_sporebomb", 5).GetForSkill(ERunEffect.SporeStackAdd, ERoguelikeSkill.SporeBomb));
-        Assert.AreEqual(3f, 1f + ResolveAtLevel("active_sporebomb", 7).GetForSkill(ERunEffect.SporeStackAdd, ERoguelikeSkill.SporeBomb));
+        Assert.AreEqual(1f, 1f + ResolveAtLevel("active_sporebomb", 2).GetForSkill(ERunEffect.SporeStackAdd, ERoguelikeSkill.SporeBomb));
+        Assert.AreEqual(2f, 1f + ResolveAtLevel("active_sporebomb", 3).GetForSkill(ERunEffect.SporeStackAdd, ERoguelikeSkill.SporeBomb));
+        Assert.AreEqual(3f, 1f + ResolveAtLevel("active_sporebomb", 5).GetForSkill(ERunEffect.SporeStackAdd, ERoguelikeSkill.SporeBomb));
+        Assert.AreEqual(4f, 1f + ResolveAtLevel("active_sporebomb", 7).GetForSkill(ERunEffect.SporeStackAdd, ERoguelikeSkill.SporeBomb));
     }
 
     [Test]
     public void Stella_ChanceOtherActivesMarkDurationMarkDamageAndDoubleBlast()
     {
-        // 기획서 v2.7 A-4: 확률 20 / 50 / 50 / 50 / 60 / 70 / 70%(기준 20), 폭발 피해 11 / 16 / 16 / 18 / 19 / 20 / 20(기준 11).
+        // 확률 20 / 50 / 50 / 50 / 60 / 70 / 70%(기준 20), 폭발 피해 12 / 18 / 30 / 39 / 48 / 54 / 60(기준 12).
         float[] chances = { 20f, 50f, 50f, 50f, 60f, 70f, 70f };
-        float[] damages = { 11f, 16f, 16f, 18f, 19f, 20f, 20f };
+        float[] damages = { 12f, 18f, 30f, 39f, 48f, 54f, 60f };
         for (int level = 1; level <= 7; level++)
         {
             RunModifiers mods = ResolveAtLevel("active_stella", level);
             Assert.AreEqual(chances[level - 1], 20f + mods.GetForSkill(ERunEffect.ChancePercent, ERoguelikeSkill.Stella), 0.001f, "확률 " + level);
-            Assert.AreEqual(damages[level - 1], 11f * (1f + mods.GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Stella) / 100f), 0.01f, "폭발 피해 " + level);
+            Assert.AreEqual(damages[level - 1], 12f * (1f + mods.GetForSkill(ERunEffect.DamagePercent, ERoguelikeSkill.Stella) / 100f), 0.01f, "폭발 피해 " + level);
         }
 
         Assert.AreEqual(0f, ResolveAtLevel("active_stella", 2).GetForSkill(ERunEffect.StarHitByActives, ERoguelikeSkill.Stella));

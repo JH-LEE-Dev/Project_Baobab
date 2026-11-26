@@ -61,7 +61,7 @@ public class UI_MainMenu : MonoBehaviour
     [SerializeField, Tooltip("기록 창을 열 때 왼쪽 하위 메뉴가 화면 밖으로 빠지는 거리(px)와 시간(초, unscaled).")]
     private float roguelikeMenuExitDistance = 280f;
     [SerializeField] private float roguelikeMenuExitSeconds = 0.22f;
-    [SerializeField, Tooltip("로그라이크 메뉴 진입 때만 쓰는 시간(초, unscaled). 메인 버튼 퇴장 → 하위 메뉴 등장까지의 대기, 부제 · 디스코드 아이콘 슬라이드. 닫을 때와 기록 · 옵션 창 전환은 위 값을 그대로 쓴다.")]
+    [SerializeField, Tooltip("로그라이크 메뉴 진입 때만 쓰는 시간(초, unscaled). 메인 버튼 퇴장 → 하위 메뉴 등장까지의 대기, 부제 등장. 닫을 때와 기록 · 옵션 창 전환은 위 값을 그대로 쓴다.")]
     private float roguelikeEnterSwapDelay = 0.38f;
     [SerializeField] private float roguelikeEnterSlideSeconds = 0.3f;
 
@@ -99,10 +99,6 @@ public class UI_MainMenu : MonoBehaviour
     private const string RoguelikeCollectionKey = "Roguelike_Menu_Collection";
     private const string RoguelikeBackKey = "Roguelike_Menu_Back";
     private const float RoguelikeDisappearStagger = 0.03f;
-    // 디스코드 아이콘이 빠질 때 아이콘 폭에 더하는 거리(px).
-    private const float DiscordExitMargin = 32f;
-    private Vector2 discordBasePosition;
-    private bool bDiscordBaseCaptured;
     private UI_MainMenuButton[] roguelikeButtons;
     private bool bRoguelikeMenuOpen;
     private bool bRoguelikeRecordsOpen;
@@ -897,8 +893,6 @@ public class UI_MainMenu : MonoBehaviour
             ShowRoguelikeButtons();
         }
 
-        // 로그라이크 메뉴에서는 디스코드 아이콘을 보이지 않는다(오른쪽 화면 밖으로 뺀다).
-        SlideDiscordButton(false, _bAnimated, roguelikeEnterSlideSeconds);
         BindRoguelikeCancel(true);
     }
 
@@ -954,46 +948,7 @@ public class UI_MainMenu : MonoBehaviour
 
         if (null != logoAnim) logoAnim.SetRoguelikeSubtitleVisible(false, true, roguelikeMenuExitSeconds);
 
-        SlideDiscordButton(true, true, roguelikeMenuExitSeconds);
-
         DOVirtual.DelayedCall(roguelikeSwapDelay, cachedShowMainButtonsAfterRoguelike, true).SetId(this);
-    }
-
-    /// <summary>
-    /// 디스코드 아이콘을 오른쪽 화면 밖으로 빼거나(_bIn = false) 제자리로 들인다(_seconds초 · 정수 픽셀 · unscaled).
-    /// 빠질 때는 호버 · 패드 선택을 풀어 화면 밖 아이콘이 선택된 채로 남지 않게 한다.
-    /// </summary>
-    private void SlideDiscordButton(bool _bIn, bool _bAnimated, float _seconds)
-    {
-        if (null == discordButton) return;
-
-        RectTransform rect = discordButton.transform as RectTransform;
-        if (null == rect) return;
-
-        if (false == bDiscordBaseCaptured)
-        {
-            discordBasePosition = rect.anchoredPosition;
-            bDiscordBaseCaptured = true;
-        }
-
-        if (false == _bIn)
-        {
-            discordButton.ForceUnhover();
-            if (null != EventSystem.current && EventSystem.current.currentSelectedGameObject == discordButton.gameObject)
-            {
-                EventSystem.current.SetSelectedGameObject(null);
-            }
-        }
-
-        Vector2 target = true == _bIn ? discordBasePosition : discordBasePosition + new Vector2(Mathf.Round(rect.rect.width + DiscordExitMargin), 0f);
-        rect.DOKill();
-        if (false == _bAnimated)
-        {
-            rect.anchoredPosition = target;
-            return;
-        }
-
-        rect.DOAnchorPos(target, _seconds, true).SetEase(true == _bIn ? Ease.OutCubic : Ease.InCubic).SetUpdate(true);
     }
 
     private void ShowMainButtonsAfterRoguelike()
@@ -1019,7 +974,6 @@ public class UI_MainMenu : MonoBehaviour
         bRoguelikeChallengesOpen = false;
         bRoguelikeCollectionOpen = false;
         bRoguelikeOptionOpen = false;
-        SlideDiscordButton(true, false, 0f);
 
         if (null != logoAnim) logoAnim.SetRoguelikeSubtitleVisible(false, false, 0f);
 
