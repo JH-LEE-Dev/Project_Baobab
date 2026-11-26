@@ -305,15 +305,12 @@ public class UI_PopupButton : Selectable,
         RectTransform _rect = CachedRectTransform;
         if (null == _rect) return false;
 
-        Vector2 _mousePos = Vector2.zero;
-        if (null != Mouse.current)
-        {
-            _mousePos = Mouse.current.position.ReadValue();
-        }
-        else
-        {
-            _mousePos = Input.mousePosition;
-        }
+        // 마우스 장치가 없으면 가리키는 위치도 없으므로 호버가 아니다. 예전 Input.mousePosition으로 대신 읽으면
+        // 이 프로젝트는 새 입력 시스템 전용(activeInputHandler: 1)이라 InvalidOperationException이 난다.
+        Mouse _mouse = Mouse.current;
+        if (null == _mouse) return false;
+
+        Vector2 _mousePos = _mouse.position.ReadValue();
 
         if (null == cachedCanvas)
         {
