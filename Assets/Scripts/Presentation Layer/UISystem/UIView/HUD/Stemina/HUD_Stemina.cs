@@ -238,13 +238,10 @@ public class HUD_Stemina : MonoBehaviour
     private const int PlusTipSlots = 4;
     private const float PlusTipSlotWidth = 2f;
     // 젤리 머리: 갱신 간격(30fps), 움직임으로 깨우는 최소 변화량(비율)
-    private const float EdgeStepInterval = 1f / 30f;
     private const float EdgeMoveEpsilon = 0.00005f;
     // 스프링 계수(복원력, 감쇠)와 상태별 목표 길이(캔버스 픽셀), 정지 호흡 진폭, 회복 시작/끝에 주는 충격
     // 회복 때 늘어나는 양은 앞쪽 이동 속도에 비례하고(EdgeGainSpeedK, 비율/초당 픽셀) EdgeGainExtraMax를 넘지 않는다.
     // 시작 충격은 이번 묶음의 회복량(10% 이상이면 최대)에 비례한다.
-    private const float EdgeSpringK = 200f;
-    private const float EdgeSpringC = 16f;
     private const float EdgeRestLen = 2.2f;
     private const float EdgeGainExtraMax = 2f;
     private const float EdgeGainSpeedK = 4f;
@@ -1373,14 +1370,7 @@ public class HUD_Stemina : MonoBehaviour
         if (true == _bGain)
             _target = _rest + Mathf.Min(EdgeGainExtraMax, edgeFastSpeed * EdgeGainSpeedK) * _s;
 
-        float _h = Mathf.Min(_dt, 0.05f) * 0.25f;
-
-        for (int i = 0; i < 4; i++)
-        {
-            float _a = EdgeSpringK * (_target - edgeSpringLen) - EdgeSpringC * edgeSpringVel;
-            edgeSpringVel += _a * _h;
-            edgeSpringLen += edgeSpringVel * _h;
-        }
+        HUD_LiquidSurface.StepSpring(ref edgeSpringLen, ref edgeSpringVel, _target, _dt);
 
         edgeSpringLen = Mathf.Clamp(edgeSpringLen, 0.6f, EdgeRestLen + EdgeGainExtraMax + 0.6f);
 
@@ -1388,7 +1378,7 @@ public class HUD_Stemina : MonoBehaviour
 
         // 정지/느린 구간은 30fps로, 채움 앞쪽 픽셀이 바뀐 프레임은 간격과 상관없이 바로 그린다.
         // (빠른 소모에서 채움은 매 프레임 줄어드는데 머리만 늦게 그려져 사이가 벌어지던 문제)
-        if (edgeStepTimer < EdgeStepInterval && _filledNow == edgeLastPaintedFilled)
+        if (edgeStepTimer < HUD_LiquidSurface.StepInterval && _filledNow == edgeLastPaintedFilled)
             return;
 
         edgeStepTimer = 0f;
@@ -1534,7 +1524,8 @@ public class HUD_Stemina : MonoBehaviour
 
         // 세로 범위: 바 윤곽이 실제로 차지하는 행 전체. 늘어나도 높이를 줄이지 않아 윗줄/아랫줄이 머리로 이어진다.
         // 소모 중 느린 흔들림은 중심을 옮기지 않고 위/아래 행의 길이 차(기울기)로 준다.
-        float _tilt = EdgeSloshAmp * _s * edgeDrainWeight * Mathf.Sin(edgeTime * 1.7f + edgeRipplePhase);
+        float _slosh = EdgeSloshAmp * _s * edgeDrainWeight;
+        float _tilt = _slosh * Mathf.Sin(edgeTime * 1.7f + edgeRipplePhase);
         float _half = (edgeRowHi - edgeRowLo + 1) * 0.5f;
         float _cy = (edgeRowLo + edgeRowHi) * 0.5f;
 
@@ -1549,13 +1540,8 @@ public class HUD_Stemina : MonoBehaviour
 
         for (int y = 0; y < barH; y++)
         {
-            float _rowLen = _len + _tilt * ((y - _cy) / _half);
-
-            if (0f < _ripple)
-            {
-                _rowLen += _ripple * (Mathf.Sin(y * 0.9f - edgeTime * 5.2f + edgeRipplePhase) * 0.7f
-                    + Mathf.Sin(y * 0.45f + edgeTime * 2.3f + edgeRipplePhase * 1.7f) * 0.4f);
-            }
+            float _rowLen = _len + HUD_LiquidSurface.Slosh(y, (y - _cy) / _half,
+                edgeTime, edgeRipplePhase, _slosh, _ripple);
 
             edgeRowLength[y] = Mathf.Max(0.5f, _rowLen);
         }
