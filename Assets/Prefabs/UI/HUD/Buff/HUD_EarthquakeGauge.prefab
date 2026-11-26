@@ -166,11 +166,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HUD_RelicSkillGauge
   visualRoot: {fileID: 5782407383425106333}
   fillImage: {fileID: 809232238384296451}
+  earthquakeFillMaterial: {fileID: 2100000, guid: 29e8181b658b4464bd588bc4e61c798e, type: 2}
   cooldownImage: {fileID: 2288441179374521312}
   flashImage: {fileID: 1892379645880036215}
   fillContentY: 22
   fillContentHeight: 20
   spriteSize: 64
+  cooldownContent: {x: 16, y: 32}
   chargingColor: {r: 0.88235295, g: 0.1882353, b: 0.12156863, a: 1}
   readyColor: {r: 0.88235295, g: 0.1882353, b: 0.12156863, a: 1}
   activeDrainColor: {r: 0.88235295, g: 0.1882353, b: 0.12156863, a: 1}
@@ -466,14 +468,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 0.45}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.6}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: f552be24ce8fb424da525793d11a2376, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9382ad7a906d8fa4abae2bf994e08273, type: 3}
   m_Type: 3
   m_PreserveAspect: 0
   m_FillCenter: 1

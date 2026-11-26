@@ -26,6 +26,7 @@ public static class HUD_BuffPrefabBuilder
     private const string MeteorBaseSpritePath = "Assets/Graphics/HUD/Bar/SeedBar/Stage03SeedHUD_Base.png";
     private const string MeteorFillSpritePath = "Assets/Graphics/HUD/Bar/SeedBar/Stage03SeedHUD_Fillbar.png";
     private const string MeteorFillMaterialPath = "Assets/Graphics/HUD/Buff/M_MeteorShowerFill.mat";
+    private const string QuakeFillMaterialPath = "Assets/Graphics/HUD/Buff/M_EarthquakeFill.mat";
     private const string QuakeBaseSpritePath = "Assets/Graphics/HUD/Bar/SeedBar/Stage04SeedHUD_Base.png";
     private const string QuakeFillSpritePath = "Assets/Graphics/HUD/Bar/SeedBar/Stage04SeedHUD_Fillbar.png";
     private const float RelicGaugeSize = 64f;
@@ -38,8 +39,9 @@ public static class HUD_BuffPrefabBuilder
     // 채움 색은 구슬 테두리의 강조색(유성우 별, 지진 보석)
     private static readonly Color32 MeteorFillColor = new Color32(154, 172, 227, 255);
     private static readonly Color32 QuakeFillColor = new Color32(225, 48, 31, 255);
-    // 지진 쿨타임 음영 #000000, 알파 0.45
-    private static readonly Color QuakeCooldownColor = new Color(0f, 0f, 0f, 0.45f);
+    // 지진 쿨타임 음영은 구슬 외곽을 포함한 32행을 덮는다.
+    private static readonly Color QuakeCooldownColor = new Color(0f, 0f, 0f, 0.6f);
+    private static readonly Vector2Int QuakeCooldownContent = new Vector2Int(16, 32);
     // HUD 그림자 규격(인벤토리 용량 게이지와 같다): 같은 스프라이트를 검정 반투명으로 왼쪽 아래에 깐다.
     // 칸이 위로 갈수록 오른쪽으로 기운 평행사변형이라 그림자가 오른쪽으로 치우쳐 보이므로 X는 2도트 더 왼쪽(-4)에 둔다.
     private static readonly Vector2 DashShadowOffset = new Vector2(-4f, -3f);
@@ -439,7 +441,7 @@ public static class HUD_BuffPrefabBuilder
         _quakePrefab = BuildRelicGaugePrefab("HUD_EarthquakeGauge",
             AssetDatabase.LoadAssetAtPath<Sprite>(QuakeBaseSpritePath),
             AssetDatabase.LoadAssetAtPath<Sprite>(QuakeFillSpritePath),
-            QuakeFillColor, true);
+            QuakeFillColor, true, AssetDatabase.LoadAssetAtPath<Material>(QuakeFillMaterialPath));
     }
 
     private static void PlaceRelicInstance(RectTransform _rt, Vector2 _pos)
@@ -488,7 +490,7 @@ public static class HUD_BuffPrefabBuilder
     // 구성(그리는 순서): 그림자(테두리 실루엣) -> 테두리 -> 채움(아래에서 위로) -> 쿨타임 음영 -> 섬광.
     // 그림자는 대시 게이지와 같은 오프셋·색. 테두리·채움·음영은 64x64 원본 그대로 겹친다.
     private static GameObject BuildRelicGaugePrefab(string _name, Sprite _base, Sprite _fill, Color32 _fillColor,
-        bool _bCooldown, Material _meteorFillMaterial = null)
+        bool _bCooldown, Material _fillMaterial)
     {
         GameObject _go = new GameObject(_name, typeof(RectTransform));
         RectTransform _rt = (RectTransform)_go.transform;
@@ -513,7 +515,7 @@ public static class HUD_BuffPrefabBuilder
 
         if (true == _bCooldown)
         {
-            _cooldownImg = NewImage("CooldownOverlay", _visual, _fill, Vector2.zero, _size);
+            _cooldownImg = NewImage("CooldownOverlay", _visual, _base, Vector2.zero, _size);
             ConfigureVerticalFill(_cooldownImg);
             _cooldownImg.fillAmount = 0f;
             _cooldownImg.color = QuakeCooldownColor;
@@ -527,8 +529,10 @@ public static class HUD_BuffPrefabBuilder
         SerializedObject _so = new SerializedObject(_gauge);
         _so.FindProperty("visualRoot").objectReferenceValue = _visual;
         _so.FindProperty("fillImage").objectReferenceValue = _fillImg;
-        _so.FindProperty("meteorFillMaterial").objectReferenceValue = _meteorFillMaterial;
+        _so.FindProperty(_bCooldown ? "earthquakeFillMaterial" : "meteorFillMaterial").objectReferenceValue = _fillMaterial;
         _so.FindProperty("cooldownImage").objectReferenceValue = _cooldownImg;
+        if (_bCooldown)
+            _so.FindProperty("cooldownContent").vector2IntValue = QuakeCooldownContent;
         _so.FindProperty("flashImage").objectReferenceValue = _flashImg;
         _so.FindProperty("chargingColor").colorValue = _fillColor;
         _so.FindProperty("readyColor").colorValue = _fillColor;
