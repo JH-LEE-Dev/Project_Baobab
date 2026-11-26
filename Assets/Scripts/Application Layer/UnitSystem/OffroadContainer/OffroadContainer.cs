@@ -2900,14 +2900,14 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH, 
     // ── 슬롯 UI 거리 투명도 ──
     //
     // 휴식 특성을 찍으면 던전에서 상자 슬롯 UI가 휴식 범위 어디서든 열려(자동 적재) 칸이 많을수록 반대쪽 나무를 가린다.
-    // 나무를 베지 않는 상자 사정권·휴식 범위 가운데에서는 그대로 보여 주고, 휴식 범위 바깥쪽(나무를 볼 곳)으로 갈수록 흐리게 한다.
+    // 상자 사정권 안에서는 선명하게 보여 주고, 사정권을 벗어나면 나무를 가리지 않도록 빠르게 흐리게 한다.
     // 마을이거나 휴식 특성이 없으면 항상 1이라 기존 표시와 같다.
 
     [Header("Slot UI Distance Fade")]
-    [Tooltip("휴식 범위 타원 중심 0 ~ 경계 1 기준, 이 거리까지는 슬롯 UI를 그대로(1) 보여 준다.")]
-    [SerializeField, Range(0f, 0.99f)] private float popupFadeStart = 0.5f;
-    [Tooltip("휴식 범위 경계(와 그 밖)에서 슬롯 UI의 투명도.")]
-    [SerializeField, Range(0f, 1f)] private float popupMinAlpha = 0.3f;
+    [Tooltip("상자 사정권 가장자리에서 최저 알파에 도달하는 거리. 휴식 범위 타원의 반지름을 1로 본다.")]
+    [SerializeField, Min(0.01f)] private float popupFadeDistance = 0.5f;
+    [Tooltip("거리 페이드가 끝났을 때의 슬롯 UI 알파.")]
+    [SerializeField, Range(0f, 1f)] private float popupMinAlpha = 0.4f;
 
     // 지금 상자가 놓인 차량의 휴식 범위. 차량이 상자를 제자리에 놓을 때(OffroadVehicleObj.ResetObject) 알려 준다.
     private StaminaRecoverCircle restAreaCircle;
@@ -2918,9 +2918,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH, 
     }
 
     /// <summary>
-    /// 상자 슬롯 UI에 곱할 투명도. 상자 사정권 안이거나 휴식 범위 가운데(popupFadeStart 안)면 1이고, 휴식 범위 경계로 갈수록
-    /// popupMinAlpha까지 내려간다. 두 거리 모두 휴식 범위 타원 크기로 나눈 값이라, 상자 사정권을 벗어나는 순간에도 끊기지 않고
-    /// 사정권 가장자리에서부터 같은 폭으로 흐려진다(둘 중 더 가까운 쪽 기준).
+    /// 상자 슬롯 UI에 곱할 알파. 상자 사정권 안에서는 1이고, 가장자리에서 멀어질수록 최저 알파에 가까워진다.
     /// </summary>
     public float PopupAlpha
     {
@@ -2928,15 +2926,13 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH, 
         {
             if (bInTown || restAreaCircle == null || !IsRestAreaOpened()) return 1f;
 
-            float fadeWidth = 1f - popupFadeStart;
-            if (fadeWidth <= 0f) return 1f;
+            if (popupFadeDistance <= 0f) return 1f;
 
-            // 휴식 범위 판정(StaminaRecoverCircle)과 같은 발밑 기준.
-            float restDist = restAreaCircle.GetNormalizedDistance(character.transform.position);
-            float tRest = Mathf.Clamp01((restDist - popupFadeStart) / fadeWidth);
-            float tBox = Mathf.Clamp01(GetBoxRangeNormalizedDistance() / fadeWidth);
+            float fadeProgress = Mathf.Clamp01(GetBoxRangeNormalizedDistance() / popupFadeDistance);
+            float remaining = 1f - fadeProgress;
 
-            return Mathf.Lerp(1f, popupMinAlpha, Mathf.Min(tRest, tBox));
+            // 3차 곡선이라 사정권을 벗어나는 초반에 알파가 가장 빠르게 내려간다.
+            return Mathf.Lerp(popupMinAlpha, 1f, remaining * remaining * remaining);
         }
     }
 

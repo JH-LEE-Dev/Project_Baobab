@@ -115,6 +115,9 @@ namespace PresentationLayer.VFX
         private readonly Stack<Entry> entryPool = new Stack<Entry>(32);
         private readonly Stack<SpriteRenderer> overlayPool = new Stack<SpriteRenderer>(16);
         private readonly Stack<SpriteRenderer> groundPool = new Stack<SpriteRenderer>(16);
+        // 로딩 때 미리 만들어 두는 바닥 링 렌더러 수(화면 안 감염 나무마다 하나씩 쓴다. 오버레이는 maxFullTrees만큼). 모자라면 예전처럼 그때 만든다.
+        private const int PrewarmGroundRendererCount = 32;
+        private readonly HashSet<Sprite> prewarmSprites = new HashSet<Sprite>();
         private Mesh groundMesh;
         private Mesh topMesh;
         private int groundLayerId;
@@ -162,6 +165,59 @@ namespace PresentationLayer.VFX
             GameObject go = Instantiate(prefab);
             go.name = "TreeSporeDebuffVfxManager";
             return Instance;
+        }
+
+        /// <summary>
+        /// 이 이펙트가 원정에서 처음 켜지는 프레임에 몰리던 준비를 로딩 때 미리 한다. 만드는 시점만 다르고 만드는 값과 방법은 같다.
+        ///  - 관리자 자신(GetOrCreate)
+        ///  - 지금 숲에 있는 나무 그림마다 실루엣·배치·오버레이, 그리고 단계의 바닥 링: 스프라이트·단계·변형마다 처음 쓸 때 한 번 만들어
+        ///    캐시하던 값이라(나무 그림·단계·변형으로만 정해진다) 미리 만들어도 같은 값이다. 여기서 못 본 그림은 예전처럼 처음 쓸 때 만든다.
+        ///  - 바닥 링·오버레이 렌더러: 풀이 비었을 때 만들던 것과 같은 방법으로 만들어 풀에 넣어 둔다.
+        /// 아무것도 등록하거나 켜지 않으므로 화면에는 나오지 않는다.
+        /// </summary>
+        public static void Prewarm(List<TreeObj> _trees, int _tier)
+        {
+            if (null == _trees || _tier < 1 || 3 < _tier) return;
+
+            TreeSporeDebuffVfxManager manager = GetOrCreate();
+            if (null == manager) return;
+
+            manager.PrewarmCaches(_trees, _tier);
+            manager.PrewarmRenderers();
+        }
+
+        private void PrewarmCaches(List<TreeObj> _trees, int _tier)
+        {
+            prewarmSprites.Clear();
+
+            for (int i = 0; i < _trees.Count; i++)
+            {
+                TreeObj tree = _trees[i];
+                if (null == tree) continue;
+
+                SpriteRenderer top = FindTopRenderer(tree);
+                Sprite sprite = null != top ? top.sprite : null;
+                if (null == sprite || false == prewarmSprites.Add(sprite)) continue;
+
+                // 변형은 나무마다 둘 중 하나로 갈리므로(Register) 둘 다 만든다.
+                TreeSilhouetteData mask = TreeSilhouetteMask.Get(sprite);
+                for (int variant = 0; variant < 2; variant++)
+                {
+                    TreeDebuffLayout layout = TreeDebuffLayout.Get(sprite, mask, _tier, variant);
+                    TreeDebuffOverlayBaker.GetOverlay(sprite, mask, layout, _tier, variant);
+                }
+            }
+
+            prewarmSprites.Clear();
+            TreeDebuffOverlayBaker.GetGround(_tier);
+        }
+
+        private void PrewarmRenderers()
+        {
+            while (groundPool.Count < PrewarmGroundRendererCount) groundPool.Push(CreateRenderer("DebuffGround"));
+
+            int overlayCount = Mathf.Max(0, maxFullTrees);
+            while (overlayPool.Count < overlayCount) overlayPool.Push(CreateRenderer("DebuffOverlay"));
         }
 
         public void Register(TreeObj _tree, int _tier)
@@ -317,6 +373,11 @@ namespace PresentationLayer.VFX
         {
             if (0 < _pool.Count) return _pool.Pop();
 
+            return CreateRenderer(_name);
+        }
+
+        private SpriteRenderer CreateRenderer(string _name)
+        {
             GameObject go = new GameObject(_name, typeof(SpriteRenderer));
             go.transform.SetParent(transform, false);
             SpriteRenderer sr = go.GetComponent<SpriteRenderer>();

@@ -50,6 +50,27 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
     private float tileWorldSize = 1f;
     private bool tileWorldSizeMeasured = false;
 
+    // 나무가 한 프레임에 여러 그루 쓰러지면(충격파 한 번에 8~11그루 등) 원목 수십 개를 풀에서 꺼내 날리는 일이 그 프레임에 몰린다
+    // (그루당 0.14~0.19ms, 쓰러질 때 드는 시간의 절반 가까이). 한 프레임에 MaxLogSpawnsPerFrame개까지만 그 자리에서 날리고,
+    // 넘는 분량은 날릴 값을 적어 줄을 세웠다가 다음 프레임들에 순서대로 날린다(SpawnLogItem, FlushPendingLogSpawns).
+    // 난수는 줄을 세우든 아니든 쓰러지는 순간에 예전과 같은 순서로 뽑으므로 난수 흐름은 그대로이고, 한도 안인 프레임은 예전과 완전히 같다.
+    private struct PendingLogSpawn
+    {
+        public LogItemTypeData typeData;
+        public LogState logState;
+        public Vector3 startPos;
+        public Vector3 endPos;
+        public float height;
+        public float rotation;
+        public float heightScale;
+    }
+
+    // 나무 네 그루 분량쯤(그루당 4~7개). 이보다 많이 쓰러지는 프레임에만 다음 프레임으로 넘어간다.
+    private const int MaxLogSpawnsPerFrame = 24;
+    private readonly Queue<PendingLogSpawn> pendingLogSpawns = new Queue<PendingLogSpawn>(128);
+    private int logSpawnFrame = -1;
+    private int logSpawnsThisFrame = 0;
+
     private VFXComponent vfxComponent;
 
     [Header("Skill Attribute")]
@@ -268,6 +289,9 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
     private void Update()
     {
         if (true == bReserveEnabled && reserveItems.Count < ReserveLogItemCount) FillReserve(ReserveLogItemCount, TopUpLogItemsPerFrame);
+
+        // 앞선 프레임에서 한도를 넘어 줄을 세워 둔 원목을 날린다(아래 갱신 루프가 이번 프레임부터 움직인다).
+        if (0 < pendingLogSpawns.Count) FlushPendingLogSpawns();
 
         float deltaTime = Time.deltaTime;
 
@@ -517,6 +541,9 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
 
     public void ClearAll()
     {
+        // 아직 날리지 않은 원목은 바닥에 떨어진 채 치워지는 원목과 마찬가지로 버린다.
+        pendingLogSpawns.Clear();
+
         int count = activeItemsList.Count;
         if (count == 0) return;
 
@@ -598,13 +625,8 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
 
         for (int i = 0; i < spawnCount; i++)
         {
-            LogItem logItem = logPool.Get();
-
-            logItem.transform.position = spawnPos;
-            logItem.Initialize(typeData, typeData.color, logType, character);
-            logItem.SetInventoryChecker(inventoryChecker);
-
-            // 포물선 운동 설정
+            // 포물선 운동 설정. 난수는 원목을 지금 날리든 줄을 세우든 여기서 예전과 같은 순서로 뽑는다
+            // (풀에서 꺼내기·초기화는 난수를 쓰지 않으므로 그 앞뒤 순서는 결과에 영향이 없다).
             Vector3 startPos = spawnPos;
             Vector2 randomDir = UnityEngine.Random.insideUnitCircle.normalized;
             float randomDist = UnityEngine.Random.Range(1.25f, 1.75f);
@@ -624,16 +646,89 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH, ILogItemAu
 
             float randomRotation = UnityEngine.Random.Range(1, 3) * 360f * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
 
-            if (_heightScale > 0f && false == Mathf.Approximately(_heightScale, 1f))
+            // 날린 원목을 돌려받아야 하는 호출(보석 원목 잔광 꼬리)은 항상 그 자리에서 날린다.
+            if (null == _launched && false == TryTakeLogSpawnSlot())
             {
-                logItem.Launch(startPos, endPos, height * _heightScale, randomRotation, 1f / Mathf.Sqrt(_heightScale));
-            }
-            else
-            {
-                logItem.Launch(startPos, endPos, height, randomRotation);
+                pendingLogSpawns.Enqueue(new PendingLogSpawn
+                {
+                    typeData = typeData,
+                    logState = logType,
+                    startPos = startPos,
+                    endPos = endPos,
+                    height = height,
+                    rotation = randomRotation,
+                    heightScale = _heightScale,
+                });
+                continue;
             }
 
+            if (null != _launched) CountLogSpawn();
+
+            LogItem logItem = LaunchLog(typeData, logType, startPos, endPos, height, randomRotation, _heightScale);
             _launched?.Add(logItem);
+        }
+    }
+
+    // 원목 하나를 풀에서 꺼내 날린다(예전 SpawnLogItem 루프 안에서 하던 일 그대로).
+    private LogItem LaunchLog(LogItemTypeData _typeData, LogState _logState, Vector3 _startPos, Vector3 _endPos, float _height, float _rotation, float _heightScale)
+    {
+        LogItem logItem = logPool.Get();
+
+        logItem.transform.position = _startPos;
+        logItem.Initialize(_typeData, _typeData.color, _logState, character);
+        logItem.SetInventoryChecker(inventoryChecker);
+
+        if (_heightScale > 0f && false == Mathf.Approximately(_heightScale, 1f))
+        {
+            logItem.Launch(_startPos, _endPos, _height * _heightScale, _rotation, 1f / Mathf.Sqrt(_heightScale));
+        }
+        else
+        {
+            logItem.Launch(_startPos, _endPos, _height, _rotation);
+        }
+
+        return logItem;
+    }
+
+    private void SyncLogSpawnFrame()
+    {
+        int frame = Time.frameCount;
+        if (frame != logSpawnFrame)
+        {
+            logSpawnFrame = frame;
+            logSpawnsThisFrame = 0;
+        }
+    }
+
+    private void CountLogSpawn()
+    {
+        SyncLogSpawnFrame();
+        ++logSpawnsThisFrame;
+    }
+
+    // 이번 프레임 한도 안이고 앞에 줄 선 원목이 없으면 자리를 하나 쓰고 true(그 자리에서 날린다). 아니면 false(줄을 세운다 - 순서 유지).
+    private bool TryTakeLogSpawnSlot()
+    {
+        SyncLogSpawnFrame();
+
+        if (0 < pendingLogSpawns.Count || MaxLogSpawnsPerFrame <= logSpawnsThisFrame) return false;
+
+        ++logSpawnsThisFrame;
+        return true;
+    }
+
+    private void FlushPendingLogSpawns()
+    {
+        SyncLogSpawnFrame();
+
+        // 밀린 양이 많으면 한도를 그 절반까지 늘려, 계속 몰리는 구간에서도 두세 프레임 안에 따라잡는다.
+        int limit = Mathf.Max(MaxLogSpawnsPerFrame, (pendingLogSpawns.Count + 1) / 2);
+
+        while (0 < pendingLogSpawns.Count && logSpawnsThisFrame < limit)
+        {
+            PendingLogSpawn pending = pendingLogSpawns.Dequeue();
+            ++logSpawnsThisFrame;
+            LaunchLog(pending.typeData, pending.logState, pending.startPos, pending.endPos, pending.height, pending.rotation, pending.heightScale);
         }
     }
 
