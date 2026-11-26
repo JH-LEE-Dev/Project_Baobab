@@ -2936,24 +2936,49 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH, 
         }
     }
 
-    // 캐릭터 콜라이더가 상자 사정권(트리거 콜라이더)에서 떨어진 거리를 휴식 범위 타원 크기로 나눈 값. 겹치면 0이다.
-    // 사정권 판정(OnTrigger의 bPhysicalOverlapped)과 같은 두 콜라이더 사이 거리라 겹치기 시작하는 지점에서 0이 된다.
+    // 캐릭터와 상자 사정권 가장자리 사이의 거리를 휴식 범위 타원 크기로 나눈 값. 겹치면 0이다.
     private float GetBoxRangeNormalizedDistance()
     {
-        if (col == null || character.col == null || !col.enabled || !col.gameObject.activeInHierarchy) return float.MaxValue;
-
-        ColliderDistance2D distance = col.Distance(character.col);
-        if (!distance.isValid) return float.MaxValue;
-        if (distance.isOverlapped || distance.distance <= 0f) return 0f;
+        CircleCollider2D characterCircle = character.col;
+        if (col == null || characterCircle == null) return float.MaxValue;
 
         float radiusX = restAreaCircle.radiusX;
         float radiusY = restAreaCircle.radiusY;
         if (radiusX <= 0f || radiusY <= 0f) return float.MaxValue;
 
-        Vector2 gap = distance.pointB - distance.pointA;
+        Vector2 gap;
+        if (col is CircleCollider2D boxCircle)
+        {
+            // 입장 직후에는 슬롯이 상호작용 콜라이더보다 먼저 켜진다. 원의 설정값으로 거리를 구해 그 전후에 같은 알파를 적용한다.
+            Vector2 boxCenter = boxCircle.transform.TransformPoint(boxCircle.offset);
+            Vector2 characterCenter = characterCircle.transform.TransformPoint(characterCircle.offset);
+            Vector2 centerDelta = characterCenter - boxCenter;
+            float centerDistance = centerDelta.magnitude;
+            float edgeDistance = centerDistance - (GetWorldCircleRadius(boxCircle) + GetWorldCircleRadius(characterCircle));
+            if (edgeDistance <= 0f) return 0f;
+
+            gap = centerDelta * (edgeDistance / centerDistance);
+        }
+        else
+        {
+            if (!col.enabled || !col.gameObject.activeInHierarchy) return float.MaxValue;
+
+            ColliderDistance2D distance = col.Distance(characterCircle);
+            if (!distance.isValid) return float.MaxValue;
+            if (distance.isOverlapped || distance.distance <= 0f) return 0f;
+
+            gap = distance.pointB - distance.pointA;
+        }
+
         float x = gap.x / radiusX;
         float y = gap.y / radiusY;
         return Mathf.Sqrt((x * x) + (y * y));
+    }
+
+    private static float GetWorldCircleRadius(CircleCollider2D _circle)
+    {
+        Vector3 scale = _circle.transform.lossyScale;
+        return _circle.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y));
     }
 
     public void SetAutoLoadInRestArea(bool _bActive)

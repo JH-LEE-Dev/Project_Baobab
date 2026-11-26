@@ -25,6 +25,7 @@ public static class HUD_BuffPrefabBuilder
     // 64x64 스프라이트, 1px = 1 UI 단위. 위치는 프리팹 왼쪽 아래(스프라이트 0,0) 기준.
     private const string MeteorBaseSpritePath = "Assets/Graphics/HUD/Bar/SeedBar/Stage03SeedHUD_Base.png";
     private const string MeteorFillSpritePath = "Assets/Graphics/HUD/Bar/SeedBar/Stage03SeedHUD_Fillbar.png";
+    private const string MeteorFillMaterialPath = "Assets/Graphics/HUD/Buff/M_MeteorShowerFill.mat";
     private const string QuakeBaseSpritePath = "Assets/Graphics/HUD/Bar/SeedBar/Stage04SeedHUD_Base.png";
     private const string QuakeFillSpritePath = "Assets/Graphics/HUD/Bar/SeedBar/Stage04SeedHUD_Fillbar.png";
     private const float RelicGaugeSize = 64f;
@@ -434,7 +435,7 @@ public static class HUD_BuffPrefabBuilder
         _meteorPrefab = BuildRelicGaugePrefab("HUD_MeteorShowerGauge",
             AssetDatabase.LoadAssetAtPath<Sprite>(MeteorBaseSpritePath),
             AssetDatabase.LoadAssetAtPath<Sprite>(MeteorFillSpritePath),
-            MeteorFillColor, false);
+            MeteorFillColor, false, AssetDatabase.LoadAssetAtPath<Material>(MeteorFillMaterialPath));
         _quakePrefab = BuildRelicGaugePrefab("HUD_EarthquakeGauge",
             AssetDatabase.LoadAssetAtPath<Sprite>(QuakeBaseSpritePath),
             AssetDatabase.LoadAssetAtPath<Sprite>(QuakeFillSpritePath),
@@ -486,7 +487,8 @@ public static class HUD_BuffPrefabBuilder
 
     // 구성(그리는 순서): 그림자(테두리 실루엣) -> 테두리 -> 채움(아래에서 위로) -> 쿨타임 음영 -> 섬광.
     // 그림자는 대시 게이지와 같은 오프셋·색. 테두리·채움·음영은 64x64 원본 그대로 겹친다.
-    private static GameObject BuildRelicGaugePrefab(string _name, Sprite _base, Sprite _fill, Color32 _fillColor, bool _bCooldown)
+    private static GameObject BuildRelicGaugePrefab(string _name, Sprite _base, Sprite _fill, Color32 _fillColor,
+        bool _bCooldown, Material _meteorFillMaterial = null)
     {
         GameObject _go = new GameObject(_name, typeof(RectTransform));
         RectTransform _rt = (RectTransform)_go.transform;
@@ -525,6 +527,7 @@ public static class HUD_BuffPrefabBuilder
         SerializedObject _so = new SerializedObject(_gauge);
         _so.FindProperty("visualRoot").objectReferenceValue = _visual;
         _so.FindProperty("fillImage").objectReferenceValue = _fillImg;
+        _so.FindProperty("meteorFillMaterial").objectReferenceValue = _meteorFillMaterial;
         _so.FindProperty("cooldownImage").objectReferenceValue = _cooldownImg;
         _so.FindProperty("flashImage").objectReferenceValue = _flashImg;
         _so.FindProperty("chargingColor").colorValue = _fillColor;

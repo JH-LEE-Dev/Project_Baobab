@@ -390,6 +390,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HUD_RelicSkillGauge
   visualRoot: {fileID: 6835327513902784477}
   fillImage: {fileID: 5003374521975200065}
+  meteorFillMaterial: {fileID: 2100000, guid: a8842a65ba1b4d75b0c64287db7f5fd8, type: 2}
   cooldownImage: {fileID: 0}
   flashImage: {fileID: 3274311694634879149}
   fillContentY: 22

@@ -14,6 +14,7 @@ public class HUD_RelicSkillGauge : MonoBehaviour
     [Tooltip("보임/숨김 및 스케일 연출 대상. 피벗은 가운데.")]
     [SerializeField] private RectTransform visualRoot;
     [SerializeField] private Image fillImage;
+    [SerializeField] private Material meteorFillMaterial;
     [Tooltip("쿨타임 음영. 채움 스프라이트(구슬 안쪽 원)를 반투명 검정으로 겹친다. 쿨타임이 없는 스킬은 비워 둔다.")]
     [SerializeField] private Image cooldownImage;
     [Tooltip("발동 순간 겹치는 흰 섬광 오버레이.")]
@@ -56,6 +57,7 @@ public class HUD_RelicSkillGauge : MonoBehaviour
     private float cooldownEndTime = -1f;
     private float cooldownTotal = 0f;
     private int cooldownShownPx = -1;
+    private HUD_MeteorShowerFill meteorFill;
 
     public bool IsUnlocked
     {
@@ -104,7 +106,12 @@ public class HUD_RelicSkillGauge : MonoBehaviour
         activeDrainElapsed = 0f;
         targetRatio = _nextRatio;
 
-        ApplyFill(_nextRatio, 1f <= _nextRatio ? readyColor : chargingColor);
+        if (meteorFill == null)
+            ApplyFill(_nextRatio, 1f <= _nextRatio ? readyColor : chargingColor);
+        else if (_bSilent || !bUnlocked)
+            meteorFill.Reset(_nextRatio);
+        else
+            meteorFill.Charge(_nextRatio);
 
         if (true == _bSilent || false == bUnlocked)
         {
@@ -115,7 +122,7 @@ public class HUD_RelicSkillGauge : MonoBehaviour
         {
             StartBounce();
 
-            if (1f <= _nextRatio)
+            if (1f <= _nextRatio && meteorFill == null)
             {
                 StartFlash();
             }
@@ -134,7 +141,8 @@ public class HUD_RelicSkillGauge : MonoBehaviour
         }
 
         StartBounce();
-        StartFlash();
+        if (meteorFill == null || _drainDuration <= 0.05f)
+            StartFlash();
 
         if (0.05f < _drainDuration)
         {
@@ -142,7 +150,10 @@ public class HUD_RelicSkillGauge : MonoBehaviour
             activeDrainDuration = _drainDuration;
             activeDrainElapsed = 0f;
             targetRatio = 1f;
-            ApplyFill(1f, activeDrainColor);
+            if (meteorFill != null)
+                meteorFill.Trigger();
+            else
+                ApplyFill(1f, activeDrainColor);
         }
         else
         {
@@ -173,6 +184,9 @@ public class HUD_RelicSkillGauge : MonoBehaviour
     {
         CacheBase();
 
+        if (meteorFillMaterial != null && fillImage != null && fillImage.sprite != null)
+            meteorFill = new HUD_MeteorShowerFill(fillImage, meteorFillMaterial, fillContentY, fillContentHeight);
+
         if (null != visualRoot)
         {
             visualRoot.gameObject.SetActive(bUnlocked);
@@ -199,7 +213,13 @@ public class HUD_RelicSkillGauge : MonoBehaviour
         UpdateBounce(_dt);
         UpdateFlash(_dt);
         UpdateActiveDrain(_dt);
+        meteorFill?.Tick(_dt);
         UpdateCooldown();
+    }
+
+    private void OnDestroy()
+    {
+        meteorFill?.Dispose();
     }
 
     // 음영 높이 = 남은 쿨타임 비율. 아래쪽을 기준으로 위 가장자리가 내려가며 걷힌다.
@@ -352,11 +372,20 @@ public class HUD_RelicSkillGauge : MonoBehaviour
         }
 
         float _remainRatio = Mathf.Clamp01(1f - (activeDrainElapsed / activeDrainDuration));
-        ApplyFill(_remainRatio, activeDrainColor);
+        if (meteorFill != null)
+            meteorFill.Drain(_remainRatio, activeDrainElapsed);
+        else
+            ApplyFill(_remainRatio, activeDrainColor);
     }
 
     private void ApplyFill(float _ratio, Color _color)
     {
+        if (meteorFill != null)
+        {
+            meteorFill.Reset(_ratio);
+            return;
+        }
+
         if (null == fillImage)
         {
             return;
@@ -373,6 +402,7 @@ public class HUD_RelicSkillGauge : MonoBehaviour
         bounceAge = -1f;
         flashAge = -1f;
         bActiveDraining = false;
+        meteorFill?.Reset(0f);
 
         if (null != visualRoot)
         {
