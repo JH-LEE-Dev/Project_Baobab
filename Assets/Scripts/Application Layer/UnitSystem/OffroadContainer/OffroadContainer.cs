@@ -2907,7 +2907,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH, 
     [Tooltip("상자 사정권 가장자리에서 최저 알파에 도달하는 거리. 휴식 범위 타원의 반지름을 1로 본다.")]
     [SerializeField, Min(0.01f)] private float popupFadeDistance = 0.5f;
     [Tooltip("거리 페이드가 끝났을 때의 슬롯 UI 알파.")]
-    [SerializeField, Range(0f, 1f)] private float popupMinAlpha = 0.4f;
+    [SerializeField, Range(0f, 1f)] private float popupMinAlpha = 0.5f;
 
     // 지금 상자가 놓인 차량의 휴식 범위. 차량이 상자를 제자리에 놓을 때(OffroadVehicleObj.ResetObject) 알려 준다.
     private StaminaRecoverCircle restAreaCircle;
