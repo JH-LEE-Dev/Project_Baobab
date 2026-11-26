@@ -26,6 +26,8 @@ public struct RoguelikeCardViewData
     public bool bFirstSeen;
     /// <summary>[삭제 예정] 뷰가 읽지 않는다(희귀 판정은 displayGrade로 한다). Application Layer 정리 후 삭제 예정(기획서 v3.2 C-2).</summary>
     public bool bRare;
+    /// <summary>이 칸을 아직 리롤할 수 있는가(카드 칸마다 1회, 기획서 4-1). 칸별 모드에서만 읽는다. 코디네이터가 CanRerollSlot(i)로 채운다(G-12).</summary>
+    public bool bCanReroll;
 }
 
 /// <summary>보유 카드 확인 UI의 카드 한 장. 기획서 5-2 "보유 카드 확인".</summary>

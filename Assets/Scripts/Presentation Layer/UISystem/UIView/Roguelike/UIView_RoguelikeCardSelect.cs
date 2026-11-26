@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using PresentationLayer.UISystem;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -13,22 +14,29 @@ using UnityEngine.UI;
 /// [시스템 → 뷰] RoguelikeUICoordinator가 아래 public 메서드를 부른다.
 /// [뷰 → 시스템] 플레이어 입력은 이벤트로만 올린다. 뷰는 선택 판정을 하지 않는다(시스템이 거절하면 PlayRejected로 돌려준다).
 ///
+/// [리롤 모드] 열 때 SlotRerollRequestedEvent 구독자가 있으면 칸별 모드(기획서 4-1: 카드 칸마다 1회), 없으면 예전 모드(공용 버튼 1개, 선택 단계마다 1회)다.
+///   칸별 모드  카드마다 바로 아래에 20x20 리롤 아이콘 버튼(UI_RoguelikeCardSlot), 공용 리롤 버튼은 숨김. 버튼 활성은 RoguelikeCardViewData.bCanReroll.
+///   예전 모드  공용 리롤 버튼만 보이고 카드별 버튼은 숨김. [호환] G-12 반영 후 삭제.
+///
 /// [흐름]
-///   OpenSelection → (RerollRequested → ReplaceOffers)* → BuyRequested(선택)
+///   칸별 모드  OpenSelection → (SlotRerollRequested → ReplaceOffer(그 칸만 다시 뒤집힘))* → BuyRequested(선택)
+///   예전 모드  OpenSelection → (RerollRequested → ReplaceOffers)* → BuyRequested(선택)
 ///   → 시스템이 결과를 판정 → PlayPurchase(선택 연출)
 ///   → 연출이 끝나면 뷰가 _onComplete를 부른다 → 시스템이 다음 단계(지형 전환/전투)로 넘어간다.
 ///   _onComplete를 부르지 않으면 시스템이 다음으로 넘어가지 못한다(대기 상한 뒤 강제 진행).
 ///
-/// [구성] 어두운 딤 배경 위에 카드 줄(UI_RoguelikeCardSlot 최대 slots.Length칸) - 그 바로 아래 가운데 리롤 글자 버튼 - 설명 패널.
+/// [구성] 어두운 딤 배경 위에 카드 줄(UI_RoguelikeCardSlot 최대 slots.Length칸) - 칸별 모드는 카드마다 바로 아래 아이콘 버튼, 예전 모드는 카드 줄 바로 아래 가운데 리롤 글자 버튼 - 설명 패널.
 ///   리롤 버튼은 플레이어 눈에 띄도록 카드 줄과 붙여 둔다(기획서의 좌하단 고정 배치 대신 - 구현 결정).
-///   리롤 포커스 표시는 공용 커서 박스만 쓴다(별도 테두리 없음). 이름·설명은 커서가 올라가면 설명 패널이 보여 준다.
+///   리롤 포커스 표시는 공용 커서 박스(버튼 둘레) + 버튼 배경 밝아짐이다. 칸별 버튼에 포커스가 오면 그 칸 카드는 올라가지 않고 나머지 카드가 어두워진다.
+///   이름·설명은 커서가 올라가면 설명 패널이 보여 준다(칸별 버튼: "이 카드 바꾸기" + 설명, 이미 썼으면 사용 불가 문구).
 ///   열리면 제일 왼쪽 카드가 호버된 상태로 시작한다. 마우스 호버·패드 선택은 같은 포커스로 모아 같은 연출(위로 6px + 커서 박스)을 준다.
 ///
 /// [시간] 이 화면이 떠 있는 동안에도 보유 카드 창(Time.timeScale = 0)이나 ESC 메뉴로 일시정지가 걸릴 수 있다.
 ///   모든 연출은 unscaled 시간으로 돌린다(슬롯·이 클래스 Update). 구매 연출 대기 상한은 게임 시간이라 그동안 함께 멈춘다.
 ///
 /// [폴리싱 - 시안 v4] 카드 줄 위 제목 명판(카드를 고르세요), 왼쪽 위 WAVE 배지(SetWave - 시스템이 부르기 전에는 숨김),
-///   리롤은 카드 줄 바로 아래 가운데 글자 버튼(아이콘 + 리롤 + 남은 횟수, 폭은 18개 언어 중 가장 긴 문구 기준), 설명 패널은 리롤 버튼 아래(카드 선택 모드 - 폭 고정 · 높이는 카드마다).
+///   예전 모드 리롤은 카드 줄 바로 아래 가운데 글자 버튼(아이콘 + 리롤 + 남은 횟수, 폭은 18개 언어 중 가장 긴 문구 기준), 설명 패널은 그 아래(카드 선택 모드 - 폭 고정 · 높이는 카드마다).
+///   칸별 모드도 설명 패널 자리는 같다(공용 버튼 자리는 비워 둔다).
 ///   키 안내는 패드 모드에서만 왼쪽 아래에 보인다(키보드 · 마우스 모드는 마우스 GUI 조작 - 키보드 단축키를 두지 않는다).
 ///
 /// [퇴장 단계] 연출이 끝나면 Complete 전에 퇴장 0.18초가 돈다: 화면 전체(딤 포함)가 흐려지고(screenGroup) Content가 4px 떠오른다. 끝나면 Complete.
@@ -94,7 +102,10 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 
     /// <summary>제시된 _offerIndex번 카드를 고르겠다.</summary>
     public event Action<int> BuyRequestedEvent;
+    // [호환] G-12 반영 후 삭제(예전 모드 전용: 공용 리롤 버튼).
     public event Action RerollRequestedEvent;
+    /// <summary>칸별 모드: 제시된 _offerIndex번 칸의 카드를 다른 카드로 바꾸겠다. 코디네이터가 구독하면 칸별 모드가 된다(G-12).</summary>
+    public event Action<int> SlotRerollRequestedEvent;
 
     protected readonly List<RoguelikeCardViewData> offers = new List<RoguelikeCardViewData>(8);
 
@@ -117,7 +128,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     [Tooltip("화면 전체를 어둡게 덮는 딤 이미지. 보관 낙하가 시작되면 이것만 걷힌다(카드 · 화면 전체는 흐려지지 않는다).")]
     [SerializeField] private Image dimImage;
 
-    [Header("리롤 버튼")]
+    [Header("리롤 버튼 [호환] G-12 반영 후 삭제(예전 모드 전용 공용 버튼)")]
     [SerializeField] private Button rerollButton;
     [SerializeField] private CanvasGroup rerollGroup;
     [SerializeField] private UI_RoguelikeSelectRelay rerollRelay;
@@ -129,6 +140,8 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     [Header("머리 줄 · 키 안내")]
     [SerializeField] private RectTransform titlePlate;
     [SerializeField] private TMP_Text titleText;
+    [SerializeField] private TMPInlineStyleAnimator titleAnimator;
+    [SerializeField] private TMPInlineStyleAnimator titleShadowAnimator;
     [SerializeField] private RectTransform waveBadge;
     [SerializeField] private TMP_Text waveText;
     [SerializeField] private RectTransform padGuideRow;
@@ -144,6 +157,8 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     private UI_RoguelikeCardSlot chosenSlot;
     private Action pendingComplete;
     private bool bLocked;
+    // 열 때 SlotRerollRequestedEvent 구독자가 있으면 칸별 리롤 모드, 없으면 예전 공용 버튼 모드.
+    private bool bSlotRerollMode;
     private bool bRarePurchase;
     // 희귀 카드의 두근 ~ 유지 시작 사이(그 카드를 뺀 나머지를 어둡게). 없으면 null.
     private UI_RoguelikeCardSlot rareSpotlightSlot;
@@ -168,6 +183,12 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     private readonly System.Text.StringBuilder waveBuilder = new System.Text.StringBuilder(16);
 
     private const string PickKey = "Roguelike_CardSelect_Pick";
+    private const string SlotRerollNameKey = "Roguelike_CardSelect_RerollCard";
+    private const string SlotRerollDescKey = "Roguelike_CardSelect_RerollCardDesc";
+    // 제목 연출 태그: 파도 + 민트(#7EEDBE) · 금(#EDD87E) 2색 순환.
+    private const string TitleTagOpen = "<wave><color=#7EEDBE,#EDD87E>";
+    private const string TitleTagClose = "</color></wave>";
+    private string titlePlainText = string.Empty;
     private const string HintMoveKey = "Roguelike_Hint_Move";
     private const string HintSelectKey = "Roguelike_Hint_Select";
     private CursorMotionSettings cursorMotion;
@@ -178,7 +199,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     private Vector2 shakeBasePosition;
     private float shakeTime;
 
-    /// <summary>이번 선택 단계에서 리롤을 쓸 수 있는가(선택 단계마다 1회).</summary>
+    /// <summary>[호환] G-12 반영 후 삭제. 예전 모드: 이번 선택 단계에서 리롤을 쓸 수 있는가(선택 단계마다 1회). 칸별 모드는 RoguelikeCardViewData.bCanReroll을 쓴다.</summary>
     public bool bCanReroll { get; private set; }
 
     /// <summary>보유 카드 창 · ESC 도전과제 창으로 덮을 수 있는 상태인가(고를 수 있는 상태: 화면이 떠 있고 Idle · 잠금 아님 · 구매/퇴장 연출 아님). 코디네이터의 인벤토리 키 통과 판정에 쓴다.</summary>
@@ -205,6 +226,8 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     /// </summary>
     public virtual void OpenSelection(IReadOnlyList<RoguelikeCardViewData> _offers, bool _bCanReroll)
     {
+        // 코디네이터는 Awake/Initialize에서 이벤트를 구독하므로 열 때 판정하면 된다(Show 전에 정해야 레이아웃이 모드를 안다).
+        bSlotRerollMode = null != SlotRerollRequestedEvent;
         CopyOffers(_offers);
         bCanReroll = _bCanReroll;
 
@@ -212,13 +235,47 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         OnOffersPresented(false);
     }
 
-    /// <summary>리롤로 카드가 바뀌었다. 리롤은 선택 단계마다 1회라 쓰고 나면 _bCanReroll이 false로 온다.</summary>
+    /// <summary>[호환] G-12 반영 후 삭제. 예전 모드: 리롤로 카드가 바뀌었다. 리롤은 선택 단계마다 1회라 쓰고 나면 _bCanReroll이 false로 온다.</summary>
     public virtual void ReplaceOffers(IReadOnlyList<RoguelikeCardViewData> _offers, bool _bCanReroll)
     {
         CopyOffers(_offers);
         bCanReroll = _bCanReroll;
 
         OnOffersPresented(true);
+    }
+
+    /// <summary>
+    /// 칸별 모드: _index번 칸의 카드만 _offer로 바꾸고 그 칸만 다시 뒤집는다. 다른 칸 · 제목 연출 · 포커스는 그대로다.
+    /// 포커스가 그 칸의 버튼이면 설명 패널만 갱신된다(다 썼으면 사용 불가 문구). 포커스가 그 카드면 뒤집히는 동안 커서를 숨기고 착지 때 다시 띄운다.
+    /// 칸별 모드가 아니거나 칸이 없으면 경고 후 무시한다. 구매 연출 중(잠금)에도 무시한다.
+    /// </summary>
+    public virtual void ReplaceOffer(int _index, RoguelikeCardViewData _offer)
+    {
+        UI_RoguelikeCardSlot slot = FindSlotByOffer(_index);
+        if (false == bSlotRerollMode || 0 > _index || offers.Count <= _index || null == slot)
+        {
+            Debug.LogWarning("[UIView_RoguelikeCardSelect] ReplaceOffer(" + _index + ")를 무시합니다. 칸별 리롤 모드가 아니거나 해당 칸이 없습니다.");
+            return;
+        }
+
+        if (true == bLocked) return;
+
+        offers[_index] = _offer;
+        slot.Bind(_index, _offer);
+        slot.PlayIntro(0f, CardRarity.IsRare(_offer.displayGrade));
+        slot.SetRerollAvailable(_offer.bCanReroll);
+
+        // Bind가 카드 호버 · 어둡게를 초기화하므로 현재 포커스에 맞게 다시 건다.
+        if (null != focusedRelay && slot.Relay == focusedRelay)
+        {
+            slot.SetFocused(true);
+            HideCursor();
+        }
+
+        ApplyDimming(GetFocusedSlot());
+        // 새 카드로 설명 최대 높이가 달라질 수 있어 배치를 다시 잡는다(내비게이션은 바뀌지 않는다).
+        LayoutControls();
+        RefreshDescription();
     }
 
     /// <summary>
@@ -287,6 +344,12 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     {
         Sound.PlayUI(SoundID.AbilityUpgradeFailed);
         UI_RoguelikeCardSlot slot = FindSlotByOffer(_offerIndex);
+        if (true == bSlotRerollMode && ECardShopResult.RerollNotAllowed == _reason && null != slot && null != slot.RerollButton)
+        {
+            StartButtonShake(slot.RerollButton);
+            return;
+        }
+
         if (null != slot)
         {
             slot.PlayReject();
@@ -381,13 +444,19 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         phase = EPhase.Idle;
         if (null != acrylicCase) acrylicCase.ResetCase();
         SetControlsVisible(true);
+        // 뷰가 처음 열릴 때만 제목 글자가 차례로 튀어나온다(리롤 때는 다시 하지 않는다). 이후 wave는 계속된다.
+        if (false == _bReroll)
+        {
+            if (null != titleAnimator) titleAnimator.PlayRevealBounce();
+            if (null != titleShadowAnimator) titleShadowAnimator.PlayRevealBounce();
+        }
 
         PlaceSlots(count);
         UpdateControls();
         LayoutControls();
         RebuildNavigation();
 
-        UI_RoguelikeSelectRelay first = count > 0 ? slots[0].Relay : rerollRelay;
+        UI_RoguelikeSelectRelay first = count > 0 ? slots[0].Relay : (false == bSlotRerollMode ? rerollRelay : null);
         SetFocus(first, true);
         SelectInEventSystem(first);
 
@@ -398,6 +467,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     // // 입력 전달
 
     protected void RequestBuy(int _offerIndex) => BuyRequestedEvent?.Invoke(_offerIndex);
+    // [호환] G-12 반영 후 삭제.
     protected void RequestReroll() => RerollRequestedEvent?.Invoke();
 
     private void CopyOffers(IReadOnlyList<RoguelikeCardViewData> _offers)
@@ -429,6 +499,8 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
             slot.Bind(i, offers[i]);
             slot.SetPosition(new Vector2(left + Mathf.Round(i * (slotWidth + slotGap)), cardRowY));
             slot.PlayIntro(introDelays[i], CardRarity.IsRare(offers[i].displayGrade));
+            slot.SetRerollVisible(bSlotRerollMode);
+            if (true == bSlotRerollMode) slot.SetRerollAvailable(offers[i].bCanReroll);
         }
     }
 
@@ -483,7 +555,19 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         return null != localizationManager ? localizationManager.GetText(_key) : string.Empty;
     }
 
-    /// <summary>리롤 버튼의 이름·설명. 쓸 수 없으면 설명 자리에 이유(사용 불가)를 보여 준다.</summary>
+    private string Localize(string _key)
+    {
+        return null != localizationManager ? localizationManager.GetText(_key) : string.Empty;
+    }
+
+    /// <summary>칸별 리롤 버튼의 이름·설명. 이미 썼으면 설명 자리에 이유(사용 불가)를 보여 준다.</summary>
+    private void GetSlotRerollInfo(bool _bAvailable, out string _name, out string _description)
+    {
+        _name = Localize(SlotRerollNameKey);
+        _description = true == _bAvailable ? Localize(SlotRerollDescKey) : Localize(LocKeys.RoguelikeUI.roguelikeCardSelectUnavailable);
+    }
+
+    /// <summary>[호환] G-12 반영 후 삭제. 예전 모드 공용 리롤 버튼의 이름·설명. 쓸 수 없으면 설명 자리에 이유(사용 불가)를 보여 준다.</summary>
     private void GetRerollInfo(out string _name, out string _description)
     {
         _name = Localize(LocKeys.RoguelikeUI.roguelikeCardSelectReroll);
@@ -508,7 +592,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         if (null != titlePlate && null != titleText)
         {
             float cardHeight = 0 < slots.Length ? ((RectTransform)slots[0].transform).rect.height : 0f;
-            float plateWidth = Mathf.Max(SpecTitlePlateWidth, Mathf.Ceil(titleText.GetPreferredValues(titleText.text, 10000f, 10000f).x) + 32f);
+            float plateWidth = Mathf.Max(SpecTitlePlateWidth, Mathf.Ceil(titleText.GetPreferredValues(titlePlainText, 10000f, 10000f).x) + 32f);
             titlePlate.sizeDelta = new Vector2(Mathf.Ceil(plateWidth * 0.5f) * 2f, titlePlate.sizeDelta.y);
             titlePlate.anchoredPosition = new Vector2(0f, Mathf.Round(cardRowY + cardHeight + UI_RoguelikeCard.HoverLiftPixels + TitleGap));
         }
@@ -532,15 +616,24 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         RectTransform screen = (RectTransform)contentRoot.parent;
         descPanel.SetMaxWidth(screen.rect.width - ScreenMargin * 2f);
 
-        GetRerollInfo(out string rerollName, out string rerollDescription);
-
         // 카드 선택 모드: 폭은 고정(화면이 좁으면 화면 폭 안). 높이는 카드마다 바뀌지만 화면 배치는 가장 큰 높이 기준으로 잡는다.
         descPanel.SetFixedWidth(Mathf.Min(SelectDescWidth, screen.rect.width - ScreenMargin * 2f));
 
         descPanel.Clear();
         float height = descPanel.TargetHeight;
         for (int i = 0; i < slotCount; i++) height = Mathf.Max(height, descPanel.MeasureCardHeight(slots[i].Data));
-        height = Mathf.Max(height, descPanel.MeasureInfoHeight(rerollName, rerollDescription));
+        if (true == bSlotRerollMode)
+        {
+            GetSlotRerollInfo(true, out string slotName, out string slotAvailableDescription);
+            height = Mathf.Max(height, descPanel.MeasureInfoHeight(slotName, slotAvailableDescription));
+            GetSlotRerollInfo(false, out slotName, out string slotUnavailableDescription);
+            height = Mathf.Max(height, descPanel.MeasureInfoHeight(slotName, slotUnavailableDescription));
+        }
+        else
+        {
+            GetRerollInfo(out string rerollName, out string rerollDescription);
+            height = Mathf.Max(height, descPanel.MeasureInfoHeight(rerollName, rerollDescription));
+        }
 
         descPanel.Clear();
         return height;
@@ -571,7 +664,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         contentRoot.anchoredPosition = new Vector2(contentRoot.anchoredPosition.x, Mathf.Round(y));
     }
 
-    /// <summary>리롤 가능 여부를 버튼 상태(활성/어둡게)에 반영한다.</summary>
+    /// <summary>[호환] G-12 반영 후 삭제. 예전 모드: 리롤 가능 여부를 공용 버튼 상태(활성/어둡게)에 반영한다. 칸별 버튼은 PlaceSlots · ReplaceOffer가 칸마다 반영한다.</summary>
     private void UpdateControls()
     {
         rerollButton.interactable = bCanReroll;
@@ -581,7 +674,13 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 
     private void SetControlsVisible(bool _bVisible)
     {
-        rerollButton.gameObject.SetActive(_bVisible);
+        // 칸별 모드는 공용 버튼을 항상 숨기고 카드별 버튼을 _bVisible에 맞춘다.
+        rerollButton.gameObject.SetActive(_bVisible && false == bSlotRerollMode);
+        if (true == bSlotRerollMode)
+        {
+            for (int i = 0; i < slotCount; i++) slots[i].SetRerollVisible(_bVisible);
+        }
+
         descPanel.gameObject.SetActive(_bVisible);
         if (null != titlePlate) titlePlate.gameObject.SetActive(_bVisible);
         if (null != waveBadge) waveBadge.gameObject.SetActive(_bVisible && bWaveSet);
@@ -590,11 +689,25 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 
     /// <summary>
     /// 패드·키보드 이동. Automatic은 픽셀 아트 배치에서 엉뚱한 곳으로 가므로 Explicit으로 직접 잇는다.
-    /// 카드끼리는 좌우, 카드에서 아래는 리롤 버튼, 버튼에서 위는 가운데 카드.
+    /// 예전 모드: 카드끼리는 좌우, 카드에서 아래는 공용 리롤 버튼, 버튼에서 위는 가운데 카드.
+    /// 칸별 모드: 카드 i는 좌우 옆 카드, 아래는 카드 i의 리롤 버튼. 리롤 버튼 i는 위가 카드 i, 좌우는 옆 칸 리롤 버튼, 아래는 없음.
     /// 리롤을 이미 써서 못 쓰는 상태여도 선택은 된다(설명 패널에서 사용 불가 사유를 읽을 수 있게).
     /// </summary>
     private void RebuildNavigation()
     {
+        if (true == bSlotRerollMode)
+        {
+            for (int i = 0; i < slotCount; i++)
+            {
+                SetExplicitNavigation(slots[i].SelectButton, i > 0 ? slots[i - 1].SelectButton : null,
+                    i < slotCount - 1 ? slots[i + 1].SelectButton : null, null, slots[i].RerollButton);
+                SetExplicitNavigation(slots[i].RerollButton, i > 0 ? slots[i - 1].RerollButton : null,
+                    i < slotCount - 1 ? slots[i + 1].RerollButton : null, slots[i].SelectButton, null);
+            }
+
+            return;
+        }
+
         for (int i = 0; i < slotCount; i++)
         {
             SetExplicitNavigation(slots[i].SelectButton, i > 0 ? slots[i - 1].SelectButton : null,
@@ -628,6 +741,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         if (false == _bForce && null != _relay) Sound.PlayUI(SoundID.ResultUIHover);
 
         FindSlotByRelay(focusedRelay)?.SetFocused(false);
+        FindSlotByRerollRelay(focusedRelay)?.SetRerollFocused(false);
         focusedRelay = _relay;
 
         if (null == _relay)
@@ -641,12 +755,16 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         UI_RoguelikeCardSlot slot = FindSlotByRelay(_relay);
         if (null != slot) slot.SetFocused(true);
 
-        ApplyDimming(slot);
+        // 칸별 리롤 버튼에 포커스가 오면 그 칸 카드는 올라가지 않고 나머지 카드만 어둡게 해 어느 카드를 바꾸는지 보이게 한다.
+        UI_RoguelikeCardSlot rerollSlot = FindSlotByRerollRelay(_relay);
+        if (null != rerollSlot) rerollSlot.SetRerollFocused(true);
+
+        ApplyDimming(null != slot ? slot : rerollSlot);
         RefreshDescription();
         ShowCursor(_relay);
     }
 
-    /// <summary>카드가 선택 중이면 나머지 카드를 어둡게 해 밝기로도 선택 중인 카드를 구분한다. 리롤 버튼에 포커스가 있거나 포커스가 없으면 모두 원래 밝기.</summary>
+    /// <summary>카드가 선택 중이면 나머지 카드를 어둡게 해 밝기로도 선택 중인 카드를 구분한다. 예전 모드 공용 리롤 버튼에 포커스가 있거나 포커스가 없으면 모두 원래 밝기. 칸별 리롤 버튼이면 그 칸 외의 카드를 어둡게 한다(_focusedSlot = 그 칸).</summary>
     private void ApplyDimming(UI_RoguelikeCardSlot _focusedSlot)
     {
         // 희귀 카드의 두근 ~ 유지 시작 사이에는 그 카드를 뺀 나머지를 어둡게 한다(희귀 등장 연출의 스포트라이트).
@@ -667,6 +785,14 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         {
             if (slot.IsRevealed) descPanel.SetCard(slot.Data);
             else descPanel.Clear();
+            return;
+        }
+
+        UI_RoguelikeCardSlot rerollSlot = FindSlotByRerollRelay(focusedRelay);
+        if (null != rerollSlot)
+        {
+            GetSlotRerollInfo(rerollSlot.Data.bCanReroll, out string slotName, out string slotDescription);
+            descPanel.SetInfo(slotName, slotDescription);
             return;
         }
 
@@ -722,6 +848,26 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         }
 
         return null;
+    }
+
+    /// <summary>그 relay가 칸별 리롤 버튼인 칸. 카드 relay · 공용 리롤 relay면 null.</summary>
+    private UI_RoguelikeCardSlot FindSlotByRerollRelay(UI_RoguelikeSelectRelay _relay)
+    {
+        if (null == _relay) return null;
+
+        for (int i = 0; i < slotCount; i++)
+        {
+            if (slots[i].RerollRelay == _relay) return slots[i];
+        }
+
+        return null;
+    }
+
+    /// <summary>포커스가 카드 또는 칸별 리롤 버튼에 있으면 그 칸, 아니면 null.</summary>
+    private UI_RoguelikeCardSlot GetFocusedSlot()
+    {
+        UI_RoguelikeCardSlot slot = FindSlotByRelay(focusedRelay);
+        return null != slot ? slot : FindSlotByRerollRelay(focusedRelay);
     }
 
     private UI_RoguelikeCardSlot FindSlotByOffer(int _offerIndex)
@@ -785,9 +931,20 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         if (true == _bOn) rareSpotlightSlot = _slot;
         else if (_slot == rareSpotlightSlot) rareSpotlightSlot = null;
 
-        ApplyDimming(FindSlotByRelay(focusedRelay));
+        ApplyDimming(GetFocusedSlot());
     }
 
+    private void OnSlotRerollClicked(UI_RoguelikeCardSlot _slot)
+    {
+        if (bLocked || false == bSlotRerollMode) return;
+        // 그 칸이 뒤집히는 중이면 무시한다(새 카드가 드러나기 전에 또 바꾸지 못하게).
+        if (true == _slot.IsIntroPlaying) return;
+
+        Sound.PlayUI(SoundID.MainClick);
+        SlotRerollRequestedEvent?.Invoke(_slot.OfferIndex);
+    }
+
+    // [호환] G-12 반영 후 삭제.
     private void OnRerollClicked()
     {
         if (bLocked) return;
@@ -824,7 +981,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         shakeRect.anchoredPosition = shakeBasePosition + new Vector2(ShakePattern[step], 0f);
     }
 
-    /// <summary>리롤 버튼에 포커스가 오면 배경이 밝아지고 아이콘이 1px 뜬다(카드 호버와 같은 결의 약한 반응).</summary>
+    /// <summary>[호환] G-12 반영 후 삭제(칸별 버튼은 UI_RoguelikeCardSlot이 같은 연출을 한다). 공용 리롤 버튼에 포커스가 오면 배경이 밝아지고 아이콘이 1px 뜬다(카드 호버와 같은 결의 약한 반응).</summary>
     private void UpdateRerollFocus()
     {
         float target = null != focusedRelay && focusedRelay == rerollRelay ? 1f : 0f;
@@ -1029,7 +1186,9 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     /// <summary>제목 · 리롤 글자 · 키 안내 문구. 언어가 바뀌면 다시 채운다.</summary>
     private void ApplyStaticTexts()
     {
-        if (null != titleText) titleText.text = null != localizationManager ? localizationManager.GetText(PickKey) : string.Empty;
+        titlePlainText = null != localizationManager ? localizationManager.GetText(PickKey) : string.Empty;
+        // 파도 + 색 순환 태그로 감싼다. 태그는 TMPInlineStyleAnimator가 제거하므로 판 폭은 titlePlainText 기준으로 잰다.
+        if (null != titleText) titleText.text = TitleTagOpen + titlePlainText + TitleTagClose;
         if (null != rerollLabel) rerollLabel.text = Localize(LocKeys.RoguelikeUI.roguelikeCardSelectReroll);
         if (null != hintMoveText) hintMoveText.text = null != localizationManager ? localizationManager.GetText(HintMoveKey) : string.Empty;
         if (null != hintSelectText) hintSelectText.text = null != localizationManager ? localizationManager.GetText(HintSelectKey) : string.Empty;
@@ -1103,6 +1262,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         UI_RoguelikeOwnedCardTray tray = RoguelikeHUDLink.OwnedTray;
         if (null != tray) tray.ReleaseCount();
         FindSlotByRelay(focusedRelay)?.SetFocused(false);
+        FindSlotByRerollRelay(focusedRelay)?.SetRerollFocused(false);
         focusedRelay = null;
         UnsubscribeLanguage();
         if (null != viewCtx && null != viewCtx.inputManager && null != viewCtx.inputManager.inputReader)
@@ -1151,6 +1311,8 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
             slots[i].LandedEvent += OnSlotLanded;
             slots[i].RareSpotlightEvent += OnSlotRareSpotlight;
             slots[i].Relay.FocusedEvent += OnRelayFocused;
+            slots[i].RerollClickedEvent += OnSlotRerollClicked;
+            if (null != slots[i].RerollRelay) slots[i].RerollRelay.FocusedEvent += OnRelayFocused;
         }
 
         rerollRelay.FocusedEvent += OnRelayFocused;
@@ -1185,6 +1347,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     {
         BuyRequestedEvent = null;
         RerollRequestedEvent = null;
+        SlotRerollRequestedEvent = null;
         pendingComplete = null;
         UnsubscribeLanguage();
         base.OnDestroy();

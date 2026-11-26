@@ -17,6 +17,10 @@ using UnityEngine.UI;
 ///   착지          0.08초 동안 1px 눌렸다 돌아오고 먼지·지면 링·금빛 반짝이 퍼진다(PlayLandingDust). 뒤집힘이 끝나면 LandedEvent.
 /// 뒷면에서는 구매 요청을 보내지 않는다(IsRevealed).
 ///
+/// [칸별 리롤 버튼] 카드 바로 아래 가운데 20x20 아이콘 버튼(슬롯 루트의 자식 - 호버로 올라가는 카드 그림과 따로 움직인다). 칸별 모드(기획서 4-1)에서만 화면이 켠다.
+///   누르면 RerollClickedEvent. 사용 여부는 SetRerollAvailable(회색 + 클릭 막음), 포커스 표시는 SetRerollFocused(배경 밝아짐 + 아이콘 1px 뜸).
+///   슬롯 canvasGroup은 구매 연출의 흐려짐에만 쓰고(카드 어둡게 하기는 카드 그림 안의 별도 처리) 버튼은 구매 연출이 시작되면 숨긴다.
+///
 /// [희귀 등장 연출] 희귀 카드(에메랄드 · 프리즘 · 루비)는 PlayIntro(_delay, true)로 시작하면 rareFx(UI_RoguelikeRareRevealFx)가 함께 돈다.
 ///   두근 0.45초(뒷면이 박자마다 1px 떨림) → 뒤집힘(뜀 10px) → 공개 순간 흰 실루엣(flash · 와이프 없음) → 팡 · 타다다닥 · 유지(후광 · 빛살 · 입자는 rareFx가 슬롯 밖 층에 그린다).
 ///   슬롯은 매 프레임 자기 위치 · 알파 · 카드 모양을 rareFx에 넘기고, rareFx가 정한 실루엣 색을 카드에 덮는다. rareFx가 비어 있으면 일반 카드와 똑같이 동작한다.
@@ -47,6 +51,10 @@ public class UI_RoguelikeCardSlot : MonoBehaviour
     private const float RevealFlashAlpha = 0.35f;
     private const float ShakeStepSeconds = 0.03f;
     private static readonly int[] ShakePattern = { -2, 2, -2, 2, -1, 1, 0 };
+    private const float DisabledButtonAlpha = 0.4f;
+    private const float RerollFocusSeconds = 0.1f;
+    private static readonly Color RerollIdleColor = new Color(0.9f, 0.88f, 0.84f, 1f);
+    private static readonly Color RerollFocusColor = Color.white;
 
     /// <summary>앞면이 된 카드를 눌렀다(구매 요청).</summary>
     public event Action<UI_RoguelikeCardSlot> ClickedEvent;
@@ -56,6 +64,8 @@ public class UI_RoguelikeCardSlot : MonoBehaviour
     public event Action<UI_RoguelikeCardSlot> LandedEvent;
     /// <summary>희귀 카드의 두근이 시작됐다(true) / 유지가 시작되었거나 연출이 중단됐다(false). 화면이 다른 카드를 어둡게 하는 구간이다.</summary>
     public event Action<UI_RoguelikeCardSlot, bool> RareSpotlightEvent;
+    /// <summary>칸별 리롤 버튼을 눌렀다(칸별 모드).</summary>
+    public event Action<UI_RoguelikeCardSlot> RerollClickedEvent;
 
     //외부 의존성 (프리팹에서 연결)
     [SerializeField] private UI_RoguelikeCard card;
@@ -64,6 +74,12 @@ public class UI_RoguelikeCardSlot : MonoBehaviour
     [SerializeField] private CanvasGroup canvasGroup;
     [Tooltip("희귀 등장 연출(뒤 층 RareFxBack_n에 붙은 컴포넌트). 비어 있으면 희귀 카드도 일반 카드처럼 뒤집힌다.")]
     [SerializeField] private UI_RoguelikeRareRevealFx rareFx;
+    [Header("칸별 리롤 버튼")]
+    [SerializeField] private Button rerollButton;
+    [SerializeField] private CanvasGroup rerollGroup;
+    [SerializeField] private UI_RoguelikeSelectRelay rerollRelay;
+    [SerializeField] private Image rerollBackground;
+    [SerializeField] private RectTransform rerollIconRect;
 
     //상태 변수
     private RoguelikeCardViewData data;
@@ -79,6 +95,9 @@ public class UI_RoguelikeCardSlot : MonoBehaviour
     private bool bRareSpotlight;
     private int rareShake;
     private Color32 lastSilhouette;
+    private float rerollFocusTarget;
+    private float rerollFocusAmount;
+    private float rerollIconBaseY;
 
     public int OfferIndex => offerIndex;
     public RoguelikeCardViewData Data => data;
@@ -87,6 +106,8 @@ public class UI_RoguelikeCardSlot : MonoBehaviour
     public UI_RoguelikeSelectRelay Relay => relay;
     public Button SelectButton => button;
     public UI_RoguelikeCard Card => card;
+    public Button RerollButton => rerollButton;
+    public UI_RoguelikeSelectRelay RerollRelay => rerollRelay;
 
     /// <summary>이 칸에 카드를 채우고 켠다. 앞면·원래 위치·불투명 상태로 시작한다.</summary>
     public void Bind(int _offerIndex, in RoguelikeCardViewData _data)
@@ -111,7 +132,59 @@ public class UI_RoguelikeCardSlot : MonoBehaviour
     {
         anim = EAnim.Idle;
         StopRareFx();
+        SetRerollVisible(false);
         gameObject.SetActive(false);
+    }
+
+    /// <summary>칸별 리롤 버튼을 보이거나 숨긴다. 숨기면 포커스 표시도 처음 상태로 돌린다.</summary>
+    public void SetRerollVisible(bool _bVisible)
+    {
+        if (null == rerollButton) return;
+
+        if (false == _bVisible) ResetRerollFocus();
+        rerollButton.gameObject.SetActive(_bVisible);
+    }
+
+    /// <summary>칸별 리롤 버튼 사용 가능 여부. 못 쓰면 회색(알파 DisabledButtonAlpha)이 되고 Button이 클릭을 막는다.</summary>
+    public void SetRerollAvailable(bool _bAvailable)
+    {
+        if (null == rerollButton) return;
+
+        rerollButton.interactable = _bAvailable;
+        rerollGroup.alpha = true == _bAvailable ? 1f : DisabledButtonAlpha;
+    }
+
+    /// <summary>칸별 리롤 버튼 포커스 표시: 배경이 밝아지고 아이콘이 1px 뜬다(0.1초, unscaled).</summary>
+    public void SetRerollFocused(bool _bFocused)
+    {
+        rerollFocusTarget = true == _bFocused ? 1f : 0f;
+    }
+
+    private void ResetRerollFocus()
+    {
+        rerollFocusTarget = 0f;
+        rerollFocusAmount = 0f;
+        if (null == rerollBackground) return;
+
+        rerollBackground.color = RerollIdleColor;
+        Vector2 iconPosition = rerollIconRect.anchoredPosition;
+        rerollIconRect.anchoredPosition = new Vector2(iconPosition.x, rerollIconBaseY);
+    }
+
+    private void UpdateRerollFocus()
+    {
+        if (rerollFocusAmount == rerollFocusTarget) return;
+
+        rerollFocusAmount = Mathf.MoveTowards(rerollFocusAmount, rerollFocusTarget, Time.unscaledDeltaTime / RerollFocusSeconds);
+        rerollBackground.color = Color.Lerp(RerollIdleColor, RerollFocusColor, rerollFocusAmount);
+
+        Vector2 iconPosition = rerollIconRect.anchoredPosition;
+        rerollIconRect.anchoredPosition = new Vector2(iconPosition.x, rerollIconBaseY + Mathf.Round(rerollFocusAmount));
+    }
+
+    private void OnRerollButtonClicked()
+    {
+        RerollClickedEvent?.Invoke(this);
     }
 
     /// <summary>화면 안 위치(정수 픽셀). 칸의 앵커·피벗은 프리팹에서 가운데 앵커, 왼쪽 아래 피벗이다.</summary>
@@ -204,6 +277,7 @@ public class UI_RoguelikeCardSlot : MonoBehaviour
     public void PlayFade(float _duration)
     {
         InterruptFlip();
+        SetRerollVisible(false);
         anim = EAnim.Fade;
         animTime = 0f;
         animDuration = Mathf.Max(0.01f, _duration);
@@ -213,6 +287,7 @@ public class UI_RoguelikeCardSlot : MonoBehaviour
     public void PlayMove(Vector2 _to, float _duration)
     {
         InterruptFlip();
+        SetRerollVisible(false);
         anim = EAnim.Move;
         animTime = 0f;
         animDuration = Mathf.Max(0.01f, _duration);
@@ -465,6 +540,11 @@ public class UI_RoguelikeCardSlot : MonoBehaviour
     private void Awake()
     {
         if (null != button) button.onClick.AddListener(OnButtonClicked);
+        if (null != rerollButton)
+        {
+            rerollButton.onClick.AddListener(OnRerollButtonClicked);
+            rerollIconBaseY = rerollIconRect.anchoredPosition.y;
+        }
 
         relay.PressedEvent += OnPressedChanged;
         relay.SubmittedEvent += OnSubmitted;
@@ -482,6 +562,7 @@ public class UI_RoguelikeCardSlot : MonoBehaviour
         }
 
         if (true == bRareFxActive) UpdateRareFx();
+        if (null != rerollButton) UpdateRerollFocus();
     }
 
     private void OnDestroy()
@@ -490,7 +571,9 @@ public class UI_RoguelikeCardSlot : MonoBehaviour
         RevealedEvent = null;
         LandedEvent = null;
         RareSpotlightEvent = null;
+        RerollClickedEvent = null;
         if (null != button) button.onClick.RemoveListener(OnButtonClicked);
+        if (null != rerollButton) rerollButton.onClick.RemoveListener(OnRerollButtonClicked);
         if (null != relay)
         {
             relay.PressedEvent -= OnPressedChanged;

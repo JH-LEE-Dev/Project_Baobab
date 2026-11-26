@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 
 /// <summary>
-/// 메인메뉴(로그라이크 씬 밖)에서 저장된 로그라이크 기록을 기록 창 · 최고 기록판용 표시 데이터로 바꾼다.
+/// 메인메뉴(로그라이크 씬 밖)에서 저장된 로그라이크 기록을 기록 창용 표시 데이터로 바꾼다.
 /// 로그라이크 씬 안에서는 RoguelikeUICoordinator가 같은 일을 한다(카드 → 보유 카드 표시 데이터 규칙이 같다: ToOwnedView).
 /// 저장 파일은 읽기만 한다(RoguelikeRecordRepository.Load). 카드 아이콘은 카드 데이터베이스(CardDatabaseSO)에서 찾는다.
 /// </summary>
@@ -35,43 +35,6 @@ public static class RoguelikeRecordViewBuilder
         }
 
         if (true == _records.bHasRecent && null != _records.recent && best < _records.recent.reachedWave) best = _records.recent.reachedWave;
-        return best;
-    }
-
-    /// <summary>언리밋 최고 단계. 기록이 없으면 0.</summary>
-    public static int GetBestUnlimit(RoguelikeRecordData _records)
-    {
-        int best = 0;
-        if (null == _records) return best;
-
-        for (int i = 0; _records.unlimitRanking.Count > i; i++)
-        {
-            RunRecordEntry entry = _records.unlimitRanking[i];
-            if (null != entry && best < entry.reachedUnlimitWave) best = entry.reachedUnlimitWave;
-        }
-
-        return best;
-    }
-
-    /// <summary>한 판에 가장 많이 부순 나무 수. 기록이 없으면 0.</summary>
-    public static int GetMostTrees(RoguelikeRecordData _records)
-    {
-        int best = 0;
-        if (null == _records) return best;
-
-        for (int i = 0; _records.clearRanking.Count > i; i++)
-        {
-            RunRecordEntry entry = _records.clearRanking[i];
-            if (null != entry && best < entry.treesFelled) best = entry.treesFelled;
-        }
-
-        for (int i = 0; _records.unlimitRanking.Count > i; i++)
-        {
-            RunRecordEntry entry = _records.unlimitRanking[i];
-            if (null != entry && best < entry.treesFelled) best = entry.treesFelled;
-        }
-
-        if (true == _records.bHasRecent && null != _records.recent && best < _records.recent.treesFelled) best = _records.recent.treesFelled;
         return best;
     }
 

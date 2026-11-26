@@ -194,6 +194,10 @@ public class UIView_MainMenu : UIView
             {
                 mainMenuUI.SetDiscordButton(discordButton);
             }
+            if (null != logoAnimUI)
+            {
+                mainMenuUI.SetLogoAnim(logoAnimUI);
+            }
         }
 
         if (null != pressAnyKeyUI)

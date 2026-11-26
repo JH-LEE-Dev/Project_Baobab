@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using PresentationLayer.UISystem;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
@@ -7,7 +8,7 @@ using UnityEngine.UI;
 /// <summary>
 /// 카드 선택 화면 프리팹 구성기. 여러 번 실행해도 같은 결과로 덮어쓴다. 카드 프리팹(RoguelikeCardBuilder)을 먼저 다시 만든다.
 ///
-///   UI_RoguelikeCardSlot.prefab  카드 1칸: 카드 + 판정 박스(Button + 포커스 중계)
+///   UI_RoguelikeCardSlot.prefab  카드 1칸: 카드 + 판정 박스(Button + 포커스 중계) + 칸별 리롤 버튼(카드 바로 아래 20x20, 칸별 모드에서만 켠다)
 ///   UIView_RoguelikeCardSelect.prefab  화면: 딤 → Content(제목 명판 · 슬롯 4칸 · 리롤 버튼 · 설명 패널 · 레어 아크릴 케이스 받침/앞면 · 보관 연출 슬리브) · WAVE 배지(왼쪽 위) · 패드 키 안내(왼쪽 아래)
 ///   Card_Sleeve.png  보관 연출의 슬리브 54x86(파일이 없을 때만 만든다)
 ///
@@ -48,12 +49,18 @@ public static class RoguelikeCardSelectBuilder
     private const float KeyIconSize = 16f;
     private const float EdgeMargin = 12f;
     private const float WaveBadgeWidth = 104f;
+    // 칸별 리롤 버튼(칸별 모드): 카드 바로 아래 가운데 20x20, 카드 바닥에서 5px 떨어진다. 아이콘 14x14.
+    private const float SlotRerollSize = 20f;
+    private const float SlotRerollGap = 5f;
+    private const float SlotRerollIconSize = 14f;
 
     private static readonly Color DimColor = new Color(0.02f, 0.03f, 0.06f, 0.85f);
     private static readonly Color CreamColor = new Color(0.95f, 0.89f, 0.77f, 1f);
     private static readonly Color GoldColor = new Color(1f, 0.83f, 0.35f, 1f);
     private static readonly Color ShadowColor = new Color(0.16f, 0.1f, 0.06f, 1f);
     private static readonly Color DarkTextColor = new Color(0.23f, 0.14f, 0.09f, 1f);
+    // 공용 리롤 버튼 배경 대기 색(UIView_RoguelikeCardSelect.RerollIdleColor · UI_RoguelikeCardSlot.RerollIdleColor와 같은 값).
+    private static readonly Color RerollIdleColor = new Color(0.9f, 0.88f, 0.84f, 1f);
 
     [MenuItem("LumberBoy/UI/Build Roguelike Card Select")]
     public static void Build()
@@ -70,7 +77,14 @@ public static class RoguelikeCardSelectBuilder
             return;
         }
 
-        BuildSlotPrefab(cardPrefab);
+        Sprite basicButtonSprite = AssetDatabase.LoadAssetAtPath<Sprite>(BasicButtonPath);
+        if (null == basicButtonSprite)
+        {
+            Debug.LogError("[RoguelikeCardSelectBuilder] 기본 버튼 그림(" + BasicButtonPath + ")을 찾지 못했습니다.");
+            return;
+        }
+
+        BuildSlotPrefab(cardPrefab, rerollIcon, basicButtonSprite);
         GameObject slotPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(SlotPrefabPath);
         BuildViewPrefab(slotPrefab, font, rerollIcon);
 
@@ -80,7 +94,7 @@ public static class RoguelikeCardSelectBuilder
 
     // // 슬롯
 
-    private static void BuildSlotPrefab(GameObject _cardPrefab)
+    private static void BuildSlotPrefab(GameObject _cardPrefab, Sprite _rerollIcon, Sprite _basicButtonSprite)
     {
         int w = RoguelikeCardBuilder.FrameWidth;
         int h = RoguelikeCardBuilder.FrameHeight;
@@ -121,12 +135,44 @@ public static class RoguelikeCardSelectBuilder
         relaySo.FindProperty("cursorTarget").objectReferenceValue = card.VisualRect;
         relaySo.ApplyModifiedPropertiesWithoutUndo();
 
+        // 칸별 리롤 버튼: 슬롯 루트의 자식(호버로 올라가는 카드 그림의 자식이 아니다). 앵커는 슬롯 왼쪽 아래(카드와 같은 기준) · 피벗 가운데,
+        // 위치는 카드 바닥 가운데에서 SlotRerollGap만큼 아래 + 버튼 반 높이. 판정(투명) → 기본 버튼 바탕 → 아이콘. 칸별 모드에서만 화면이 켠다(기본 꺼짐).
+        RectTransform rerollRect = RoguelikeCardBuilder.CreateRect("RerollButton", rootRect, Vector2Int.zero, new Vector2(SlotRerollSize, SlotRerollSize));
+        rerollRect.pivot = new Vector2(0.5f, 0.5f);
+        rerollRect.anchoredPosition = new Vector2(Mathf.Floor(w * 0.5f), -(SlotRerollGap + SlotRerollSize * 0.5f));
+        Image rerollHit = rerollRect.gameObject.AddComponent<Image>();
+        rerollHit.color = new Color(1f, 1f, 1f, 0f);
+        rerollHit.raycastTarget = true;
+        Button rerollButton = rerollRect.gameObject.AddComponent<Button>();
+        rerollButton.transition = Selectable.Transition.None;
+        rerollButton.targetGraphic = rerollHit;
+        CanvasGroup rerollGroup = rerollRect.gameObject.AddComponent<CanvasGroup>();
+        UI_RoguelikeSelectRelay rerollRelay = rerollRect.gameObject.AddComponent<UI_RoguelikeSelectRelay>();
+
+        Image rerollBg = CreateStretchImage("Background", rerollRect, RerollIdleColor);
+        rerollBg.sprite = _basicButtonSprite;
+        rerollBg.type = Image.Type.Sliced;
+        rerollBg.raycastTarget = false;
+
+        Image rerollIcon = RoguelikeCardBuilder.CreateImage("Icon", rerollRect, _rerollIcon, Vector2Int.zero, new Vector2(SlotRerollIconSize, SlotRerollIconSize));
+        RectTransform rerollIconRect = rerollIcon.rectTransform;
+        rerollIconRect.anchorMin = new Vector2(0.5f, 0.5f);
+        rerollIconRect.anchorMax = new Vector2(0.5f, 0.5f);
+        rerollIconRect.pivot = new Vector2(0.5f, 0.5f);
+        rerollIconRect.anchoredPosition = Vector2.zero;
+        rerollRect.gameObject.SetActive(false);
+
         UI_RoguelikeCardSlot slot = root.AddComponent<UI_RoguelikeCardSlot>();
         SerializedObject so = new SerializedObject(slot);
         so.FindProperty("card").objectReferenceValue = card;
         so.FindProperty("relay").objectReferenceValue = relay;
         so.FindProperty("button").objectReferenceValue = button;
         so.FindProperty("canvasGroup").objectReferenceValue = root.GetComponent<CanvasGroup>();
+        so.FindProperty("rerollButton").objectReferenceValue = rerollButton;
+        so.FindProperty("rerollGroup").objectReferenceValue = rerollGroup;
+        so.FindProperty("rerollRelay").objectReferenceValue = rerollRelay;
+        so.FindProperty("rerollBackground").objectReferenceValue = rerollBg;
+        so.FindProperty("rerollIconRect").objectReferenceValue = rerollIconRect;
         so.ApplyModifiedPropertiesWithoutUndo();
 
         PrefabUtility.SaveAsPrefabAsset(root, SlotPrefabPath);
@@ -174,10 +220,24 @@ public static class RoguelikeCardSelectBuilder
         titleImage.sprite = titlePlateSprite;
         titleImage.type = Image.Type.Sliced;
         titleImage.raycastTarget = false;
+        // 보더 제거: Image만 끈다. RectTransform은 스크립트가 판 폭 · 높이 · 위치 레이아웃에 쓰므로 유지한다.
+        titleImage.enabled = false;
         TMP_Text titleText = CreateText("Title", titlePlate, _font, string.Empty, TextAlignmentOptions.Midline, CreamColor, false, TextOverflowModes.Overflow);
         StretchRect(titleText.rectTransform);
         titleText.rectTransform.offsetMin = new Vector2(0f, 1f);
-        AddShadow(titleText);
+        // 글자 연출(파도 + 색 순환). 그림자는 이 오브젝트의 복제본이라 같은 파형 값을 그대로 물려받는다(AddShadow보다 먼저 부착).
+        TMPInlineStyleAnimator titleAnimator = titleText.gameObject.AddComponent<TMPInlineStyleAnimator>();
+        SerializedObject animatorSo = new SerializedObject(titleAnimator);
+        animatorSo.FindProperty("colorCycleDuration").floatValue = 0.75f;
+        animatorSo.FindProperty("waveAmplitude").floatValue = 2f;
+        animatorSo.FindProperty("waveFrequency").floatValue = 5f;
+        animatorSo.FindProperty("waveCharacterOffset").floatValue = 0.45f;
+        animatorSo.ApplyModifiedPropertiesWithoutUndo();
+        TMP_Text titleShadow = AddShadow(titleText);
+        SerializedObject followerSo = new SerializedObject(titleShadow.GetComponent<UI_TextShadowFollower>());
+        followerSo.FindProperty("stripColorTags").boolValue = true;
+        followerSo.ApplyModifiedPropertiesWithoutUndo();
+        TMPInlineStyleAnimator titleShadowAnimator = titleShadow.GetComponent<TMPInlineStyleAnimator>();
 
         UI_RoguelikeCardSlot[] slots = new UI_RoguelikeCardSlot[SlotCount];
         for (int i = 0; i < SlotCount; i++)
@@ -313,6 +373,8 @@ public static class RoguelikeCardSelectBuilder
         viewSo.FindProperty("rerollCountText").objectReferenceValue = rerollCount;
         viewSo.FindProperty("titlePlate").objectReferenceValue = titlePlate;
         viewSo.FindProperty("titleText").objectReferenceValue = titleText;
+        viewSo.FindProperty("titleAnimator").objectReferenceValue = titleAnimator;
+        viewSo.FindProperty("titleShadowAnimator").objectReferenceValue = titleShadowAnimator;
         viewSo.FindProperty("waveBadge").objectReferenceValue = waveBadge;
         viewSo.FindProperty("waveText").objectReferenceValue = waveText;
         viewSo.FindProperty("padGuideRow").objectReferenceValue = guide;
@@ -538,7 +600,7 @@ public static class RoguelikeCardSelectBuilder
     }
 
     /// <summary>글자 아래 1px 그림자(글자를 복제해 어두운 색으로 깔고 UI_TextShadowFollower가 원본을 따라가게 한다).</summary>
-    private static void AddShadow(TMP_Text _text)
+    private static TMP_Text AddShadow(TMP_Text _text)
     {
         TMP_Text shadow = UnityEngine.Object.Instantiate(_text.gameObject, _text.transform.parent).GetComponent<TMP_Text>();
         shadow.name = _text.name + "Shadow";
@@ -548,6 +610,7 @@ public static class RoguelikeCardSelectBuilder
         SerializedObject so = new SerializedObject(follower);
         so.FindProperty("source").objectReferenceValue = _text;
         so.ApplyModifiedPropertiesWithoutUndo();
+        return shadow;
     }
 
     private static TMP_Text CreateGuideText(string _name, RectTransform _parent, TMP_FontAsset _font)

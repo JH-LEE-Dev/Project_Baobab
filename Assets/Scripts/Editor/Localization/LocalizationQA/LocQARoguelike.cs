@@ -413,14 +413,12 @@ namespace LocalizationQA
             return _text.Length >= _prefix.Length + _suffix.Length && true == _text.StartsWith(_prefix, StringComparison.Ordinal) && true == _text.EndsWith(_suffix, StringComparison.Ordinal);
         }
 
-        // UI_MainMenu.ShowRoguelikeButtons: 메인 버튼을 끄고 로그라이크 하위 메뉴를 켠 뒤, 최고 기록판을 채워 보인다(Refresh · PlayShow).
+        // UI_MainMenu.ShowRoguelikeButtons: 메인 버튼을 끄고 로그라이크 하위 메뉴를 켠다.
         private static LocQAHostPlan MainMenu(MonoBehaviour _menu, Transform _target, string _key)
         {
             Transform _root = Get(_menu, "roguelikeMenuRoot") as Transform;
-            UI_RoguelikeMenuRecordPanel _panel = Get(_menu, "roguelikeRecordPanel") as UI_RoguelikeMenuRecordPanel;
             bool _inMenu = null != _root && true == _target.IsChildOf(_root);
-            bool _inPanel = null != _panel && true == _target.IsChildOf(_panel.transform);
-            if (false == _inMenu && false == _inPanel) return null;
+            if (false == _inMenu) return null;
 
             List<GameObject> _hidden = new List<GameObject>(MainMenuButtonFields.Length);
             for (int i = 0; i < MainMenuButtonFields.Length; i++)
@@ -449,9 +447,8 @@ namespace LocalizationQA
                 _hidden.Add(_discord.gameObject);
             }
 
-            List<GameObject> _shown = new List<GameObject>(2);
+            List<GameObject> _shown = new List<GameObject>(1);
             Show(_root, _shown);
-            Show(null != _panel ? _panel.transform : null, _shown);
 
             // 하위 메뉴 버튼은 코드가 세로로 늘어놓는다. (ShowRoguelikeButtons: roguelikeFirstButtonY - i * buttonSpacingY, 형제 순서 i)
             List<RectTransform> _buttons = new List<RectTransform>(RoguelikeButtonFields.Length);
@@ -472,28 +469,11 @@ namespace LocalizationQA
                 _rect.anchoredPosition = new Vector2(_rect.anchoredPosition.x, _firstY - i * _spacing);
                 _rect.SetSiblingIndex(i);
             }
-            CanvasGroup _group = null != _panel ? _panel.GetComponent<CanvasGroup>() : null;
-            float _alpha = null != _group ? _group.alpha : 1f;
-            if (null != _group) _group.alpha = 1f;
 
             return new LocQAHostPlan
             {
-                // 기록판 문구는 코드가 넣는다. 하위 메뉴 버튼 글자는 연결된 문구를 툴이 넣는다.
-                ownsText = _inPanel,
-                onLanguage = _lang =>
-                {
-                    if (null == _panel) return;
-                    _panel.Initialize(Localization(_lang));
-                    _panel.Refresh();
-
-                    // 기록판은 저장 기록을 읽는다(Refresh). "기록 없음" 문구는 기록이 없을 때의 값 칸 모습으로 그린다.
-                    if ("Roguelike_Menu_NoRecord" == _key)
-                    {
-                        string _none = Localization(_lang).GetText(_key);
-                        for (int i = 0; i < 3; i++) Call(_panel, "SetValue", i, _none);
-                        Call(_panel, "Layout");
-                    }
-                },
+                // 하위 메뉴 버튼 글자는 연결된 문구를 툴이 넣는다.
+                ownsText = false,
                 onRestore = () =>
                 {
                     for (int i = 0; i < _hidden.Count; i++)
@@ -504,7 +484,6 @@ namespace LocalizationQA
                     {
                         if (null != _shown[i]) _shown[i].SetActive(false);
                     }
-                    if (null != _group) _group.alpha = _alpha;
                     for (int i = _buttons.Count - 1; i >= 0; i--)
                     {
                         if (null == _buttons[i]) continue;

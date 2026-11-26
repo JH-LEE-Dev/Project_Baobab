@@ -11,7 +11,7 @@ using UnityEngine.UI;
 ///   LumberBoy/UI/Build Roguelike Records    UIView_RoguelikeRecords.prefab 기록 창 - 나이테 기록판(딤 · 판 · 탭 명판(옵션 화살표 · 패드 LB/RB) · 점 3개 · 스포트라이트 · 순위 줄 견본 · 카드 보관함 · 입자 · 뒤로 버튼). 그림은 Graphics/Roguelike/records/
 ///   LumberBoy/UI/Build Roguelike Challenges UIView_RoguelikeChallenges.prefab 도전과제 창(기록 창과 같은 판 · 명판 · 스크롤바 · 뒤로 버튼 + 본문 위쪽 머리줄 30 + 칸 목록 뷰포트 220, 칸 템플릿 1개 = 시안 B 리본). 프리팹이 없으면 새로 만든다.
 ///   LumberBoy/UI/Build Roguelike Collection UIView_RoguelikeCollection.prefab 카드 도감 창(RoguelikeLobbyUIBuilder.Collection.cs)
-///   LumberBoy/UI/Build Roguelike Main Menu  UI_MainMenu.prefab에 로그라이크 하위 메뉴(명판 + 버튼 6개 + 최고 기록판), UIView_MainMenu.prefab에 기록 창 · 도전과제 창 · 카드 도감 창 · 카드 DB 연결
+///   LumberBoy/UI/Build Roguelike Main Menu  UI_MainMenu.prefab에 로그라이크 하위 메뉴(명판 + 버튼 6개), UIView_MainMenu.prefab에 기록 창 · 도전과제 창 · 카드 도감 창 · 카드 DB 연결
 ///   LumberBoy/UI/Build Roguelike Lobby UI (All)  위 셋을 차례로
 ///
 /// [그림] 보관함과 같은 9-슬라이스(Assets/Graphics/Roguelike/owned/Panel_Book · Panel_Info · Title_Plate), 버튼 바탕은 본편 BasicButton,
@@ -56,10 +56,8 @@ public static partial class RoguelikeLobbyUIBuilder
     private const float KeyIconSize = 16f;
 
     // 로그라이크 메뉴 배치(B안 - 양쪽 끝 대칭). 640×360 기준.
-    // 하위 메뉴 루트는 메인 버튼 묶음(BTNs) 위치에서 이만큼 옮긴다: 왼쪽 여백 11 → 16, 명판 윗변을 기록판 명판 윗변과 같은 줄로.
+    // 하위 메뉴 루트는 메인 버튼 묶음(BTNs) 위치에서 이만큼 옮긴다: 왼쪽 여백 11 → 16.
     private static readonly Vector2 RoguelikeMenuOffset = new Vector2(5f, 18f);
-    // 기록판(오른쪽 위 기준): 오른쪽 여백 16, 판 윗변(= 명판 세로 중심) 162.
-    private static readonly Vector2 RecordPanelPosition = new Vector2(-16f, -162f);
 
     // 스크롤바: 판 색감의 단색(그림 없음) - 홈 #3A261C, 막대 #CA8F73(누르는 동안 #8F563B는 UI_RoguelikeScrollbar가 칠한다). 굵기 3.
     private static readonly Color ScrollTrackColor = new Color32(0x3A, 0x26, 0x1C, 255);
@@ -93,10 +91,6 @@ public static partial class RoguelikeLobbyUIBuilder
         public Sprite arrowLeft;
         public Sprite arrowRight;
         public Sprite infoPanelGold;
-        public Sprite iconFlag;
-        public Sprite iconInfinity;
-        public Sprite iconTree;
-        public Sprite iconAxe;
     }
 
     [MenuItem("LumberBoy/UI/Build Roguelike Lobby UI (All)")]
@@ -1291,7 +1285,7 @@ public static partial class RoguelikeLobbyUIBuilder
             Transform oldPanel = rootRect.Find("RoguelikeRecordPanel");
             if (null != oldPanel) UnityEngine.Object.DestroyImmediate(oldPanel.gameObject);
 
-            // 하위 메뉴 묶음: BTNs 자리(왼쪽 가운데 기준)에서 RoguelikeMenuOffset만큼 옮긴다(B안 - 왼쪽 여백 16, 위쪽 끝을 기록판과 정렬).
+            // 하위 메뉴 묶음: BTNs 자리(왼쪽 가운데 기준)에서 RoguelikeMenuOffset만큼 옮긴다(B안 - 왼쪽 여백 16).
             RectTransform menuRoot = new GameObject("RoguelikeMenu", typeof(RectTransform)).GetComponent<RectTransform>();
             menuRoot.gameObject.layer = LayerMask.NameToLayer("UI");
             menuRoot.SetParent(rootRect, false);
@@ -1302,32 +1296,6 @@ public static partial class RoguelikeLobbyUIBuilder
             menuRoot.anchoredPosition = buttons.anchoredPosition + RoguelikeMenuOffset;
             menuRoot.SetSiblingIndex(buttons.GetSiblingIndex() + 1);
 
-            // 명판: 버튼 글자 왼쪽 선(버튼 판정 박스 왼쪽)에 맞춘다.
-            RectTransform plate = new GameObject("Plate", typeof(RectTransform)).GetComponent<RectTransform>();
-            plate.gameObject.layer = LayerMask.NameToLayer("UI");
-            plate.SetParent(menuRoot, false);
-            plate.anchorMin = new Vector2(0.5f, 0.5f);
-            plate.anchorMax = new Vector2(0.5f, 0.5f);
-            plate.pivot = new Vector2(0f, 0.5f);
-            plate.sizeDelta = new Vector2(116f, PlateHeight);
-            plate.anchoredPosition = new Vector2(-105f, 0f);
-            Image plateImage = plate.gameObject.AddComponent<Image>();
-            plateImage.sprite = a.titlePlate;
-            plateImage.type = Image.Type.Sliced;
-            plateImage.raycastTarget = false;
-            // 도끼 그림(7x7)은 오른쪽 열 · 위쪽 행에 투명 1px이 붙은 8x8이다. 피벗이 세로 가운데라 그림 아래 모서리를 예전 자리(가운데 - 3.5)에 두려면 0.5 올린다.
-            RectTransform axe = IconRect("Icon", plate, a.iconAxe, 8f, 8f);
-            axe.anchorMin = new Vector2(0f, 0.5f);
-            axe.anchorMax = new Vector2(0f, 0.5f);
-            axe.pivot = new Vector2(0f, 0.5f);
-            axe.anchoredPosition = new Vector2(9f, 0.5f);
-            TMP_Text plateText = Text("Label", plate, a.font, TextAlignmentOptions.MidlineLeft, CreamColor);
-            AddShadow(plateText);
-            plateText.rectTransform.anchorMin = Vector2.zero;
-            plateText.rectTransform.anchorMax = Vector2.one;
-            plateText.rectTransform.offsetMin = new Vector2(20f, 0f);
-            plateText.rectTransform.offsetMax = new Vector2(-8f, 0f);
-
             UI_MainMenuButton start = CloneMenuButton(sourceButton, menuRoot, "BTN_RL_Start");
             UI_MainMenuButton records = CloneMenuButton(sourceButton, menuRoot, "BTN_RL_Records");
             UI_MainMenuButton challenges = CloneMenuButton(sourceButton, menuRoot, "BTN_RL_Challenges");
@@ -1335,82 +1303,18 @@ public static partial class RoguelikeLobbyUIBuilder
             UI_MainMenuButton option = CloneMenuButton(sourceButton, menuRoot, "BTN_RL_Option");
             UI_MainMenuButton back = CloneMenuButton(sourceButton, menuRoot, "BTN_RL_Back");
 
-            // 최고 기록판: 화면 오른쪽 위 기준(오른쪽 여백 16). 판 윗변 = 명판 세로 중심을 162에 두어
-            // 왼쪽 하위 메뉴 명판과 윗변(149.5)을 같은 줄로 맞춘다(B안). 로고 아래끝(약 131)과 명판 윗변 사이 약 18px,
-            // 판(높이 약 150) 아래끝 312는 버전 글자(위끝 약 338) 위다. 로그라이크 메뉴에서는 디스코드 아이콘이 화면 밖으로 빠진다.
-            RectTransform panelRoot = new GameObject("RoguelikeRecordPanel", typeof(RectTransform)).GetComponent<RectTransform>();
-            panelRoot.gameObject.layer = LayerMask.NameToLayer("UI");
-            panelRoot.SetParent(rootRect, false);
-            panelRoot.anchorMin = new Vector2(1f, 1f);
-            panelRoot.anchorMax = new Vector2(1f, 1f);
-            panelRoot.pivot = new Vector2(1f, 1f);
-            panelRoot.sizeDelta = Vector2.zero;
-            panelRoot.anchoredPosition = RecordPanelPosition;
-            CanvasGroup group = panelRoot.gameObject.AddComponent<CanvasGroup>();
-            group.blocksRaycasts = false;
-
-            RectTransform panel = new GameObject("Panel", typeof(RectTransform)).GetComponent<RectTransform>();
-            panel.gameObject.layer = LayerMask.NameToLayer("UI");
-            panel.SetParent(panelRoot, false);
-            panel.anchorMin = new Vector2(1f, 1f);
-            panel.anchorMax = new Vector2(1f, 1f);
-            panel.pivot = new Vector2(1f, 1f);
-            panel.sizeDelta = new Vector2(272f, 150f);
-            panel.anchoredPosition = Vector2.zero;
-            Image panelImage = panel.gameObject.AddComponent<Image>();
-            panelImage.sprite = a.bookPanel;
-            panelImage.type = Image.Type.Sliced;
-            panelImage.raycastTarget = false;
-
-            RectTransform titlePlate = SlicedChild("TitlePlate", panel, a.titlePlate, 216f, PlateHeight);
-            TMP_Text titleText = Text("Title", titlePlate, a.font, TextAlignmentOptions.Midline, CreamColor);
-            AddShadow(titleText);
-            StretchText(titleText);
-
-            Sprite[] iconSprites = { a.iconFlag, a.iconInfinity, a.iconTree };
-            RectTransform[] icons = new RectTransform[3];
-            TMP_Text[] labels = new TMP_Text[3];
-            TMP_Text[] values = new TMP_Text[3];
-            for (int i = 0; 3 > i; i++)
-            {
-                // 칸 크기는 스프라이트 크기 그대로이고 위치는 화면 스크립트(UI_RoguelikeMenuRecordPanel.PlaceIcon)가 잡는다.
-                icons[i] = IconRect("Icon" + i, panel, iconSprites[i], iconSprites[i].rect.width, iconSprites[i].rect.height);
-                labels[i] = Text("Label" + i, panel, a.font, TextAlignmentOptions.MidlineLeft, MutedColor);
-                values[i] = Text("Value" + i, panel, a.font, TextAlignmentOptions.MidlineLeft, GoldColor);
-            }
-            RectTransform sepA = Solid("Separator0", panel, SeparatorColor);
-            RectTransform sepB = Solid("Separator1", panel, SeparatorColor);
-
-            UI_RoguelikeMenuRecordPanel recordPanel = panelRoot.gameObject.AddComponent<UI_RoguelikeMenuRecordPanel>();
-            SerializedObject ps = new SerializedObject(recordPanel);
-            Set(ps, "group", group);
-            Set(ps, "panel", panel);
-            Set(ps, "titlePlate", titlePlate);
-            Set(ps, "titleText", titleText);
-            SetArray(ps, "icons", icons[0], icons[1], icons[2]);
-            SetArray(ps, "labels", labels[0], labels[1], labels[2]);
-            SetArray(ps, "values", values[0], values[1], values[2]);
-            SetArray(ps, "separators", sepA, sepB);
-            ps.FindProperty("plateHeight").floatValue = PlateHeight;
-            ps.FindProperty("lineHeight").floatValue = SmallLineHeight;
-            ps.ApplyModifiedPropertiesWithoutUndo();
-
             SerializedObject ms = new SerializedObject(menu);
             Set(ms, "roguelikeMenuRoot", menuRoot);
-            Set(ms, "roguelikePlate", plate);
-            Set(ms, "roguelikePlateText", plateText);
             Set(ms, "roguelikeStartButton", start);
             Set(ms, "roguelikeRecordsButton", records);
             Set(ms, "roguelikeChallengesButton", challenges);
             Set(ms, "roguelikeCollectionButton", collection);
             Set(ms, "roguelikeOptionButton", option);
             Set(ms, "roguelikeBackButton", back);
-            Set(ms, "roguelikeRecordPanel", recordPanel);
             ms.FindProperty("roguelikeFirstButtonY").floatValue = -Mathf.Ceil(PlateHeight * 0.5f) - 18f;
             ms.ApplyModifiedPropertiesWithoutUndo();
 
             menuRoot.gameObject.SetActive(false);
-            panelRoot.gameObject.SetActive(false);
 
             PrefabUtility.SaveAsPrefabAsset(root, MainMenuPrefabPath);
             Debug.Log("[RoguelikeLobbyUIBuilder] 완료: " + MainMenuPrefabPath);
@@ -1624,10 +1528,6 @@ public static partial class RoguelikeLobbyUIBuilder
             arrowLeft = AssetDatabase.LoadAssetAtPath<Sprite>(OptionArrowLeftPath),
             arrowRight = AssetDatabase.LoadAssetAtPath<Sprite>(OptionArrowRightPath),
             infoPanelGold = AssetDatabase.LoadAssetAtPath<Sprite>(OwnedDir + "Panel_Info_Gold.png"),
-            iconFlag = AssetDatabase.LoadAssetAtPath<Sprite>(HudDir + "IconFlag.png"),
-            iconInfinity = AssetDatabase.LoadAssetAtPath<Sprite>(HudDir + "IconInfinity.png"),
-            iconTree = AssetDatabase.LoadAssetAtPath<Sprite>(HudDir + "IconTree.png"),
-            iconAxe = AssetDatabase.LoadAssetAtPath<Sprite>(HudDir + "IconAxe.png"),
         };
 
         for (int i = 0; SlotLevelNames.Length > i; i++) a.slotLevels[i] = AssetDatabase.LoadAssetAtPath<Sprite>(OwnedDir + "SlotLevel_" + SlotLevelNames[i] + ".png");

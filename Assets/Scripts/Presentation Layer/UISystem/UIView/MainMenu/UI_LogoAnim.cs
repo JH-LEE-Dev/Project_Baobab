@@ -1,6 +1,7 @@
 using UnityEngine;
 using DG.Tweening;
 using System;
+using UnityEngine.UI;
 
 /// <summary>
 /// 메인 메뉴 화면에서 로고 전용 애니메이션을 독립적으로 담당하는 스크립트입니다.
@@ -25,6 +26,17 @@ public class UI_LogoAnim : MonoBehaviour
     [SerializeField, Tooltip("데모 버전 표시 뱃지 오브젝트 (Title > Demo)")]
     private GameObject demoBadge;
 
+    [Header("Roguelike Subtitle")]
+    [SerializeField, Tooltip("로그라이크 하위 메뉴에서만 보이는 부제 (Title > Roguelike)")]
+    private CanvasGroup roguelikeSubtitle;
+    [SerializeField, Tooltip("부제 글자 9장 (Title > Roguelike > Letter0~8). 등장 때 0.05초 간격으로 하나씩 떨어진다.")]
+    private Image[] roguelikeSubtitleLetters;
+    [SerializeField] private float subtitleLetterDropDistance = 22f;
+    [SerializeField] private float subtitleLetterStagger = 0.05f;
+    [SerializeField] private float subtitleLetterDuration = 0.42f;
+    [SerializeField] private float subtitleLetterOvershoot = 2.4f;
+    [SerializeField, Tooltip("글자마다 낙하 시간 중 알파 0→1에 쓰는 비율")] private float subtitleLetterFadeRatio = 0.25f;
+
     private Vector2 initialPosition;
 
     private Action currentRevealComplete;
@@ -36,6 +48,11 @@ public class UI_LogoAnim : MonoBehaviour
     private Action currentFadeOutComplete;
     private TweenCallback onFadeOutCompleteCallback;
 
+    private TweenCallback onRoguelikeSubtitleHiddenCallback;
+
+    // 부제 글자 9장의 제자리(Letter마다 anchoredPosition이 달라서 기억해 둔다)
+    private Vector2[] roguelikeSubtitleLetterBasePositions;
+
     private bool isInitialPositionSet = false;
 
     public void Initialize()
@@ -43,6 +60,8 @@ public class UI_LogoAnim : MonoBehaviour
         if (null == onRevealCompleteCallback) onRevealCompleteCallback = OnRevealComplete;
         if (null == onFadeInCompleteCallback) onFadeInCompleteCallback = OnFadeInComplete;
         if (null == onFadeOutCompleteCallback) onFadeOutCompleteCallback = OnFadeOutComplete;
+        if (null == onRoguelikeSubtitleHiddenCallback) onRoguelikeSubtitleHiddenCallback = OnRoguelikeSubtitleHidden;
+        CaptureRoguelikeSubtitleLetterBases();
 
         if (null != logoTransform && false == isInitialPositionSet)
         {
@@ -87,6 +106,134 @@ public class UI_LogoAnim : MonoBehaviour
         if (null != demoBadge)
         {
             demoBadge.SetActive(_isActive);
+        }
+    }
+
+    /// <summary>
+    /// 로그라이크 부제(Title > Roguelike)를 보이거나 숨깁니다.
+    /// 글자는 프리팹에 놓인 제자리(Letter마다 다름)를 기준으로 움직인다.
+    /// 보이기 + 애니메이션: 글자 9장이 위에서 0.05초 간격으로 하나씩 떨어집니다(_duration은 사용하지 않음).
+    /// 숨기기 + 애니메이션: _duration초 동안 컨테이너 알파로 페이드합니다(unscaled).
+    /// </summary>
+    public void SetRoguelikeSubtitleVisible(bool _isVisible, bool _isAnimated, float _duration)
+    {
+        if (null == roguelikeSubtitle) return;
+
+        CaptureRoguelikeSubtitleLetterBases();
+        KillRoguelikeSubtitleTweens();
+
+        if (true == _isVisible)
+        {
+            roguelikeSubtitle.alpha = 1f;
+            roguelikeSubtitle.gameObject.SetActive(true);
+
+            if (false == _isAnimated || 0f >= _duration)
+            {
+                ResetRoguelikeSubtitleLetters();
+                return;
+            }
+
+            if (null == roguelikeSubtitleLetters) return;
+            for (int i = 0; roguelikeSubtitleLetters.Length > i; i++)
+            {
+                Image _letter = roguelikeSubtitleLetters[i];
+                if (null == _letter) continue;
+
+                float _delay = i * subtitleLetterStagger;
+                RectTransform _rect = _letter.rectTransform;
+                Vector2 _basePosition = roguelikeSubtitleLetterBasePositions[i];
+                _rect.anchoredPosition = _basePosition + new Vector2(0f, subtitleLetterDropDistance);
+                Color _color = _letter.color;
+                _color.a = 0f;
+                _letter.color = _color;
+
+                _rect.DOAnchorPos(_basePosition, subtitleLetterDuration, true)
+                    .SetEase(Ease.OutBack, subtitleLetterOvershoot)
+                    .SetDelay(_delay)
+                    .SetUpdate(true);
+                _letter.DOFade(1f, subtitleLetterDuration * subtitleLetterFadeRatio)
+                    .SetDelay(_delay)
+                    .SetUpdate(true);
+            }
+            return;
+        }
+
+        if (false == _isAnimated || 0f >= _duration)
+        {
+            roguelikeSubtitle.alpha = 0f;
+            roguelikeSubtitle.gameObject.SetActive(false);
+            ResetRoguelikeSubtitleLetters();
+            return;
+        }
+
+        if (false == roguelikeSubtitle.gameObject.activeSelf) return;
+        if (null == onRoguelikeSubtitleHiddenCallback) onRoguelikeSubtitleHiddenCallback = OnRoguelikeSubtitleHidden;
+        roguelikeSubtitle.DOFade(0f, _duration).SetUpdate(true).OnComplete(onRoguelikeSubtitleHiddenCallback);
+    }
+
+    private void OnRoguelikeSubtitleHidden()
+    {
+        if (null == roguelikeSubtitle) return;
+
+        roguelikeSubtitle.gameObject.SetActive(false);
+        ResetRoguelikeSubtitleLetters();
+    }
+
+    /// <summary>
+    /// 부제 컨테이너와 글자 9장의 진행 중인 트윈을 모두 중단합니다.
+    /// </summary>
+    private void KillRoguelikeSubtitleTweens()
+    {
+        if (null != roguelikeSubtitle) roguelikeSubtitle.DOKill();
+        if (null == roguelikeSubtitleLetters) return;
+
+        for (int i = 0; roguelikeSubtitleLetters.Length > i; i++)
+        {
+            Image _letter = roguelikeSubtitleLetters[i];
+            if (null == _letter) continue;
+
+            _letter.rectTransform.DOKill();
+            _letter.DOKill();
+        }
+    }
+
+    /// <summary>
+    /// 부제 글자 9장의 제자리를 한 번만 기억합니다(배열이 없거나 글자 수가 달라졌을 때만 다시 만듦).
+    /// 등장 · 되돌리기보다 먼저 불러야 하며, 트윈이 위치를 옮기기 전의 값이 저장됩니다.
+    /// </summary>
+    private void CaptureRoguelikeSubtitleLetterBases()
+    {
+        if (null == roguelikeSubtitleLetters) return;
+        if (null != roguelikeSubtitleLetterBasePositions && roguelikeSubtitleLetters.Length == roguelikeSubtitleLetterBasePositions.Length) return;
+
+        roguelikeSubtitleLetterBasePositions = new Vector2[roguelikeSubtitleLetters.Length];
+        for (int i = 0; roguelikeSubtitleLetters.Length > i; i++)
+        {
+            Image _letter = roguelikeSubtitleLetters[i];
+            if (null == _letter) continue;
+
+            roguelikeSubtitleLetterBasePositions[i] = _letter.rectTransform.anchoredPosition;
+        }
+    }
+
+    /// <summary>
+    /// 부제 글자를 제자리(알파 1)로 되돌립니다.
+    /// </summary>
+    private void ResetRoguelikeSubtitleLetters()
+    {
+        if (null == roguelikeSubtitleLetters) return;
+
+        CaptureRoguelikeSubtitleLetterBases();
+
+        for (int i = 0; roguelikeSubtitleLetters.Length > i; i++)
+        {
+            Image _letter = roguelikeSubtitleLetters[i];
+            if (null == _letter) continue;
+
+            _letter.rectTransform.anchoredPosition = roguelikeSubtitleLetterBasePositions[i];
+            Color _color = _letter.color;
+            _color.a = 1f;
+            _letter.color = _color;
         }
     }
 
@@ -220,5 +367,6 @@ public class UI_LogoAnim : MonoBehaviour
         {
             canvasGroup.DOKill();
         }
+        KillRoguelikeSubtitleTweens();
     }
 }

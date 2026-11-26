@@ -13,8 +13,11 @@ public class UI_TextShadowFollower : MonoBehaviour
 
     //외부 의존성 (프리팹에서 연결)
     [SerializeField] private TMP_Text source;
+    [Tooltip("켜면 원본 문구의 <color=...> · </color> 태그를 지우고 그림자에 넣는다(그림자가 원본의 글자색을 따라 물들지 않게).")]
+    [SerializeField] private bool stripColorTags;
 
     //내부 의존성
+    private readonly System.Text.StringBuilder stripBuilder = new System.Text.StringBuilder(64);
     private TMP_Text shadow;
     private RectTransform shadowRect;
 
@@ -29,7 +32,7 @@ public class UI_TextShadowFollower : MonoBehaviour
         if (false == ReferenceEquals(lastText, source.text))
         {
             lastText = source.text;
-            shadow.text = lastText;
+            shadow.text = true == stripColorTags ? StripColorTags(lastText) : lastText;
         }
 
         if (lastFont != source.font)
@@ -50,6 +53,36 @@ public class UI_TextShadowFollower : MonoBehaviour
 
         bool bActive = source.gameObject.activeSelf;
         if (shadow.enabled != bActive) shadow.enabled = bActive;
+    }
+
+    // 문구가 바뀔 때만 불린다. <color=...>와 </color>만 지우고 나머지 태그는 그대로 둔다.
+    private string StripColorTags(string _text)
+    {
+        if (string.IsNullOrEmpty(_text)) return _text;
+
+        stripBuilder.Clear();
+        int index = 0;
+        while (index < _text.Length)
+        {
+            if ('<' == _text[index])
+            {
+                int end = _text.IndexOf('>', index);
+                if (0 <= end)
+                {
+                    int length = end - index + 1;
+                    bool bColorTag = (7 <= length && 0 == string.Compare(_text, index, "<color=", 0, 7, System.StringComparison.OrdinalIgnoreCase))
+                        || (8 == length && 0 == string.Compare(_text, index, "</color>", 0, 8, System.StringComparison.OrdinalIgnoreCase));
+                    if (true == bColorTag)
+                    {
+                        index = end + 1;
+                        continue;
+                    }
+                }
+            }
+            stripBuilder.Append(_text[index]);
+            index++;
+        }
+        return stripBuilder.ToString();
     }
 
     private void Awake()
