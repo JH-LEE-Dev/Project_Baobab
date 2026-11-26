@@ -74,6 +74,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 41a543f29b925bb4695ecbcb32db7718, type: 2}
   groundDecoTiles:
   - {fileID: 11400000, guid: fdc019016a4f3464ea80a49432ad0ef7, type: 2}
+  - {fileID: 11400000, guid: b7b849174a5e6e344b3ee1bf02024817, type: 2}
+  - {fileID: 11400000, guid: 6592c8e5a0344f940ba4dc5c1da8f401, type: 2}
+  - {fileID: 11400000, guid: 726623ed72daef64a8421baa3f7d1a04, type: 2}
   bloomGrassDecoTiles: []
   bloomGroundDecoTiles: []
   waterDecoTiles: []
