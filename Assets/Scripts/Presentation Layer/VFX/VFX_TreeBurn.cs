@@ -233,6 +233,12 @@ namespace PresentationLayer.VFX
         private Vector3 deferredParentScale;      // LateUpdate에서 읽은 부모 스케일/회전(SyncTransforms용)
         private Quaternion deferredParentRotation;
         private int deferredVisibility;           // 1 보임, 0 안 보임, -1 아직 모름(반영 때 주 스레드에서 확정)
+        // 고정 박자(PixelVfxClock): 마지막으로 계산한 박자 번호, 이 인스턴스의 박자 어긋남, 계산을 쉰 프레임 동안 모아 둔 시간,
+        // 마지막으로 계산한 프레임에 화면에 보였는지(안 보였으면 더 낮은 박자로 돈다).
+        private int lastStepTick;
+        private float stepPhase;
+        private float pendingDeltaTime;
+        private bool bLastStepVisible;
         private Vector3 deferredCullCenter;
         private Vector3 deferredCullSize;
         private LayerSegment backSegment;
@@ -323,6 +329,10 @@ namespace PresentationLayer.VFX
             emberAccumulator = 0.0f;
             intensity = 0.0f;
             framesSinceEnable = 0;
+            lastStepTick = int.MinValue;
+            stepPhase = PixelVfxClock.PhaseFromInstance(GetInstanceID());
+            pendingDeltaTime = 0.0f;
+            bLastStepVisible = true;
             emberCursor = 0;
             bFirstFrame = true;
             bTransformSynced = false;
@@ -935,8 +945,31 @@ namespace PresentationLayer.VFX
 
         private void LateUpdate()
         {
-            // 첫 프레임은 시간을 더하지 않아서 t=0의 첫 장면이 반드시 한 번 그려진다
-            float dt = true == bFirstFrame ? 0.0f : Time.deltaTime;
+            // 첫 프레임은 시간을 더하지 않아서 t=0의 첫 장면이 반드시 한 번 그려진다.
+            // 그 뒤로는 고정 박자(PixelVfxClock)로만 계산한다: 쉬는 프레임에는 지나간 시간만 모아 두고, 계산하는 프레임에 한꺼번에 흘린다.
+            if (true == bFirstFrame)
+            {
+                PixelVfxClock.ShouldStep(ref lastStepTick, stepPhase, PixelVfxClock.Rate);
+            }
+            else
+            {
+                pendingDeltaTime += Time.deltaTime;
+                if (false == PixelVfxClock.ShouldStep(ref lastStepTick, stepPhase, true == bLastStepVisible ? PixelVfxClock.Rate : PixelVfxClock.OffScreenRate))
+                {
+                    // 쉬는 프레임에도 나무의 흔들림(스케일·회전)은 따라가 지운다. 이것까지 쉬면 맞은 나무 위에서 불꽃이 한 프레임씩 같이 늘어난다.
+                    if (true == bLastStepVisible)
+                    {
+                        deferredParentScale = transform.lossyScale;
+                        deferredParentRotation = transform.rotation;
+                        SyncTransforms();
+                    }
+
+                    return;
+                }
+            }
+
+            float dt = pendingDeltaTime;
+            pendingDeltaTime = 0.0f;
             bFirstFrame = false;
             elapsed += dt;
             stateTime += dt;
@@ -1015,6 +1048,7 @@ namespace PresentationLayer.VFX
                 SyncTransforms();
             }
 
+            bLastStepVisible = bVisible;
             work = null;
         }
 
