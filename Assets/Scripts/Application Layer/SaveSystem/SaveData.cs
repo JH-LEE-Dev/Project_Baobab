@@ -263,6 +263,11 @@ public class GameSaveData
     // Clear()에서는 건드리지 않고, 저장 직전에 SaveManager가 항상 현재 빌드 값으로 덮어쓴다.
     public SaveBuildVariant buildVariant;
 
+    // 세이브 형식 번호. 값이 없는 예전 세이브는 0으로 읽힌다. 읽을 때 SaveManager.UpgradeSaveData가
+    // 현재 형식(SaveManager.CURRENT_SAVE_VERSION)으로 올리고, 저장 직전에 항상 현재 번호로 덮어쓴다.
+    // Clear()에서는 건드리지 않는다.
+    public int saveVersion;
+
     public SkillTreeSaveData skillTreeSaveData;
     public InventorySaveData inventorySaveData;
     public LogProcessingSaveData logProcessingSaveData;
