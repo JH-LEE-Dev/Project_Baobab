@@ -354,7 +354,7 @@ namespace PresentationLayer.VFX
             accumulator = 0.0f;
             glowAccumulator = 0.0f;
             lastStepTick = int.MinValue;
-            stepPhase = PixelVfxClock.PhaseFromInstance(GetInstanceID());
+            stepPhase = PixelVfxClock.NextPhase();
             phase = Rand01();
             flare = 0.0f;
             flareTimer = 1.0f + Rand01() * 2.0f;

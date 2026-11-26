@@ -40,17 +40,27 @@ namespace PresentationLayer.VFX
             return true;
         }
 
-        /// <summary>인스턴스 번호에서 0~1 사이의 고른 어긋남 값을 만든다.</summary>
-        public static float PhaseFromInstance(int _instanceId)
+        // 지금까지 어긋남 값을 받아 간 횟수. 플레이를 시작할 때 0으로 돌아간다.
+        private static uint phaseCounter;
+
+        /// <summary>
+        /// 재생을 시작하는 인스턴스에 0~1 사이의 어긋남 값을 차례로 나눠 준다. 황금비 수열이라 연달아 시작한 인스턴스끼리 박자가 고르게 벌어진다.
+        /// 오브젝트 번호(GetInstanceID)에서 만들지 않는 까닭: 그 번호는 실행마다, 그리고 그 전에 다른 오브젝트가 몇 개 만들어졌느냐에 따라 달라져서
+        /// 같은 장면도 박자가 다르게 나온다(골든 검증에서 같은 코드끼리 그림이 갈렸다). 시작한 순서로만 정하면 같은 장면은 같은 박자로 재현된다.
+        /// </summary>
+        public static float NextPhase()
         {
-            uint hash = unchecked((uint)_instanceId * 2654435761u);
-            return ((hash >> 12) & 0x3FF) / 1024.0f;
+            phaseCounter++;
+            // 2654435769 = 2^32 / 황금비
+            uint hash = unchecked(phaseCounter * 2654435769u);
+            return (hash >> 22) / 1024.0f;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
         {
             bFixedRate = true;
+            phaseCounter = 0;
         }
     }
 }

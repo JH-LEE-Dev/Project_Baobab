@@ -330,7 +330,7 @@ namespace PresentationLayer.VFX
             intensity = 0.0f;
             framesSinceEnable = 0;
             lastStepTick = int.MinValue;
-            stepPhase = PixelVfxClock.PhaseFromInstance(GetInstanceID());
+            stepPhase = PixelVfxClock.NextPhase();
             pendingDeltaTime = 0.0f;
             bLastStepVisible = true;
             emberCursor = 0;
