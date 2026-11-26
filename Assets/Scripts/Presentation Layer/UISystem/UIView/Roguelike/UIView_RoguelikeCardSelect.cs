@@ -40,9 +40,9 @@ using UnityEngine.UI;
 ///   키 안내는 패드 모드에서만 왼쪽 아래에 보인다(키보드 · 마우스 모드는 마우스 GUI 조작 - 키보드 단축키를 두지 않는다).
 ///
 /// [빛기둥 소환] 처음 열 때(OpenSelection)만 카드 뒤집힘 앞에 소환 단계가 붙는다(리롤 · 예전 모드 ReplaceOffers는 그대로). t = 0은 화면이 켜지는 순간이다.
-///   0.00  딤이 기본 알파에서 진하게(기본의 약 1.23배) 깔리고 카드 칸은 비어 있다. 0.10  제목 글자 바운스.
+///   0.00  딤이 기본 알파에서 진하게(남은 밝기의 약 37%를 더 가림) 깔리고 카드 칸은 비어 있다. 0.10  제목 글자 바운스.
 ///   기둥 k - 0.20 예고(바닥 빛 줄 + 피어오르는 알갱이) → 기둥 k 빛기둥 쾅(번쩍 · 화면 흔들림 · 입자 · 그 칸에 뒷면이 흰 실루엣으로 나타남). 일반 카드를 왼쪽부터 0.30초에 시작해 0.26초 간격,
-///   희귀 카드는 마지막에 0.25초 더 뜸을 들이고 등급색 굵은 기둥(뒤집기 전에 미리 드러남). 마지막 기둥 + 0.12초에 딤이 기본으로 돌아오고 설명 패널 · 칸별 리롤 버튼이 0.15초에 나타난다.
+///   희귀 카드는 마지막에 0.25초 더 뜸을 들이고 등급색 굵은 기둥(뒤집기 전에 미리 드러남). 마지막 기둥 + 0.38초에 딤이 기본으로 돌아오고 설명 패널 · 칸별 리롤 버튼이 0.15초에 나타난다.
 ///   이어서 지금과 같은 뒤집힘(일반 0.13초 간격 → 희귀는 마지막 일반 + 0.3초에 두근). 칸별 리롤(ReplaceOffer)은 바뀌는 칸에만 예고 0.2초 → 기둥 → 0.12초 뒤 뒤집힘(딤 · 다른 칸 그대로).
 ///   기둥 · 입자는 UI_RoguelikeSummonPillarFx, 번쩍 · 흔들림(Content 정수 px 오프셋)은 이 클래스가 StrikeEvent를 받아 처리한다. 닫기 · 구매 · 보유 카드 창으로 가려짐 · 다시 열기에서는 StopSummon이 모두 원래대로 돌린다.
 ///
@@ -100,7 +100,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     // 18개 언어 중 가장 긴 제목 문구로 잰 명판 최소 폭.
     private const float SpecTitlePlateWidth = 200f;
     private const float TitleGap = 6f;
-    private const float SelectDescWidth = 520f;
+    private const float SelectDescWidth = 580f;
     private const float DescGap = 10f;
     private const float RerollGap = 8f;
     private const float ScreenMargin = 6f;
@@ -110,11 +110,11 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     private const float SummonFirstStrikeSeconds = 0.3f;
     private const float SummonStrikeIntervalSeconds = 0.26f;
     private const float SummonRareExtraSeconds = 0.25f;
-    private const float SummonEndAfterLastSeconds = 0.12f;
+    private const float SummonEndAfterLastSeconds = 0.38f;
     private const float SummonTitleDelaySeconds = 0.1f;
     private const float SummonControlsFadeSeconds = 0.15f;
-    // 시안 딤 76% / 기본 62%
-    private const float SummonDimScale = 0.76f / 0.62f;
+    // 시안 딤 62% → 76%: 남은 밝기(1 - 기본 알파) 중 이 비율만큼 더 가린다(기본 알파가 높아도 1.0에 붙지 않게).
+    private const float SummonDimDeepen = (0.76f - 0.62f) / (1f - 0.62f);
     private const float SummonDimLerpRate = 8f;
     private const float SummonDimReturnLeadSeconds = 0.05f;
     private const float SummonDimEpsilon = 0.004f;
@@ -236,7 +236,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
     private Vector2 shakeBasePosition;
     private float shakeTime;
 
-    // 빛기둥 소환. summonDelays = 칸별 기둥이 치는 시각(OpenSelection 기준 초), summonEndTime = 마지막 기둥 + 0.12초(딤 복귀 · 설명 패널 표시 시각).
+    // 빛기둥 소환. summonDelays = 칸별 기둥이 치는 시각(OpenSelection 기준 초), summonEndTime = 마지막 기둥 + 0.38초(딤 복귀 · 설명 패널 표시 시각).
     private bool bSummonActive;
     private float summonTime;
     private float summonEndTime;
@@ -625,7 +625,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 
     /// <summary>
     /// 빛기둥 소환 일정. 기둥은 일반 카드를 왼쪽부터 0.30초에 시작해 0.26초 간격, 희귀 카드는 맨 뒤에서 기둥마다 0.25초 더 뜸을 들인다(summonDelays).
-    /// 뒤집힘 시작 지연(introDelays)은 기존 규칙(일반 0.13초 간격, 희귀는 마지막 일반 + 0.3초)에 마지막 기둥 + 0.12초를 더한 값이다.
+    /// 뒤집힘 시작 지연(introDelays)은 기존 규칙(일반 0.13초 간격, 희귀는 마지막 일반 + 0.3초)에 마지막 기둥 + 0.38초를 더한 값이다.
     /// </summary>
     private void ComputeSummonSchedule(int _count)
     {
@@ -1080,7 +1080,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
 
     /// <summary>
     /// 소환 시작(처음 열 때). 제목 · 설명 패널 · 칸별 리롤 버튼을 숨기고 칸마다 기둥을 예약한다(카드 숨김과 뒤집힘 일정은 PlaceSlots가 슬롯에 이미 넘겼다).
-    /// 딤은 UpdateSummon이 기본 알파에서 진하게 올렸다가 마지막 기둥 + 0.12초에 기본으로 돌린다.
+    /// 딤은 UpdateSummon이 기본 알파에서 진하게 올렸다가 마지막 기둥 + 0.38초에 기본으로 돌린다.
     /// </summary>
     private void BeginSummon(int _count)
     {
@@ -1218,7 +1218,7 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         return Mathf.Repeat(Mathf.Sin(_n * 12.9898f) * 43758.5453f, 1f);
     }
 
-    /// <summary>소환 진행: 제목 바운스(0.1초) · 딤 진하게/복귀 · 마지막 기둥 + 0.12초부터 설명 패널 · 리롤 버튼이 0.15초에 나타남.</summary>
+    /// <summary>소환 진행: 제목 바운스(0.1초) · 딤 진하게/복귀 · 마지막 기둥 + 0.38초부터 설명 패널 · 리롤 버튼이 0.15초에 나타남.</summary>
     private void UpdateSummon()
     {
         if (false == bSummonActive) return;
@@ -1271,12 +1271,12 @@ public class UIView_RoguelikeCardSelect : UIView_RoguelikeModalBase
         for (int i = 0; i < slotCount; i++) slots[i].SetRerollFade(_fade);
     }
 
-    /// <summary>딤: 기본 알파 → 진하게(마지막 기둥 + 0.07초 전까지) → 기본으로 돌아옴(지수 접근 초당 8). 기본에 닿으면 true.</summary>
+    /// <summary>딤: 기본 알파 → 진하게(마지막 기둥 + 0.33초 전까지) → 기본으로 돌아옴(지수 접근 초당 8). 기본에 닿으면 true.</summary>
     private bool UpdateSummonDim(float _dt)
     {
         if (null == dimImage) return true;
 
-        float target = summonTime < summonEndTime - SummonDimReturnLeadSeconds ? Mathf.Min(1f, dimBaseAlpha * SummonDimScale) : dimBaseAlpha;
+        float target = summonTime < summonEndTime - SummonDimReturnLeadSeconds ? dimBaseAlpha + (1f - dimBaseAlpha) * SummonDimDeepen : dimBaseAlpha;
         summonDimAlpha += (target - summonDimAlpha) * Mathf.Min(1f, _dt * SummonDimLerpRate);
 
         bool bDone = summonEndTime <= summonTime && Mathf.Abs(summonDimAlpha - dimBaseAlpha) < SummonDimEpsilon;

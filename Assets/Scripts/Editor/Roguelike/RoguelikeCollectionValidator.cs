@@ -38,7 +38,7 @@ public static class RoguelikeCollectionValidator
     private const int DetailDescTop = 41;
     private const int DetailBadgeTop = DetailHeight - 16 - DetailMaskTop;
     private const int DetailBadgeGap = 4;
-    private const float DetailDescWidth = 182f;
+    private const float DetailDescWidth = 196f;
     private const int MaxNameLines = 2;
     private const int MaxDescLines = 5;
     private const float TextWidthSlack = 2f;
@@ -217,8 +217,10 @@ public static class RoguelikeCollectionValidator
             if (HeaderLineMinWidth > headerLineMin) problems.Append("머리줄 ");
             if (DetailMaskWidth < kindMax) problems.Append("종류 ");
 
-            // 카드 이름(폭 182에서 최대 2줄, 늘어난 줄만큼 설명이 내려감) · 설명(폭 182에서 최대 5줄, 높이는 상세 아래 끝 또는 MAX 배지 윗변까지)
+            // 카드 이름(폭 196에서 최대 2줄, 늘어난 줄만큼 설명이 내려감) · 설명(폭 196에서 최대 5줄, 높이는 상세 아래 끝 또는 MAX 배지 윗변까지)
             MeasureWrapped(measure, "A", detailName.fontSize, DetailDescWidth, out _, out float singleNameHeight);
+            measure.fontSize = detailDesc.fontSize;
+            float descLineSpacing = UIView_RoguelikeCollection.ResolveDetailDescLineSpacing(measure, DetailDescWidth);
             int nameLinesMax = 1;
             int descLinesMax = 0;
             float descBottomMax = 0f;
@@ -235,7 +237,7 @@ public static class RoguelikeCollectionValidator
                 desc = StripMarkers(desc);
 
                 MeasureWrapped(measure, name, detailName.fontSize, DetailDescWidth, out int nameLines, out float nameHeight);
-                MeasureWrapped(measure, desc, detailDesc.fontSize, DetailDescWidth, out int lines, out float height);
+                MeasureWrapped(measure, desc, detailDesc.fontSize, DetailDescWidth, out int lines, out float height, descLineSpacing);
                 nameLinesMax = Mathf.Max(nameLinesMax, nameLines);
                 descLinesMax = Mathf.Max(descLinesMax, lines);
                 float descTop = DetailDescTop + Mathf.Max(0f, nameHeight - singleNameHeight);
@@ -285,13 +287,15 @@ public static class RoguelikeCollectionValidator
     private static float MeasureWidth(TextMeshProUGUI _measure, string _text, float _fontSize)
     {
         _measure.fontSize = _fontSize;
+        _measure.lineSpacing = 0f;
         _measure.textWrappingMode = TextWrappingModes.NoWrap;
         return Mathf.Ceil(_measure.GetPreferredValues(_text, Unbounded, Unbounded).x);
     }
 
-    private static void MeasureWrapped(TextMeshProUGUI _measure, string _text, float _fontSize, float _width, out int _lines, out float _height)
+    private static void MeasureWrapped(TextMeshProUGUI _measure, string _text, float _fontSize, float _width, out int _lines, out float _height, float _lineSpacing = 0f)
     {
         _measure.fontSize = _fontSize;
+        _measure.lineSpacing = _lineSpacing;
         _measure.textWrappingMode = TextWrappingModes.Normal;
         _measure.rectTransform.sizeDelta = new Vector2(_width, 1000f);
         _measure.text = _text;

@@ -247,7 +247,7 @@ public static class RoguelikeCardEffectText
 
         if (false == _bDeltaOnly) return false;
 
-        // 충격파 VII는 2타 분할로 인해 ShockwaveDamageScalePercent 델타가 음수(-381.25)로 기록되어 있어 원시 음수를 숨긴다.
+        // 충격파 VII는 2타 분할로 인해 ShockwaveDamageScalePercent 델타가 음수(-331.25)로 기록되어 있어 원시 음수를 숨긴다.
         if (ShockwaveCardId == _card.cardId && ERunEffect.ShockwaveDamageScalePercent == _effect && 0f > _value) return true;
 
         // 균일 패시브의 주 효과는 기본 설명(_Desc)에 이미 고정 수치가 적혀 있어 카드 선택 화면에서 반복하지 않는다.

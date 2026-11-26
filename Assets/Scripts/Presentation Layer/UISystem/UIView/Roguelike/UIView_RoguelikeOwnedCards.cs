@@ -39,9 +39,9 @@ using UnityEngine.UI;
 /// </summary>
 public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
 {
-    // 화면 배치(Content 왼쪽 위 기준 정수 픽셀). 640×360 기준: 가장자리 8 + 목록 398(카드 7열에 딱 맞춤) + 2 + 설명 224 + 가장자리 8.
+    // 화면 배치(Content 왼쪽 위 기준 정수 픽셀). 640×360 기준: 가장자리 8 + 목록 344(카드 6열에 딱 맞춤) + 2 + 설명 278 + 가장자리 8.
     private const float GroupMaxWidth = 624f;
-    private const float InfoTargetWidth = 200f;
+    private const float InfoTargetWidth = 254f;
     private const float PanelGap = 2f;
     private const float ScreenMargin = 8f;
     private const float VerticalGap = 4f;
@@ -426,6 +426,7 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
     /// </summary>
     private float PrepareDescriptionPanel()
     {
+        EnsureInfoMask();
         float panelWidth = infoWidth - InfoPaddingX * 2f;
         descPanel.SetMaxWidth(panelWidth);
         descPanel.SetFixedWidth(panelWidth);
@@ -452,6 +453,13 @@ public class UIView_RoguelikeOwnedCards : UIView_RoguelikeModalBase
         }
 
         return Mathf.Min(mainHeight, requiredHeight);
+    }
+
+    private void EnsureInfoMask()
+    {
+        if (null == infoRoot || true == infoRoot.TryGetComponent<RectMask2D>(out _)) return;
+
+        infoRoot.gameObject.AddComponent<RectMask2D>();
     }
 
     // // 설명 패널(오른쪽)

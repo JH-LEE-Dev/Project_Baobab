@@ -223,10 +223,11 @@ public static class RoguelikeOwnedCardsBuilder
             scroll.inertia = false;
 
             // ---- 설명(오른쪽): 설명 패널(이름 · 레벨 · 구분선 · 설명). 카드 그림은 목록의 카드가 이미 보여 준다. 배경 상자 없이 패널 위에 바로 놓는다.
-            RectTransform info = CreateSlicedPanel("Info", content, _sprites.infoPanel, 224f, 300f, true);
+            RectTransform info = CreateSlicedPanel("Info", content, _sprites.infoPanel, 278f, 300f, true);
+            info.gameObject.AddComponent<RectMask2D>();
             CanvasGroup infoGroup = info.gameObject.AddComponent<CanvasGroup>();
 
-            RectTransform desc = TopLeftRect("DescPanel", info, 216f, 48f);
+            RectTransform desc = TopLeftRect("DescPanel", info, 270f, 48f);
 
             TMP_Text nameText = CreateText("Name", desc, _font, TextAlignmentOptions.TopLeft, Color.white);
             TMP_Text levelText = CreateText("Level", desc, _font, TextAlignmentOptions.TopRight, new Color(1f, 0.8f, 0.25f, 1f));
