@@ -509,6 +509,13 @@ public class UIView_HUD : UIView
 
         bool _bVisible = true == _bCanDisplay && true == _bUnlocked;
         bool _bBecameVisible = true == _bVisible && false == _gauge.IsUnlocked;
+
+        // 쿨타임 음영은 숨겨져 있어도 시각 기준으로 맞춰 둔다(다시 보일 때 남은 만큼 그려진다)
+        if (ERelicSkillHudOp.SetCharge == _signal.op || ERelicSkillHudOp.Trigger == _signal.op)
+        {
+            _gauge.SetCooldown(_signal.cooldownRemaining, _signal.cooldownTotal);
+        }
+
         _gauge.SetUnlocked(_bVisible);
 
         if (ERelicSkillHudOp.Trigger == _signal.op)

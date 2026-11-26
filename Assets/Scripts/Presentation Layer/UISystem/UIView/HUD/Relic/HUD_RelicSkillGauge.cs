@@ -3,9 +3,9 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// 전리품 발동형 스킬(유성우/지진) 임시 원형 HUD 게이지.
-/// 보임/숨김은 해금 및 현재 맵 상태로 제어하고, Radial360 채움 + 발동 시 바운스/섬광을 재생한다.
-/// 실제 리소스가 준비되면 프리팹의 원형 프레임/채움/아이콘 스프라이트만 교체한다.
+/// 전리품 발동형 스킬(유성우/지진) 구슬 HUD 게이지.
+/// 보임/숨김은 해금 및 현재 맵 상태로 제어하고, 스택이 찰수록 구슬이 아래에서 위로 차오른다(정수 도트 행으로 스냅).
+/// 유성우는 내리는 동안 게이지가 0까지 천천히 줄고, 지진은 쿨타임 동안 구슬 위에 음영이 덮였다가 위에서부터 아래로 걷힌다.
 /// </summary>
 public class HUD_RelicSkillGauge : MonoBehaviour
 {
@@ -14,8 +14,16 @@ public class HUD_RelicSkillGauge : MonoBehaviour
     [Tooltip("보임/숨김 및 스케일 연출 대상. 피벗은 가운데.")]
     [SerializeField] private RectTransform visualRoot;
     [SerializeField] private Image fillImage;
+    [Tooltip("쿨타임 음영. 채움 스프라이트(구슬 안쪽 원)를 반투명 검정으로 겹친다. 쿨타임이 없는 스킬은 비워 둔다.")]
+    [SerializeField] private Image cooldownImage;
     [Tooltip("발동 순간 겹치는 흰 섬광 오버레이.")]
     [SerializeField] private Image flashImage;
+
+    [Header("Fill Shape")]
+    [Tooltip("채움 스프라이트 안에서 채움 픽셀이 시작하는 행(아래부터)과 높이, 스프라이트 높이(px)")]
+    [SerializeField] private int fillContentY = 22;
+    [SerializeField] private int fillContentHeight = 20;
+    [SerializeField] private int spriteSize = 64;
 
     [Header("Color")]
     [SerializeField] private Color chargingColor = new Color32(110, 210, 255, 255);
@@ -44,6 +52,10 @@ public class HUD_RelicSkillGauge : MonoBehaviour
     private float enterAge = -1f;
     private float bounceAge = -1f;
     private float flashAge = -1f;
+    // 쿨타임이 끝나는 시각(Time.time 기준, 0 미만이면 쿨타임 없음). 게임 쪽 쿨타임도 Time.deltaTime으로 줄어 일시정지 때 함께 멈춘다.
+    private float cooldownEndTime = -1f;
+    private float cooldownTotal = 0f;
+    private int cooldownShownPx = -1;
 
     public bool IsUnlocked
     {
@@ -70,6 +82,7 @@ public class HUD_RelicSkillGauge : MonoBehaviour
         {
             enterAge = 0f;
             ApplyEnterScale(0f);
+            UpdateCooldown();
         }
         else
         {
@@ -139,6 +152,23 @@ public class HUD_RelicSkillGauge : MonoBehaviour
         }
     }
 
+    // 남은 쿨타임과 전체 쿨타임(초). 남은 시간이 0 이하이면 음영을 걷는다.
+    public void SetCooldown(float _remaining, float _total)
+    {
+        if (0f >= _remaining || 0f >= _total)
+        {
+            cooldownEndTime = -1f;
+            cooldownTotal = 0f;
+        }
+        else
+        {
+            cooldownTotal = _total;
+            cooldownEndTime = Time.time + Mathf.Min(_remaining, _total);
+        }
+
+        UpdateCooldown();
+    }
+
     private void Awake()
     {
         CacheBase();
@@ -149,6 +179,7 @@ public class HUD_RelicSkillGauge : MonoBehaviour
         }
 
         ApplyFill(0f, chargingColor);
+        UpdateCooldown();
 
         if (null != flashImage)
         {
@@ -168,6 +199,42 @@ public class HUD_RelicSkillGauge : MonoBehaviour
         UpdateBounce(_dt);
         UpdateFlash(_dt);
         UpdateActiveDrain(_dt);
+        UpdateCooldown();
+    }
+
+    // 음영 높이 = 남은 쿨타임 비율. 아래쪽을 기준으로 위 가장자리가 내려가며 걷힌다.
+    // 남은 시간이 조금이라도 있으면 1행은 남기도록 올림한다(끝나는 순간 정확히 사라짐).
+    private void UpdateCooldown()
+    {
+        if (null == cooldownImage)
+        {
+            return;
+        }
+
+        int _px = 0;
+
+        if (0f <= cooldownEndTime && 0f < cooldownTotal)
+        {
+            float _remain = cooldownEndTime - Time.time;
+
+            if (0f < _remain)
+            {
+                _px = Mathf.Clamp(Mathf.CeilToInt(_remain / cooldownTotal * fillContentHeight), 1, fillContentHeight);
+            }
+            else
+            {
+                cooldownEndTime = -1f;
+            }
+        }
+
+        if (_px == cooldownShownPx)
+        {
+            return;
+        }
+
+        cooldownShownPx = _px;
+        cooldownImage.enabled = 0 < _px;
+        cooldownImage.fillAmount = (float)(fillContentY + _px) / Mathf.Max(1, spriteSize);
     }
 
     private void CacheBase()
@@ -295,7 +362,9 @@ public class HUD_RelicSkillGauge : MonoBehaviour
             return;
         }
 
-        fillImage.fillAmount = Mathf.Clamp01(_ratio);
+        // 채움 높이를 정수 도트 행으로 스냅한다(구슬 안쪽 원의 아래 행부터 차오름)
+        float _px = Mathf.Round(Mathf.Clamp01(_ratio) * fillContentHeight);
+        fillImage.fillAmount = (fillContentY + _px) / Mathf.Max(1, spriteSize);
         fillImage.color = _color;
     }
 

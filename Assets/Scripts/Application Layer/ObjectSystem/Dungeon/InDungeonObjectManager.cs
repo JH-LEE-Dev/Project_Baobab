@@ -179,7 +179,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     [SerializeField, Range(1, PresentationLayer.VFX.VFX_StarRain.MaxCount)] private int meteorShowerTier3Count = 25;
     // 이번 숲 방문에 적용되는 단계(0이면 효과 없음). 숲에 들어올 때 정하고 방문 도중에는 바꾸지 않는다.
     private int starCompassTierThisRun;
-    // 유성우 스택(0~meteorShowerMaxStack). 숲 방문마다 비운다.
+    // 유성우 스택(0~meteorShowerMaxStack). 원정이 끝나도(마을 귀환·재도전 포함) 유지되고 세이브에 저장된다.
+    // 로그라이크 판 동안만 0부터 따로 차고, 본편 값은 판이 끝날 때 되돌린다(SetRunTreeRules).
     private int meteorShowerStack;
     // 유성우가 쏟아지는 중인지. 그동안은 게이지가 차지 않는다.
     private bool bMeteorShowerActive;
@@ -189,8 +190,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private readonly PresentationLayer.VFX.StarRainImpact[] meteorImpacts = new PresentationLayer.VFX.StarRainImpact[PresentationLayer.VFX.VFX_StarRain.MaxCount];
     private readonly bool[] meteorImpactDone = new bool[PresentationLayer.VFX.VFX_StarRain.MaxCount];
 
-    /// <summary>유성우 게이지(0~1). 효과가 없는 숲 방문이면 0이다.</summary>
+    /// <summary>유성우 게이지(0~1).</summary>
     public float MeteorShowerCharge => (float)meteorShowerStack / GetMeteorShowerMaxStack();
+    /// <summary>지금 유성우 스택. HUD 게이지 기준이다.</summary>
+    public int MeteorShowerStack => meteorShowerStack;
+    /// <summary>세이브할 유성우 스택. 로그라이크 판 동안에는 판 시작 때 보관해 둔 본편 값이다.</summary>
+    public int SavedMeteorShowerStack => null != runTreeRules ? mainMeteorShowerStack : meteorShowerStack;
     /// <summary>이번 숲 방문에서 별빛 나침반(유성우) 효과가 활성화되어 있는지.</summary>
     public bool IsMeteorShowerActiveThisRun => 0 < starCompassTierThisRun;
     /// <summary>이번 숲 방문에서 흑요 부적(지진) 효과가 활성화되어 있는지.</summary>
@@ -201,6 +206,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public int QuakeMaxStack => GetQuakeMaxStack();
     /// <summary>지진 발동 후 쿨타임(초).</summary>
     public float QuakeCooldown => quakeCooldown;
+    // 남은 지진 쿨타임(초). HUD 쿨타임 음영용.
+    public float QuakeCooldownRemaining => quakeCooldownRemaining;
     [SerializeField] private int starCompassPityMinKills = 4;
     [SerializeField] private int starCompassPityMaxKills = 5;
     private int starCompassPityThreshold;
@@ -245,10 +252,16 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private float quakeTier3MaxHpRatio = 0.15f;
     // 이번 숲 방문에 적용되는 단계(0이면 효과 없음). 숲에 들어올 때 정하고 방문 도중에는 바꾸지 않는다.
     private int obsidianCharmTierThisRun;
-    // 지진 스택(0~quakeMaxStack). 숲 방문마다 비운다.
+    // 지진 스택(0~quakeMaxStack). 유성우 스택과 같이 원정이 끝나도 유지되고 세이브에 저장된다(로그라이크 판 동안만 따로).
     private int quakeStack;
     // 남은 지진 쿨타임(초). 발동할 때 quakeCooldown으로 채우고 Update에서 줄인다. 숲 방문마다 0으로 비운다.
     private float quakeCooldownRemaining;
+    // 이번 숲 방문에서 스택이 가득 찼는데 쿨타임이 남아 기다리는 중인지. 이때만 쿨타임이 끝나는 순간 저절로 발동한다(TickQuakeCooldown).
+    // 지난 원정에서 가득 찬 채 넘어온 스택은 이 표시 없이 기다리다가 다음 불씨를 주울 때 발동한다(ChargeQuake).
+    private bool bQuakeWaitingCooldown;
+    // 로그라이크 판 동안 보관해 둔 본편 스택(판 시작 때 넣고 끝날 때 되돌린다).
+    private int mainMeteorShowerStack;
+    private int mainQuakeStack;
     // 던전 정리 때 올라간다. 퍼지던 지진이 다음 맵의 나무를 때리지 않게 한다.
     private int quakeVersion = 0;
     // 지진에 쓰러진 나무가 공중으로 튀어 올랐다 터지는 연출(렌더링 전용 - QuakeTreeLaunch). 처음 쓸 때 만든다.
@@ -263,8 +276,29 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private const float QuakeLaunchTiltMin = 4f;
     private const float QuakeLaunchTiltMax = 9f;
 
-    /// <summary>지진 게이지(0~1). 효과가 없는 숲 방문이면 0이다.</summary>
+    /// <summary>지진 게이지(0~1).</summary>
     public float QuakeCharge => (float)quakeStack / GetQuakeMaxStack();
+    /// <summary>지금 지진 스택. HUD 게이지 기준이다.</summary>
+    public int QuakeStack => quakeStack;
+    /// <summary>세이브할 지진 스택. 로그라이크 판 동안에는 판 시작 때 보관해 둔 본편 값이다.</summary>
+    public int SavedQuakeStack => null != runTreeRules ? mainQuakeStack : quakeStack;
+
+    /// <summary>세이브에서 유성우·지진 스택을 되돌린다. 발동 목표 스택 범위로 자른다.</summary>
+    public void RestoreRelicStacks(int _meteorShowerStack, int _quakeStack)
+    {
+        int meteor = Mathf.Clamp(_meteorShowerStack, 0, GetMeteorShowerMaxStack());
+        int quake = Mathf.Clamp(_quakeStack, 0, GetQuakeMaxStack());
+
+        if (null != runTreeRules)
+        {
+            mainMeteorShowerStack = meteor;
+            mainQuakeStack = quake;
+            return;
+        }
+
+        meteorShowerStack = meteor;
+        quakeStack = quake;
+    }
 
     // 구제(pity) 드랍 공통 규칙
     //
@@ -460,13 +494,33 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     /// <summary>[로그라이크] 판 단위 나무 규칙을 건다. null이면 해제(본편 동작).</summary>
     public void SetRunTreeRules(IRunTreeRules _rules)
     {
+        bool bEnterRun = null == runTreeRules && null != _rules;
+        bool bLeaveRun = null != runTreeRules && null == _rules;
+
+        // 본편 유성우·지진 스택은 원정이 끝나도 유지되므로, 판 동안 보관했다가 판이 끝나면 되돌린다(판은 지금처럼 0부터 찬다).
+        if (true == bEnterRun)
+        {
+            mainMeteorShowerStack = meteorShowerStack;
+            mainQuakeStack = quakeStack;
+        }
+
         runTreeRules = _rules;
 
         // 로그라이크 판 시작도 숲 방문이다. 판 도중엔 전리품이 떨어지지 않으므로 지금까지와 같다.
         sporePotionTierThisRun = GetLootGrowthTier(LootType.SporePotion);
         starCompassTierThisRun = GetLootGrowthTier(LootType.StarCompass);
-        ResetMeteorShowerCharge();
         obsidianCharmTierThisRun = GetLootGrowthTier(LootType.ObsidianCharm);
+
+        if (true == bLeaveRun)
+        {
+            meteorShowerStack = mainMeteorShowerStack;
+            quakeStack = mainQuakeStack;
+            BeginMeteorShowerVisit();
+            BeginQuakeVisit();
+            return;
+        }
+
+        ResetMeteorShowerCharge();
         ResetQuakeCharge();
     }
 
@@ -946,12 +1000,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         bStarCompassSpawnedThisRun = false;
         starCompassTreeKillCount = 0;
         starCompassTierThisRun = GetLootGrowthTier(LootType.StarCompass);
-        ResetMeteorShowerCharge();
+        BeginMeteorShowerVisit();
 
         bObsidianCharmSpawnedThisRun = false;
         obsidianCharmTreeKillCount = 0;
         obsidianCharmTierThisRun = GetLootGrowthTier(LootType.ObsidianCharm);
-        ResetQuakeCharge();
+        BeginQuakeVisit();
 
         // 구제 임계값 - 이번 런에 구제 대상인 것만, 오래된 지역 것부터 "앞 전리품 뒤 다시 min~max그루"씩
         // 이어 붙인다. 대상이 하나면 지금까지와 같은 min~max그루째이고, 여럿이면 같은 나무에서 한꺼번에
@@ -1211,12 +1265,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 원정 종료 상태도 같은 지점에서 끝난다(재도전은 카메라 상승 완료, 귀환은 마을 셋업).
         ResetRunEnd();
 
-        // 쿨타임 대기로 가득 찬 채 기다리던 지진("흑요 부적")을 버린다. 이 매니저는 마을에서도 Update가 돌아서,
-        // 비워 두지 않으면 바로 위 ResetRunEnd로 귀환 대기가 풀린 뒤 쿨타임이 끝나는 순간 마을에서 지진이 발동하고
-        // 용암 숲 분출(용암 나무 사망 폭발 이펙트)이 마을에 터졌다. 다음 숲 방문은 어차피 ResetQuakeCharge로 0부터 시작한다.
-        // HUD는 지금처럼 다음 숲 방문의 ResetQuakeCharge가 내린다(여기서는 이벤트를 보내지 않는다).
-        quakeStack = 0;
+        // 쿨타임 대기로 가득 찬 채 기다리던 지진("흑요 부적")의 자동 발동을 끈다. 이 매니저는 마을에서도 Update가 돌아서,
+        // 끄지 않으면 바로 위 ResetRunEnd로 귀환 대기가 풀린 뒤 쿨타임이 끝나는 순간 마을에서 지진이 발동하고
+        // 용암 숲 분출(용암 나무 사망 폭발 이펙트)이 마을에 터졌다. 스택은 버리지 않고 남긴다 - 가득 찬 채 넘어간 스택은
+        // 다음 숲에서 불씨를 주울 때 발동한다(BeginQuakeVisit, ChargeQuake).
         quakeCooldownRemaining = 0f;
+        bQuakeWaitingCooldown = false;
 
         if (offroadVehicle != null)
         {
@@ -3472,7 +3526,14 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         StartCoroutine(MeteorShowerRoutine(starCompassTierThisRun));
     }
 
-    // 숲 방문 초기화. 이전 방문에서 차던 유성우 게이지 버프 HUD도 함께 내린다.
+    // 숲 방문 시작. 스택은 지난 원정에서 이어 가고(발동 목표 범위로만 자른다), 지금 스택을 HUD에 알린다.
+    private void BeginMeteorShowerVisit()
+    {
+        meteorShowerStack = Mathf.Clamp(meteorShowerStack, 0, GetMeteorShowerMaxStack());
+        MeteorShowerChargeChangedEvent?.Invoke(meteorShowerStack, GetMeteorShowerMaxStack());
+    }
+
+    // [로그라이크] 판 시작 초기화. 판 동안의 유성우 게이지는 0부터 찬다(본편 값은 SetRunTreeRules가 보관한다).
     private void ResetMeteorShowerCharge()
     {
         meteorShowerStack = 0;
@@ -3596,6 +3657,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // 불씨를 하나 주울 때마다 지진 스택이 무작위(최소~최대, 둘 다 포함)로 오르고, 최대치에 닿으면 지진이 발동한다.
     // 불씨 관련 특성(획득량·효율 배율)은 곱하지 않는다. 넘친 몫은 버린다(발동하면 0부터 다시 찬다).
     // 가득 찼어도 쿨타임(quakeCooldown)이 남아 있으면 가득 찬 채로 기다렸다가 쿨타임이 끝나는 순간 발동한다(TickQuakeCooldown).
+    // 지난 원정에서 가득 찬 채 넘어온 스택은 숲 방문 시작 때 쿨타임이 비어 있으므로, 이 숲의 첫 불씨에서 바로 발동한다.
     private void ChargeQuake()
     {
         int maxStack = GetQuakeMaxStack();
@@ -3610,13 +3672,20 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         if (false == bWasFull) QuakeChargeChangedEvent?.Invoke(maxStack, maxStack);
-        if (0f < quakeCooldownRemaining) return;
+
+        if (0f < quakeCooldownRemaining)
+        {
+            bQuakeWaitingCooldown = true;
+            return;
+        }
 
         TriggerQuake(obsidianCharmTierThisRun);
     }
 
-    // 쿨타임을 줄이고, 스택이 가득 찬 채 기다리던 지진을 쿨타임이 끝나면 발동한다.
+    // 쿨타임을 줄이고, 이번 숲 방문에서 스택이 가득 찬 채 기다리던 지진을 쿨타임이 끝나면 발동한다.
     // 귀환 절차 중(경고창·탑승 연출)이나 쓰러진 뒤에는 발동하지 않고 계속 기다린다(그때는 불씨를 주워 발동할 수도 없다).
+    // 지난 원정에서 넘어온 가득 찬 스택(bQuakeWaitingCooldown 꺼짐)은 여기서 발동하지 않는다 - 숲 도착 연출 중에 터지지 않게
+    // 다음 불씨를 기다린다(ChargeQuake).
     private void TickQuakeCooldown()
     {
         if (0f < quakeCooldownRemaining)
@@ -3626,6 +3695,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             quakeCooldownRemaining = 0f;
         }
 
+        if (false == bQuakeWaitingCooldown) return;
         if (0 >= obsidianCharmTierThisRun || quakeStack < GetQuakeMaxStack()) return;
         if (bStarGazeSuspendedByGameEnd || character == null || character.bDead) return;
 
@@ -3636,16 +3706,28 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private void TriggerQuake(int _tier)
     {
         quakeStack = 0;
+        bQuakeWaitingCooldown = false;
         quakeCooldownRemaining = Mathf.Max(0f, quakeCooldown);
         QuakeTriggeredEvent?.Invoke();
         StartCoroutine(QuakeRoutine(_tier));
     }
 
-    // 숲 방문 초기화. 이전 방문에서 차던 지진 게이지 버프 HUD도 함께 내린다. 쿨타임도 비워 첫 지진은 가득 차면 바로 발동한다.
+    // 숲 방문 시작. 스택은 지난 원정에서 이어 가고(발동 목표 범위로만 자른다), 쿨타임은 비워 첫 지진은 가득 차면 바로 발동한다.
+    // 가득 찬 채 넘어온 스택은 자동 발동 대기 없이 다음 불씨를 기다린다. 지금 스택을 HUD에 알린다.
+    private void BeginQuakeVisit()
+    {
+        quakeStack = Mathf.Clamp(quakeStack, 0, GetQuakeMaxStack());
+        quakeCooldownRemaining = 0f;
+        bQuakeWaitingCooldown = false;
+        QuakeChargeChangedEvent?.Invoke(quakeStack, GetQuakeMaxStack());
+    }
+
+    // [로그라이크] 판 시작 초기화. 판 동안의 지진 게이지는 0부터 찬다(본편 값은 SetRunTreeRules가 보관한다). 쿨타임도 비운다.
     private void ResetQuakeCharge()
     {
         quakeStack = 0;
         quakeCooldownRemaining = 0f;
+        bQuakeWaitingCooldown = false;
         QuakeChargeChangedEvent?.Invoke(0, GetQuakeMaxStack());
     }
 

@@ -462,6 +462,8 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
             cachedSaveData.bHasAcquiredSporePotion = inDungeonObjectManager.bHasAcquiredSporePotion;
             cachedSaveData.bHasAcquiredStarCompass = inDungeonObjectManager.bHasAcquiredStarCompass;
             cachedSaveData.bHasAcquiredObsidianCharm = inDungeonObjectManager.bHasAcquiredObsidianCharm;
+            cachedSaveData.meteorShowerStack = inDungeonObjectManager.SavedMeteorShowerStack;
+            cachedSaveData.quakeStack = inDungeonObjectManager.SavedQuakeStack;
             cachedSaveData.bGoldTreePityDone = inDungeonObjectManager.bGoldTreePityDone;
             cachedSaveData.bGoldTreePityArmed = inDungeonObjectManager.IsGoldTreePityArmed;
             cachedSaveData.goldTreePityThreshold = inDungeonObjectManager.GoldTreePityThreshold;
@@ -991,6 +993,7 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem, ISaveCheckSystem
             inDungeonObjectManager.bHasAcquiredSporePotion = _data.bHasAcquiredSporePotion;
             inDungeonObjectManager.bHasAcquiredStarCompass = _data.bHasAcquiredStarCompass;
             inDungeonObjectManager.bHasAcquiredObsidianCharm = _data.bHasAcquiredObsidianCharm;
+            inDungeonObjectManager.RestoreRelicStacks(_data.meteorShowerStack, _data.quakeStack);
             inDungeonObjectManager.bGoldTreePityDone = _data.bGoldTreePityDone;
 
             // 이 복원은 스킬 재적용(1단계)보다 뒤라, 1단계의 TryArmGoldTreePity가 방금 새로

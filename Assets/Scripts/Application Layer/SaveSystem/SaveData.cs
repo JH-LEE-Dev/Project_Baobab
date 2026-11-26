@@ -277,6 +277,9 @@ public class GameSaveData
     public bool bHasAcquiredSporePotion;
     public bool bHasAcquiredStarCompass;
     public bool bHasAcquiredObsidianCharm;
+    // 유성우(별빛 나침반)·지진(흑요 부적) 스택. 원정이 끝나도 유지된다. 이 키가 없는 예전 세이브는 0으로 읽힌다.
+    public int meteorShowerStack;
+    public int quakeStack;
     // 데모 전용 "황금 나무" 보장을 이미 소진했는지. 이 키가 없는 예전 세이브는 false로 읽히고,
     // 그러면 특성을 찍어둔 상태에서 한 번 더 보장이 무장된다(데모 한정이라 그대로 둔다).
     public bool bGoldTreePityDone;
@@ -332,6 +335,8 @@ public class GameSaveData
         bHasAcquiredSporePotion = false;
         bHasAcquiredStarCompass = false;
         bHasAcquiredObsidianCharm = false;
+        meteorShowerStack = 0;
+        quakeStack = 0;
         bGoldTreePityDone = false;
         bGoldTreePityArmed = false;
         goldTreePityThreshold = 0;

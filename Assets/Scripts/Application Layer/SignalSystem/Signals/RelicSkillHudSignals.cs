@@ -22,6 +22,9 @@ public struct RelicSkillHudSignal
     public int current;
     public int max;
     public float duration;
+    // 남은 쿨타임과 전체 쿨타임(초). 지진만 쓴다. SetCharge/Trigger가 보낼 때마다 HUD 쿨타임 음영을 이 값으로 맞춘다(0이면 음영 없음).
+    public float cooldownRemaining;
+    public float cooldownTotal;
 
     public static RelicSkillHudSignal SetUnlock(ERelicSkillHudId _id, bool _bUnlocked)
     {
@@ -32,7 +35,8 @@ public struct RelicSkillHudSignal
         return _signal;
     }
 
-    public static RelicSkillHudSignal SetCharge(ERelicSkillHudId _id, bool _bUnlocked, int _current, int _max)
+    public static RelicSkillHudSignal SetCharge(ERelicSkillHudId _id, bool _bUnlocked, int _current, int _max,
+        float _cooldownRemaining = 0f, float _cooldownTotal = 0f)
     {
         RelicSkillHudSignal _signal = new RelicSkillHudSignal();
         _signal.id = _id;
@@ -40,16 +44,21 @@ public struct RelicSkillHudSignal
         _signal.bUnlocked = _bUnlocked;
         _signal.current = _current;
         _signal.max = _max;
+        _signal.cooldownRemaining = _cooldownRemaining;
+        _signal.cooldownTotal = _cooldownTotal;
         return _signal;
     }
 
-    public static RelicSkillHudSignal Trigger(ERelicSkillHudId _id, bool _bUnlocked, float _duration)
+    public static RelicSkillHudSignal Trigger(ERelicSkillHudId _id, bool _bUnlocked, float _duration,
+        float _cooldownRemaining = 0f, float _cooldownTotal = 0f)
     {
         RelicSkillHudSignal _signal = new RelicSkillHudSignal();
         _signal.id = _id;
         _signal.op = ERelicSkillHudOp.Trigger;
         _signal.bUnlocked = _bUnlocked;
         _signal.duration = _duration;
+        _signal.cooldownRemaining = _cooldownRemaining;
+        _signal.cooldownTotal = _cooldownTotal;
         return _signal;
     }
 }
