@@ -3345,6 +3345,18 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         PresentationLayer.VFX.TreeSporeDebuffVfx.Prewarm(activeTrees, damageAmplify);
     }
 
+    /// <summary>
+    /// 이번 원정에서 지진(흑요 부적)이 일어날 수 있으면, 바닥 물결의 첫 준비(복제 타일맵 만들기, 타일 옮겨 쓰기, 물체 모으기)를
+    /// 시작 지점 둘레에서 숨긴 채 미리 한 번 돌려 둔다. 게임을 켠 뒤 첫 지진의 시작 프레임들에 몰리던 것을 나무 초기 스폰이 끝난
+    /// 로딩 시점으로 옮길 뿐이라 결과는 같다. 본편 원정 시작(InDungeonSystem.OnTreesReady)에서만 부른다.
+    /// </summary>
+    public void PrewarmQuakeRipple()
+    {
+        if (0 >= obsidianCharmTierThisRun) return;
+
+        environmentProvider.PrewarmQuakeRipple(GetPlayerStartPos());
+    }
+
     private float GetSporeBigExplosionChance(int _tier)
     {
         return (3 == _tier) ? sporeBigExplosionTier3Chance : (2 == _tier) ? sporeBigExplosionTier2Chance : sporeBigExplosionTier1Chance;

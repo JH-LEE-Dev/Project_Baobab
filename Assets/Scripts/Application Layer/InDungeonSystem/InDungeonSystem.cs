@@ -354,6 +354,8 @@ public class InDungeonSystem : MonoBehaviour
     {
         // 화면이 아직 가려져 있는 지금, 전투 중 처음 켜질 때 준비가 몰리는 이펙트를 미리 준비한다.
         inDungeonObjectManager.PrewarmSporeDebuffVfx();
+        // 지진(흑요 부적)의 바닥 물결 첫 준비도 같은 이유로 지금 해 둔다. 로그라이크는 건드리지 않는다.
+        if (false == GameModeContext.IsRoguelike) inDungeonObjectManager.PrewarmQuakeRipple();
 
         inDungeonObjectManager.ReadyPortal();
         inDungeonProductionManager.Offroad_DI(inDungeonObjectManager.offroadVehicle);
