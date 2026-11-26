@@ -55,33 +55,45 @@ Shader "Custom/VFX/TreeSporeDebuffOverlay"
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/2DCommon.hlsl"
 
+            // GPU 인스턴싱(재질에서 켬). 나무 본체 셰이더와 같은 구성이다.
+            // 인스턴싱이 꺼져 있으면 같은 오버레이 그림을 쓰는 렌더러들이 스프라이트 묶음 그리기로 합쳐지면서 정점이 월드 좌표로 미리 옮겨지고
+            // UNITY_MATRIX_M이 단위 행렬이 된다. 그러면 흔들림 피벗이 나무 밑동이 아니라 월드 원점이 되어(위상도 원점 기준으로 모두 같아짐)
+            // 원점에서 먼 나무일수록 오버레이가 나무에서 크게 떨어져 그려졌다. 인스턴싱으로 그리면 렌더러마다 자기 행렬을 그대로 쓴다.
             #pragma multi_compile_instancing
             #pragma multi_compile _ DEBUG_DISPLAY SKINNED_SPRITE
 
-            CBUFFER_START(UnityPerMaterial)
-                half4 _Color;
-                float _EnableWindSway;
-                float _SwayPositionAmplitude;
-                float _SwayRotationAmplitude;
-                float _SwayMainSpeed;
-                float _SwayDetailSpeed;
-                float _SwayDetailWeight;
-            CBUFFER_END
+            UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
+                UNITY_DEFINE_INSTANCED_PROP(float, _EnableWindSway)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayPositionAmplitude)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayRotationAmplitude)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayMainSpeed)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailSpeed)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailWeight)
+            UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings UnlitVertex(Attributes input)
             {
+                UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_SKINNED_VERTEX_COMPUTE(input);
                 SetUpSpriteInstanceProperties();
                 input.positionOS = UnityFlipSprite(input.positionOS, unity_SpriteProps.xy);
 
                 // 나무 본체와 같은 식(같은 피벗 위상, 같은 돌풍·지진)
                 float3 objectPivotWorldPos = float3(UNITY_MATRIX_M._m03, UNITY_MATRIX_M._m13, UNITY_MATRIX_M._m23);
-                input.positionOS = ApplyWindSway(input.positionOS, objectPivotWorldPos, _EnableWindSway, _SwayPositionAmplitude,
-                    _SwayRotationAmplitude, _SwayMainSpeed, _SwayDetailSpeed, _SwayDetailWeight);
+                input.positionOS = ApplyWindSway(
+                    input.positionOS,
+                    objectPivotWorldPos,
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _EnableWindSway),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayPositionAmplitude),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayRotationAmplitude),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayMainSpeed),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayDetailSpeed),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayDetailWeight));
 
                 Varyings o = CommonUnlitVertex(input);
                 o.worldPos = TransformObjectToWorld(input.positionOS).xy;
-                o.color = input.color * _Color * unity_SpriteColor;
+                o.color = input.color * UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Color) * unity_SpriteColor;
                 return o;
             }
 

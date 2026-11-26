@@ -33,6 +33,10 @@ public static class TreeSporeDebuffBuilder
         Material overlayMaterial = BuildMaterial(OverlayMaterialPath, OverlayShaderName, false);
         if (null == meshMaterial || null == spriteMaterial || null == swayMeshMaterial || null == overlayMaterial) return;
 
+        // 오버레이는 GPU 인스턴싱으로 그려야 스프라이트 묶음 그리기로 합쳐지지 않아 렌더러마다 자기 피벗으로 흔들린다(셰이더 주석 참고).
+        overlayMaterial.enableInstancing = true;
+        EditorUtility.SetDirty(overlayMaterial);
+
         BuildPrefab(meshMaterial, spriteMaterial, swayMeshMaterial, overlayMaterial);
         AssetDatabase.SaveAssets();
         Debug.Log("[TreeSporeDebuffBuilder] 완료: " + PrefabPath);
