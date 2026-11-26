@@ -132,6 +132,7 @@ public static class RoguelikeCollectionValidator
 
         // 도감 카드 이름 · 설명 키(분류와 최대 레벨 배지 유무)
         int cardCount = idsProperty.arraySize;
+        List<CardDefinitionSO> cards = new List<CardDefinitionSO>(cardCount);
         List<string> nameKeys = new List<string>(cardCount);
         List<string> descKeys = new List<string>(cardCount);
         List<bool> hasBadge = new List<bool>(cardCount);
@@ -142,6 +143,7 @@ public static class RoguelikeCollectionValidator
             for (int d = 0; null == card && databases.Count > d; d++) card = databases[d].FindById(cardId);
             if (null == card) continue;
 
+            cards.Add(card);
             nameKeys.Add(card.nameKey);
             descKeys.Add(card.descriptionKey);
             hasBadge.Add(ECardKind.Active == card.kind || ECardKind.Passive == card.kind);
@@ -229,6 +231,7 @@ public static class RoguelikeCollectionValidator
                 string name = Resolve(entries, nameKeys[i], language);
                 string desc = Resolve(entries, descKeys[i], language);
                 if (0 == name.Length || 0 == desc.Length) missingKeys++;
+                desc = RoguelikeCardEffectText.FormatDescription(cards[i], 1, false, null, desc);
                 desc = StripMarkers(desc);
 
                 MeasureWrapped(measure, name, detailName.fontSize, DetailDescWidth, out int nameLines, out float nameHeight);

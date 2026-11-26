@@ -96,6 +96,7 @@ public struct RoguelikeCollectionViewData
     public string cardId;
     public string nameKey;
     public string descKey;
+    public CardDefinitionSO card;
     public Sprite icon;
     public ECardKind kind;
     /// <summary>한 번이라도 고른 카드(앞면). false면 뒷면 칸이다(히든 조합 규칙: 이름 · 재료를 보이지 않는다).</summary>

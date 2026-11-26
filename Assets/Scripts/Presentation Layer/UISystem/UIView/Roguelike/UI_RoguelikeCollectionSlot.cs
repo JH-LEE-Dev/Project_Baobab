@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 /// <summary>
 /// 카드 도감의 칸 한 장(36x36). 판정(이 오브젝트, 움직이지 않는다) / 그림(visual, 정수 픽셀로 움직인다)으로 나뉜다.
-///   앞면 = 칸 그림(CardSlot_Normal · CardSlot_Max · CardSlot_Prism · CardSlot_Ruby, 36x36, 카드 앞면과 같은 금 모서리 · 파인 홈 문법) + 아이콘(원래 크기, 정중앙 = 18 - 폭/2) + MAX 배지(SlotLevel_MAX) 또는 루비 배지(SlotLevel_Ruby, 오른쪽 아래 2px 안쪽).
+///   앞면 = 칸 그림(CardSlot_Normal · CardSlot_Max · CardSlot_Prism · CardSlot_Ruby, 36x36, 카드 앞면과 같은 금 모서리 · 파인 홈 문법) + 아이콘(원래 크기, 정중앙 = 18 - 폭/2) + MAX 배지(SlotLevel_MAX) 또는 루비 배지(SlotLevel_Ruby, 오른쪽 아래 3px 안쪽).
 ///   뒷면 = Slot_Back(36x36 그림). 뒷면 칸은 착지한 순간 가운데 밝은 금 마름모(d ≤ 2)가 2프레임 흰색으로 반짝인다(backSparkImage).
 ///   NEW 배지(records/BadgeNew)는 칸 왼쪽 위에서 (+20, -2)에 붙는다.
 /// 뒤집힘 폭(36 → … → 2 → … → 36)은 face의 가로 배율로 만든다(가운데 기준, 크기 변화 연출은 이것뿐이다).
@@ -16,7 +16,7 @@ using UnityEngine.UI;
 public class UI_RoguelikeCollectionSlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, ISelectHandler
 {
     public const int SlotSize = 36;
-    private const int BadgeInset = 2;
+    private const int BadgeInset = 3;
     public const int NewBadgeX = 20;
     public const int NewBadgeY = -2;
     private const int IconCenter = 18;

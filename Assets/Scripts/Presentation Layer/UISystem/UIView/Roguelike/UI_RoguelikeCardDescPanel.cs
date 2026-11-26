@@ -170,22 +170,37 @@ public class UI_RoguelikeCardDescPanel : MonoBehaviour
         ApplyTexts(LocalizeCard(_data.nameKey), levelLabel, BuildOwnedDescription(in _data));
     }
 
-    /// <summary>기본 설명만 돌려준다(색 마커 {+}·{-}는 칠한다). 효과 줄은 붙이지 않는다.</summary>
+    /// <summary>기본 설명 + 현재 보유 레벨까지의 누적 효과 줄(버프는 금색, 계약 디메리트는 붉은색). 효과 줄이 없으면 기본 설명만이다.</summary>
     private string BuildOwnedDescription(in RoguelikeOwnedCardViewData _data)
     {
-        return ApplyColorMarkers(LocalizeCard(_data.descriptionKey));
+        string rawDescription = RoguelikeCardEffectText.FormatDescription(_data.card, _data.level, true, localizationManager, LocalizeCard(_data.descriptionKey));
+        string description = ApplyColorMarkers(rawDescription);
+        RoguelikeCardEffectText.BuildOwned(in _data, localizationManager, benefitBuilder, demeritBuilder, "\n");
+        return AppendEffectBuilders(description);
     }
 
     /// <summary>기본 설명 + 고르면 적용되는 효과 줄(버프는 금색, 계약 디메리트는 붉은색). 효과 줄이 없으면 기본 설명만이다.</summary>
     private string BuildDescription(in RoguelikeCardViewData _data)
     {
-        string description = ApplyColorMarkers(LocalizeCard(_data.descriptionKey));
-        if (true == bCardSelectMode) return JoinManualLines(description);
-        RoguelikeCardEffectText.Build(in _data, localizationManager, benefitBuilder, demeritBuilder);
-        if (0 == benefitBuilder.Length && 0 == demeritBuilder.Length) return description;
+        string rawDescription = RoguelikeCardEffectText.FormatDescription(_data.card, _data.levelAfterPurchase, false, localizationManager, LocalizeCard(_data.descriptionKey));
+        string description = ApplyColorMarkers(rawDescription);
+        if (true == bCardSelectMode)
+        {
+            description = JoinManualLines(description);
+            RoguelikeCardEffectText.Build(in _data, localizationManager, benefitBuilder, demeritBuilder, " · ");
+            return AppendEffectBuilders(description);
+        }
+
+        RoguelikeCardEffectText.Build(in _data, localizationManager, benefitBuilder, demeritBuilder, "\n");
+        return AppendEffectBuilders(description);
+    }
+
+    private string AppendEffectBuilders(string _description)
+    {
+        if (0 == benefitBuilder.Length && 0 == demeritBuilder.Length) return _description;
 
         descriptionBuilder.Clear();
-        descriptionBuilder.Append(description);
+        descriptionBuilder.Append(_description);
 
         if (0 < benefitBuilder.Length)
         {

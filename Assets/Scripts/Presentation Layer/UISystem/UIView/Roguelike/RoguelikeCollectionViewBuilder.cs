@@ -50,6 +50,7 @@ public static class RoguelikeCollectionViewBuilder
                     cardId = card.cardId,
                     nameKey = card.nameKey,
                     descKey = card.descriptionKey,
+                    card = card,
                     icon = card.icon,
                     kind = card.kind,
                     bFound = bFound,

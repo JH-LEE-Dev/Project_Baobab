@@ -1661,7 +1661,8 @@ public class UIView_RoguelikeCollection : UIView_RoguelikeModalBase
         {
             SetDetailText(detailKind, kindName, KindColor(_data.kind), DetailKindTop);
             int nameExtra = SetDetailName(Localize(_data.nameKey), true == _data.bMaxed ? GoldColor : CreamColor);
-            SetDetailText(detailDesc, ApplyColorMarkers(Localize(_data.descKey)), CreamColor, DetailDescTop + nameExtra);
+            string formattedDesc = RoguelikeCardEffectText.FormatDescription(_data.card, 1, false, localizationManager, Localize(_data.descKey));
+            SetDetailText(detailDesc, ApplyColorMarkers(formattedDesc), CreamColor, DetailDescTop + nameExtra);
         }
         else
         {
