@@ -428,6 +428,9 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         // 로그만으로 구분하기 위해서다(먹통 상태에서 CPU를 확인해달라고 부탁하지 않아도 된다).
         System.Diagnostics.Stopwatch _swTotal = System.Diagnostics.Stopwatch.StartNew();
 
+        // 씬 로드 전에 이미 한 프레임 양보했는지(메인메뉴/엔딩의 인스톨러 해제 경로)
+        bool _bYieldedBeforeLoad = false;
+
         try
         {
             // 1. 전환 로직 시작
@@ -479,19 +482,29 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
                     yield return null;
 
                     Debug.Log($"[BootStrap] 지연 파괴 완료 대기 후 씬 로드 진행 ({_swTotal.ElapsedMilliseconds}ms)");
+                    _bYieldedBeforeLoad = true;
                 }
+            }
+
+            // 위와 같은 교착이 다른 전환에서도 난다. 숲 재도전(InDungeonSystem.CameraUpIsEnd)은 같은 프레임에서
+            // ClearObjManager()로 공유 이미터를 Destroy하고 풀 상한을 넘은 오브젝트를 파괴한 직후 이 코루틴을 시작한다.
+            // 그 상태로 ChangeSceneAsync를 부르면 "호출" 로그만 남기고 다음 로그 없이 에디터가 멈췄다.
+            // 어느 경로든 요청한 프레임의 지연 파괴가 끝난 다음 프레임에 씬 로드를 시작한다.
+            // (요청 시점은 카메라가 상공에 있고 소리 배율이 0으로 고정된 구간이라 한 프레임 늦어도 보이거나 들리는 차이가 없다)
+            if (false == _bYieldedBeforeLoad)
+            {
+                yield return null;
             }
 
             // 2. 비동기 씬 로드
             Debug.Log($"[BootStrap] ChangeSceneAsync({_sceneType}) 호출 (요청 후 {_swTotal.ElapsedMilliseconds}ms)");
             AsyncOperation asyncLoad = sceneManager.ChangeSceneAsync(_sceneType);
 
-            // 여기까지가 카메라 연출의 DOTween 콜백 안에서 동기 실행되는 구간이다.
-            // 이 다음 로그가 찍혔다는 건 프레임이 정상적으로 끝났다는 뜻이고, 곧 프레임 끝에 밀려 있던
-            // GameInstaller 계층의 지연 파괴(Destroy)까지 통과했다는 의미다.
-            // 반대로 이 로그가 없으면 멈춤은 "프레임 종료 처리" 안에 있다.
+            // 요청한 프레임의 지연 파괴는 위에서 한 프레임 양보해 이미 끝났다. 씬 로드는 이 프레임에 시작된다.
+            // 이 다음 로그가 찍혔다는 건 씬 로드를 시작한 프레임이 정상적으로 끝났다는 뜻이다.
+            // 반대로 이 로그가 없으면 멈춤은 그 프레임의 "프레임 종료 처리" 안에 있다.
             yield return null;
-            Debug.Log($"[BootStrap] 첫 프레임 통과 - 지연 파괴 처리 완료 ({_swTotal.ElapsedMilliseconds}ms)");
+            Debug.Log($"[BootStrap] 첫 프레임 통과 - 씬 로드 시작 프레임 종료 ({_swTotal.ElapsedMilliseconds}ms)");
 
             if (asyncLoad != null)
             {
