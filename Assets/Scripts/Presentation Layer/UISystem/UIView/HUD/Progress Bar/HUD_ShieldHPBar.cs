@@ -211,7 +211,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
             shieldFadeTween = null;
         }
 
-        if (null != shieldRecoveryTween && true == shieldRecoveryTween.IsActive())
+        if (true == IsOwnTween(shieldRecoveryTween, shieldSlider))
         {
             shieldRecoveryTween.Kill();
             shieldRecoveryTween = null;
@@ -299,7 +299,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
             specialRecoveryTween = null;
         }
 
-        if (null != hpGhostTween && true == hpGhostTween.IsActive())
+        if (true == IsOwnTween(hpGhostTween, ghostSlider))
         {
             hpGhostTween.Kill();
             hpGhostTween = null;
@@ -405,6 +405,14 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
         }
     }
 
+    // 슬라이더 값 트윈(hpGhostTween·shieldGhostTween·shieldRecoveryTween)은 재활용(SetRecyclable)한다. 재활용 트윈은 죽은 뒤
+    // 다른 곳의 트윈으로 다시 쓰이므로, 들고 있던 참조가 아직 이 바의 것인지 대상(슬라이더)으로 확인하고 나서만 건드린다
+    // (TreeVisualComponent의 피격 트윈과 같은 방식). 슬라이더가 없으면 이 바가 만든 트윈도 없다.
+    private static bool IsOwnTween(Tween _tween, Slider _slider)
+    {
+        return null != _tween && null != _slider && true == _tween.IsActive() && true == ReferenceEquals(_tween.target, _slider);
+    }
+
     public void UpdateValues(float _hpRatio, float _shieldRatio)
     {
         if (Time.frameCount == lastRevivalFrame)
@@ -440,7 +448,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
         {
             if (_hpRatio > _prevHp)
             {
-                if (null != hpGhostTween && true == hpGhostTween.IsActive())
+                if (true == IsOwnTween(hpGhostTween, ghostSlider))
                 {
                     hpGhostTween.Kill();
                     hpGhostTween = null;
@@ -450,7 +458,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
             else if (_hpRatio < _prevHp)
             {
                 float _nextHpDelay = ghostDelay;
-                if (null != hpGhostTween && true == hpGhostTween.IsActive())
+                if (true == IsOwnTween(hpGhostTween, ghostSlider))
                 {
                     if (true == useAccumulatedGhost && false == resetDelayOnHit)
                     {
@@ -464,7 +472,8 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
                 hpGhostTween = SliderValueTweener.DOValue(ref ghostValueTweener, ghostSlider, _hpRatio, ghostFollowDuration)
                     .SetDelay(_nextHpDelay)
                     .SetEase(Ease.OutQuad)
-                    .SetLink(gameObject);
+                    .SetLink(gameObject)
+                    .SetRecyclable(true);
             }
         }
 
@@ -475,7 +484,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
                 // 실제 쉴드 바는 즉시 깎임
                 if (null != shieldSlider)
                 {
-                    if (null != shieldRecoveryTween && true == shieldRecoveryTween.IsActive())
+                    if (true == IsOwnTween(shieldRecoveryTween, shieldSlider))
                     {
                         shieldRecoveryTween.Kill();
                         shieldRecoveryTween = null;
@@ -487,7 +496,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
                 if (null != shieldGhostSlider)
                 {
                     float _nextShieldDelay = ghostDelay;
-                    if (null != shieldGhostTween && true == shieldGhostTween.IsActive())
+                    if (true == IsOwnTween(shieldGhostTween, shieldGhostSlider))
                     {
                         if (true == useAccumulatedGhost && false == resetDelayOnHit)
                         {
@@ -501,7 +510,8 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
                     shieldGhostTween = SliderValueTweener.DOValue(ref shieldGhostValueTweener, shieldGhostSlider, _shieldRatio, ghostFollowDuration)
                         .SetDelay(_nextShieldDelay)
                         .SetEase(Ease.OutQuad)
-                        .SetLink(gameObject);
+                        .SetLink(gameObject)
+                        .SetRecyclable(true);
                 }
             }
             else if (_shieldRatio > _prevShield) // 쉴드 회복
@@ -509,7 +519,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
                 // 고스트 바는 즉시 목표치로 증가 (회복 예정량 시각화)
                 if (null != shieldGhostSlider)
                 {
-                    if (null != shieldGhostTween && true == shieldGhostTween.IsActive())
+                    if (true == IsOwnTween(shieldGhostTween, shieldGhostSlider))
                     {
                         shieldGhostTween.Kill();
                         shieldGhostTween = null;
@@ -521,7 +531,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
                 if (null != shieldSlider)
                 {
                     float _nextShieldDelay = ghostDelay;
-                    if (null != shieldRecoveryTween && true == shieldRecoveryTween.IsActive())
+                    if (true == IsOwnTween(shieldRecoveryTween, shieldSlider))
                     {
                         if (true == useAccumulatedGhost && false == resetDelayOnHit)
                         {
@@ -535,7 +545,8 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
                     shieldRecoveryTween = SliderValueTweener.DOValue(ref shieldValueTweener, shieldSlider, _shieldRatio, ghostFollowDuration)
                         .SetDelay(_nextShieldDelay)
                         .SetEase(Ease.OutQuad)
-                        .SetLink(gameObject);
+                        .SetLink(gameObject)
+                        .SetRecyclable(true);
                 }
             }
             else // 변화 없음
@@ -608,7 +619,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
         isHiding = true;
 
         // 페이드아웃(은닉) 시작 시 고스트 바가 천천히 줄어드는 연출을 강제로 멈추고 고스트 바 오브젝트를 즉시 숨김
-        if (null != hpGhostTween && true == hpGhostTween.IsActive())
+        if (true == IsOwnTween(hpGhostTween, ghostSlider))
         {
             hpGhostTween.Kill();
             hpGhostTween = null;
@@ -620,7 +631,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
             SetGraphicsEnabled(ghostGraphics, false);
         }
 
-        if (null != shieldGhostTween && true == shieldGhostTween.IsActive())
+        if (true == IsOwnTween(shieldGhostTween, shieldGhostSlider))
         {
             shieldGhostTween.Kill();
             shieldGhostTween = null;
@@ -703,13 +714,13 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
         if (null != hpGhostFillImage && null != normalGhostBarSprite)
             hpGhostFillImage.sprite = normalGhostBarSprite;
 
-        if (null != hpGhostTween && true == hpGhostTween.IsActive())
+        if (true == IsOwnTween(hpGhostTween, ghostSlider))
         {
             hpGhostTween.Kill();
             hpGhostTween = null;
         }
 
-        if (null != shieldGhostTween && true == shieldGhostTween.IsActive())
+        if (true == IsOwnTween(shieldGhostTween, shieldGhostSlider))
         {
             shieldGhostTween.Kill();
             shieldGhostTween = null;

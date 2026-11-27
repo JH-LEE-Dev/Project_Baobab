@@ -98,19 +98,27 @@ namespace PresentationLayer.DOTweenAnimationSystem
 
         public virtual void Stop()
         {
-            if (null != currentTween && currentTween.IsActive())
+            if (true == IsCurrentTweenAlive())
                 currentTween.Kill();
         }
 
         public bool IsPlaying()
         {
-            return null != currentTween && currentTween.IsActive() && currentTween.IsPlaying();
+            return true == IsCurrentTweenAlive() && currentTween.IsPlaying();
         }
 
         public void Skip(bool _isCallback)
         {
-            if (null != currentTween && currentTween.IsActive())
+            if (true == IsCurrentTweenAlive())
                 currentTween.Complete(_isCallback);
+        }
+
+        // currentTween이 살아 있고 아직 이 모션의 것인지. 모션이 만든 트윈에는 id로 자신을 달아 둔다(ApplyTweenSettings).
+        // 일부 모션(OMB_UIClickTwist)은 트윈을 재활용(SetRecyclable)하는데, 재활용 트윈은 죽은 뒤 다른 곳의 트윈으로 다시
+        // 쓰이므로 들고 있던 참조가 남의 트윈일 수 있다. 재활용하지 않는 모션에서는 예전의 IsActive 검사와 결과가 같다.
+        protected bool IsCurrentTweenAlive()
+        {
+            return null != currentTween && currentTween.IsActive() && ReferenceEquals(currentTween.id, this);
         }
 
         public void SetDelayForward(float _delay) => forwardDelay = _delay;
@@ -143,9 +151,25 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 BindKeyEvents(_seq, currentKeyEventAction);
             }
 
-            currentTween.SetDelay(forwardDelay)
-                        .OnStart(InternalOnStart)
-                        .OnComplete(InternalOnComplete);
+            EnsureCallbacks();
+            currentTween.SetId(this)
+                        .SetDelay(forwardDelay)
+                        .OnStart(cachedInternalOnStart)
+                        .OnComplete(cachedInternalOnComplete);
+        }
+
+        // InternalOnStart/InternalOnComplete를 메서드 그룹으로 넘기면 재생마다 델리게이트가 새로 할당된다. 한 번만 만들어 둔다
+        // (가상 함수라 만들 때의 인스턴스 타입으로 묶이며, 매번 새로 만들던 것과 부르는 함수가 같다).
+        private TweenCallback cachedInternalOnStart;
+        private TweenCallback cachedInternalOnComplete;
+
+        private void EnsureCallbacks()
+        {
+            if (null != cachedInternalOnStart)
+                return;
+
+            cachedInternalOnStart = InternalOnStart;
+            cachedInternalOnComplete = InternalOnComplete;
         }
 
         protected virtual void ApplyBackwardTweenSettings(Tween _tween)
@@ -163,9 +187,11 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 BindKeyEvents(_seq, currentKeyEventAction);
             }
 
-            currentTween.SetDelay(backwardDelay)
-                        .OnStart(InternalOnStart)
-                        .OnComplete(InternalOnComplete);
+            EnsureCallbacks();
+            currentTween.SetId(this)
+                        .SetDelay(backwardDelay)
+                        .OnStart(cachedInternalOnStart)
+                        .OnComplete(cachedInternalOnComplete);
         }
 
         protected void ProcessTargets(Sequence _seq, List<MotionTarget> _targets, Ease _currentEase)
@@ -292,7 +318,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
 
         protected virtual void OnDestroy()
         {
-            if (null != currentTween && currentTween.IsActive())
+            if (true == IsCurrentTweenAlive())
                 currentTween.Kill();
         }
 

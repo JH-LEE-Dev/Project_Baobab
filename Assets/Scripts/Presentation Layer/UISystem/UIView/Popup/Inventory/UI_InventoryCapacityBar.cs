@@ -41,6 +41,8 @@ public class UI_InventoryCapacityBar : HUD_ProgressBar
     // Slider.DOValue 대신 쓰는 슬라이더별 델리게이트 캐시(SliderValueTweener 참조)
     private SliderValueTweener progressValueTweener;
     private SliderValueTweener ghostValueTweener;
+    // transform.DOScale 대신 쓰는 델리게이트 캐시(TransformScaleTweener 참조)
+    private TransformScaleTweener scaleTweener;
     private TweenCallback cachedOnCapacityUpdate;
 
     // //퍼블릭 초기화 및 제어 메서드
@@ -186,26 +188,46 @@ public class UI_InventoryCapacityBar : HUD_ProgressBar
         // 아직 한 번도 진행되지 않았다면(같은 프레임) 그것을 끊고 똑같은 연출을 새로 만드는 것과, 그대로 두는 것은
         // 결과가 같다 - 끊으면 끝값(원래 크기)으로 맞춰진 뒤 원래 크기에서 다시 시작하고, 그대로 두어도 원래 크기에서
         // 시작한다. 그래서 새로 만들지 않고 재사용해 트윈 할당을 아낀다.
-        if (true == bFeedbackIsAdd && null != feedbackSequence && true == feedbackSequence.IsActive()
+        if (true == bFeedbackIsAdd && true == IsOwnFeedbackSequence()
             && true == feedbackSequence.IsPlaying() && 0f >= feedbackSequence.Elapsed(true))
         {
             transform.localScale = Vector3.one;
             return;
         }
 
-        if (null != feedbackSequence && true == feedbackSequence.IsActive())
+        if (true == IsOwnFeedbackSequence())
             feedbackSequence.Kill(true);
 
         transform.localScale = Vector3.one;
 
         bFeedbackIsAdd = true;
-        feedbackSequence = DOTween.Sequence().SetLink(gameObject);
+        feedbackSequence = NewFeedbackSequence();
         // 1. 가로로 늘어나면서 세로로 수축 (Stretch)
-        feedbackSequence.Append(transform.DOScale(new Vector3(stretchX, stretchY, 1f), stepDuration).SetEase(Ease.OutQuad));
+        feedbackSequence.Append(ScaleStep(new Vector3(stretchX, stretchY, 1f), stepDuration).SetEase(Ease.OutQuad));
         // 2. 가로로 수축되면서 세로로 늘어남 (Squash)
-        feedbackSequence.Append(transform.DOScale(new Vector3(squashX, squashY, 1f), stepDuration).SetEase(Ease.InOutQuad));
+        feedbackSequence.Append(ScaleStep(new Vector3(squashX, squashY, 1f), stepDuration).SetEase(Ease.InOutQuad));
         // 3. 원래대로 찰지게 돌아오기
-        feedbackSequence.Append(transform.DOScale(Vector3.one, stepDuration * 2f).SetEase(Ease.OutBack, settleOvershoot));
+        feedbackSequence.Append(ScaleStep(Vector3.one, stepDuration * 2f).SetEase(Ease.OutBack, settleOvershoot));
+    }
+
+    // 획득·제거 연출의 시퀀스와 그 안의 크기 트윈은 재활용(SetRecyclable)한다. 원목을 주울 때마다 새로 만들던 시퀀스 1개와
+    // 트윈 2~3개, DOScale의 클로저·델리게이트가 쓰레기로 쌓였다. 만드는 연출은 예전과 같다(DOScale 본문과 같은 트윈,
+    // 같은 순서·이징·SetLink).
+    // 재활용 트윈은 죽은 뒤 다른 곳의 트윈으로 다시 쓰이므로, 들고 있던 참조가 아직 이 바의 것인지 id(this)로 확인하고
+    // 나서만 건드린다(IsOwnFeedbackSequence).
+    private Sequence NewFeedbackSequence()
+    {
+        return DOTween.Sequence().SetLink(gameObject).SetId(this).SetRecyclable(true);
+    }
+
+    private Tweener ScaleStep(Vector3 _endValue, float _duration)
+    {
+        return TransformScaleTweener.DOScale(ref scaleTweener, transform, _endValue, _duration).SetRecyclable(true);
+    }
+
+    private bool IsOwnFeedbackSequence()
+    {
+        return null != feedbackSequence && true == feedbackSequence.IsActive() && true == ReferenceEquals(feedbackSequence.id, this);
     }
 
     /// <summary>
@@ -213,17 +235,17 @@ public class UI_InventoryCapacityBar : HUD_ProgressBar
     /// </summary>
     public void PlayRemoveFeedbackAnimation()
     {
-        if (null != feedbackSequence && true == feedbackSequence.IsActive())
+        if (true == IsOwnFeedbackSequence())
             feedbackSequence.Kill(true);
 
         transform.localScale = Vector3.one;
 
         bFeedbackIsAdd = false;
-        feedbackSequence = DOTween.Sequence().SetLink(gameObject);
+        feedbackSequence = NewFeedbackSequence();
         // 1. 살짝 작아지면서 눌리는 느낌 (Squash)
-        feedbackSequence.Append(transform.DOScale(new Vector3(removeSquashScale, removeSquashScale, 1f), stepDuration).SetEase(Ease.OutQuad));
+        feedbackSequence.Append(ScaleStep(new Vector3(removeSquashScale, removeSquashScale, 1f), stepDuration).SetEase(Ease.OutQuad));
         // 2. 원래대로 찰지게 돌아오기
-        feedbackSequence.Append(transform.DOScale(Vector3.one, stepDuration * 2f).SetEase(Ease.OutBack, settleOvershoot));
+        feedbackSequence.Append(ScaleStep(Vector3.one, stepDuration * 2f).SetEase(Ease.OutBack, settleOvershoot));
     }
 
     private void OnCapacityTweenUpdate()
@@ -260,7 +282,7 @@ public class UI_InventoryCapacityBar : HUD_ProgressBar
             catchupTween = null;
         }
 
-        if (null != feedbackSequence && true == feedbackSequence.IsActive())
+        if (true == IsOwnFeedbackSequence())
         {
             feedbackSequence.Kill();
             feedbackSequence = null;

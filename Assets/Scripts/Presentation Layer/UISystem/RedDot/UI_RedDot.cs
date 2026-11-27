@@ -14,6 +14,8 @@ public class UI_RedDot : MonoBehaviour
     [SerializeField] private int shakeVibrato = 40;
 
     private Sequence dotweenSeq;
+    // targetVisual.DOScale 대신 쓰는 델리게이트 캐시(TransformScaleTweener 참조)
+    private TransformScaleTweener scaleTweener;
     private TweenCallback cachedOnAppearComplete;
 
     private void Awake()
@@ -56,19 +58,22 @@ public class UI_RedDot : MonoBehaviour
         targetVisual.localPosition = Vector3.zero;
         targetVisual.localEulerAngles = Vector3.zero;
 
-        dotweenSeq = DOTween.Sequence().SetLink(gameObject);
-        
+        // 등장·뽀잉 연출의 시퀀스와 크기 트윈은 재활용(SetRecyclable)한다. 원목을 주울 때마다 새로 만들던 시퀀스·트윈과
+        // DOScale의 클로저·델리게이트가 쓰레기로 쌓였다. 만드는 연출은 예전과 같다(DOScale(1f, 시간) 본문과 같은 트윈).
+        // 재활용 트윈은 죽은 뒤 다른 곳의 트윈으로 다시 쓰이므로 id(this)를 달아 두고, 끊을 때 아직 이 점의 것인지 확인한다(KillAnimation).
+        dotweenSeq = DOTween.Sequence().SetLink(gameObject).SetId(this).SetRecyclable(true);
+
         if (true == wasActive)
         {
             // 이미 켜진 상태에서 추가 신호: 뽀잉 연출
             targetVisual.localScale = new Vector3(0.7f, 0.7f, 0.7f);
-            dotweenSeq.Append(targetVisual.DOScale(1f, 0.2f).SetEase(Ease.OutBack));
+            dotweenSeq.Append(TransformScaleTweener.DOScale(ref scaleTweener, targetVisual, Vector3.one, 0.2f).SetRecyclable(true).SetEase(Ease.OutBack));
         }
         else
         {
             // 최초 등장 연출 (뽁 하고 커짐)
             targetVisual.localScale = Vector3.zero;
-            dotweenSeq.Append(targetVisual.DOScale(1f, appearDuration).SetEase(Ease.OutBack));
+            dotweenSeq.Append(TransformScaleTweener.DOScale(ref scaleTweener, targetVisual, Vector3.one, appearDuration).SetRecyclable(true).SetEase(Ease.OutBack));
         }
         
         // DOTween은 시퀀스 내부에 무한 반복(-1) 요소를 Append하는 것을 허용하지 않습니다.
@@ -80,7 +85,7 @@ public class UI_RedDot : MonoBehaviour
     {
         if (null == targetVisual) return;
 
-        dotweenSeq = DOTween.Sequence().SetLink(gameObject);
+        dotweenSeq = DOTween.Sequence().SetLink(gameObject).SetId(this);
         dotweenSeq.AppendInterval(idleDuration);
         dotweenSeq.Append(targetVisual.DOShakeRotation(shakeDuration, shakeRotStrength, shakeVibrato, 90f, fadeOut: true));
         dotweenSeq.SetLoops(-1);
@@ -90,7 +95,9 @@ public class UI_RedDot : MonoBehaviour
     {
         if (null != dotweenSeq)
         {
-            dotweenSeq.Kill();
+            // 이미 죽어 다른 곳에서 다시 쓰이는 트윈이면 건드리지 않는다(죽은 트윈의 Kill은 원래도 아무 일도 하지 않았다).
+            if (true == dotweenSeq.IsActive() && true == ReferenceEquals(dotweenSeq.id, this))
+                dotweenSeq.Kill();
             dotweenSeq = null;
         }
         

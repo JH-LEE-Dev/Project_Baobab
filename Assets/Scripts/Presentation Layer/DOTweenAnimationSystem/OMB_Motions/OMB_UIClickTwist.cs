@@ -69,12 +69,28 @@ namespace PresentationLayer.DOTweenAnimationSystem
             _seq.Join(BuildScaleTween(_trans, _state.localScale));
         }
 
+        // 이 모션은 인벤토리 칸이 원목을 받을 때마다 재생된다(숲에서 프레임당 한 번 이상). 재생마다 새로 만들던 시퀀스 2개와
+        // 크기 트윈(튀는 횟수 × 2 + 1개), 콜백 델리게이트가 쓰레기로 쌓였다. 시퀀스와 트윈을 재활용(SetRecyclable)하고
+        // 콜백은 한 번만 만들어 둔다. 만드는 연출은 예전과 같다.
+        // 재활용 트윈은 죽은 뒤 다른 곳의 트윈으로 다시 쓰이므로, currentTween은 ObjectMotionBase.IsCurrentTweenAlive로만 건드린다.
+        protected override Sequence StopAndBinding(UnityEngine.Events.UnityAction _onStart, UnityEngine.Events.UnityAction _onComplete)
+        {
+            return base.StopAndBinding(_onStart, _onComplete).SetRecyclable(true);
+        }
+
+        private TweenCallback cachedRestoreMotionState;
+
         protected override void ApplyTweenSettings(Tween _tween)
         {
             base.ApplyTweenSettings(_tween);
 
             if (null != currentTween)
-                currentTween.OnKill(RestoreMotionState);
+            {
+                if (null == cachedRestoreMotionState)
+                    cachedRestoreMotionState = RestoreMotionState;
+
+                currentTween.OnKill(cachedRestoreMotionState);
+            }
         }
 
         protected override void InternalOnComplete()
@@ -111,6 +127,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
 
             var t = DOTween.To(scaleTweenGetter, scaleTweenSetter, _endValue, _duration);
             t.SetTarget(_target);
+            t.SetRecyclable(true);
             return t;
         }
 
@@ -133,7 +150,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
             float recoilDuration = forwardDuration * Mathf.Clamp01(valueSettings.recoilTimeRatio / totalRatio);
             float restoreDuration = forwardDuration * Mathf.Clamp01(valueSettings.restoreTimeRatio / totalRatio);
 
-            Sequence sequence = DOTween.Sequence();
+            Sequence sequence = DOTween.Sequence().SetRecyclable(true);
             float intensity = 1f;
 
             for (int i = 0; i < bounceCount; i++)
