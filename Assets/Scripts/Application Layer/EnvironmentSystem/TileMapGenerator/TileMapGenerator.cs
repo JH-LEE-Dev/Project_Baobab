@@ -140,6 +140,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     // 셰이더 타일 애니메이션(켠 스테이지만). 켜지면 물·물가·스텐실 애니메이션 타일을 첫 프레임 그림 타일로 바꾼 배열(아래 버퍼)을 깐다.
     // 원본 배열(waterTiles 등)은 그대로 두어 물 판정·용암 빛 등 다른 코드가 보던 값이 바뀌지 않는다.
     private readonly StageTileFrameAnimation tileFrameAnimation = new StageTileFrameAnimation();
+    // 바닥·물 타일맵(개별 모드)을 줄마다 한 덩어리 메쉬로 대신 그린다(그림은 같고 그리기 준비만 싸다, 렌더링 전용). TileRowStripRenderer 참고.
+    private readonly TileRowStripRenderer rowStrips = new TileRowStripRenderer();
     private TileBase[] waterTilesFrameBuffer;
     private TileBase[] waterCornerTilesFrameBuffer;
     private TileBase[] waterStencilTilesFrameBuffer;
@@ -485,6 +487,11 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         bWaterDecoGridReady = false;
         ApplyTiles();
         ApplyOuterWaterTiles();
+
+        // 바닥·물 타일(맵 안팎)과 재질이 모두 정해진 뒤에 줄 메쉬를 굽는다. 타일 데이터는 건드리지 않는다.
+        // 로그라이크는 지형을 실행 중에 바꾸므로 쓰지 않는다(이전 맵의 줄 메쉬만 걷는다).
+        if (true == GameModeContext.IsRoguelike) rowStrips.Clear();
+        else rowStrips.Rebuild(groundTilemap, waterTilemap);
 
         // 인자 순서 주의: (잔디 타일 수, 걷기 가능 타일 수)다.
         // 나무는 잔디에만 심기고(TilemapGeneratedEvent가 넘기는 grassPositions가 곧 스폰 후보다)
@@ -883,6 +890,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     {
         if (null != cachedCombatTileFlush) TreeTileWriteBatch.Unregister(cachedCombatTileFlush);
         StageAmbienceShaderGlobals.Clear();
+        rowStrips.Dispose();
         tileFrameAnimation.End();
     }
 
