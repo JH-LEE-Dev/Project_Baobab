@@ -100,7 +100,9 @@ public class UIView_RoguelikeCollection : UIView_RoguelikeModalBase
     private const int DetailBadgeLabelTop = DetailHeight - 18 - DetailMaskTop;
     private const int DetailBadgeGap = 4;
     private const int DetailMaxLevel = 5;
-    private const float DetailDescWidth = 182f;
+    private const float DetailDescWidth = 196f;
+    private const float TallFontLineHeightThreshold = 18f;
+    private const float TallFontLineSpacing = -15f;
 
     // ---------- 연출 값(시뮬레이션 K · E9K, 시간은 unscaled) ----------
     private const float FrameSeconds = 1f / 60f;
@@ -1709,6 +1711,16 @@ public class UIView_RoguelikeCollection : UIView_RoguelikeModalBase
         return Mathf.RoundToInt(height - lineHeight);
     }
 
+    /// <summary>Lorem_Optimum처럼 줄높이가 큰 폰트에만 음수 줄간격을 적용해 상세 설명 하단 넘침을 막는다.</summary>
+    public static float ResolveDetailDescLineSpacing(TMP_Text _text, float _width)
+    {
+        if (null == _text) return 0f;
+
+        _text.lineSpacing = 0f;
+        float lineHeight = Mathf.Ceil(_text.GetPreferredValues("A", _width, Unbounded).y);
+        return TallFontLineHeightThreshold < lineHeight ? TallFontLineSpacing : 0f;
+    }
+
     private void SetDetailText(TMP_Text _text, string _value, Color32 _color, int _top)
     {
         if (null == _text) return;
@@ -1719,6 +1731,7 @@ public class UIView_RoguelikeCollection : UIView_RoguelikeModalBase
         PlaceText(_text, 0f, _top, width);
         if (_text == detailDesc)
         {
+            _text.lineSpacing = ResolveDetailDescLineSpacing(_text, DetailDescWidth);
             // 설명은 줄바꿈이 있는 여러 줄이라 높이를 글자 크기에 맞춘다.
             float height = Mathf.Ceil(_text.GetPreferredValues(_value, DetailDescWidth, Unbounded).y);
             _text.rectTransform.sizeDelta = new Vector2(DetailDescWidth, height);
