@@ -1274,13 +1274,14 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             float stepDt = steps / fps;
             lastFlickerFrame = meshFrame;
 
-            // 불씨 이동·생성과 쿼드 채우기는 모든 LateUpdate가 끝난 직후 일꾼 스레드에서 돌고(ComputeDeferred), UI 메쉬 갱신 요청은 주 스레드에서 한다(ApplyDeferred).
+            // 불씨 이동·생성과 쿼드 채우기(ComputeDeferred)와 UI 메쉬 갱신 요청(ApplyDeferred)은 모든 LateUpdate가 끝난 직후 대기열이 돌린다.
             // 캔버스가 메쉬를 다시 만드는 시점(그리기 직전)보다 앞이다.
             deferredStepDt = stepDt;
             deferredMeshFrame = meshFrame;
             bDeferredHasBack = null != backGraphic;
             bDeferredHasFront = null != frontGraphic;
-            deferredSlot = PresentationLayer.VFX.PixelVfxWorkQueue.Enqueue(this);
+            // UI 그래픽이라 같은 프레임의 캔버스 갱신이 결과를 읽는다. 대기열이 넘기는 자리에서 주 스레드로 바로 계산·반영하게 표시한다.
+            deferredSlot = PresentationLayer.VFX.PixelVfxWorkQueue.Enqueue(this, true);
         }
 
         private void OnDisable()
