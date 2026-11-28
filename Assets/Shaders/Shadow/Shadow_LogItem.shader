@@ -13,6 +13,7 @@ Shader "Custom/Shadow_LogItem"
         _ShadowFrameRect3("Frame 2+ UV Rect", Vector) = (0,0,1,1)
         // 포물선 비행 중(Dropped 이전)에만 CPU가 매 프레임 갱신하는 값(픽셀 단위). Dropped 상태에서는 0으로 유지되어
         // 별도의 CPU 갱신 없이 아래의 사인파 공식만으로 둥둥 뜨는 프레임 전환이 이루어진다.
+        // 원목(LogItem)은 높이를 스프라이트 색의 알파로 넘기고(아래 frag 참고) 이 값은 속성 블록에 언제나 0으로 둔다. 다른 아이템은 이 값으로 넘긴다(둘은 더해진다).
         _ShadowHeightPixels("Flight Height In Pixels (CPU-Driven)", Float) = 0
     }
 
@@ -39,12 +40,14 @@ Shader "Custom/Shadow_LogItem"
             #pragma vertex vert
             #pragma fragment frag
             #pragma multi_compile_instancing
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            // Core2D.hlsl: Core.hlsl에 더해, 인스턴싱으로 그릴 때의 스프라이트 색(unity_SpriteColor)을 인스턴스별로 읽게 해 준다
+            #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/Core2D.hlsl"
 
             struct Attributes
             {
                 float4 positionOS : POSITION;
                 float2 uv : TEXCOORD0;
+                float4 color : COLOR;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -53,6 +56,8 @@ Shader "Custom/Shadow_LogItem"
                 float4 positionHCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
                 float3 worldPos : TEXCOORD1;
+                // 스프라이트 색의 알파(묶여 그려질 때는 정점 색, 따로 그려질 때는 unity_SpriteColor에 들어온다. 둘 중 하나는 1이다)
+                nointerpolation float spriteAlpha : TEXCOORD2;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -82,6 +87,7 @@ Shader "Custom/Shadow_LogItem"
                 OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
                 OUT.worldPos = TransformObjectToWorld(IN.positionOS.xyz);
                 OUT.uv = IN.uv;
+                OUT.spriteAlpha = IN.color.a * unity_SpriteColor.a;
                 return OUT;
             }
 
@@ -118,7 +124,13 @@ Shader "Custom/Shadow_LogItem"
                 float idleOffsetPixels = sin(_Time.y * 2.5 + floatingPhase) * 1.0; // -1..1 픽셀
 
                 // 포물선 비행 중일 때만 CPU가 채워주는 값(착지 시 0으로 리셋된 뒤 다시 갱신되지 않음)
-                float flightHeightPixels = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ShadowHeightPixels);
+                // 원목은 스프라이트 색의 알파로 넘긴다: 알파 1 = 0픽셀, 알파 0.2 = 2.5픽셀 이상(LogItem.SetShadowFlightHeight와 같은 식).
+                // 렌더러마다 내용이 다른 속성 블록을 쓰면 그림자가 하나씩 따로 그려지기 때문이다(날아가는 원목 270개일 때 그리기 준비 약 0.9ms).
+                // 블록 내용이 모두 같으면 함께 그려지고, 스프라이트 색은 달라도 함께 그려진다.
+                // 2.5픽셀 이상은 아래 판정에서 언제나 마지막 프레임이라(둥둥 값이 -1 이상) 잘라도 결과가 같다.
+                // 이 셰이더의 그림자는 스프라이트 색을 다른 데 쓰지 않으며, 색이 흰색(알파 1)이면 0픽셀이라 예전과 같다.
+                float flightHeightPixels = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ShadowHeightPixels)
+                    + (1.0 - saturate(IN.spriteAlpha)) * (2.5 / 0.8);
 
                 float totalPixels = idleOffsetPixels + flightHeightPixels;
 

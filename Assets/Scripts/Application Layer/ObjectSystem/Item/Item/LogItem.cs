@@ -145,6 +145,11 @@ public class LogItem : Item, IStaticCollidable
 
     private MaterialPropertyBlock mpb;
 
+    // 그림자 스프라이트 색의 알파에 마지막으로 넣은 값(날아가는 높이를 담는다 - SetShadowFlightHeight). 같은 값이면 다시 쓰지 않는다.
+    private float shadowHeightAlphaWritten = float.NaN;
+    private const float ShadowHeightMaxPixels = 2.5f;
+    private const float ShadowHeightAlphaSpan = 0.8f;
+
     private CustomSortable customSortable;
 
     private bool bDisableCustomSortable = false;
@@ -913,7 +918,7 @@ public class LogItem : Item, IStaticCollidable
 
         if (null != shadowRenderer)
         {
-            shadowRenderer.color = originalShadowColor; // FadeAndVanish 연출로 줄어든 알파 복구
+            SetShadowFlightHeight(0f); // 그림자 색을 원래대로(알파 1 = 높이 0)
 
             // 페이드로 _BaseColor 알파를 깎아둔 채 풀에 반납됐을 때만 되돌린다(씬 전환으로 연출이
             // 중간에 끊기는 경로가 있어서, 페이드가 끝까지 간 시점이 아니라 여기서 복구해야 한다).
@@ -1166,9 +1171,9 @@ public class LogItem : Item, IStaticCollidable
             outlineSR.color = c;
         }
 
-        // 그림자는 SpriteRenderer.color로 못 낮춘다. Shadow_LogItem 셰이더는 정점 컬러(COLOR 시맨틱)를
-        // 아예 받지 않고 최종 알파를 texColor.a * _BaseColor.a 로만 내므로, 렌더러 색을 바꿔도 화면에
-        // 아무 변화가 없다. 그래서 본체와 같은 비율을 머티리얼의 _BaseColor 알파에 곱해 넣는다.
+        // 그림자는 SpriteRenderer.color로 못 낮춘다. Shadow_LogItem 셰이더는 스프라이트 색의 알파를 날아가는 높이로만 읽고
+        // (SetShadowFlightHeight) 최종 알파는 texColor.a * _BaseColor.a 로만 내므로, 렌더러 색으로는 그림자가 흐려지지 않는다.
+        // 그래서 본체와 같은 비율을 머티리얼의 _BaseColor 알파에 곱해 넣는다.
         // (_ShadowHeightPixels와 같은 프로퍼티 블록을 쓰므로 반드시 Get -> 수정 -> Set 순서를 지킨다)
         if (shadowRenderer != null)
         {
@@ -1719,10 +1724,27 @@ public class LogItem : Item, IStaticCollidable
         float normalizedHeight = height > 0.0001f ? Mathf.Clamp01(_heightOffset / height) : 0f;
         float shadowHeightPixels = normalizedHeight * shadowFlightPixelScale;
 
-        if (mpb == null) mpb = new MaterialPropertyBlock();
-        shadowRenderer.GetPropertyBlock(mpb);
-        mpb.SetFloat(ShadowHeightPixelsPropertyID, shadowHeightPixels);
-        shadowRenderer.SetPropertyBlock(mpb);
+        SetShadowFlightHeight(shadowHeightPixels);
+    }
+
+    /// <summary>
+    /// 그림자 셰이더(Shadow_LogItem)에 날아가는 높이(픽셀, 0 이상)를 넘긴다. 예전에는 렌더러별 속성 블록(_ShadowHeightPixels)으로 넘겼는데,
+    /// 블록 내용이 원목마다 달라 날아가는 원목의 그림자가 하나씩 따로 그려졌다(날아가는 원목 270개일 때 그리기 준비 약 0.9ms).
+    /// 스프라이트 색은 렌더러마다 달라도 함께 그려지므로 알파에 담는다: 알파 1 = 0픽셀, 알파 0.2 = 2.5픽셀 이상.
+    /// 셰이더는 2.5픽셀 이상이면 언제나 마지막 그림자 프레임을 고르므로(둥둥 값이 -1 이상) 잘라도 결과가 같다.
+    /// 속성 블록은 없애지 않는다 - 모든 원목 그림자가 같은 내용(_ShadowHeightPixels = 0, InitializeShadowFrames)을 들고 있어야
+    /// 엔진이 예전과 같은 길로 그린다(블록을 비우면 그림자 그림이 달라지는 것을 화면 대조로 확인했다).
+    /// 그림자 셰이더는 스프라이트 색을 이 용도로만 읽는다. 그림자를 흐리게 하려면 색이 아니라 _BaseColor를 써야 한다(ApplyLaunchFadeAlpha).
+    /// </summary>
+    private void SetShadowFlightHeight(float _pixels)
+    {
+        if (shadowRenderer == null) return;
+
+        float alpha = 1f - ShadowHeightAlphaSpan * (Mathf.Min(_pixels, ShadowHeightMaxPixels) / ShadowHeightMaxPixels);
+        if (alpha == shadowHeightAlphaWritten) return;
+
+        shadowRenderer.color = new Color(originalShadowColor.r, originalShadowColor.g, originalShadowColor.b, alpha);
+        shadowHeightAlphaWritten = alpha;
     }
 
     // 그림자용 4프레임 스프라이트의 UV 사각형을 계산해 셰이더에 1회 전달한다(스폰/재사용 시 1회만 실행).
@@ -1750,10 +1772,13 @@ public class LogItem : Item, IStaticCollidable
             sharedShadowMaterial.SetVector(ShadowLocalOffsetPropertyID, new Vector4(localOffset.x, localOffset.y, 0f, 0f));
         }
 
+        // 날아가는 높이는 스프라이트 색의 알파로 넘긴다(SetShadowFlightHeight). 블록의 _ShadowHeightPixels는 언제나 0으로 둔다 -
+        // 모든 원목 그림자의 블록 내용이 같아야 함께 그려진다.
         if (mpb == null) mpb = new MaterialPropertyBlock();
         shadowRenderer.GetPropertyBlock(mpb);
         mpb.SetFloat(ShadowHeightPixelsPropertyID, 0f);
         shadowRenderer.SetPropertyBlock(mpb);
+        SetShadowFlightHeight(0f);
     }
 
     private static Vector4 GetSpriteUVRect(Sprite _sprite)
