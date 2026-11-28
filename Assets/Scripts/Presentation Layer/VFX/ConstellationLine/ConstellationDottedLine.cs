@@ -138,6 +138,20 @@ public class ConstellationDottedLine : MonoBehaviour
     private readonly List<Vector2> cachedUV0s = new List<Vector2>(512);
     private readonly List<Vector2> cachedUV1s = new List<Vector2>(512);
     private readonly List<Vector3> cachedWaypoints = new List<Vector3>(64);
+
+    // 푸른빛 전환 중에는 점의 위치·모양은 그대로이고 정점 색만 바뀐다. 메쉬 전체를 만들 때 점마다 색 계산에 필요한 값을 적어 두고,
+    // 전환 프레임에는 그 값으로 색만 다시 계산해 넣는다(RefreshDotColors). 점의 순서는 정점 버퍼에 들어간 순서와 같다.
+    private struct DotColorKey
+    {
+        public int segment;        // 이 점이 놓인 구간 번호(노드 segment -> segment + 1)
+        public float progress;     // 구간 안 진행도(0~1)
+        public float weightFromA;  // Pow(1 - progress, 0.55)
+        public float weightFromB;  // Pow(progress, 0.55)
+        public int vertexCount;    // 이 점이 만든 정점 수(모양에 따라 4 / 8 / 20)
+    }
+    private readonly List<DotColorKey> cachedDotColorKeys = new List<DotColorKey>(128);
+    // cachedDotColorKeys·cachedColors가 지금 메쉬(activeNodes로 만든 것)와 맞는 동안만 true. 메쉬를 비우거나 다른 노드 목록으로 만들면 false가 된다.
+    private bool bDotColorKeysValid = false;
     private readonly List<ConstellationNode> activeNodes = new List<ConstellationNode>(16);
 
     // activeNodes와 같은 인덱스의 푸른빛 전환 진행도(0: 황금빛, 1: 푸른빛)와 시작 전 남은 대기 시간
@@ -216,7 +230,7 @@ public class ConstellationDottedLine : MonoBehaviour
         // 마지막 별 예고 맥동(켜져 있거나 꺼지는 중일 때만 일한다). 메쉬는 다시 만들지 않고 셰이더 값만 바꾼다.
         UpdateLastStarWarning(Time.deltaTime);
 
-        // 벌목된 노드의 푸른빛 전환이 진행 중이면 그 프레임만 무할당 재빌드(전환이 끝나면 다시 정적 상태)
+        // 벌목된 노드의 푸른빛 전환이 진행 중이면 그 프레임만 정점 색을 다시 넣는다(전환이 끝나면 다시 정적 상태)
         bool bBlendChanged = AdvanceNodeBlends(Time.deltaTime);
 
         // 타겟 Transform을 추적 중이고 위치가 변경되었을 때만 무할당 재빌드
@@ -247,7 +261,11 @@ public class ConstellationDottedLine : MonoBehaviour
 
         if (true == bBlendChanged && 0 < activeNodes.Count)
         {
-            BuildConstellationMesh(activeNodes, isClosedLoop);
+            // 전환 중에 바뀌는 것은 정점 색뿐이라 색만 다시 계산해 넣는다. 적어 둔 값이 지금 메쉬와 맞지 않으면 전체를 다시 만든다.
+            if (false == RefreshDotColors())
+            {
+                BuildConstellationMesh(activeNodes, isClosedLoop);
+            }
         }
     }
 
@@ -509,6 +527,7 @@ public class ConstellationDottedLine : MonoBehaviour
     /// </summary>
     public void Clear()
     {
+        bDotColorKeysValid = false;
         if (null != proceduralMesh)
         {
             proceduralMesh.Clear();
@@ -678,6 +697,84 @@ public class ConstellationDottedLine : MonoBehaviour
     }
 
     /// <summary>
+    /// 점 하나의 색(황금빛 ↔ 푸른빛 그라데이션 + 전환 앞선의 반짝임)을 계산합니다. 메쉬 전체를 만들 때와 전환 중 색만 다시 넣을 때가
+    /// 같은 식을 쓰도록 한 곳에 둡니다.
+    /// </summary>
+    private Color ComputeDotColor(float _blendA, float _blendB, float _progressAlongSeg, float _weightFromA, float _weightFromB)
+    {
+        // 노드 간 색상 보간 (황금빛 나무 ↔ 푸른색 큰 별 그라데이션)
+        // 푸른색 영역이 노란색에 묻히지 않도록, 큰 별과 연결된 구간에서는 푸른색이 선분의 65% 이상을 시원하게 장악하는 비대칭 곡선을 쓴다.
+        // 벌목 전환 중에는 각 노드의 푸른빛이 그 노드에서 선분 안쪽으로 번지는 앞선(sweep)을 따라 드러난다.
+        // 앞선이 완전히 지나간 뒤(blend = 1)의 색은 기존 최종 색과 정확히 같다.
+        float sweepA = Mathf.Clamp01((_blendA * (1.0f + SweepSoftness) - _progressAlongSeg) / SweepSoftness);
+        float sweepB = Mathf.Clamp01((_blendB * (1.0f + SweepSoftness) - (1.0f - _progressAlongSeg)) / SweepSoftness);
+        float reachA = Mathf.SmoothStep(0.0f, 1.0f, sweepA);
+        float reachB = Mathf.SmoothStep(0.0f, 1.0f, sweepB);
+
+        // 나무(A) <- 큰별(B): 푸른빛이 B 쪽에서 빠르게 치고 올라옴 / 큰별(A) -> 나무(B): A 쪽에서 오래 유지되다가 나무 쪽에서 전환
+        float blueAmount = reachA * (1.0f - reachB) * _weightFromA + (1.0f - reachA) * reachB * _weightFromB + reachA * reachB;
+
+        Color dotBaseColor = Color.Lerp(TreeGoldenColor, BigStarBlueColor, blueAmount);
+
+        // 전환 앞선이 지나가는 도트만 살짝 밝게 (앞선의 중앙에서 최대, 앞선 앞뒤에서는 0)
+        if (0.0f < felledTransitionGlow)
+        {
+            float frontBump = Mathf.Max(4.0f * sweepA * (1.0f - sweepA), 4.0f * sweepB * (1.0f - sweepB));
+            dotBaseColor = Color.Lerp(dotBaseColor, TransitionGlowColor, felledTransitionGlow * frontBump);
+        }
+
+        return dotBaseColor;
+    }
+
+    /// <summary>
+    /// 푸른빛 전환 프레임용: 메쉬는 그대로 두고 정점 색만 다시 계산해 넣습니다(Zero GC Alloc). 적어 둔 값이 지금 메쉬와 맞지 않으면
+    /// 아무것도 넣지 않고 false를 돌려주며, 그때는 호출한 쪽이 메쉬 전체를 다시 만듭니다.
+    /// </summary>
+    private bool RefreshDotColors()
+    {
+        int nodeCount = activeNodes.Count;
+        if (false == bDotColorKeysValid || null == proceduralMesh || 2 > nodeCount) return false;
+
+        int colorCount = cachedColors.Count;
+        int vertexIndex = 0;
+        int segment = -1;
+        float blendA = 0.0f;
+        float blendB = 0.0f;
+        for (int i = 0; i < cachedDotColorKeys.Count; i++)
+        {
+            DotColorKey key = cachedDotColorKeys[i];
+            if (key.segment != segment)
+            {
+                segment = key.segment;
+                blendA = GetNodeBlend(segment, activeNodes);
+                blendB = GetNodeBlend((segment + 1) % nodeCount, activeNodes);
+            }
+
+            if (colorCount < vertexIndex + key.vertexCount)
+            {
+                bDotColorKeysValid = false;
+                return false;
+            }
+
+            Color dotColor = ComputeDotColor(blendA, blendB, key.progress, key.weightFromA, key.weightFromB);
+            for (int v = 0; v < key.vertexCount; v++)
+            {
+                cachedColors[vertexIndex] = dotColor;
+                vertexIndex++;
+            }
+        }
+
+        if (colorCount != vertexIndex)
+        {
+            bDotColorKeysValid = false;
+            return false;
+        }
+
+        proceduralMesh.SetColors(cachedColors);
+        return true;
+    }
+
+    /// <summary>
     /// 다중 노드 별자리 네트워크 단일 메쉬 일괄 빌드 (Zero GC Alloc)
     /// </summary>
     private void BuildConstellationMesh(IReadOnlyList<ConstellationNode> _nodes, bool _isClosed)
@@ -688,6 +785,8 @@ public class ConstellationDottedLine : MonoBehaviour
         cachedColors.Clear();
         cachedUV0s.Clear();
         cachedUV1s.Clear();
+        cachedDotColorKeys.Clear();
+        bDotColorKeysValid = false;
 
         if (null == _nodes || 2 > _nodes.Count)
         {
@@ -782,28 +881,10 @@ public class ConstellationDottedLine : MonoBehaviour
                     float progressAlongSeg = Mathf.Clamp01(currentSegDist / segDist);
                     float globalProgress = Mathf.Clamp01((accumulatedNetworkDist + currentSegDist) / totalNetworkDist);
 
-                    // 노드 간 색상 보간 (황금빛 나무 ↔ 푸른색 큰 별 그라데이션)
-                    // 푸른색 영역이 노란색에 묻히지 않도록, 큰 별과 연결된 구간에서는 푸른색이 선분의 65% 이상을 시원하게 장악하는 비대칭 곡선을 쓴다.
-                    // 벌목 전환 중에는 각 노드의 푸른빛이 그 노드에서 선분 안쪽으로 번지는 앞선(sweep)을 따라 드러난다.
-                    // 앞선이 완전히 지나간 뒤(blend = 1)의 색은 기존 최종 색과 정확히 같다.
-                    float sweepA = Mathf.Clamp01((blendA * (1.0f + SweepSoftness) - progressAlongSeg) / SweepSoftness);
-                    float sweepB = Mathf.Clamp01((blendB * (1.0f + SweepSoftness) - (1.0f - progressAlongSeg)) / SweepSoftness);
-                    float reachA = Mathf.SmoothStep(0.0f, 1.0f, sweepA);
-                    float reachB = Mathf.SmoothStep(0.0f, 1.0f, sweepB);
-
-                    // 나무(A) <- 큰별(B): 푸른빛이 B 쪽에서 빠르게 치고 올라옴 / 큰별(A) -> 나무(B): A 쪽에서 오래 유지되다가 나무 쪽에서 전환
+                    // 노드 간 색상 보간 (황금빛 나무 ↔ 푸른색 큰 별 그라데이션, 식은 ComputeDotColor)
                     float weightFromA = Mathf.Pow(1.0f - progressAlongSeg, 0.55f);
                     float weightFromB = Mathf.Pow(progressAlongSeg, 0.55f);
-                    float blueAmount = reachA * (1.0f - reachB) * weightFromA + (1.0f - reachA) * reachB * weightFromB + reachA * reachB;
-
-                    Color dotBaseColor = Color.Lerp(TreeGoldenColor, BigStarBlueColor, blueAmount);
-
-                    // 전환 앞선이 지나가는 도트만 살짝 밝게 (앞선의 중앙에서 최대, 앞선 앞뒤에서는 0)
-                    if (0.0f < felledTransitionGlow)
-                    {
-                        float frontBump = Mathf.Max(4.0f * sweepA * (1.0f - sweepA), 4.0f * sweepB * (1.0f - sweepB));
-                        dotBaseColor = Color.Lerp(dotBaseColor, TransitionGlowColor, felledTransitionGlow * frontBump);
-                    }
+                    Color dotBaseColor = ComputeDotColor(blendA, blendB, progressAlongSeg, weightFromA, weightFromB);
 
                     // 트윙클 및 색상 시프트 위상
                     float twinklePhase = Mathf.Repeat(GetPseudoRandom(segBaseSeed + dotGlobalIndex * 17) * 0.5f + 0.5f, 1.0f);
@@ -811,7 +892,16 @@ public class ConstellationDottedLine : MonoBehaviour
                     Vector2 uv1Phases  = new Vector2(twinklePhase, colorPhase);
 
                     // 도트 형태별 쿼드 생성
+                    int dotFirstVertex = cachedVertices.Count;
                     AddDotByShape(dotCenter, basePixelSize, globalProgress, progressAlongSeg, dotBaseColor, lineNormal, uv1Phases, segBaseSeed + dotGlobalIndex);
+                    cachedDotColorKeys.Add(new DotColorKey
+                    {
+                        segment = s,
+                        progress = progressAlongSeg,
+                        weightFromA = weightFromA,
+                        weightFromB = weightFromB,
+                        vertexCount = cachedVertices.Count - dotFirstVertex
+                    });
 
                     dotGlobalIndex++;
                     nextSpacing = GetPseudoRandomRange(segBaseSeed + dotGlobalIndex * 43, minSpacingUnit, maxSpacingUnit);
@@ -832,6 +922,9 @@ public class ConstellationDottedLine : MonoBehaviour
         proceduralMesh.SetColors(cachedColors);
         proceduralMesh.SetTriangles(cachedTriangles, 0);
         proceduralMesh.RecalculateBounds();
+
+        // 실제 노드로 만든 메쉬일 때만 다음 전환 프레임에 색만 다시 넣을 수 있다(에디터 미리보기 노드로 만든 메쉬는 제외).
+        bDotColorKeysValid = true == ReferenceEquals(_nodes, activeNodes);
     }
 
     /// <summary>
