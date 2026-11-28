@@ -619,6 +619,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable, 
         InitializeShadow(bottomShadowObject);
 
         customSortable = GetComponent<CustomSortable>();
+        // 나무는 켜져 있는 동안 자리를 옮기지 않는다(풀에서 꺼낼 때만 놓인다). 지진 물체 출렁임이 이 표시를 보고 자리를 기억해 둔다.
+        if (null != customSortable) customSortable.SetStaticGround(true);
 
         if (treeVisualComponent != null)
         {

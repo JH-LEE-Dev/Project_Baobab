@@ -20,6 +20,21 @@ public class CustomSortable : MonoBehaviour
 
     public int CurrentSortingOrder { get; private set; }
 
+    /// <summary>
+    /// 지면 위치(GroundPosition)가 달라질 수 있는 일이 생길 때마다 바뀌는 번호: 켜질 때(풀에서 다시 꺼내져 다른 자리에 놓일 수 있다),
+    /// 공중 높이가 바뀔 때, 기준점이 바뀔 때. 제자리에 서 있는 물체(IsStaticGround)의 지면 위치를 기억해 두는 쪽(QuakeObjectRide)은
+    /// 이 번호가 그대로인 동안만 기억한 값을 쓴다.
+    /// </summary>
+    public int GroundSerial { get; private set; }
+
+    /// <summary>
+    /// 켜져 있는 동안 자리를 옮기지 않는 물체(나무)인지. 이런 물체를 옮기는 코드는 껐다 켜거나(풀에 넣었다 꺼내기) 옮긴 뒤 끄기까지 한 번에 해야 한다 -
+    /// 켜 둔 채로 다른 자리에 놓으면 GroundSerial이 그대로라 기억해 둔 자리가 어긋난다.
+    /// </summary>
+    public bool IsStaticGround { get; private set; }
+
+    public void SetStaticGround(bool _bStatic) => IsStaticGround = _bStatic;
+
     /// <summary>정렬 기준이 되는 지면 위치(정렬 기준점에서 공중 높이를 뺀 자리). UpdateSortingOrder와 같은 기준이다.</summary>
     public Vector3 GroundPosition
     {
@@ -41,7 +56,11 @@ public class CustomSortable : MonoBehaviour
         foreach (CustomSortable sortable in enabledSortables) _into.Add(sortable);
     }
 
-    private void OnEnable() => enabledSortables.Add(this);
+    private void OnEnable()
+    {
+        enabledSortables.Add(this);
+        unchecked { GroundSerial++; }
+    }
 
     private void OnDisable() => enabledSortables.Remove(this);
 
@@ -49,6 +68,7 @@ public class CustomSortable : MonoBehaviour
     {
         sortAnchor = _sortAnchor;
         sortingGroup = _sortingGroup;
+        unchecked { GroundSerial++; }
         
         spriteRenderers.Clear();
 
@@ -108,6 +128,7 @@ public class CustomSortable : MonoBehaviour
 
     public void SetHeight(float _height)
     {
+        if (height != _height) unchecked { GroundSerial++; }
         height = _height;
     }
 

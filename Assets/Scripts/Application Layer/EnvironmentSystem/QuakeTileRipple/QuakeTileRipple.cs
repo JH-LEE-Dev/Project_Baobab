@@ -486,6 +486,39 @@ public sealed class QuakeTileRipple
         return order >= 0;
     }
 
+    /// <summary>PixelsAt과 FrontAgeAt을 칸 한 번 찾기로 한다. 같은 자리로 두 함수를 따로 부른 것과 같은 값이다.</summary>
+    public void SampleAt(Vector3 _world, out int _pixels, out float _frontAge)
+    {
+        int order = OrderAt(_world);
+        if (order < 0)
+        {
+            _pixels = 0;
+            _frontAge = float.NegativeInfinity;
+            return;
+        }
+
+        _pixels = lastPixels[order];
+        _frontAge = elapsed - cells[order].key / Mathf.Max(0.1f, settings.frontSpeed);
+    }
+
+    /// <summary>
+    /// 앞머리가 지난 지 _seconds가 안 된 칸의 거리(key) 범위. FrontAgeAt이 0 이상 _seconds 미만인 칸은 모두 이 범위 안에 있다
+    /// (나이 = 흐른 시간 - 거리 / 앞머리 속도). 물결이 돌지 않으면 빈 범위.
+    /// </summary>
+    public void GetFrontKeyWindow(float _seconds, out float _min, out float _max)
+    {
+        if (false == bPlaying)
+        {
+            _min = float.PositiveInfinity;
+            _max = float.NegativeInfinity;
+            return;
+        }
+
+        float speed = Mathf.Max(0.1f, settings.frontSpeed);
+        _min = (elapsed - _seconds) * speed;
+        _max = elapsed * speed;
+    }
+
     private int OrderAt(Vector3 _world)
     {
         if (false == bPlaying || null == rippleGrid) return -1;

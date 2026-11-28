@@ -20,6 +20,15 @@ using UnityEngine.Rendering;
 ///   - 물(용암) 칸은 출렁이지 않으므로 그 위의 물체도 그대로다.
 /// 연출 중 새로 나타난 물체(쓰러진 나무의 원목 등)는 잠깐마다 켜진 정렬기 목록(CustomSortable.CollectEnabled)에서 찾아 더한다.
 ///
+/// [훑기 줄이기 - 옮길 물체와 옮길 양은 그대로]
+///   그릴 때마다 물체 수백 개를 훑는데 실제로 옮기는 것은 수십 개뿐이라, 옮길 일이 없는 물체는 엔진에 묻지 않고 건너뛴다.
+///   - 나무: 자리를 옮기지 않는 물체(CustomSortable.IsStaticGround)라 진원에서의 거리를 기억해 둔다. 지금 움직이는 칸 범위 밖이고
+///     맞아서 튀는 중도 아니면 건너뛴다(범위 밖 칸의 높이는 0이라 원래도 옮기지 않았다). 풀에서 다시 꺼내져 자리가 바뀌면
+///     정렬기의 GroundSerial이 달라져 다시 읽는다.
+///   - 그 밖의 물체: 자리는 매번 읽되(움직인다), 움직이는 칸 범위 밖이면 칸 높이를 찾지 않고(0), 앞머리가 방금 지난 범위 밖이면
+///     튀는 때도 찾지 않는다(튀지 않는다). 높이와 튀는 때를 같은 자리로 읽는 물체는 칸을 한 번만 찾는다.
+///   - 새 물체 찾기: 영역 밖에 서 있는 나무는 자리가 바뀌지 않는 한 다시 보지 않는다.
+///
 /// [나무 - 옮긴 높이를 셰이더에 알린다]
 ///   나무 셰이더(TreeWindSway.hlsl)는 피봇(트랜스폼 자리)으로 바람·지진 떨림 위상과 진원 거리를 정한다. 옮긴 채로 그리면 위상이 튀고
 ///   거리가 실제 자리(피해 판정)와 어긋난다. 그래서 나무(TreeObj 루트)를 옮길 때 옮긴 픽셀과, 지진에 맞은 나무(MarkStruck)가 튀는
@@ -48,7 +57,12 @@ public sealed class QuakeObjectRide
     private sealed class Rider
     {
         public Transform root;
+        public GameObject rootObject; // root.gameObject(켜짐 확인용, 매번 다시 얻지 않는다)
         public Part[] parts;
+        // [나무 자리 기억] 진원에서의 거리 제곱과, 그 값을 읽었을 때의 정렬기 GroundSerial(같으면 자리가 그대로다)
+        public bool bGroundCached;
+        public int groundSerial;
+        public float groundDistanceSq;
         public bool bTree;   // 나무 셰이더에 옮긴 높이를 알린다([나무])
         public PopKind pop;  // 앞머리가 지날 때 통 튀는 물체([튐])
         public bool[] popParts;      // 부분마다 튀는지(바닥 층 그림만 있는 부분 - 그림자·범위 표시 - 은 튀지 않는다)
@@ -59,6 +73,16 @@ public sealed class QuakeObjectRide
     }
 
     private enum PopKind { None, Item, Character }
+
+    // 살아 있는 정렬기끼리만 견주는 자리에서 쓴다(유니티의 == 대신 같은 참조인지만 본다).
+    private sealed class ReferenceComparer : IEqualityComparer<CustomSortable>
+    {
+        public static readonly ReferenceComparer Instance = new ReferenceComparer();
+
+        public bool Equals(CustomSortable _a, CustomSortable _b) => ReferenceEquals(_a, _b);
+
+        public int GetHashCode(CustomSortable _sortable) => System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(_sortable);
+    }
 
     // [나눠 모으기] 처음 모으기에서 Tick마다 더하는 물체 수. 물체 하나 더하는 데 수십 µs라 한 프레임에 1ms 남짓이다.
     // 전조(약 0.35초 = 20프레임 남짓) 동안 수백 개를 다 모은다. 전조가 없어도 가까운 것부터라 앞머리보다 빠르다.
@@ -105,6 +129,8 @@ public sealed class QuakeObjectRide
     private readonly List<Rider> riders = new List<Rider>(512);
     private readonly HashSet<Transform> roots = new HashSet<Transform>();
     private readonly HashSet<CustomSortable> known = new HashSet<CustomSortable>();
+    // 영역 밖에 서 있는 것으로 확인한 나무 정렬기 → 그때의 GroundSerial. 번호가 그대로면 새 물체 찾기에서 다시 보지 않는다.
+    private readonly Dictionary<CustomSortable, int> outsideStatic = new Dictionary<CustomSortable, int>(ReferenceComparer.Instance);
     // 지금 옮겨 둔 트랜스폼과 옮기기 전 로컬 자리(되돌릴 때 그대로 쓴다).
     private readonly List<Transform> shifted = new List<Transform>(512);
     private readonly List<Vector3> savedLocal = new List<Vector3>(512);
@@ -185,6 +211,10 @@ public sealed class QuakeObjectRide
         ReturnArray(transformArrayPool, _rider.grounded);
 
         _rider.root = null;
+        _rider.rootObject = null;
+        _rider.bGroundCached = false;
+        _rider.groundSerial = 0;
+        _rider.groundDistanceSq = 0f;
         _rider.parts = null;
         _rider.bTree = false;
         _rider.pop = PopKind.None;
@@ -295,6 +325,7 @@ public sealed class QuakeObjectRide
         riders.Clear();
         roots.Clear();
         known.Clear();
+        outsideStatic.Clear();
         struckAt.Clear();
 
         for (int i = 0; i < standIns.Count; i++)
@@ -376,8 +407,16 @@ public sealed class QuakeObjectRide
             CustomSortable sortable = sortableBuffer[i];
             if (null == sortable || known.Contains(sortable)) continue;
 
+            // 영역 밖에 서 있던 나무는 자리가 그대로면(GroundSerial) 여전히 영역 밖이다. 자리를 다시 읽지 않는다.
+            bool bStatic = sortable.IsStaticGround;
+            if (bStatic && outsideStatic.TryGetValue(sortable, out int outsideSerial) && outsideSerial == sortable.GroundSerial) continue;
+
             Vector3 position = sortable.transform.position;
-            if (false == area.Contains(position)) continue;
+            if (false == area.Contains(position))
+            {
+                if (bStatic) outsideStatic[sortable] = sortable.GroundSerial;
+                continue;
+            }
 
             float dx = position.x - center.x;
             float dy = (position.y - center.y) * 2f;
@@ -463,6 +502,7 @@ public sealed class QuakeObjectRide
 
         Rider rider = riderPool.Count > 0 ? riderPool.Pop() : new Rider();
         rider.root = root;
+        rider.rootObject = root.gameObject;
         rider.parts = RentArrayCopy(partArrayPool, partBuffer);
         rider.bTree = bTree;
         if (PopKind.None != pop && false == bTree) SetupPop(rider, pop);
@@ -745,15 +785,46 @@ public sealed class QuakeObjectRide
         float posedLowSq = posedLow * posedLow;
         float posedHigh = posedMax + PosedKeyMargin;
         float posedHighSq = posedMax < posedMin ? -1f : posedHigh * posedHigh;
+        // [튐] 앞머리가 방금 지난 칸의 거리 범위. 이 밖의 물체는 앞머리 나이가 0 미만이거나 튀는·눌리는 시간을 넘어 튀지도 눌리지도 않는다.
+        ripple.GetFrontKeyWindow(Mathf.Max(objectPopSeconds, squashSeconds), out float frontMin, out float frontMax);
+        float frontLow = Mathf.Max(0f, frontMin - PosedKeyMargin);
+        float frontLowSq = frontLow * frontLow;
+        float frontHigh = frontMax + PosedKeyMargin;
+        float frontHighSq = frontMax < frontMin ? -1f : frontHigh * frontHigh;
 
         for (int r = 0; r < riders.Count; r++)
         {
             Rider rider = riders[r];
-            if (null == rider.root) continue;
-            if (false == rider.root.gameObject.activeInHierarchy)
+            if (rider.bTree)
+            {
+                // [나무 자리 기억] 맞아서 튀는 중이 아니고, 칸 높이를 따르지 않거나 기억해 둔 거리가 움직이는 칸 범위 밖이면 할 일이 없다
+                // (아래 경로로 가도 옮길 양이 0이다). 엔진에 묻지 않고 넘어간다.
+                if (0 == struckAt.Count || false == struckAt.ContainsKey(rider.root))
+                {
+                    if (false == bRideHeights) continue;
+
+                    CustomSortable treeSample = rider.parts[0].sample;
+                    if (rider.bGroundCached && false == ReferenceEquals(treeSample, null) && rider.groundSerial == treeSample.GroundSerial
+                        && false == (rider.groundDistanceSq >= posedLowSq && rider.groundDistanceSq <= posedHighSq)) continue;
+                }
+            }
+
+            if (null == rider.rootObject) continue;
+            if (false == rider.rootObject.activeInHierarchy)
             {
                 // 튀는 도중 꺼진(풀로 돌아간) 나무는 튐을 끝낸다. 다시 켜져도 새로 맞기 전에는 튀지 않는다.
                 if (struckAt.Count > 0) struckAt.Remove(rider.root);
+                // 꺼진 나무는 다시 켜질 때(GroundSerial이 바뀐다)까지 할 일이 없다. 어느 범위에도 들지 않는 거리로 기억해 둔다.
+                if (rider.bTree)
+                {
+                    CustomSortable offSample = rider.parts[0].sample;
+                    if (false == ReferenceEquals(offSample, null) && offSample.IsStaticGround)
+                    {
+                        rider.bGroundCached = true;
+                        rider.groundSerial = offSample.GroundSerial;
+                        rider.groundDistanceSq = float.PositiveInfinity;
+                    }
+                }
                 continue;
             }
 
@@ -764,10 +835,19 @@ public sealed class QuakeObjectRide
                 if (bRideHeights)
                 {
                     Part part = rider.parts[0];
-                    Vector3 ground = null != part.sample ? part.sample.GroundPosition : part.transform.position;
+                    CustomSortable sample = part.sample;
+                    bool bHasSample = null != sample;
+                    Vector3 ground = bHasSample ? sample.GroundPosition : part.transform.position;
                     float dx = ground.x - center.x;
                     float dy = (ground.y - center.y) * 2f;
                     float distanceSq = dx * dx + dy * dy;
+                    if (bHasSample && sample.IsStaticGround)
+                    {
+                        rider.bGroundCached = true;
+                        rider.groundSerial = sample.GroundSerial;
+                        rider.groundDistanceSq = distanceSq;
+                    }
+
                     if (distanceSq >= posedLowSq && distanceSq <= posedHighSq) treePixels = ripple.PixelsAt(ground);
                 }
 
@@ -777,23 +857,56 @@ public sealed class QuakeObjectRide
 
             // 높이를 모두 읽은 뒤에 옮긴다. 먼저 옮긴 부분의 정렬기를 다른 부분이 따르면 옮긴 자리로 칸을 고르게 된다.
             pixelBuffer.Clear();
+            bool bPop = PopKind.None != rider.pop;
+            // [튐] 앞머리가 이 물체 칸을 지난 뒤 지난 시간. 튀는 때를 정할 자리(rider.ground)와 같은 자리로 높이를 읽는 부분이 있으면 거기서 함께 읽는다.
+            float age = float.NegativeInfinity;
+            bool bAgeRead = false;
             for (int p = 0; p < rider.parts.Length; p++)
             {
                 Part part = rider.parts[p];
                 int pixels = 0;
-                if (bRideHeights && null != part.transform && part.transform.gameObject.activeInHierarchy)
+                if (bRideHeights)
                 {
-                    pixels = ripple.PixelsAt(null != part.sample ? part.sample.GroundPosition : part.transform.position);
+                    // 부분이 루트 자신이면 위에서 살아 있고 켜져 있음을 이미 확인했다.
+                    Transform partTransform = part.transform;
+                    if (ReferenceEquals(partTransform, rider.root) || (null != partTransform && partTransform.gameObject.activeInHierarchy))
+                    {
+                        CustomSortable sample = part.sample;
+                        bool bHasSample = null != sample;
+                        Vector3 ground = bHasSample ? sample.GroundPosition : partTransform.position;
+                        float dx = ground.x - center.x;
+                        float dy = (ground.y - center.y) * 2f;
+                        float distanceSq = dx * dx + dy * dy;
+                        // 움직이는 칸 범위 밖의 칸 높이는 0이다(나무와 같은 기준).
+                        bool bPosed = distanceSq >= posedLowSq && distanceSq <= posedHighSq;
+                        if (bPop && false == bAgeRead && bHasSample && ReferenceEquals(sample, rider.ground))
+                        {
+                            // 높이와 튀는 때를 같은 자리로 읽는다. 둘 다 범위 밖이면 높이 0, 튀지 않음(나이는 읽지 않은 값 그대로 둔다).
+                            bAgeRead = true;
+                            if (bPosed || (distanceSq >= frontLowSq && distanceSq <= frontHighSq)) ripple.SampleAt(ground, out pixels, out age);
+                        }
+                        else if (bPosed)
+                        {
+                            pixels = ripple.PixelsAt(ground);
+                        }
+                    }
                 }
                 pixelBuffer.Add(pixels);
             }
 
             // [튐] 앞머리가 이 물체 칸을 지난 뒤 지난 시간으로 튀는 높이·눌림을 정한다.
             int pop = 0;
-            float age = float.NegativeInfinity;
-            if (PopKind.None != rider.pop)
+            if (bPop)
             {
-                age = ripple.FrontAgeAt(null != rider.ground ? rider.ground.GroundPosition : rider.root.position);
+                if (false == bAgeRead)
+                {
+                    Vector3 popGround = null != rider.ground ? rider.ground.GroundPosition : rider.root.position;
+                    float dx = popGround.x - center.x;
+                    float dy = (popGround.y - center.y) * 2f;
+                    float distanceSq = dx * dx + dy * dy;
+                    if (distanceSq >= frontLowSq && distanceSq <= frontHighSq) age = ripple.FrontAgeAt(popGround);
+                }
+
                 pop = ObjectPopPixels(rider, age);
             }
 
